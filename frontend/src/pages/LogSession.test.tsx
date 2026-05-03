@@ -1041,6 +1041,90 @@ describe('LogSession — edit mode', () => {
       expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('User is typing')
     })
   })
+
+  it('syncs title field when query refetches with new server value (Atelier Apply flow)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    // Wait for initial populate (title is null in EDIT_SESSION, so input starts empty)
+    await screen.findByTestId('log-session-title-input')
+    expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('')
+    // Simulate Atelier Apply: server returns new title
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        title: 'Subjuntivo',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('Subjuntivo')
+    })
+  })
+
+  it('does not overwrite locally-edited title when query refetches', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('log-session-title-input')
+    // Teacher types their own title
+    fireEvent.change(screen.getByTestId('log-session-title-input'), { target: { value: 'My own title' } })
+    // Refetch returns a different server title
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        title: 'Server Title',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    // Teacher's edit must be preserved
+    await waitFor(() => {
+      expect((screen.getByTestId('log-session-title-input') as HTMLInputElement).value).toBe('My own title')
+    })
+  })
+
+  it('syncs actualContent field when query refetches with new server value', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('actual-content')
+    expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Covered irregular preterite')
+    // Simulate Atelier Apply updating actualContent
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        actualContent: 'Hoy hemos trabajado el subjuntivo',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Hoy hemos trabajado el subjuntivo')
+    })
+  })
 })
 
 describe('LogSession — back arrow behavior', () => {

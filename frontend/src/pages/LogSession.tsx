@@ -206,6 +206,14 @@ export default function LogSession() {
   // the same session does not wipe the teacher's in-progress edits, but navigation
   // to a different session will re-initialize correctly.
   const initializedForIdRef = useRef<string | null>(null)
+  // Tracks the last values received from the server for the 4 Atelier-patchable fields.
+  // Used by the post-init sync effect to distinguish "user edited" from "server updated".
+  const lastServerValuesRef = useRef<{
+    title: string | undefined
+    actualContent: string
+    generalNotes: string
+    homeworkAssigned: string
+  } | null>(null)
   // Create mode: track whether we've pre-populated actualContent from plannedForToday
   const [didInitContent, setDidInitContent] = useState(false)
 
@@ -304,8 +312,37 @@ export default function LogSession() {
       const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
       setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
     } catch { setSuggestedDifficulties([]) }
+    lastServerValuesRef.current = {
+      title: editSession.title ?? undefined,
+      actualContent: editSession.actualContent ?? '',
+      generalNotes: editSession.generalNotes ?? '',
+      homeworkAssigned: editSession.homeworkAssigned ?? '',
+    }
     initializedForIdRef.current = editSession.id
   }, [editSession])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Post-init sync: when the Atelier Assistant applies a proposal the server is PATCHed and
+  // the ['session', id, sessionId] query is invalidated. On refetch editSession changes, but
+  // the init effect above won't re-run (initializedForIdRef guard). This effect syncs the 4
+  // patchable fields back to local state for any field the teacher hasn't manually edited.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!editSession) return
+    if (initializedForIdRef.current !== editSession.id) return
+    const prev = lastServerValuesRef.current
+    if (!prev) return
+    const nextTitle = editSession.title ?? undefined
+    const nextActualContent = editSession.actualContent ?? ''
+    const nextGeneralNotes = editSession.generalNotes ?? ''
+    const nextHomeworkAssigned = editSession.homeworkAssigned ?? ''
+    // Each field: only sync if local value matches last server value (user hasn't dirtied it)
+    if (sessionTitle === prev.title && nextTitle !== prev.title) setSessionTitle(nextTitle)
+    if (actualContent === prev.actualContent && nextActualContent !== prev.actualContent) setActualContent(nextActualContent)
+    if (generalNotes === prev.generalNotes && nextGeneralNotes !== prev.generalNotes) setGeneralNotes(nextGeneralNotes)
+    if (homeworkAssigned === prev.homeworkAssigned && nextHomeworkAssigned !== prev.homeworkAssigned) setHomeworkAssigned(nextHomeworkAssigned)
+    lastServerValuesRef.current = { title: nextTitle, actualContent: nextActualContent, generalNotes: nextGeneralNotes, homeworkAssigned: nextHomeworkAssigned }
+  }, [editSession]) // intentionally reads local state without declaring as deps
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
