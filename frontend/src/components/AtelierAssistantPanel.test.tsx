@@ -347,6 +347,23 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.queryByTestId('assistant-panel')).not.toBeInTheDocument()
   })
 
+  it('input value is cleared when panel closes and reopens', async () => {
+    const user = userEvent.setup()
+    const props = { ...defaultProps }
+    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+
+    const input = screen.getByTestId('assistant-input')
+    await user.type(input, 'some text')
+    expect((input as HTMLInputElement).value).toBe('some text')
+
+    // Close panel
+    rerender(<AtelierAssistantPanel {...props} open={false} />)
+    // Reopen panel
+    rerender(<AtelierAssistantPanel {...props} open={true} />)
+
+    expect((screen.getByTestId('assistant-input') as HTMLInputElement).value).toBe('')
+  })
+
   // ---- voice input tests ------------------------------------------------------
 
   it('renders mic button in idle state', () => {
