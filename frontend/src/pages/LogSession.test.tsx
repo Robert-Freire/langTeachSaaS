@@ -1125,6 +1125,63 @@ describe('LogSession — edit mode', () => {
       expect((screen.getByTestId('actual-content') as HTMLTextAreaElement).value).toBe('Hoy hemos trabajado el subjuntivo')
     })
   })
+
+  it('syncs homeworkAssigned field when query refetches with new server value', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('homework-assigned')
+    expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Exercises p. 55')
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...EDIT_SESSION,
+        homeworkAssigned: 'Workbook page 42',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('homework-assigned') as HTMLInputElement).value).toBe('Workbook page 42')
+    })
+  })
+
+  it('syncs generalNotes field when query refetches with new server value', async () => {
+    const sessionWithNotes: SessionLog = { ...EDIT_SESSION, generalNotes: 'Initial notes' }
+    vi.mocked(sessionLogsApi.getSession).mockResolvedValue(sessionWithNotes)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={[`/students/${STUDENT_ID}/sessions/${SESSION_ID}/edit`]}>
+          <Routes>
+            <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+            <Route path="/students/:id" element={<div data-testid="student-detail">Student Detail</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    // Open secondary section to reveal general-notes textarea
+    const toggle = await screen.findByTestId('toggle-secondary')
+    fireEvent.click(toggle)
+    const notesField = await screen.findByTestId('general-notes')
+    expect((notesField as HTMLTextAreaElement).value).toBe('Initial notes')
+    await act(async () => {
+      client.setQueryData(['session', STUDENT_ID, SESSION_ID], {
+        ...sessionWithNotes,
+        generalNotes: 'Updated notes from Apply',
+        updatedAt: '2026-04-01T12:00:00Z',
+      })
+    })
+    await waitFor(() => {
+      expect((screen.getByTestId('general-notes') as HTMLTextAreaElement).value).toBe('Updated notes from Apply')
+    })
+  })
 })
 
 describe('LogSession — back arrow behavior', () => {
