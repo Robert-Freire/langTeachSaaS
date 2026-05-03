@@ -1579,7 +1579,7 @@ public class PromptService : IPromptService
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
             - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Also triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]". Empty array if none.
             - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios", "tengo que preparar ejercicios"). Also triggered by imperative phrases like "añade follow up [X]", "apunta follow up [X]", "añade como follow up [X]" — extract the action after the trigger phrase. Empty array if none.
-            - levelReassessment: CEFR level string (e.g. "B1", "B2+") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set to null even when CEFR strings appear elsewhere in the utterance. Examples: "ha mejorado mucho, creo que ya está en B2, súbele el nivel" → "B2" (positive: level change stated); "habla a nivel B2 pero el nivel global no lo toco" → null (negative: level mentioned but suppressed).
+            - levelReassessment: CEFR level string (e.g. "B1", "B2") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set to null even when CEFR strings appear elsewhere in the utterance. Examples: "ha mejorado mucho, creo que ya está en B2, súbele el nivel" → "B2" (positive: level change stated); "habla a nivel B2 pero el nivel global no lo toco" → null (negative: level mentioned but suppressed).
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
@@ -1589,7 +1589,7 @@ public class PromptService : IPromptService
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
             - competency: one of {competencies}
-            - subcategory: specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+            - subcategory: specific item (e.g. "ser/estar", "subjuntivo", "tiempos de pasado"), free text
             - severity: {severities} (infer from language: "mucho"/"siempre"/"constantemente" -> high, "a veces"/"sometimes" -> medium, "un poco"/"slightly" -> low; default medium)
 
             Only include difficulties explicitly mentioned. Do not invent. Use null for scalar fields that cannot be inferred.
@@ -1678,7 +1678,7 @@ public class PromptService : IPromptService
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
                 - competency: string — must be one of: {competencies}
-                - subcategory: string — specific item (e.g. "ser/estar", "subjunctive", "past tense"), free text
+                - subcategory: string — specific item (e.g. "ser/estar", "subjuntivo", "tiempos de pasado"), free text
               Empty array [] if no difficulties mentioned.
             - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
             - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.

@@ -515,8 +515,10 @@ public class ReflectionExtractionServiceTests
 
     [Theory]
     [InlineData("B1", "B1")]
-    [InlineData("A2+", "A2+")]
+    [InlineData("A2", "A2")]
     [InlineData("C1", "C1")]
+    [InlineData("A2+", null)]
+    [InlineData("B2.1", null)]
     [InlineData("Intermediate", null)]
     [InlineData("B3", null)]
     [InlineData("", null)]
