@@ -159,11 +159,10 @@ public class AssistantController : ControllerBase
         EmitProposal(proposals, "session", "generalNotes", "Areas to Improve", session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value);
         EmitProposal(proposals, "session", "homeworkAssigned", "Homework Assigned", session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value);
 
-        if (!string.IsNullOrWhiteSpace(reflectionExtraction.NewSessionTitle))
+        if (reflectionExtraction.ProposedNewSession is { } proposed)
         {
-            var sessionDate = reflectionExtraction.NewSessionDate
-                ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
-            var newSessionPayload = new { title = reflectionExtraction.NewSessionTitle, sessionDate };
+            var sessionDate = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var newSessionPayload = new { title = proposed.Title, sessionDate };
             var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(
                 Guid.NewGuid().ToString(),
@@ -171,7 +170,7 @@ public class AssistantController : ControllerBase
                 "newSession",
                 "New Session",
                 null,
-                reflectionExtraction.NewSessionTitle,
+                proposed.Title,
                 payloadElement));
         }
 
