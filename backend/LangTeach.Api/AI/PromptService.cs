@@ -1524,7 +1524,11 @@ public class PromptService : IPromptService
         var weekdayFactsSection = weekdayFacts != null ? $"\n            {weekdayFacts}" : string.Empty;
 
         var sessionContextHint = ctx.HasOpenSession
-            ? string.Empty
+            ? """
+
+
+            IMPORTANT CONTEXT: There IS an open session in scope. Future-tense planning asides ("la semana que viene quiero hacer el subjuntivo", "quiero trabajar X la próxima vez") are teaching ideas — capture them in teachingTodos or nextLessonIdeas, not as new session records.
+            """
             : """
 
 
@@ -1567,13 +1571,18 @@ public class PromptService : IPromptService
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
-            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Also triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]". Empty array if none.
+            - teachingTodos: array of objects — pedagogical ideas for future sessions. Each object has:
+                - "text": string — the pedagogical idea (grammar points to revisit, vocabulary, skills to develop)
+                - "dueDate": string or null — ISO 8601 date (YYYY-MM-DD) if a specific target date is mentioned for this todo; resolve forward from today using the same rules as newSessionDate. Null if no date is mentioned.
+                Triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]", "añade un teaching todo para [X]". Empty array if none.
+                Example: input "Añade un teaching todo para repasar la voz pasiva el martes que viene" produces one todo object with text "Repasar la voz pasiva" and dueDate set to the next Tuesday from today.
             - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios", "tengo que preparar ejercicios"). Also triggered by imperative phrases like "añade follow up [X]", "apunta follow up [X]", "añade como follow up [X]" — extract the action after the trigger phrase. Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set to null even when CEFR strings appear elsewhere in the utterance. Examples: "ha mejorado mucho, creo que ya está en B2, súbele el nivel" → "B2" (positive: level change stated); "habla a nivel B2 pero el nivel global no lo toco" → null (negative: level mentioned but suppressed).
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
             - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
+                When the teacher uses a todo-creation trigger phrase ("añade un teaching todo", "apunta como teaching todo", "ponme un todo para", "añade como idea"), produce a todo object with dueDate and leave newSessionTitle null — the date belongs to the todo, not a new session.
             - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. For future dates: resolve forward from today — "el lunes" or "next Monday" = the next Monday strictly after today (count forward to the first occurrence of that weekday; if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. For retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"): resolve backward — {weekdayBackwardRule} Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
 
             For suggestedDifficulties, each object must have:

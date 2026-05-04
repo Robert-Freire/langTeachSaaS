@@ -39,7 +39,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
-  onEditPayload: (id: string, payload: NewStudentData | NewSessionData) => void
+  onEditPayload: (id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => void
 }
 
 export function useAtelierAssistant(
@@ -141,7 +141,8 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        await applyTodoProposal(studentId, proposal.newValue)
+        const dueDate = (proposal.payload as { dueDate?: string | null } | null | undefined)?.dueDate ?? null
+        await applyTodoProposal(studentId, proposal.newValue, dueDate)
       } else if (proposal.type === 'newStudent') {
         const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
@@ -199,6 +200,9 @@ export function useAtelierAssistant(
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'todo' && studentId) {
+        await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       }
     } catch (err) {
       if (generationRef.current !== gen) return
@@ -245,10 +249,11 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
-  const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData) => {
+  const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => {
     setProposals(prev => prev.map(p => {
       if (p.id !== id) return p
       if (p.type === 'newStudent') return { ...p, newStudentPayload: payload as NewStudentData }
+      if (p.type === 'todo') return { ...p, payload: payload as Record<string, unknown> }
       return { ...p, payload: payload as NewSessionData }
     }))
   }, [])

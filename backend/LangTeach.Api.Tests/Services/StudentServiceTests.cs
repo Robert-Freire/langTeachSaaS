@@ -312,7 +312,7 @@ public class StudentServiceTests : IDisposable
     public async Task TeachingTodos_StatusTransition_Covered_Succeeds()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null));
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null, null));
         var todoId = appended!.Profile.TeachingTodos.Single().Id;
 
         var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId, new UpdateTeachingTodoDto("Covered", null, null));
@@ -324,7 +324,7 @@ public class StudentServiceTests : IDisposable
     public async Task TeachingTodos_StatusTransition_Dismissed_Succeeds()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null));
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Work on ser/estar", null, null));
         var todoId = appended!.Profile.TeachingTodos.Single().Id;
 
         var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId, new UpdateTeachingTodoDto("Dismissed", null, null));
@@ -348,7 +348,7 @@ public class StudentServiceTests : IDisposable
         var otherTeacherId = Guid.NewGuid();
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
 
-        var result = await _sut.AppendTeachingTodoAsync(otherTeacherId, created.Id, new CreateTeachingTodoDto("Some text", null));
+        var result = await _sut.AppendTeachingTodoAsync(otherTeacherId, created.Id, new CreateTeachingTodoDto("Some text", null, null));
 
         result.Should().BeNull();
     }
@@ -358,7 +358,7 @@ public class StudentServiceTests : IDisposable
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
 
-        var result = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Trabajar ser/estar", null));
+        var result = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Trabajar ser/estar", null, null));
 
         result!.Profile.TeachingTodos.Should().HaveCount(1);
         result.Profile.TeachingTodos[0].Text.Should().Be("Trabajar ser/estar");
@@ -372,8 +372,8 @@ public class StudentServiceTests : IDisposable
     public async Task DeleteTeachingTodoAsync_RemovesTodo_ReturnsUpdatedStudent()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var after1 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo one", null));
-        var after2 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo two", null));
+        var after1 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo one", null, null));
+        var after2 = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Todo two", null, null));
         var firstId = after1!.Profile.TeachingTodos[0].Id;
         var secondId = after2!.Profile.TeachingTodos[1].Id;
 
@@ -410,7 +410,7 @@ public class StudentServiceTests : IDisposable
     public async Task UpdateTeachingTodoAsync_WithText_UpdatesText()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Original text", null));
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Original text", null, null));
         var todoId = appended!.Profile.TeachingTodos.Single().Id;
 
         var result = await _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId,
@@ -423,7 +423,7 @@ public class StudentServiceTests : IDisposable
     public async Task UpdateTeachingTodoAsync_TextTooLong_ThrowsValidation()
     {
         var created = await _sut.CreateAsync(_teacherId, BaseRequest());
-        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Some text", null));
+        var appended = await _sut.AppendTeachingTodoAsync(_teacherId, created.Id, new CreateTeachingTodoDto("Some text", null, null));
         var todoId = appended!.Profile.TeachingTodos.Single().Id;
 
         var act = () => _sut.UpdateTeachingTodoAsync(_teacherId, created.Id, todoId,

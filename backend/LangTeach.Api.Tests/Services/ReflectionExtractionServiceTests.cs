@@ -462,7 +462,29 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
-    public void ParseResponse_ExtractsTeachingTodos()
+    public void ParseResponse_ExtractsTeachingTodos_ObjectFormat()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [
+                {"text": "Trabajar conectores adversativos", "dueDate": null},
+                {"text": "Practicar el subjuntivo en concesivas", "dueDate": "2026-05-12"}
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Select(t => t.Text).Should()
+            .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos[0].DueDate.Should().BeNull();
+        result.TeachingTodos[1].DueDate.Should().Be("2026-05-12");
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeachingTodos_LegacyStringFormat()
     {
         var sut = CreateSut("{}");
         var json = """
@@ -474,7 +496,9 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.TeachingTodos.Should().BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos.Select(t => t.Text).Should()
+            .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos.Should().AllSatisfy(t => t.DueDate.Should().BeNull());
     }
 
     [Fact]

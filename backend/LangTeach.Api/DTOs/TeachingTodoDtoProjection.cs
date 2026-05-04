@@ -12,7 +12,8 @@ public static class TeachingTodoDtoProjection
             f.CreatedAt,
             f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
             f.Status,
-            f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null);
+            f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null,
+            f.DueDate);
 
     public static readonly Func<TeacherFollowup, TeachingTodoDto> Compiled = Projection.Compile();
 }

@@ -147,7 +147,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SessionTitle: GetStringOrNull(root, "sessionTitle"),
                 TopicTags: ParseTopicTags(root),
                 PreviousHomeworkStatus: ParseHomeworkStatus(root),
-                TeachingTodos: ParseStringArray(root, "teachingTodos"),
+                TeachingTodos: ParseTeachingTodos(root),
                 TeacherFollowups: ParseStringArray(root, "teacherFollowups"),
                 LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
@@ -281,6 +281,29 @@ public class ReflectionExtractionService : IReflectionExtractionService
         return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
             ? raw
             : null;
+    }
+
+    private static List<ExtractedTeachingTodoDto> ParseTeachingTodos(JsonElement root)
+    {
+        var result = new List<ExtractedTeachingTodoDto>();
+        if (!root.TryGetProperty("teachingTodos", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var s = item.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s, null));
+            }
+            else if (item.ValueKind == JsonValueKind.Object)
+            {
+                var text = GetStringOrNull(item, "text");
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                var dueDate = GetIsoDateOrNull(item, "dueDate");
+                result.Add(new ExtractedTeachingTodoDto(text, dueDate));
+            }
+        }
+        return result;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)

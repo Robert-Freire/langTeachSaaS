@@ -49,7 +49,7 @@ interface Props {
   onModify: (id: string, newValue: string) => void
   onApplyAll: () => void
   onDismissAll: () => void
-  onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData) => void
+  onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
 }
 
