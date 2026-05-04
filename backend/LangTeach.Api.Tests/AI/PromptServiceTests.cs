@@ -1390,7 +1390,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Design at least one Practice exercise",
+        req.UserPrompt.Should().Contain("at most 1-2 weakness-targeting exercises",
             because: "lessonWeaknessProfileGuidance from config must appear in the error profile block");
         req.UserPrompt.Should().Contain("subjunctive",
             because: "weakness text must be listed in the error profile block");
