@@ -2212,14 +2212,14 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1Plus()
+    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1AndAbove()
     {
         var ctx = BaseCtx() with { CefrLevel = "B2" };
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("B1+",
-            because: "guidance should specify B1+ as the target level range");
+        req.UserPrompt.Should().Contain("B1 and above",
+            because: "guidance should specify the target level range without sublevel notation");
         req.UserPrompt.Should().Contain("DELE",
             because: "guidance should reference DELE exam relevance");
     }

@@ -1,7 +1,6 @@
 import type { NewStudentData } from '@/api/assistant'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { Input } from '@/components/ui/input'
-
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 interface Props {
   payload: NewStudentData
@@ -88,7 +87,7 @@ function FieldRow({ label, value, onChange, required, placeholder }: FieldRowPro
 interface SelectRowProps {
   label: string
   value: string
-  options: string[]
+  options: readonly string[]
   onChange: (v: string) => void
   required?: boolean
 }
