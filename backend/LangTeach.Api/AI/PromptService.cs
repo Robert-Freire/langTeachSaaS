@@ -1217,22 +1217,6 @@ public class PromptService : IPromptService
             }
             profileSb.Append(_pedagogy.GetLessonWeaknessProfileGuidance());
             baseInstruction += profileSb.ToString();
-
-            var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");
-            foreach (var section in SectionOrder)
-            {
-                var label = char.ToUpper(section[0]) + section[1..];
-                foreach (var group in weaknesses.GroupBy(w => w.WeaknessType))
-                {
-                    var guidance = _pedagogy.GetWeaknessTargetingGuidance(section, group.Key);
-                    if (!string.IsNullOrEmpty(guidance))
-                    {
-                        var typeText = string.Join("; ", group.Select(w => w.Description));
-                        sb.AppendLine($"{label} ({group.Key}): {guidance.Replace("{weaknesses}", typeText, StringComparison.Ordinal)}");
-                    }
-                }
-            }
-            baseInstruction += sb.ToString().TrimEnd();
         }
 
         // Section coherence rules from config
