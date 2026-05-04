@@ -25,7 +25,8 @@ export interface ProposalDto {
   oldValue: string | null
   newValue: string
   action?: 'replace' | 'append'
-  payload?: NewStudentData | NewSessionData | Record<string, unknown> | null
+  payload?: NewSessionData | Record<string, unknown> | null
+  newStudentPayload?: NewStudentData | null
 }
 
 export interface ProposeResponse {

@@ -177,7 +177,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
             </div>
           ) : isNewStudent ? (
             <NewStudentFields
-              payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
+              payload={proposal.newStudentPayload as NewStudentData ?? { name: proposal.newValue }}
               proposalId={proposal.id}
               onEditPayload={onEditPayload ?? (() => {})}
             />

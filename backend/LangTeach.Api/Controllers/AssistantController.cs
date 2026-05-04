@@ -91,7 +91,7 @@ public class AssistantController : ControllerBase
                 reasonForStudying = studentExtraction.ReasonForStudying,
             };
             var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, camelCaseOpts);
-            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, payloadElement));
+            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, Payload: null, NewStudentPayload: payloadElement));
         }
 
         if (student != null)
