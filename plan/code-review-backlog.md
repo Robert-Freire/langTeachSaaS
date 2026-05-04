@@ -57,6 +57,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 - **Third PromptService hardcoded opener** (prompt-health-reviewer): Line ~1691 `"You are an expert language teaching assistant..."` in `BuildReplanSuggestionPrompt` is a self-contained multi-line const that was excluded from fragment extraction in this PR. Revisit when replan prompt needs tuning.
 
+## #1064 (2026-05-04)
+
+- **FAB and Compound Input Bar placement** (arch-reviewer): These are placed as `###` subsections inside §5 "Components" but carry §11-level token detail. §11 is the home for all detailed cross-screen control specs (§11.7 Toggle Pill Chips, §11.8 Chevron, §11.9 Drawer Footer). Future doc authors adding FAB-level detail may follow either §5 or §11 as a model. Low priority; only worth moving if the §5/§11 split is ever formally codified with explicit scope rules.
+
 ## #1067 (2026-05-04)
 
 - **GenerateController.Generate returns 503 for ClaudeRateLimitException** (architecture-reviewer): The non-streaming `Generate` helper in `GenerateController.cs` returns 503 with a bare string for `ClaudeRateLimitException`. The new `ExtractProfile` endpoint correctly returns 429 with a structured body. Inconsistency across AI-backed endpoints. Pre-existing gap; `GenerateController` fix is out of scope for this hardening batch. Align in a future pass.

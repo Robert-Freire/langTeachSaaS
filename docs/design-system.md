@@ -106,6 +106,8 @@ Depth comes from tonal layering, not shadows.
 
 All buttons: consistent height, no XL or oversized variants unless it's a full-width CTA on an empty state.
 
+**Card micro-action exception:** inline action buttons inside transient AI cards (proposal cards, suggestion cards) may use raw `<button>` elements with hardcoded Tailwind classes instead of the DS Button component variants. These are micro-CTAs scoped to the card lifecycle, not page-level actions. They must still follow DS color tokens and sizing norms (see §11.10 for the canonical proposal card action row spec).
+
 **Known violation (filed for fix #1105):** The student detail header (`/students/:id`) places "Update via voice" and "Edit Student" as custom `bg-indigo-50 text-indigo-600` buttons next to the filled-primary "Log Session" button. These should be Secondary variant.
 
 ### FAB (Floating Action Button)

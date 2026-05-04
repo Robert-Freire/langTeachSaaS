@@ -10,3 +10,4 @@ The sprint-close procedure (Stage 1) audits this log and clears it after each sp
 |-------|------|----|-------------------------------------------|
 | #1057 | 2026-05-03 | TBD | Zero frontend files changed; backend-only flag added to reflection extraction pipeline |
 | #1063 | 2026-05-03 | TBD | Pure deletion of dead Help NavLink from AppShell; <20 lines, no logic/state changes, no new elements |
+| #1064 | 2026-05-04 | TBD | Documentation-only change to docs/design-system.md; zero frontend files changed, no component logic or state |
