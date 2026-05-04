@@ -45,12 +45,12 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
                 IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
-                NewSessionTitle: null, NewSessionDate: null);
+                ProposedNewSession: null);
         }
 
         var dto = ParseResponse(response.Content);
 
-        var isRetrospectiveNewSession = !hasOpenSession && !string.IsNullOrWhiteSpace(dto.NewSessionTitle);
+        var isRetrospectiveNewSession = !hasOpenSession && dto.ProposedNewSession is not null;
 
         if (!isRetrospectiveNewSession && NeedsWhatWasCoveredFallback(dto))
         {
@@ -154,8 +154,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
                 DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
                 SessionStartTime: GetHhMmOrNull(root, "sessionStartTime"),
-                NewSessionTitle: GetStringOrNull(root, "newSessionTitle"),
-                NewSessionDate: GetIsoDateOrNull(root, "newSessionDate")
+                ProposedNewSession: BuildProposedNewSession(root)
             );
         }
         catch (Exception ex)
@@ -169,7 +168,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
                 IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
-                NewSessionTitle: null, NewSessionDate: null);
+                ProposedNewSession: null);
         }
     }
 
@@ -227,6 +226,14 @@ public class ReflectionExtractionService : IReflectionExtractionService
             return string.IsNullOrWhiteSpace(value) ? null : new ExtractedTextFieldDto(value, ExtractionMode.Replace);
         }
         return null;
+    }
+
+    private static ProposedNewSession? BuildProposedNewSession(JsonElement root)
+    {
+        var title = GetStringOrNull(root, "newSessionTitle");
+        if (string.IsNullOrWhiteSpace(title)) return null;
+        var date = GetIsoDateOrNull(root, "newSessionDate");
+        return new ProposedNewSession(title, date);
     }
 
     private static string? GetStringOrNull(JsonElement root, string key)

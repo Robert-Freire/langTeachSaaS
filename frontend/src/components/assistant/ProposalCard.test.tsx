@@ -207,7 +207,7 @@ describe('ProposalCard', () => {
   it('newStudent type: uses teal accent', () => {
     const { container } = renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(container.querySelector('.bg-teal-500')).toBeInTheDocument()
   })
@@ -215,7 +215,7 @@ describe('ProposalCard', () => {
   it('newStudent type: renders inline field inputs instead of diff', () => {
     renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(screen.getByDisplayValue('Sofía')).toBeInTheDocument()
     expect(screen.getByDisplayValue('inglés')).toBeInTheDocument()
@@ -224,7 +224,7 @@ describe('ProposalCard', () => {
   it('newStudent type: does not show Modify button', () => {
     renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
   })
@@ -235,7 +235,7 @@ describe('ProposalCard', () => {
     renderCard(
       makeProposal({
         type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-        payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+        newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
       }),
       { onEditPayload },
     )

@@ -204,7 +204,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: routes newStudent proposal to createStudent and invalidates students query', async () => {
     const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-student-id', name: 'Sofía', learningLanguage: 'inglés',
@@ -228,7 +228,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: normalizes Spanish language names to canonical English before creating student', async () => {
     const studentPayload = { name: 'María', learningLanguage: 'inglés', nativeLanguages: ['castellano'], cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'María', learningLanguage: 'English',
@@ -254,7 +254,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: English-only input passes through without normalization regression', async () => {
     const studentPayload = { name: 'John', learningLanguage: 'Spanish', nativeLanguages: ['English'], cefrLevel: 'A2' }
-    const newStudentProposal = { id: 'p6', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'John', payload: studentPayload }
+    const newStudentProposal = { id: 'p6', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'John', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'John', learningLanguage: 'Spanish',
@@ -280,7 +280,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: mixed Spanish aliases and canonical English in nativeLanguages both normalize correctly', async () => {
     const studentPayload = { name: 'María', learningLanguage: 'Spanish', nativeLanguages: ['Portuguese', 'castellano'], cefrLevel: 'B2' }
-    const newStudentProposal = { id: 'p8', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    const newStudentProposal = { id: 'p8', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'María', learningLanguage: 'Spanish',
@@ -306,7 +306,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: unrecognized language name sets proposal to error with offending value', async () => {
     const studentPayload = { name: 'Test', learningLanguage: 'klingon', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p7', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Test', payload: studentPayload }
+    const newStudentProposal = { id: 'p7', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Test', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -321,7 +321,7 @@ describe('useAtelierAssistant', () => {
 
   it('onEditPayload: updates payload of proposal with matching id', async () => {
     const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -330,7 +330,7 @@ describe('useAtelierAssistant', () => {
 
     const updatedPayload = { name: 'Lucía', learningLanguage: 'inglés', cefrLevel: 'B1' }
     act(() => { result.current.onEditPayload('p4', updatedPayload) })
-    expect(result.current.proposals[0].payload).toEqual(updatedPayload)
+    expect(result.current.proposals[0].newStudentPayload).toEqual(updatedPayload)
   })
 
   it('reset: clears transcription, processing, and proposals', async () => {

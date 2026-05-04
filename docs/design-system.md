@@ -42,6 +42,12 @@ Reference benchmark: a well-curated editorial tool. Think high-quality stationer
 | `surface-container-lowest` | `#FFFFFF` | Active workspace, main cards |
 | `outline-variant` | `#C7C4D8` | Ghost borders (accessibility only, at 20% opacity max) |
 
+### Utility classes
+
+| Class | Definition | Usage |
+|-------|-----------|-------|
+| `lt-gradient-primary` | `linear-gradient(135deg, #3525CD 0%, #4F46E5 50%, #6366f1 100%)` | All primary CTA buttons, FABs, header icons that use the indigo gradient. Single source of truth — do not inline gradient strings. |
+
 ### The No-Line Rule
 
 **Borders between sections are forbidden.** Layout boundaries must be defined only through background color shifts (tonal layering). Exception: input fields may use `outline-variant` at 20% opacity for accessibility. Never use 1px solid borders to section content.

@@ -48,3 +48,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 - **Extract per-item shape predicates as named guards** (Sophy): `coerceExercisesContent` inline filters re-implement shape checks that could be shared named guards (e.g. `isExercisesFillInBlankItem`). A schema change to any interface requires editing two places. Extract guards when adding the next exercise sub-format.
 - **`multipleChoice.options` element type** (Sophy): `options: string[]` is validated as "is array" but individual elements are not checked for string type. If AI sends non-string elements they pass through. Apply `filter(a => typeof a === 'string')` for symmetry with `sentenceTransformation.alternatives`.
+
+## #1066 (2026-05-04)
+
+- **weekdayBackwardRule to prompt-fragments.json** (Sophy): The weekday backward-resolution C# const is prompt text that ideally lives in JSON alongside the opener strings. Complex to extract (embedded in a raw-string interpolation) - revisit when the surrounding date-resolution prose needs tuning by Isaac.
+- **AssistantController dictionary key hardcoding** (Sophy): The C# dictionary that maps field names to extraction DTO properties is still hardcoded. Adding a new student field requires touching C# (extraction DTO + dictionary entry) AND the JSON. The JSON is a label+multiline registry, not a full field taxonomy. Document this limitation at the call site.
+- **ProposalDto NewStudentPayload vs single Payload** (Sophy): Splitting Payload into Payload + NewStudentPayload is a discriminated union encoded as two nullable fields with a prose contract. Issue #1066 explicitly requested it; TypeScript typing is cleaner with a dedicated field. Revisit if a third proposal type needs its own payload shape.
+
+- **Third PromptService hardcoded opener** (prompt-health-reviewer): Line ~1691 `"You are an expert language teaching assistant..."` in `BuildReplanSuggestionPrompt` is a self-contained multi-line const that was excluded from fragment extraction in this PR. Revisit when replan prompt needs tuning.
