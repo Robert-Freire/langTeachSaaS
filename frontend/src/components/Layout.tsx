@@ -7,7 +7,7 @@ export default function Layout() {
   return (
     <div className="app-layout">
       <header>
-        <h1>LangTeach</h1>
+        <h1>Atelier</h1>
         <div>
           <span>{user?.email}</span>
           <Link to="/settings">Settings</Link>

@@ -292,7 +292,7 @@ export default function AtelierAssistantPanel({
             <div className="flex flex-col items-center justify-center h-full text-center gap-3" data-testid="mic-permission-error">
               <AlertCircle className="h-8 w-8 text-zinc-300" aria-hidden="true" />
               <p className="text-sm font-inter text-zinc-500">
-                LangTeach needs microphone access to listen.
+                Atelier needs microphone access to listen.
               </p>
               <p className="text-xs font-inter text-zinc-400">
                 Open your browser settings to allow microphone access, then try again.

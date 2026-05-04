@@ -66,7 +66,7 @@ function SidebarContent({ user, initials, logout, location }: {
       <div className="px-6 pt-7 pb-8">
         <div className="flex items-center gap-2.5">
           <LangTeachLogo size={28} />
-          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">Atelier</span>
         </div>
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 mt-1 ml-[38px] font-inter">
           Language Curator
@@ -203,7 +203,7 @@ export default function AppShell() {
         </Button>
         <div className="flex items-center gap-2">
           <LangTeachLogo size={24} />
-          <span className="text-primary font-bold text-base tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-bold text-base tracking-tight font-manrope">Atelier</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Tooltip>

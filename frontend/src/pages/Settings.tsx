@@ -208,7 +208,7 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Integrations</CardTitle>
-          <CardDescription>Connect external services to LangTeach.</CardDescription>
+          <CardDescription>Connect external services to Atelier.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
