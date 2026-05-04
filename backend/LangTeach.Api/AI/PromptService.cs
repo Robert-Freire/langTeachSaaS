@@ -1497,7 +1497,7 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
     {
         var today = ctx.Today;
-        var teacherText = InputSanitizer.Sanitize(ctx.TeacherText);
+        var teacherText = InputSanitizer.Sanitize(ctx.TeacherText?.Replace('\r', ' ').Replace('\n', ' '));
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
         const string weekdayBackwardRule =
