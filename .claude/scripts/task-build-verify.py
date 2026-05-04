@@ -56,7 +56,7 @@ def main() -> None:
         print("Usage: python3 task-build-verify.py <worktree-path>", file=sys.stderr)
         sys.exit(1)
 
-    worktree = Path(sys.argv[1])
+    worktree = Path(sys.argv[1]).resolve()
     if not worktree.exists():
         print(f"ERROR: path does not exist: {worktree}", file=sys.stderr)
         sys.exit(1)
