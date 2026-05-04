@@ -67,6 +67,43 @@ Wait for frontend:
 for i in $(seq 1 40); do curl -sf http://localhost:5174 > /dev/null 2>&1 && break; sleep 3; done
 ```
 
+**Stack health check (mandatory before taking screenshots):**
+
+Verify the API is reachable from the host AND that the frontend is calling the correct API port. A healthy frontend response to `/api/auth/me` confirms the API URL baked into the frontend build is reachable:
+```bash
+# 1. API directly reachable on the exposed port
+curl -sf http://localhost:5178/api/auth/me \
+  -H "Authorization: Bearer test-token" -H "Accept: application/json" \
+  -o /dev/null -w "%{http_code}" && echo " [API:5178 OK]" || echo " [API:5178 FAIL]"
+
+# 2. Frontend bundle is calling the right URL (check which API URL is baked in)
+curl -sf http://localhost:5174 | grep -o 'VITE_API_URL[^"]*\|localhost:[0-9]*' | head -5 || true
+
+# 3. A data endpoint returns real data (proves auth + API are wired up)
+curl -sf http://localhost:5178/api/students \
+  -H "Authorization: Bearer test-token" -H "Accept: application/json" | head -c 200
+```
+
+If the API health check returns a non-2xx response OR if step 3 returns an error/empty body, **STOP immediately** and report as BLOCKED:
+
+```
+BLOCKED: VISUAL STACK API NOT REACHABLE
+
+The frontend is running (http://localhost:5174 responds) but the API at
+http://localhost:5178 is not reachable or returning errors. Screenshots taken
+in this state would show the broken/empty app, not the real application.
+
+Root cause from sprint close 2026-05-03: VITE_API_URL was not set correctly
+at Docker build time, causing the frontend to call localhost:5000 (not exposed).
+The fix is in frontend/.env.e2e (tracked since #1059). Verify this file exists
+and contains VITE_API_URL=http://localhost:5178, then rebuild: docker compose
+-f docker-compose.e2e.yml -f docker-compose.visual.yml --env-file .env.e2e
+build api frontend
+
+Do NOT proceed to Playwright -- screenshots of a broken stack are worse than
+no screenshots.
+```
+
 **Teardown** (always, even on failure):
 ```bash
 docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
