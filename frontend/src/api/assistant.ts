@@ -6,6 +6,7 @@ export interface NewStudentData {
   birthYear?: number | null
   profession?: string | null
   cityOfResidence?: string | null
+  countryOfResidence?: string | null
   nativeLanguages?: string[]
   learningLanguage?: string | null
   cefrLevel?: string | null

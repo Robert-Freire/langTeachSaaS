@@ -45,6 +45,11 @@ export default function NewStudentFields({ payload, proposalId, onEditPayload }:
         onChange={v => update({ cityOfResidence: v || null })}
       />
       <FieldRow
+        label="Country"
+        value={payload.countryOfResidence ?? ''}
+        onChange={v => update({ countryOfResidence: v || null })}
+      />
+      <FieldRow
         label="Native Language(s)"
         value={payload.nativeLanguages?.join(', ') ?? ''}
         onChange={v => update({ nativeLanguages: v ? v.split(',').map(s => s.trim()).filter(Boolean) : [] })}

@@ -173,6 +173,7 @@ export function useAtelierAssistant(
           birthYear: data.birthYear ?? null,
           profession: data.profession ?? null,
           cityOfResidence: data.cityOfResidence ?? null,
+          countryOfResidence: data.countryOfResidence ?? null,
           nativeLanguages: normalizedNativeLanguages,
           reasonForStudying: data.reasonForStudying ?? null,
           interests: [],
