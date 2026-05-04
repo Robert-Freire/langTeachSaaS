@@ -200,6 +200,9 @@ export function useAtelierAssistant(
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'todo' && studentId) {
+        await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       }
     } catch (err) {
       if (generationRef.current !== gen) return
