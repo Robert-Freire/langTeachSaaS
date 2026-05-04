@@ -218,7 +218,7 @@ export function StudentRoster({ students }: StudentRosterProps) {
                     className="group hover:bg-[#ECEAFD] transition-colors cursor-pointer"
                     data-testid="zone3-student-row"
                     onClick={() => navigate(`/students/${student.studentId}`)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/students/${student.studentId}`) }}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/students/${student.studentId}`) } }}
                     tabIndex={0}
                     role="link"
                     aria-label={`Open student ${student.name}`}
