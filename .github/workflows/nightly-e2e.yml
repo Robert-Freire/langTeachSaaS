@@ -154,6 +154,9 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  # Filing policy: on failure, if an open issue titled "Nightly E2E failure tracker" exists,
+  # a comment is appended to it. If no such issue exists, a new tracker issue is created.
+  # This means there is at most one open tracker issue at any time, not one per day.
   notify_failure:
     name: Notify on failure
     needs: [check-changes, e2e]
