@@ -138,6 +138,8 @@ export function useAtelierAssistant(
         } else {
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
+      } else if (proposal.type === 'session' && studentId && !sessionId) {
+        throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
@@ -195,7 +197,6 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-        await queryClient.invalidateQueries({ queryKey: ['session-summary', studentId] })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
