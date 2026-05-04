@@ -102,6 +102,25 @@ Each reviewer prompt must include:
 
 **Stage 2 (agent):** After user approves backlogs and branch review findings, run the `sprint-close` agent (`subagent_type: "sprint-close"`). It verifies board/issues, runs the comprehensive UI/UX sprint review (`review-ui-sprint`), Teacher QA, prompt health review, and pedagogy review. Returns READY / NOT READY.
 
+**Stage 2 UI finding verification (mandatory, runs in main conversation after sprint-close returns):**
+
+Background: during the Unified Voice & Chat sprint close (2026-05-03), `review-ui-sprint` produced findings about UI state that did not match the live app. Root cause: the visual stack was running with a broken API URL (VITE_API_URL not set at build time), so screenshots showed the app in a broken/empty state rather than the real working state. The underlying stack bug was fixed in #1059. Even so, vision-model misreading is a separate risk that cannot be eliminated by the stack fix alone.
+
+Every **Critical or Important** finding from `review-ui-sprint` must be chrome-verified before it affects the sprint gate verdict. Minor findings do not require verification and go directly to `plan/ui-review-backlog.md`.
+
+**Verification steps:**
+1. Collect all Critical and Important findings from the sprint-close report's UI/UX Review section.
+2. Group findings by route. For each route with findings, run one chrome session:
+   ```
+   claude --chrome
+   ```
+   Prompt the chrome agent: "Navigate to `<route>`. Verify each of the following claims one by one and report CONFIRMED, REFUTED, or PARTIAL with a one-line observation for each: [paste finding descriptions]."
+3. Triage results:
+   - **CONFIRMED**: keep the finding at its original severity.
+   - **REFUTED**: remove from the verdict. Log to `plan/observed-issues.md` as `| #review-ui-sprint-<sprint-slug> | <date> | minor | REFUTED: agent claimed <X> but chrome showed <Y> |`.
+   - **PARTIAL**: keep but downgrade severity by one level (Critical to Important, Important to Minor).
+4. Rebuild the finding list from surviving findings only. The READY / NOT READY verdict is based on this verified list, not the raw agent output.
+
 **Stage 2b (issue filing, mandatory):** After Stage 2 completes, review all findings from every reviewer (Stage 1b branch reviewers, Isaac pedagogy review, prompt health review, Teacher QA triage, UI/UX review). Every finding with severity >= minor that is not fixed in the current sprint **must** be filed as a GitHub issue (batch related findings into one issue) and assigned to the next sprint milestone. Findings without a GitHub issue are considered lost. The sprint cannot move to Stage 3 until all findings are filed.
 
 **Stage 3 (cleanup, after user triggers merge action):** Close the milestone, delete the sprint branch, update memory (task status, sprint overviews), clear remaining backlog entries.
