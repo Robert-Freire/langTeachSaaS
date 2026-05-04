@@ -3,6 +3,8 @@ param location string
 @secure()
 param sqlConnectionString string
 param appPrincipalId string
+@description('Object ID of the GitHub Actions service principal that runs the BACPAC backup workflow. When non-empty, grants Key Vault Secrets User so the workflow can read the SQL connection string.')
+param backupServicePrincipalId string = ''
 @secure()
 param storageConnectionString string
 param auth0Domain string
@@ -27,13 +29,25 @@ resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-// Grant App Service managed identity read access to secrets
+// Grant Container App managed identity read access to secrets
 resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(kv.id, appPrincipalId, kvSecretsUserRoleId)
   scope: kv
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsUserRoleId)
     principalId: appPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Grant GitHub Actions OIDC service principal read access so the backup workflow
+// can fetch the SQL connection string to run the BACPAC export.
+resource backupRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(backupServicePrincipalId)) {
+  name: guid(kv.id, backupServicePrincipalId, kvSecretsUserRoleId)
+  scope: kv
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsUserRoleId)
+    principalId: backupServicePrincipalId
     principalType: 'ServicePrincipal'
   }
 }
