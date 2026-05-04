@@ -338,7 +338,7 @@ export default function Students() {
       setVoiceError('Extraction failed. Please try again.')
       setVoiceFlow('recording')
     }
-  }, [])
+  }, [setExtractedProfile, setVoiceFlow])
 
   async function handleVoiceCreate(rows: DrawerRow[]) {
     setVoiceFlow('saving')

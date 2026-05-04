@@ -228,7 +228,7 @@ export default function StudentDetail() {
       setVoiceError('Extraction failed. Please try again.')
       setVoiceFlow('idle')
     }
-  }, [])
+  }, [setExtractedProfile, setVoiceFlow])
 
   async function handleVoiceSave(patch: VoiceMergePatch) {
     if (!student) return

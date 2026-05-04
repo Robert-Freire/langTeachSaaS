@@ -138,7 +138,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
-        const data = proposal.payload as NewStudentData | null | undefined
+        const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
         if (!data.name?.trim()) throw new Error('Name is required.')
         if (!data.learningLanguage?.trim()) throw new Error('Learning Language is required.')
@@ -239,7 +239,11 @@ export function useAtelierAssistant(
   }, [dismiss])
 
   const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData) => {
-    setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
+    setProposals(prev => prev.map(p => {
+      if (p.id !== id) return p
+      if (p.type === 'newStudent') return { ...p, newStudentPayload: payload as NewStudentData }
+      return { ...p, payload: payload as NewSessionData }
+    }))
   }, [])
 
   const reset = useCallback(() => {
