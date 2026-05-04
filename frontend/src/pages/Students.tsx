@@ -15,7 +15,8 @@ import { calendarRelativeDay } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
-import { extractStudentProfile, type ExtractedStudentProfile } from '@/api/studentExtraction'
+import { extractStudentProfile } from '@/api/studentExtraction'
+import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
 import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
 import { logger } from '@/lib/logger'
 
@@ -208,9 +209,7 @@ export default function Students() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  type VoiceFlow = 'idle' | 'recording' | 'extracting' | 'confirming' | 'saving'
-  const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
-  const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
+  const { voiceFlow, setVoiceFlow, extractedProfile, setExtractedProfile, cancelVoiceFlow: resetVoiceFlow } = useVoiceExtractionFlow()
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const voiceSaveTokenRef = useRef(0)
 
@@ -360,8 +359,7 @@ export default function Students() {
 
   function cancelVoiceFlow() {
     voiceSaveTokenRef.current++
-    setVoiceFlow('idle')
-    setExtractedProfile(null)
+    resetVoiceFlow()
     setVoiceError(null)
   }
 
