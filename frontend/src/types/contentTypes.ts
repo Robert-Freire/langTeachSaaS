@@ -398,13 +398,12 @@ export function coerceGrammarContent(v: unknown): GrammarContent | null {
 }
 
 export function coerceExercisesContent(v: unknown): ExercisesContent | null {
-  if (isExercisesContent(v)) return v
   if (typeof v !== 'object' || v === null) return null
   const obj = v as Record<string, unknown>
 
-  // Unwrap extra wrapper key
+  // Unwrap extra wrapper key - recurse so item-level filtering always applies
   const unwrapped = unwrapWrapper(obj, isExercisesContent)
-  if (unwrapped) return unwrapped
+  if (unwrapped) return coerceExercisesContent(unwrapped)
 
   // Only attempt to fill missing arrays if at least one recognized key is present
   const hasRecognizedField =
@@ -425,16 +424,35 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
     : undefined
 
   const candidate = {
-    fillInBlank: Array.isArray(obj.fillInBlank) ? obj.fillInBlank
+    fillInBlank: (Array.isArray(obj.fillInBlank) ? obj.fillInBlank
       : Array.isArray(obj.fill_in_blank) ? obj.fill_in_blank
-      : [],
-    multipleChoice: Array.isArray(obj.multipleChoice) ? obj.multipleChoice
+      : []).filter((item: unknown): item is ExercisesFillInBlank => {
+        if (typeof item !== 'object' || item === null) return false
+        const it = item as Record<string, unknown>
+        return typeof it.sentence === 'string' && typeof it.answer === 'string'
+      }),
+    multipleChoice: (Array.isArray(obj.multipleChoice) ? obj.multipleChoice
       : Array.isArray(obj.multiple_choice) ? obj.multiple_choice
-      : [],
-    matching: Array.isArray(obj.matching) ? obj.matching : [],
-    trueFalse: Array.isArray(obj.trueFalse) ? obj.trueFalse
+      : []).filter((item: unknown): item is ExercisesMultipleChoice => {
+        if (typeof item !== 'object' || item === null) return false
+        const it = item as Record<string, unknown>
+        return typeof it.question === 'string' && Array.isArray(it.options) &&
+          (it.options as unknown[]).every((o) => typeof o === 'string') && typeof it.answer === 'string'
+      }),
+    matching: (Array.isArray(obj.matching) ? obj.matching : [])
+      .filter((item: unknown): item is ExercisesMatching => {
+        if (typeof item !== 'object' || item === null) return false
+        const it = item as Record<string, unknown>
+        return typeof it.left === 'string' && typeof it.right === 'string'
+      }),
+    trueFalse: (Array.isArray(obj.trueFalse) ? obj.trueFalse
       : Array.isArray(obj.true_false) ? obj.true_false
-      : [],
+      : []).filter((item: unknown): item is ExercisesTrueFalse => {
+        if (typeof item !== 'object' || item === null) return false
+        const it = item as Record<string, unknown>
+        return typeof it.statement === 'string' && typeof it.isTrue === 'boolean' &&
+          typeof it.justification === 'string'
+      }),
     sentenceOrdering: rawSo
       ? rawSo.filter((item: unknown): item is ExercisesSentenceOrdering => {
           if (typeof item !== 'object' || item === null) return false
@@ -444,12 +462,19 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
         })
       : undefined,
     sentenceTransformation: rawSt
-      ? rawSt.filter((item: unknown): item is ExercisesSentenceTransformation => {
-          if (typeof item !== 'object' || item === null) return false
-          const it = item as Record<string, unknown>
-          return typeof it.prompt === 'string' && typeof it.original === 'string' &&
-            typeof it.expected === 'string'
-        })
+      ? rawSt
+          .filter((item: unknown): item is ExercisesSentenceTransformation => {
+            if (typeof item !== 'object' || item === null) return false
+            const it = item as Record<string, unknown>
+            return typeof it.prompt === 'string' && typeof it.original === 'string' &&
+              typeof it.expected === 'string'
+          })
+          .map((item) => ({
+            ...item,
+            alternatives: Array.isArray(item.alternatives)
+              ? (item.alternatives as unknown[]).filter((a): a is string => typeof a === 'string')
+              : undefined,
+          }))
       : undefined,
   }
   if (isExercisesContent(candidate)) return candidate

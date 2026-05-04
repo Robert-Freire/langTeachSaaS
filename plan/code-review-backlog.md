@@ -43,3 +43,8 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1075 (2026-05-03)
 
 - **eslint-disable comment style** (arch-reviewer): The new post-init sync `useEffect` in `LogSession.tsx` uses an inline trailing comment on the dep array (`// intentionally reads local state without declaring as deps`) rather than a `// eslint-disable-next-line` line above it. Both are consistent with patterns used elsewhere in the file; cosmetic only, no functional impact.
+
+## #421 (2026-05-04)
+
+- **Extract per-item shape predicates as named guards** (Sophy): `coerceExercisesContent` inline filters re-implement shape checks that could be shared named guards (e.g. `isExercisesFillInBlankItem`). A schema change to any interface requires editing two places. Extract guards when adding the next exercise sub-format.
+- **`multipleChoice.options` element type** (Sophy): `options: string[]` is validated as "is array" but individual elements are not checked for string type. If AI sends non-string elements they pass through. Apply `filter(a => typeof a === 'string')` for symmetry with `sentenceTransformation.alternatives`.
