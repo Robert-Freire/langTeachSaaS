@@ -40,6 +40,10 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
         {
             response = await _claude.CompleteAsync(request, ct);
         }
+        catch (ClaudeRateLimitException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Claude API call failed during student profile extraction");

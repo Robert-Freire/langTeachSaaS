@@ -93,7 +93,7 @@ export default function Courses() {
               data-testid={`course-card-${course.id}`}
               className="group flex items-center gap-4 rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-300 hover:bg-zinc-50 transition-colors cursor-pointer"
             >
-              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/courses/${course.id}`)}>
+              <Link to={`/courses/${course.id}`} className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-zinc-900">{course.name}</span>
                   <Badge variant="outline" className="text-xs text-zinc-500">
@@ -119,7 +119,7 @@ export default function Courses() {
                     {course.lessonsCreated}/{course.sessionCount} sessions
                   </span>
                 </div>
-              </div>
+              </Link>
               <button
                 type="button"
                 data-testid={`delete-course-${course.id}`}

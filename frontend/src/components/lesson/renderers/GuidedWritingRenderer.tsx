@@ -88,7 +88,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           <button
             type="button"
             onClick={() => handleAddItem('requiredStructures')}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
             data-testid="guided-writing-add-structure"
           >+ Add structure</button>
         </div>
@@ -142,7 +142,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           <button
             type="button"
             onClick={() => handleAddItem('evaluationCriteria')}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
             data-testid="guided-writing-add-criterion"
           >+ Add criterion</button>
         </div>
@@ -183,7 +183,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           <button
             type="button"
             onClick={() => handleAddItem('tips')}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
             data-testid="guided-writing-add-tip"
           >+ Add tip</button>
         </div>
@@ -313,7 +313,7 @@ function Student({ parsedContent }: StudentProps) {
           <div>
             <button
               type="button"
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
               onClick={() => setTipsOpen((v) => !v)}
               data-testid="guided-writing-tips-toggle"
             >

@@ -586,10 +586,10 @@ export default function Students() {
                 const signals = buildSignals(student, dash)
 
                 return (
-                  <div
+                  <Link
                     key={student.id}
+                    to={`/students/${student.id}`}
                     data-testid={`student-row-${student.id}`}
-                    onClick={() => navigate(`/students/${student.id}`)}
                     className={cn(
                       'grid gap-x-4 items-center px-2 py-1.5 rounded-lg cursor-pointer transition-colors group',
                       'hover:bg-[#ECEAFD]',
@@ -667,7 +667,7 @@ export default function Students() {
                         <span key={interest} data-testid="interest-chip">{interest}</span>
                       ))}
                     </span>
-                  </div>
+                  </Link>
                 )
               })}
             </div>

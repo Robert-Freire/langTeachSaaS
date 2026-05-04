@@ -195,7 +195,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
       <button
         type="button"
         onClick={addItem}
-        className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+        className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
       >
         + Add item
       </button>

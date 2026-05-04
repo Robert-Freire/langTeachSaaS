@@ -56,3 +56,8 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 - **ProposalDto NewStudentPayload vs single Payload** (Sophy): Splitting Payload into Payload + NewStudentPayload is a discriminated union encoded as two nullable fields with a prose contract. Issue #1066 explicitly requested it; TypeScript typing is cleaner with a dedicated field. Revisit if a third proposal type needs its own payload shape.
 
 - **Third PromptService hardcoded opener** (prompt-health-reviewer): Line ~1691 `"You are an expert language teaching assistant..."` in `BuildReplanSuggestionPrompt` is a self-contained multi-line const that was excluded from fragment extraction in this PR. Revisit when replan prompt needs tuning.
+
+## #1067 (2026-05-04)
+
+- **GenerateController.Generate returns 503 for ClaudeRateLimitException** (architecture-reviewer): The non-streaming `Generate` helper in `GenerateController.cs` returns 503 with a bare string for `ClaudeRateLimitException`. The new `ExtractProfile` endpoint correctly returns 429 with a structured body. Inconsistency across AI-backed endpoints. Pre-existing gap; `GenerateController` fix is out of scope for this hardening batch. Align in a future pass.
+- **TeachingTodosCard.test.tsx timer pattern** (architecture-reviewer): The flake fix uses inline `try/finally` for fake-timer scope, while other test files use `afterEach(() => vi.useRealTimers())`. The `try/finally` is safe; inconsistency is cosmetic. Normalise if a global timer convention is ever established.

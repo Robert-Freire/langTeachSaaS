@@ -288,7 +288,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={addFib} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
+      <button type="button" onClick={addFib} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add item</button>
 
       {/* Multiple Choice */}
       <p className={sectionHeadingClass}>Multiple Choice</p>
@@ -325,7 +325,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
                   <button type="button" onClick={() => removeMcOption(qi, oi)} className="text-zinc-400 hover:text-red-500 transition-colors shrink-0" aria-label="Remove option">✕</button>
                 </div>
               ))}
-              <button type="button" onClick={() => addMcOption(qi)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1">+ Add option</button>
+              <button type="button" onClick={() => addMcOption(qi)} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1">+ Add option</button>
             </div>
             {q.explanation && (
               <p className="text-xs text-zinc-400 italic mt-2 pl-1 border-t border-zinc-100 pt-2">{q.explanation}</p>
@@ -333,7 +333,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </div>
         ))}
       </div>
-      <button type="button" onClick={addMc} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add question</button>
+      <button type="button" onClick={addMc} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add question</button>
 
       {/* Matching */}
       <p className={sectionHeadingClass}>Matching</p>
@@ -371,7 +371,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={addMatch} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add pair</button>
+      <button type="button" onClick={addMatch} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add pair</button>
 
       {/* True/False with Justification */}
       <p className={sectionHeadingClass}>True / False with Justification</p>
@@ -417,7 +417,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={addTf} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add statement</button>
+      <button type="button" onClick={addTf} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add statement</button>
 
       {/* Sentence Ordering */}
       <p className={sectionHeadingClass}>Sentence Ordering</p>
@@ -465,7 +465,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={addSo} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
+      <button type="button" onClick={addSo} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add item</button>
 
       {/* Sentence Transformation */}
       <p className={sectionHeadingClass}>Sentence Transformation</p>
@@ -527,7 +527,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={addSt} className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add item</button>
+      <button type="button" onClick={addSt} className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add item</button>
     </div>
   )
 }

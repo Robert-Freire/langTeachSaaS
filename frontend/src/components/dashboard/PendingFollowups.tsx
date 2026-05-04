@@ -65,7 +65,7 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
         {showSeeAll && (
           <Link
             to="#"
-            className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
+            className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-700 font-inter transition-colors"
             data-testid="followups-see-all"
           >
             See all ({visible.length})
@@ -97,7 +97,7 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
                   {showChip && (
                     <Link
                       to={`/students/${f.studentId}`}
-                      className="block text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter mb-0.5 transition-colors"
+                      className="block text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-700 font-inter mb-0.5 transition-colors"
                       data-testid={`followup-student-link-${f.id}`}
                     >
                       {f.studentName}
