@@ -12,8 +12,8 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     private static readonly Regex CefrLevelRegex =
         new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
 
-    // Skill level values from AI extraction are normalized to the 6-level set before storage.
-    // This regex accepts sublevel notation from raw AI output before normalization.
+    // Skill level values from AI extraction are accepted here with sublevel tolerance.
+    // StudentService.NormalizeSkillLevelOverrides collapses them to base levels before storage.
     private static readonly Regex SkillLevelRegex =
         new(@"^[ABC][12](\.\d+)?[+]?$", RegexOptions.Compiled);
 

@@ -1,4 +1,4 @@
-namespace LangTeach.Api.DTOs;
+namespace LangTeach.Api.Services;
 
 /// <summary>
 /// LangTeach accepts only A1, A2, B1, B2, C1, C2. No sublevel (B2.1) or plus (B2+) notation.
