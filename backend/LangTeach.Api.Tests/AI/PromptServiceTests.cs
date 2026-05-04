@@ -1371,7 +1371,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("DECLARED WEAKNESSES");
+        req.UserPrompt.Should().Contain("STUDENT ERROR PROFILE");
         req.UserPrompt.Should().Contain("articles");
     }
 
@@ -1380,23 +1380,24 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
+        req.UserPrompt.Should().NotContain("STUDENT ERROR PROFILE");
     }
 
     [Fact]
-    public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
+    public void LessonPlanPrompt_WeaknessBlock_IncludesProfileGuidanceAndOmitsSectionLabels()
     {
         var ctx = BaseCtx() with { StudentWeaknesses = [new StudentWeakness("subjunctive")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // Verify section-specific labels and guidance are assembled from config
-        req.UserPrompt.Should().Contain("Practice (grammatical):", because: "practice has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("Production (grammatical):", because: "production has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("WrapUp (grammatical):", because: "wrapup has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
-        req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
-        req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+        req.UserPrompt.Should().Contain("Design at least one Practice exercise",
+            because: "lessonWeaknessProfileGuidance from config must appear in the error profile block");
+        req.UserPrompt.Should().Contain("subjunctive",
+            because: "weakness text must be listed in the error profile block");
+        req.UserPrompt.Should().NotContain("Practice (grammatical):",
+            because: "per-section DECLARED WEAKNESSES labels are removed from lesson plan prompt (#611)");
+        req.UserPrompt.Should().NotContain("Production (grammatical):",
+            because: "per-section DECLARED WEAKNESSES labels are removed from lesson plan prompt (#611)");
     }
 
     [Fact]
