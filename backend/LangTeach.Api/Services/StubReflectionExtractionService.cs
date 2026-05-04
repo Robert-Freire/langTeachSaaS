@@ -41,8 +41,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             IsCancelled: null,
             DifficultiesWorkedOn: [],
             SessionStartTime: "09:00",
-            NewSessionTitle: newSessionTitle,
-            NewSessionDate: newSessionDate
+            ProposedNewSession: newSessionTitle is not null ? new ProposedNewSession(newSessionTitle, newSessionDate) : null
         ));
     }
 }

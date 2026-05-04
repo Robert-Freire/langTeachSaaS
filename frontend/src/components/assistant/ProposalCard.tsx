@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { NewSessionData, NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import NewStudentFields from './NewStudentFields'
+import proposalFields from '@data/assistant/proposal-fields.json'
 
 interface Props {
   proposal: ProposalWithStatus
@@ -17,7 +18,9 @@ interface Props {
   studentId?: string | null
 }
 
-const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
+const MULTILINE_FIELDS = new Set(
+  proposalFields.sessionFields.filter((f) => f.multiline).map((f) => f.field)
+)
 
 const TYPE_CONFIG = {
   student: {
@@ -177,7 +180,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
             </div>
           ) : isNewStudent ? (
             <NewStudentFields
-              payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
+              payload={proposal.newStudentPayload as NewStudentData ?? { name: proposal.newValue }}
               proposalId={proposal.id}
               onEditPayload={onEditPayload ?? (() => {})}
             />

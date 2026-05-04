@@ -5,6 +5,14 @@ import type { ExtractedStudentProfile, ExtractedObjective, ExtractedDifficulty }
 
 const DEFAULT_LEARNING_LANGUAGE = 'Spanish'
 
+function mergeUnique(existing: string[], incoming: string[]): string[] {
+  const result = [...existing]
+  for (const x of incoming) {
+    if (!result.some((e) => e.toLowerCase() === x.toLowerCase())) result.push(x)
+  }
+  return result
+}
+
 export interface DrawerRow {
   id: string
   fieldKey: string
@@ -127,34 +135,19 @@ export function mergeExtractedIntoStudent(
     confirmedRows.filter((r) => r.fieldKey === 'nativeLanguages').map((r) => r.value)
   )
   if (confirmedNativeLangs.length > 0) {
-    const existing = student.languages.nativeLanguages
-    const deduped = [...existing]
-    for (const lang of confirmedNativeLangs) {
-      if (!deduped.some((l) => l.toLowerCase() === lang.toLowerCase())) deduped.push(lang)
-    }
-    patch.nativeLanguages = deduped
+    patch.nativeLanguages = mergeUnique(student.languages.nativeLanguages, confirmedNativeLangs)
   }
 
   const confirmedSpokenLangs = normalizeLanguages(
     confirmedRows.filter((r) => r.fieldKey === 'spokenLanguages').map((r) => r.value)
   )
   if (confirmedSpokenLangs.length > 0) {
-    const existing = student.languages.spokenLanguages
-    const deduped = [...existing]
-    for (const lang of confirmedSpokenLangs) {
-      if (!deduped.some((l) => l.toLowerCase() === lang.toLowerCase())) deduped.push(lang)
-    }
-    patch.spokenLanguages = deduped
+    patch.spokenLanguages = mergeUnique(student.languages.spokenLanguages, confirmedSpokenLangs)
   }
 
   const confirmedInterests = confirmedRows.filter((r) => r.fieldKey === 'interests').map((r) => r.value)
   if (confirmedInterests.length > 0) {
-    const existing = student.profile.interests
-    const deduped = [...existing]
-    for (const item of confirmedInterests) {
-      if (!deduped.some((i) => i.toLowerCase() === item.toLowerCase())) deduped.push(item)
-    }
-    patch.interests = deduped
+    patch.interests = mergeUnique(student.profile.interests, confirmedInterests)
   }
 
   const confirmedObjectives = confirmedRows.filter((r) => r.fieldKey === 'shortTermObjectives')

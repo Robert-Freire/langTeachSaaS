@@ -15,6 +15,7 @@ public class AssistantProposeRequest
 // Payload carries structured data for compound or append proposal types.
 // Scalar replace proposals leave Payload null.
 // Action is "replace" (default) or "append".
+// NewStudentPayload is set only for Type == "newStudent"; Payload is null in that case.
 public record ProposalDto(
     string Id,
     string Type,
@@ -23,7 +24,8 @@ public record ProposalDto(
     string? OldValue,
     string NewValue,
     JsonElement? Payload = null,
-    string Action = "replace"
+    string Action = "replace",
+    JsonElement? NewStudentPayload = null
 );
 
 public record AssistantProposeResponse(List<ProposalDto> Proposals);

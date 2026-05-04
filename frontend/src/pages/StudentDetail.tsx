@@ -19,7 +19,7 @@ import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
 import type { VoiceMergePatch } from '@/lib/voiceUpdateMerge'
 import { extractStudentProfile } from '@/api/studentExtraction'
-import type { ExtractedStudentProfile } from '@/api/studentExtraction'
+import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
 
 function calcSessionFrequency(sessions: SessionLog[]): string | null {
   const past = sessions
@@ -46,14 +46,11 @@ export default function StudentDetail() {
   const [difficultyToggleError, setDifficultyToggleError] = useState<string | null>(null)
   const difficultyToggleAttemptRef = useRef(0)
 
-  type VoiceFlow = 'idle' | 'recording' | 'extracting' | 'confirming' | 'saving'
-  const [voiceFlow, setVoiceFlow] = useState<VoiceFlow>('idle')
-  const [extractedProfile, setExtractedProfile] = useState<ExtractedStudentProfile | null>(null)
+  const { voiceFlow, setVoiceFlow, extractedProfile, setExtractedProfile, cancelVoiceFlow: resetVoiceFlow } = useVoiceExtractionFlow()
   const [voiceError, setVoiceError] = useState<string | null>(null)
 
   function cancelVoiceFlow() {
-    setVoiceFlow('idle')
-    setExtractedProfile(null)
+    resetVoiceFlow()
     setVoiceError(null)
   }
 
@@ -231,7 +228,7 @@ export default function StudentDetail() {
       setVoiceError('Extraction failed. Please try again.')
       setVoiceFlow('idle')
     }
-  }, [])
+  }, [setExtractedProfile, setVoiceFlow])
 
   async function handleVoiceSave(patch: VoiceMergePatch) {
     if (!student) return
