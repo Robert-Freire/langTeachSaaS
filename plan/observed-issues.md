@@ -3,6 +3,8 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #smoke-hardening | 2026-05-04 | medium | `/dashboard` route renders blank white page; correct route is `/` - sidebar link uses `/` but direct navigation to `/dashboard` silently fails |
+| #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
@@ -28,3 +30,4 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #888 | 2026-05-04 | low | session-log-voice.spec.ts still uses getByRole('tab', { name: /history/i }) -- same selector that was breaking the nightly session-log tests. Not in nightly suite so not blocking, but will fail if added. Should be updated alongside next session-log-voice work. |
 | #888 | 2026-05-04 | low | Tests finding seeded students (Ana Visual, Diego Seed) use pageSize=100 to work around pagination -- fragile if visual seed roster grows past 100. A findStudentByName() helper that handles pagination would be more robust. |
 | #1071 | 2026-05-04 | low | `formatTime` (AudioRecorder.tsx) and `formatTimer` (AtelierAssistantPanel.tsx) are identical MM:SS formatters with different names. The hook extraction in #1071 was the natural moment to consolidate into a shared utility (e.g. `frontend/src/lib/formatDuration.ts`), but the formatters are trivial (3 lines each) and moving them was out of scope. Deferred to next tech-debt pass. |
+| #1082 | 2026-05-04 | low | LogSession.tsx has `CEFR_SUBLEVELS` array with dot-notation levels (A1.1, B1.2 etc.) for per-skill tracking UI. This is an intentional feature but the sublevel values are stored in DB. Future cleanup: decide if this should use base levels only. |

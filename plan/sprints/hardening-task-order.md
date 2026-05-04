@@ -10,17 +10,17 @@ These actively bite us today. Until they're fixed we can't trust review-ui, the 
 
 | # | Issue | Area | Why first |
 |---|-------|------|-----------|
-| 1 | **#1083** db-helper hardcoded teacher email | e2e/infra | All Atelier visual specs fail at seed today; tiny diff, unblocks every review-ui run downstream |
-| 2 | **#1059** e2e port 5000 conflict | infra/e2e | Visual stack smoke tests broken; pair with #1083 |
-| 3 | **#1080** review-ui-sprint hallucinated 4/6 findings | infra/tooling | Restores trust in the sprint-close UI agent before next sprint close |
-| 4 | **#1084** task-build-verify.py bicep path | infra | Worktree builds currently fail at bicep step; small |
+| 1D | **#1083** db-helper hardcoded teacher email | e2e/infra | All Atelier visual specs fail at seed today; tiny diff, unblocks every review-ui run downstream |
+| 2D | **#1059** e2e port 5000 conflict | infra/e2e | Visual stack smoke tests broken; pair with #1083 |
+| 3D | **#1080** review-ui-sprint hallucinated 4/6 findings | infra/tooling | Restores trust in the sprint-close UI agent before next sprint close |
+| 4D | **#1084** task-build-verify.py bicep path | infra | Worktree builds currently fail at bicep step; small |
 
 ## Wave 2 — Production safety
 
 | # | Issue | Area | Why next |
 |---|-------|------|----------|
-| 5 | **#1048** BACPAC backup failed | infra | Production data safety; don't carry an open backup-failure ticket through the sprint |
-| 6 | **#888** Nightly E2E failure tracker audit | e2e | Clears 7 dated noise issues in one pass; either fixes nightly or proves it's stale |
+| 5D | **#1048** BACPAC backup failed | infra | Production data safety; don't carry an open backup-failure ticket through the sprint |
+| 6D | **#888** Nightly E2E failure tracker audit | e2e | Clears 7 dated noise issues in one pass; either fixes nightly or proves it's stale |
 
 ## Wave 3 — Backend-only bug fixes (parallelizable with frontend waves)
 
@@ -28,9 +28,9 @@ These don't touch the frontend so they can run alongside any frontend task witho
 
 | # | Issue | Area | Notes |
 |---|-------|------|-------|
-| 7 | **#36** Settings HTML sanitization | backend (with tiny FE) | qa:ready since earlier sprints; small |
-| 8 | **#421** coerceExercisesContent hardening | backend (FE coerce util) | unit-test only, browser waiver granted |
-| 9 | **#610** trueFalse sourcePassage guard | backend prompt | prompt-side fix, decision locked |
+| 7D | **#36** Settings HTML sanitization | backend (with tiny FE) | qa:ready since earlier sprints; small |
+| 8W | **#421** coerceExercisesContent hardening | backend (FE coerce util) | unit-test only, browser waiver granted |
+| 9W| **#610** trueFalse sourcePassage guard | backend prompt | prompt-side fix, decision locked |
 | 10 | **#611** dedup weakness blocks in lesson plan prompt | backend prompt | discrete prompt cleanup |
 
 ## Wave 4 — Foundational frontend refactors (sequential, frontend port lock)
