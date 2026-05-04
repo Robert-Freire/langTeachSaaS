@@ -16,3 +16,5 @@ param alertEmail        = 'robert.freire@gmail.com'
 param auth0Domain       = readEnvironmentVariable('LANGTEACH_AUTH0_DOMAIN')
 param auth0Audience     = readEnvironmentVariable('LANGTEACH_AUTH0_AUDIENCE')
 param allowedOriginSwa  = readEnvironmentVariable('LANGTEACH_SWA_URL_PROD')
+// Object ID of the GitHub Actions OIDC service principal (az ad sp show --id $AZURE_CLIENT_ID --query id -o tsv)
+param backupServicePrincipalId = '1ab59fda-472d-438e-9ee3-c939debd746e'
