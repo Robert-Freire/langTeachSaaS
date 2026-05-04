@@ -460,6 +460,9 @@ public class PedagogyConfigService : IPedagogyConfigService
         "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}", "{language}"
     };
 
+    private static readonly HashSet<string> ValidSkillKeys = new(StringComparer.Ordinal)
+        { "Reading", "Writing", "Speaking", "Listening" };
+
     private static void ValidateProposalFields(ProposalFieldsConfig f)
     {
         if (f.StudentFields is not { Length: > 0 })
@@ -468,6 +471,18 @@ public class PedagogyConfigService : IPedagogyConfigService
             throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json skillLevelFields is missing or empty.");
         if (f.SessionFields is not { Length: > 0 })
             throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields is missing or empty.");
+
+        var allFields = f.StudentFields.Select(e => e.Field)
+            .Concat(f.SkillLevelFields.Select(e => e.Field))
+            .Concat(f.SessionFields.Select(e => e.Field))
+            .ToList();
+        var duplicates = allFields.GroupBy(x => x).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicates.Count > 0)
+            throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json has duplicate field names: {string.Join(", ", duplicates)}.");
+
+        var invalidSkillKeys = f.SkillLevelFields.Select(e => e.SkillKey).Except(ValidSkillKeys).ToList();
+        if (invalidSkillKeys.Count > 0)
+            throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json skillLevelFields contains invalid skillKey values: {string.Join(", ", invalidSkillKeys)}. Expected: {string.Join(", ", ValidSkillKeys)}.");
     }
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
