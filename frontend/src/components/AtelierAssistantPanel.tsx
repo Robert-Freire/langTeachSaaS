@@ -1,24 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { uploadVoiceNote } from '@/api/voiceNotes'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import ProposalCard from '@/components/assistant/ProposalCard'
+import { useMicRecorder } from '@/hooks/useMicRecorder'
 
 const MIN_DURATION_S = 1
 const WARN_DURATION_S = 50
 const MAX_DURATION_S = 60
 
-type MicState = 'idle' | 'recording' | 'uploading' | 'error'
-type MicError = 'permission-denied' | 'no-hardware' | 'upload-failed' | 'empty-transcription' | null
-
-function getMicMimeType(): string {
-  if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return ''
-  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus'
-  if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4'
-  return ''
-}
+type UploadError = 'upload-failed' | 'empty-transcription' | null
 
 function formatTimer(secs: number) {
   const m = Math.floor(secs / 60).toString().padStart(2, '0')
@@ -82,217 +75,104 @@ export default function AtelierAssistantPanel({
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
 
-  const [micState, setMicState] = useState<MicState>('idle')
-  const [micError, setMicError] = useState<MicError>(null)
-  const [micElapsed, setMicElapsed] = useState(0)
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading'>('idle')
+  const [uploadError, setUploadError] = useState<UploadError>(null)
   const [tooShortHint, setTooShortHint] = useState(false)
-  const [durationWarning, setDurationWarning] = useState(false)
+  const [showSlowSttCancel, setShowSlowSttCancel] = useState(false)
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const discardRef = useRef(false)
-  const elapsedRef = useRef(0)
   const uploadCancelledRef = useRef(false)
   const slowSttTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const startInFlightRef = useRef(false)
-  const [showSlowSttCancel, setShowSlowSttCancel] = useState(false)
 
-  const stopInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-  }, [])
+  function handleBlob(file: File) {
+    uploadCancelledRef.current = false
+    setUploadState('uploading')
+    slowSttTimerRef.current = setTimeout(() => {
+      setShowSlowSttCancel(true)
+    }, 15000)
+
+    uploadVoiceNote(file)
+      .then((note) => {
+        if (uploadCancelledRef.current) return
+        const text = note.transcription?.trim() ?? ''
+        if (!text) {
+          setUploadState('idle')
+          setUploadError('empty-transcription')
+        } else {
+          setUploadState('idle')
+          onSubmit(text)
+        }
+      })
+      .catch(() => {
+        if (uploadCancelledRef.current) return
+        setUploadState('idle')
+        setUploadError('upload-failed')
+      })
+      .finally(() => {
+        if (slowSttTimerRef.current) {
+          clearTimeout(slowSttTimerRef.current)
+          slowSttTimerRef.current = null
+        }
+        if (!uploadCancelledRef.current) setShowSlowSttCancel(false)
+      })
+  }
+
+  const {
+    recording,
+    elapsed: micElapsed,
+    durationWarning,
+    error: hookError,
+    start: startMicRecording,
+    stop: stopMicRecording,
+    clearError: clearMicError,
+  } = useMicRecorder({
+    maxDurationSeconds: MAX_DURATION_S,
+    minDurationSeconds: MIN_DURATION_S,
+    warnAtSecondsRemaining: MAX_DURATION_S - WARN_DURATION_S,
+    onBlob: handleBlob,
+    onTooShort: () => {
+      setTooShortHint(true)
+      tooShortTimerRef.current = setTimeout(() => setTooShortHint(false), 3000)
+    },
+  })
 
   useEffect(() => {
     return () => {
-      stopInterval()
       if (slowSttTimerRef.current) clearTimeout(slowSttTimerRef.current)
       if (tooShortTimerRef.current) clearTimeout(tooShortTimerRef.current)
       uploadCancelledRef.current = true
-      discardRef.current = true
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      const recorder = mediaRecorderRef.current
-      if (recorder && recorder.state !== 'inactive') {
-        recorder.ondataavailable = null
-        recorder.onstop = null
-        recorder.stop()
-      }
     }
-  }, [stopInterval])
+  }, [])
 
   useEffect(() => {
     if (!open) {
       setInputValue('')
       setPendingClose(false)
-      setMicState('idle')
-      setMicError(null)
-      setMicElapsed(0)
+      if (recording) stopMicRecording(true)
+      setUploadState('idle')
+      setUploadError(null)
+      clearMicError()
       setTooShortHint(false)
-      setDurationWarning(false)
       setShowSlowSttCancel(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   useEffect(() => {
     function onVisibilityChange() {
-      if (document.hidden && micState === 'recording') {
+      if (document.hidden && recording) {
         stopMicRecording(true)
       }
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [micState])
-
-  function resetMicState() {
-    stopInterval()
-    if (slowSttTimerRef.current) {
-      clearTimeout(slowSttTimerRef.current)
-      slowSttTimerRef.current = null
-    }
-    if (tooShortTimerRef.current) {
-      clearTimeout(tooShortTimerRef.current)
-      tooShortTimerRef.current = null
-    }
-    setMicState('idle')
-    setMicElapsed(0)
-    elapsedRef.current = 0
-    setDurationWarning(false)
-    setMicError(null)
-    setShowSlowSttCancel(false)
-    chunksRef.current = []
-  }
-
-  async function startMicRecording() {
-    if (micState !== 'idle' || startInFlightRef.current || processing) return
-    startInFlightRef.current = true
-
-    setMicError(null)
-    setTooShortHint(false)
-
-    if (typeof MediaRecorder === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setMicError('no-hardware')
-      startInFlightRef.current = false
-      return
-    }
-
-    let stream: MediaStream
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch (err) {
-      const name = (err as Error).name
-      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setMicError('permission-denied')
-      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-        setMicError('no-hardware')
-      } else {
-        setMicError('permission-denied')
-      }
-      startInFlightRef.current = false
-      return
-    }
-
-    streamRef.current = stream
-    chunksRef.current = []
-    elapsedRef.current = 0
-
-    const mimeType = getMicMimeType()
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-    mediaRecorderRef.current = recorder
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data)
-    }
-
-    recorder.onstop = () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
-
-      if (discardRef.current) {
-        discardRef.current = false
-        resetMicState()
-        return
-      }
-
-      if (elapsedRef.current < MIN_DURATION_S) {
-        setTooShortHint(true)
-        tooShortTimerRef.current = setTimeout(() => setTooShortHint(false), 3000)
-        resetMicState()
-        return
-      }
-
-      const finalMimeType = recorder.mimeType || mimeType || 'audio/webm'
-      const ext = finalMimeType.includes('mp4') ? 'mp4' : 'webm'
-      const blob = new Blob(chunksRef.current, { type: finalMimeType })
-      const file = new File([blob], `recording.${ext}`, { type: finalMimeType })
-      chunksRef.current = []
-
-      uploadCancelledRef.current = false
-      setMicState('uploading')
-      slowSttTimerRef.current = setTimeout(() => {
-        setShowSlowSttCancel(true)
-      }, 15000)
-
-      uploadVoiceNote(file)
-        .then((note) => {
-          if (uploadCancelledRef.current) return
-          const text = note.transcription?.trim() ?? ''
-          if (!text) {
-            setMicState('error')
-            setMicError('empty-transcription')
-          } else {
-            resetMicState()
-            onSubmit(text)
-          }
-        })
-        .catch(() => {
-          if (uploadCancelledRef.current) return
-          setMicState('error')
-          setMicError('upload-failed')
-        })
-        .finally(() => {
-          if (slowSttTimerRef.current) {
-            clearTimeout(slowSttTimerRef.current)
-            slowSttTimerRef.current = null
-          }
-          if (!uploadCancelledRef.current) setShowSlowSttCancel(false)
-        })
-    }
-
-    recorder.start(500)
-    startInFlightRef.current = false
-    setMicState('recording')
-    setMicElapsed(0)
-    setDurationWarning(false)
-
-    intervalRef.current = setInterval(() => {
-      elapsedRef.current += 1
-      setMicElapsed(elapsedRef.current)
-      if (elapsedRef.current === WARN_DURATION_S) setDurationWarning(true)
-      if (elapsedRef.current >= MAX_DURATION_S) stopMicRecording(false)
-    }, 1000)
-  }
-
-  function stopMicRecording(discard: boolean) {
-    stopInterval()
-    if (discard) discardRef.current = true
-    const recorder = mediaRecorderRef.current
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop()
-    } else {
-      discardRef.current = false
-      resetMicState()
-    }
-  }
+  }, [recording])
 
   function handleCloseAttempt() {
-    if (micState === 'uploading') return
+    if (uploadState === 'uploading') return
     const hasBlockingWork = processing || pendingProposals.length > 0
-    if (micState === 'recording') {
+    if (recording) {
       stopMicRecording(true)
       if (hasBlockingWork) {
         setPendingClose(true)
@@ -335,8 +215,8 @@ export default function AtelierAssistantPanel({
     ? `What did you cover with ${studentName} today?`
     : 'What would you like to cover today?'
 
-  const noHardware = micError === 'no-hardware'
-  const permissionDenied = micError === 'permission-denied'
+  const noHardware = hookError === 'no-hardware'
+  const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
   const applyAllBlocked = !studentId && pendingProposals.some(p => p.type === 'newSession')
 
@@ -348,7 +228,7 @@ export default function AtelierAssistantPanel({
       >
         {/* Header */}
         <div className="flex items-center px-5 py-4 gap-2 shrink-0">
-          <div className="h-7 w-7 rounded-full bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] flex items-center justify-center shrink-0">
+          <div className="h-7 w-7 rounded-full lt-gradient-primary flex items-center justify-center shrink-0">
             <Sparkles className="h-3.5 w-3.5 text-white" aria-hidden="true" />
           </div>
           <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">Atelier Assistant</span>
@@ -412,7 +292,7 @@ export default function AtelierAssistantPanel({
                 Open your browser settings to allow microphone access, then try again.
               </p>
               <button
-                onClick={() => setMicError(null)}
+                onClick={() => clearMicError()}
                 className="text-sm font-inter font-medium text-indigo-600 hover:text-indigo-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50"
                 data-testid="mic-retry-btn"
               >
@@ -477,7 +357,7 @@ export default function AtelierAssistantPanel({
             <button
               onClick={onApplyAll}
               disabled={applyAllBlocked}
-              className={`w-full py-2.5 rounded-xl font-inter font-semibold text-sm transition-all ${applyAllBlocked ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed' : 'text-white bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] hover:brightness-105'}`}
+              className={`w-full py-2.5 rounded-xl font-inter font-semibold text-sm transition-all ${applyAllBlocked ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed' : 'text-white lt-gradient-primary hover:brightness-105'}`}
               data-testid="apply-all-btn"
             >
               Apply All Remaining
@@ -502,11 +382,11 @@ export default function AtelierAssistantPanel({
           )}
 
           {/* Empty transcription error */}
-          {micError === 'empty-transcription' && (
+          {uploadError === 'empty-transcription' && (
             <div className="flex items-center gap-2 text-sm font-inter text-zinc-500" data-testid="empty-transcription-hint">
               <span>I didn't catch that — try again.</span>
               <button
-                onClick={() => { setMicState('idle'); setMicError(null) }}
+                onClick={() => { setUploadState('idle'); setUploadError(null) }}
                 className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
                 data-testid="empty-transcription-retry-btn"
               >
@@ -516,12 +396,12 @@ export default function AtelierAssistantPanel({
           )}
 
           {/* Upload error */}
-          {micError === 'upload-failed' && (
+          {uploadError === 'upload-failed' && (
             <div className="flex items-center gap-2 text-sm font-inter text-red-600" data-testid="upload-error">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>Transcription failed.</span>
               <button
-                onClick={() => { setMicState('idle'); setMicError(null) }}
+                onClick={() => { setUploadState('idle'); setUploadError(null) }}
                 className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
                 data-testid="upload-retry-btn"
               >
@@ -531,7 +411,7 @@ export default function AtelierAssistantPanel({
           )}
 
           {/* Duration warning */}
-          {durationWarning && micState === 'recording' && (
+          {durationWarning && recording && (
             <p className="text-xs font-inter text-amber-600 text-center" data-testid="duration-warning">
               10 seconds left
             </p>
@@ -539,10 +419,10 @@ export default function AtelierAssistantPanel({
 
           {/* Input row */}
           <div className="flex items-center gap-2">
-            {micState === 'idle' && (
+            {!recording && uploadState === 'idle' && (
               <>
                 <button
-                  onClick={startMicRecording}
+                  onClick={() => void startMicRecording()}
                   disabled={noHardware || processing}
                   aria-label={noHardware ? 'No microphone detected' : 'Start voice recording'}
                   title={noHardware ? 'No microphone detected' : undefined}
@@ -564,7 +444,7 @@ export default function AtelierAssistantPanel({
                   onClick={handleSubmit}
                   disabled={!inputValue.trim() || processing}
                   aria-label="Send message"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white disabled:opacity-40 transition-opacity shrink-0"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl lt-gradient-primary text-white disabled:opacity-40 transition-opacity shrink-0"
                   data-testid="assistant-send-btn"
                 >
                   <Send className="h-4 w-4" />
@@ -572,7 +452,7 @@ export default function AtelierAssistantPanel({
               </>
             )}
 
-            {micState === 'recording' && (
+            {recording && (
               <div className="flex items-center gap-3 flex-1 px-1" data-testid="recording-bar">
                 <WaveformBars />
                 <span className="text-sm font-inter text-zinc-500 tabular-nums" data-testid="recording-timer">
@@ -582,7 +462,7 @@ export default function AtelierAssistantPanel({
                 <button
                   onClick={() => stopMicRecording(false)}
                   aria-label="Stop recording"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white shrink-0"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl lt-gradient-primary text-white shrink-0"
                   data-testid="stop-recording-btn"
                 >
                   <Square className="h-4 w-4 fill-white" />
@@ -598,7 +478,7 @@ export default function AtelierAssistantPanel({
               </div>
             )}
 
-            {micState === 'uploading' && (
+            {uploadState === 'uploading' && (
               <div className="flex items-center gap-2 text-sm font-inter text-zinc-500 px-1 flex-1" data-testid="transcribing-state">
                 <Loader2 className="h-4 w-4 animate-spin text-indigo-500 shrink-0" />
                 <span>Transcribing...</span>
@@ -606,7 +486,8 @@ export default function AtelierAssistantPanel({
                   <button
                     onClick={() => {
                       uploadCancelledRef.current = true
-                      resetMicState()
+                      setUploadState('idle')
+                      setShowSlowSttCancel(false)
                     }}
                     className="ml-auto text-sm font-inter font-medium text-zinc-400 hover:text-zinc-600 transition-colors"
                     data-testid="cancel-transcription-btn"
