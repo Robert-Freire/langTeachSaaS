@@ -3,7 +3,7 @@ import { Auth0Context, type Auth0ContextInterface, type User } from '@auth0/auth
 
 const mockUser: User = {
   sub: 'auth0|e2e-test-teacher',
-  email: 'e2e-test@langteach.io',
+  email: import.meta.env.VITE_E2E_TEST_EMAIL ?? 'e2e-test@langteach.dev',
   name: 'E2E Teacher',
 }
 

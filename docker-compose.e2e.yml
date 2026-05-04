@@ -66,6 +66,7 @@ services:
       Claude__ApiKey: "${CLAUDE_API_KEY}"
       AllowedOrigins__E2e: "http://frontend:5174"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      E2E_TEST_EMAIL: "${E2E_TEST_EMAIL}"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1
       interval: 10s
@@ -90,6 +91,7 @@ services:
       VITE_AUTH0_DOMAIN: "${AUTH0_DOMAIN}"
       VITE_AUTH0_CLIENT_ID: "${VITE_AUTH0_CLIENT_ID}"
       VITE_AUTH0_AUDIENCE: "${AUTH0_AUDIENCE}"
+      VITE_E2E_TEST_EMAIL: "${E2E_TEST_EMAIL}"
     ports:
       - "5174:5174"
     healthcheck:
