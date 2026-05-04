@@ -1,8 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
 
@@ -655,6 +659,25 @@ public class StudentsControllerTests
         patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task ExtractProfile_WhenClaudeRateLimited_Returns429()
+    {
+        var rateLimitFactory = _factory.WithWebHostBuilder(b =>
+            b.ConfigureServices(services =>
+            {
+                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IStudentProfileExtractionService));
+                if (descriptor is not null) services.Remove(descriptor);
+                services.AddScoped<IStudentProfileExtractionService, RateLimitThrowingExtractionService>();
+            }));
+
+        var client = rateLimitFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth0Id", "auth0|rate-limit-test");
+        client.DefaultRequestHeaders.Add("X-Test-Email", "rate-limit@example.com");
+        var response = await client.PostAsJsonAsync("/api/students/extract-profile", new { text = "any text" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
     private static async Task<StudentDto> CreateStudentAsync(
         HttpClient client,
         string name,
@@ -671,4 +694,10 @@ public class StudentsControllerTests
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<StudentDto>())!;
     }
+}
+
+internal class RateLimitThrowingExtractionService : IStudentProfileExtractionService
+{
+    public Task<LangTeach.Api.DTOs.ExtractedStudentProfileDto> ExtractAsync(string text, CancellationToken ct = default)
+        => throw new ClaudeRateLimitException(TimeSpan.FromSeconds(30));
 }

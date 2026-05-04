@@ -518,4 +518,25 @@ describe('useAtelierAssistant', () => {
     expect(mockApplyStudent).toHaveBeenCalledWith('student-1', 'skillLevel.writing', 'B1')
     expect(result.current.proposals[0].status).toBe('applied')
   })
+
+  it('reset: prevents stale submit from repopulating proposals', async () => {
+    let resolvePropose!: (v: { proposals: typeof sampleProposals }) => void
+    mockPropose.mockReturnValueOnce(new Promise(r => { resolvePropose = r }))
+
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('text') })
+    expect(result.current.processing).toBe(true)
+
+    act(() => { result.current.reset() })
+    expect(result.current.processing).toBe(false)
+    expect(result.current.proposals).toHaveLength(0)
+
+    // Resolve the in-flight submit after reset
+    await act(async () => { resolvePropose({ proposals: sampleProposals }); await vi.runAllTimersAsync() })
+
+    // State must remain clear -- stale response discarded
+    expect(result.current.proposals).toHaveLength(0)
+    expect(result.current.processing).toBe(false)
+  })
 })
