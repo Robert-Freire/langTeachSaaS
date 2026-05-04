@@ -8,11 +8,13 @@ public record TeachingTodoDto(
     DateTime CreatedAt,
     string? SourceSessionLogId,
     string Status,
-    string? CoveredInSessionLogId);
+    string? CoveredInSessionLogId,
+    DateOnly? DueDate);
 
 public record CreateTeachingTodoDto(
     [MaxLength(500)] string Text,
-    string? SourceSessionLogId);
+    string? SourceSessionLogId,
+    string? DueDate);
 
 public record UpdateTeachingTodoDto(
     [Required]

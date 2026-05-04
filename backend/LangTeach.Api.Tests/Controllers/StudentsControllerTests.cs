@@ -417,7 +417,7 @@ public class StudentsControllerTests
 
         var appendResponse = await client.PostAsJsonAsync(
             $"/api/students/{student.Id}/teaching-todos",
-            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+            new CreateTeachingTodoDto("Practicar subjuntivo", null, null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
         var todoId = withTodo!.Profile.TeachingTodos[0].Id;
@@ -448,7 +448,7 @@ public class StudentsControllerTests
 
         var appendResponse = await client.PostAsJsonAsync(
             $"/api/students/{student.Id}/teaching-todos",
-            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+            new CreateTeachingTodoDto("Practicar subjuntivo", null, null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
         var todoId = withTodo!.Profile.TeachingTodos[0].Id;

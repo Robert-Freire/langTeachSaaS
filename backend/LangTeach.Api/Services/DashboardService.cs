@@ -226,7 +226,8 @@ public class DashboardService : IDashboardService
                         f.Id.ToString(), f.Text, f.CreatedAt,
                         f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
                         f.Status,
-                        f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null))
+                        f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null,
+                        f.DueDate))
                     .ToList(),
                 LastSessionDate = s.SessionLogs
                     .Where(sl => !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now)

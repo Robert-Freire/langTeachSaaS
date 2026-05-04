@@ -127,8 +127,11 @@ public class AssistantController : ControllerBase
 
             foreach (var todo in reflectionExtraction.TeachingTodos)
             {
-                if (!string.IsNullOrWhiteSpace(todo))
-                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo));
+                if (!string.IsNullOrWhiteSpace(todo.Text))
+                {
+                    var todoPayload = JsonSerializer.SerializeToElement(new { dueDate = todo.DueDate }, camelCaseOpts);
+                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo.Text, Payload: todoPayload));
+                }
             }
 
             if (studentExtraction.Interests.Count > 0)
