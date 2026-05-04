@@ -272,6 +272,85 @@ describe('coerceExercisesContent (sentenceTransformation)', () => {
     const result = coerceExercisesContent(validExercises)
     expect(result?.sentenceTransformation).toBeUndefined()
   })
+
+  it('strips non-string alternatives even when base ExercisesContent structure is already valid', () => {
+    const input = {
+      ...validExercises,
+      sentenceTransformation: [{ prompt: 'P', original: 'O', expected: 'E', alternatives: [123, 'valid', null] }],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.sentenceTransformation).toHaveLength(1)
+    expect(result?.sentenceTransformation?.[0].alternatives).toEqual(['valid'])
+  })
+
+  it('filters invalid items when wrapped in an extra key (unwrapWrapper path)', () => {
+    const wrapped = {
+      exercises: {
+        ...validExercises,
+        sentenceTransformation: [
+          { prompt: 'P', original: 'O', expected: 'E' },
+          { prompt: 'P', original: 'O' },
+        ],
+      },
+    }
+    const result = coerceExercisesContent(wrapped)
+    expect(result?.sentenceTransformation).toHaveLength(1)
+  })
+})
+
+describe('coerceExercisesContent (item shape validation)', () => {
+  it('filters out fillInBlank items missing required fields', () => {
+    const input = {
+      fillInBlank: [
+        { sentence: 'S', answer: 'A' },
+        { sentence: 'S' },
+        { notAField: true },
+      ],
+      multipleChoice: [],
+      matching: [],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.fillInBlank).toHaveLength(1)
+    expect(result?.fillInBlank[0].sentence).toBe('S')
+  })
+
+  it('filters out multipleChoice items missing required fields', () => {
+    const input = {
+      fillInBlank: [],
+      multipleChoice: [
+        { question: 'Q', options: ['a', 'b'], answer: 'a' },
+        { question: 'Q', options: ['a', 'b'] },
+        { question: 'Q', answer: 'a' },
+      ],
+      matching: [],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.multipleChoice).toHaveLength(1)
+  })
+
+  it('filters out matching items missing required fields', () => {
+    const input = {
+      fillInBlank: [],
+      multipleChoice: [],
+      matching: [
+        { left: 'L', right: 'R' },
+        { left: 'L' },
+        { notAField: true },
+      ],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.matching).toHaveLength(1)
+  })
+
+  it('preserves valid fillInBlank items with optional fields', () => {
+    const input = {
+      ...validExercises,
+      fillInBlank: [{ sentence: 'S', answer: 'A', hint: 'H', explanation: 'E' }],
+    }
+    const result = coerceExercisesContent(input)
+    expect(result?.fillInBlank).toHaveLength(1)
+    expect(result?.fillInBlank[0].hint).toBe('H')
+  })
 })
 
 // ─── Noticing Task ───────────────────────────────────────────────────────────
