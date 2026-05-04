@@ -17,6 +17,7 @@ public class AssistantController : ControllerBase
     private readonly IStudentProfileExtractionService _studentExtractionService;
     private readonly IReflectionExtractionService _reflectionExtractionService;
     private readonly IProfileService _profileService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -25,6 +26,7 @@ public class AssistantController : ControllerBase
         IStudentProfileExtractionService studentExtractionService,
         IReflectionExtractionService reflectionExtractionService,
         IProfileService profileService,
+        IPedagogyConfigService pedagogy,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -32,6 +34,7 @@ public class AssistantController : ControllerBase
         _studentExtractionService = studentExtractionService;
         _reflectionExtractionService = reflectionExtractionService;
         _profileService = profileService;
+        _pedagogy = pedagogy;
         _logger = logger;
     }
 
@@ -96,18 +99,30 @@ public class AssistantController : ControllerBase
 
         if (student != null)
         {
-            EmitProposal(proposals, "student", "cefrLevel", "CEFR Level", student.Level.CefrLevel, studentExtraction.CefrLevel);
-            EmitProposal(proposals, "student", "profession", "Profession", student.Identity.Profession, studentExtraction.Profession);
-            EmitProposal(proposals, "student", "countryOfResidence", "Country of Residence", student.Identity.CountryOfResidence, studentExtraction.CountryOfResidence);
+            var studentFieldValues = new Dictionary<string, (string? current, string? extracted)>
+            {
+                ["cefrLevel"] = (student.Level.CefrLevel, studentExtraction.CefrLevel),
+                ["profession"] = (student.Identity.Profession, studentExtraction.Profession),
+                ["countryOfResidence"] = (student.Identity.CountryOfResidence, studentExtraction.CountryOfResidence),
+            };
+            foreach (var f in _pedagogy.ProposalFields.StudentFields)
+            {
+                if (studentFieldValues.TryGetValue(f.Field, out var vals))
+                    EmitProposal(proposals, "student", f.Field, f.Label, vals.current, vals.extracted);
+            }
 
-            student.Level.SkillLevelOverrides.TryGetValue("Reading", out var curReading);
-            student.Level.SkillLevelOverrides.TryGetValue("Writing", out var curWriting);
-            student.Level.SkillLevelOverrides.TryGetValue("Speaking", out var curSpeaking);
-            student.Level.SkillLevelOverrides.TryGetValue("Listening", out var curListening);
-            EmitProposal(proposals, "student", "skillLevel.reading", "Reading Level", curReading, studentExtraction.SkillLevelReading);
-            EmitProposal(proposals, "student", "skillLevel.writing", "Writing Level", curWriting, studentExtraction.SkillLevelWriting);
-            EmitProposal(proposals, "student", "skillLevel.speaking", "Speaking Level", curSpeaking, studentExtraction.SkillLevelSpeaking);
-            EmitProposal(proposals, "student", "skillLevel.listening", "Listening Level", curListening, studentExtraction.SkillLevelListening);
+            var skillExtractedValues = new Dictionary<string, string?>
+            {
+                ["Reading"] = studentExtraction.SkillLevelReading,
+                ["Writing"] = studentExtraction.SkillLevelWriting,
+                ["Speaking"] = studentExtraction.SkillLevelSpeaking,
+                ["Listening"] = studentExtraction.SkillLevelListening,
+            };
+            foreach (var f in _pedagogy.ProposalFields.SkillLevelFields)
+            {
+                student.Level.SkillLevelOverrides.TryGetValue(f.SkillKey, out var curVal);
+                EmitProposal(proposals, "student", f.Field, f.Label, curVal, skillExtractedValues.GetValueOrDefault(f.SkillKey));
+            }
 
             foreach (var todo in reflectionExtraction.TeachingTodos)
             {
@@ -154,10 +169,18 @@ public class AssistantController : ControllerBase
             }
         }
 
-        EmitProposal(proposals, "session", "title", "Session Title", session?.Title, reflectionExtraction.SessionTitle);
-        EmitProposal(proposals, "session", "actualContent", "What Was Covered", session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value);
-        EmitProposal(proposals, "session", "generalNotes", "Areas to Improve", session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value);
-        EmitProposal(proposals, "session", "homeworkAssigned", "Homework Assigned", session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value);
+        var sessionFieldValues = new Dictionary<string, (string? current, string? extracted)>
+        {
+            ["title"] = (session?.Title, reflectionExtraction.SessionTitle),
+            ["actualContent"] = (session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value),
+            ["generalNotes"] = (session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value),
+            ["homeworkAssigned"] = (session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value),
+        };
+        foreach (var f in _pedagogy.ProposalFields.SessionFields)
+        {
+            if (sessionFieldValues.TryGetValue(f.Field, out var vals))
+                EmitProposal(proposals, "session", f.Field, f.Label, vals.current, vals.extracted);
+        }
 
         if (reflectionExtraction.ProposedNewSession is { } proposed)
         {

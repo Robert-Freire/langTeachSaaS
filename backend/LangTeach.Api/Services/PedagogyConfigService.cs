@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
+using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
@@ -27,6 +28,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly FrozenSet<string> _difficultyCompetencies;
     private readonly FrozenSet<string> _difficultySeverities;
     public PromptFragmentsConfig PromptFragments { get; }
+    public ProposalFieldsConfig ProposalFields { get; }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -129,6 +131,7 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Load prompt fragments
         PromptFragments = LoadJson<PromptFragmentsConfig>(assembly, "LangTeach.Api.Pedagogy.prompt-fragments.json");
+        ProposalFields = LoadJson<ProposalFieldsConfig>(assembly, "LangTeach.Api.Assistant.proposal-fields.json");
         ValidatePromptFragments(PromptFragments);
 
         // Validate cross-layer references — fail fast on dangling IDs
