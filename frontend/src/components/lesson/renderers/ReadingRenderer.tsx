@@ -126,7 +126,7 @@ function Editor({ parsedContent: raw, rawContent, onChange, onRegenerate, isInco
         <button
           type="button"
           onClick={handleAddQuestion}
-          className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+          className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
           data-testid="reading-add-question"
         >
           + Add question
@@ -169,7 +169,7 @@ function Editor({ parsedContent: raw, rawContent, onChange, onRegenerate, isInco
         <button
           type="button"
           onClick={handleAddHighlight}
-          className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+          className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
           data-testid="reading-add-highlight"
         >
           + Add highlight

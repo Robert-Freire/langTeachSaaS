@@ -144,7 +144,7 @@ export default function LessonNew() {
         ) : templatesError ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <p className="text-sm text-red-600 font-medium">Failed to load templates.</p>
-            <button onClick={() => refetchTemplates()} className="text-sm text-indigo-600 underline hover:text-indigo-800">Retry</button>
+            <button onClick={() => refetchTemplates()} className="text-sm text-indigo-600 underline hover:text-indigo-700">Retry</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3" data-testid="template-grid">

@@ -118,7 +118,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
       <button
         type="button"
         onClick={handleAdd}
-        className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+        className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
         data-testid="vocab-add-word"
       >
         + Add word

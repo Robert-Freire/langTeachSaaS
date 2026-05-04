@@ -52,6 +52,7 @@ export function useAtelierAssistant(
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const applyingIdsRef = useRef<Set<string>>(new Set())
+  const generationRef = useRef(0)
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
@@ -69,6 +70,7 @@ export function useAtelierAssistant(
   }, [])
 
   const submit = useCallback(async (text: string) => {
+    const gen = ++generationRef.current
     setTranscription(text)
     setProcessing(true)
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
@@ -79,6 +81,7 @@ export function useAtelierAssistant(
         studentId ?? undefined,
         sessionId ?? undefined,
       )
+      if (generationRef.current !== gen) return
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -115,7 +118,7 @@ export function useAtelierAssistant(
     } catch {
       // Error shown via empty proposals list; processing clears
     } finally {
-      setProcessing(false)
+      if (generationRef.current === gen) setProcessing(false)
     }
   }, [studentId, sessionId])
 
@@ -124,6 +127,7 @@ export function useAtelierAssistant(
     const proposal = proposalsRef.current.find(p => p.id === id)
     if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
+    const gen = generationRef.current
     applyingIdsRef.current.add(id)
     updateProposal(id, { status: 'applying', errorMessage: undefined })
 
@@ -182,6 +186,7 @@ export function useAtelierAssistant(
         if (!data?.title?.trim()) throw new Error('Session title is missing.')
         await applyNewSessionProposal(studentId, data.title, data.sessionDate)
       }
+      if (generationRef.current !== gen) return
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change
       if (proposal.type === 'student' && studentId) {
@@ -196,6 +201,7 @@ export function useAtelierAssistant(
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
       }
     } catch (err) {
+      if (generationRef.current !== gen) return
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })
     } finally {
@@ -248,6 +254,7 @@ export function useAtelierAssistant(
   }, [])
 
   const reset = useCallback(() => {
+    generationRef.current++
     applyingIdsRef.current.clear()
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
