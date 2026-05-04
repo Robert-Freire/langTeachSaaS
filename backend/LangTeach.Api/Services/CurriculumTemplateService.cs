@@ -43,7 +43,7 @@ public class CurriculumTemplateService : ICurriculumTemplateService
 
         foreach (var name in resourceNames)
         {
-            // e.g. "LangTeach.Api.Curricula.A1.1.json" -> level = "A1.1"
+            // e.g. "LangTeach.Api.Curricula.A1.json" -> level = "A1", or sublevel resource -> level is normalized below
             var withoutPrefix = name[prefix.Length..];
             var level = withoutPrefix[..^".json".Length];
 
@@ -90,9 +90,8 @@ public class CurriculumTemplateService : ICurriculumTemplateService
                 CompetencyFocus: u.CompetencyFocus ?? []
             )).ToList();
 
-            // Normalize CefrLevel to the 2-char CEFR prefix ("B1", not "B1.2")
-            // so GetGrammarForCefrPrefix lookups always work regardless of what
-            // individual JSON files store in the cefr_level field.
+            // Normalize CefrLevel to the 2-char base level so lookups always work
+            // regardless of what individual JSON files store in the cefr_level field.
             var rawCefr = raw.CefrLevel?.Trim();
             var normalizedCefr = !string.IsNullOrEmpty(rawCefr)
                 ? (rawCefr.Length >= 2 ? rawCefr[..2] : rawCefr)
@@ -118,7 +117,7 @@ public class CurriculumTemplateService : ICurriculumTemplateService
                 SampleGrammar: sampleGrammar
             ));
 
-            // Accumulate grammar by CEFR prefix (e.g., "B1" from "B1.2")
+            // Accumulate grammar by CEFR base prefix (first 2 chars of the normalized level)
             var cefrPrefix = data.CefrLevel.Length >= 2 ? data.CefrLevel[..2] : data.CefrLevel;
             if (!grammarAccumulator.TryGetValue(cefrPrefix, out var set))
             {

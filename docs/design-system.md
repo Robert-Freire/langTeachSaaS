@@ -102,6 +102,8 @@ All buttons: consistent height, no XL or oversized variants unless it's a full-w
 
 ### CEFR Badges
 
+**Valid levels:** A1, A2, B1, B2, C1, C2 only. No sublevel (B2.1) or plus (B2+) notation anywhere in the system. If sublevels are introduced as a product decision, update `CefrConstants.cs` (backend) and `CEFR_LEVELS` in `frontend/src/lib/cefr-colors.ts` first; never introduce sublevel strings ad hoc.
+
 Square-format badge with `md` (0.375rem) radius — not pill-shaped.
 
 | Level | Color token |

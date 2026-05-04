@@ -30,7 +30,7 @@ public record AssistantProposeResponse(List<ProposalDto> Proposals);
 
 public class PatchStudentRequest
 {
-    [RegularExpression(@"^(A1|A2|B1|B2|C1|C2)$", ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
+    [RegularExpression(CefrConstants.ValidationPattern, ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
     public string? CefrLevel { get; set; }
 
     [MaxLength(128)]

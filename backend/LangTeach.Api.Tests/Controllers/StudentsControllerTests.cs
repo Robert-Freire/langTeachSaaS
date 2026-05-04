@@ -630,17 +630,17 @@ public class StudentsControllerTests
     }
 
     [Fact]
-    public async Task PatchStudent_SkillLevelWithSubLevel_StoresSubLevel()
+    public async Task PatchStudent_SkillLevelOverride_StoresBaseLevel()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-sublevel", "patch-skill-sublevel@example.com");
         var student = await CreateStudentAsync(client, "Marco");
 
-        var patch = new PatchStudentRequest { SkillLevelReading = "B1.2" };
+        var patch = new PatchStudentRequest { SkillLevelReading = "B1" };
         var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
 
         patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1.2");
+        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1");
     }
 
     [Fact]
