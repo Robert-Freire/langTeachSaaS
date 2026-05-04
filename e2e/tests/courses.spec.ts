@@ -734,19 +734,15 @@ test('full happy path: student edit → CourseNew (locked) → generate → Cour
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'A1' }).click()
   await page.getByRole('button', { name: 'Done' }).click()
-  await expect(page).toHaveURL('/students', { timeout: NAV_TIMEOUT })
+  // After creation, redirects to student detail page
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
 
-  // Navigate to student edit page
-  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName }),
-  })
-  await expect(studentCard).toBeVisible({ timeout: NAV_TIMEOUT })
-  await studentCard.click()
+  // Navigate to student edit page directly from detail page
+  const detailUrl = page.url()
+  const studentId = detailUrl.match(/\/students\/([^/]+)$/)?.[1]
   await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: NAV_TIMEOUT })
 
-  const editUrl = page.url()
-  const studentId = editUrl.match(/\/students\/([^/]+)\/edit/)?.[1]
   expect(studentId).toBeTruthy()
 
   // Mock course creation and retrieval

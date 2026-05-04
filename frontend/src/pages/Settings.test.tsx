@@ -170,6 +170,28 @@ describe('Settings validation and toast behavior', () => {
     expect(mockMutate).toHaveBeenCalledTimes(1)
   })
 
+  it('rejects display name containing HTML tags', async () => {
+    vi.mocked(useProfile).mockReturnValue({
+      data: profileData,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProfile>)
+
+    wrapper(<Settings />)
+    const user = userEvent.setup()
+
+    const input = screen.getByLabelText('Name')
+    await user.clear(input)
+    await user.type(input, '<script>xss</script>')
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+
+    expect(screen.getByTestId('validation-error')).toHaveTextContent(
+      'Display name must not contain < or > characters.'
+    )
+    expect(mockMutate).not.toHaveBeenCalled()
+  })
+
   it('never shows success and validation error simultaneously', async () => {
     mockMutationState = { isPending: false, isSuccess: true, isError: false }
     vi.mocked(useProfile).mockReturnValue({

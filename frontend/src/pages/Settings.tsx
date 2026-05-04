@@ -54,6 +54,12 @@ export default function Settings() {
       return
     }
 
+    if (displayName.includes('<') || displayName.includes('>')) {
+      reset()
+      setValidationError('Display name must not contain < or > characters.')
+      return
+    }
+
     setValidationError(null)
     mutate(
       { displayName, teachingLanguages, cefrLevels, preferredStyle },

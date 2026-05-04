@@ -43,7 +43,7 @@ test('log session from student detail page', async ({ browser }) => {
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Session should appear in history
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
@@ -97,7 +97,7 @@ test('expand session entry shows full detail without duplicating preview content
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
 
   const entry = page.getByTestId('session-entry').first()
   await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
@@ -138,7 +138,7 @@ test('delete session requires confirmation dialog', async ({ browser }) => {
 
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
 
   const entry = page.getByTestId('session-entry').first()
   await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
@@ -221,7 +221,7 @@ test('future session date is accepted and appears in history', async ({ browser 
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Session appears in history
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   await context.close()
@@ -311,7 +311,7 @@ test('cancelled session shows Cancelled badge and is excluded from summary count
   // Cancelled badge visible in history
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-entry').first()).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('cancelled-badge')).toBeVisible()
 
@@ -347,7 +347,7 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
   // View history -- badge present
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('cancelled-badge')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Open expanded view and click "Edit full session"
@@ -369,7 +369,7 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}(\\?tab=sessions)?$`), { timeout: UI_TIMEOUT })
 
   // Badge should be gone
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('cancelled-badge')).toBeHidden({ timeout: FEEDBACK_TIMEOUT })
 
   // Verify via API -- session is no longer cancelled
@@ -403,7 +403,7 @@ test('summary header appears on history tab after logging a session', async ({ b
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
 
   // Navigate to History tab
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
 
   await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('session-summary-action-items-toggle')).toBeVisible()
@@ -626,7 +626,7 @@ test('start next session button navigates to log session page with planned topic
   // Navigate to student page, go to Sessions tab
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
 
   // Expand the session entry
   await expect(page.getByTestId('session-entry')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -651,7 +651,7 @@ test('start next session button navigates to log session page with planned topic
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
   // Two sessions should now be present
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-entry')).toHaveCount(2, { timeout: UI_TIMEOUT })
 
   // Original session still shows its NextSessionTopics preview
@@ -775,7 +775,7 @@ test('session title: typing a title saves it and appears in session list and edi
     await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // Session list shows the typed title
-    await page.getByRole('tab', { name: /history/i }).click()
+    await page.getByTestId('tab-sessions').click()
     const entry = page.getByTestId('session-entry').first()
     await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(entry).toContainText('Present tense practice')
@@ -809,7 +809,7 @@ test('session title: blank title shows date fallback in session list', async ({ 
     await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: UI_TIMEOUT })
 
     // Session list shows date fallback (contains "Session,")
-    await page.getByRole('tab', { name: /history/i }).click()
+    await page.getByTestId('tab-sessions').click()
     const entry = page.getByTestId('session-entry').first()
     await expect(entry).toBeVisible({ timeout: UI_TIMEOUT })
     await expect(entry).toContainText('Session,')

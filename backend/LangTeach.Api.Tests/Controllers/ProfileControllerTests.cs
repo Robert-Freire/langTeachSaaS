@@ -67,6 +67,23 @@ public class ProfileControllerTests
     }
 
     [Fact]
+    public async Task UpdateProfile_WithHtmlInDisplayName_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|html-name-test", "html-name@example.com", "Html Name Teacher");
+        await client.GetAsync("/api/profile");
+
+        var response = await client.PutAsJsonAsync("/api/profile", new
+        {
+            displayName = "<script>xss</script>",
+            teachingLanguages = new[] { "English" },
+            cefrLevels = new[] { "B1" },
+            preferredStyle = "Conversational",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Get_HasStudentsAndHasLessons_ReflectData()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|onboarding-data", "onboarding-data@example.com", "Data Teacher");
