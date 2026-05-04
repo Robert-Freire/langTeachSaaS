@@ -23,9 +23,9 @@ public class CefrSublevelsGuardTest
     };
 
 
-    // Matches "B2.1", "B1.2", "A1+" etc. but NOT SVG coordinate data like "A1.125" (followed by more digits).
+    // Matches "B2.1", "B1.2", "A1+", "A0+" etc. but NOT SVG coordinate data like "A1.125" (followed by more digits).
     private static readonly Regex SublevelsPattern = new(
-        @"(A1|A2|B1|B2|C1|C2)(\.[12](?!\d)|\+)",
+        @"(A0|A1|A2|B1|B2|C1|C2)(\.[12](?!\d)|\+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     [Fact]
