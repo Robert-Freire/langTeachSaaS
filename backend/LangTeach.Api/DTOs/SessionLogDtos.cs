@@ -92,15 +92,6 @@ public class CreateSessionLogRequest
     public string? RawExtractionJson { get; set; }
 }
 
-public record StudentSessionSummaryDto(
-    int TotalSessions,
-    string? LastSessionDate,
-    int? DaysSinceLastSession,
-    List<string> OpenActionItems,
-    bool LevelReassessmentPending,
-    Dictionary<string, string> SkillLevelOverrides
-);
-
 /// <remarks>
 /// Full-replace semantics: every field must be included in the request body.
 /// Nullable fields that are omitted will be set to null on the stored record.

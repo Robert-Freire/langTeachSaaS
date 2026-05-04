@@ -3386,6 +3386,18 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("no open session in scope");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_SanitizesTeacherText_StripsControlCharactersAndNormalizesNewlines()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        const string dirtyText = "Hoy trabajamos\nel subjuntivo\x00 y\r\ntambién\x1F repasamos.";
+        const string expectedText = "Hoy trabajamos el subjuntivo y  también repasamos.";
+
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, dirtyText));
+
+        request.UserPrompt.Should().Be(expectedText);
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]

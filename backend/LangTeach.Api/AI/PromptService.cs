@@ -1497,7 +1497,7 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
     {
         var today = ctx.Today;
-        var teacherText = ctx.TeacherText;
+        var teacherText = InputSanitizer.Sanitize(ctx.TeacherText?.Replace('\r', ' ').Replace('\n', ' '));
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
         const string weekdayBackwardRule =
@@ -1548,7 +1548,7 @@ public class PromptService : IPromptService
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
                 Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
                 Set mode to "skip" if this field should not be updated.
-                Return null only if the teacher genuinely said nothing about session content. If any topics, grammar structures, vocabulary, or activities were mentioned, you MUST synthesise a prose summary here.
+                Return null only if the teacher genuinely said nothing about session content. If any topics, grammar structures, vocabulary, or activities were mentioned, you MUST synthesise a prose summary here. Null when there is no active session (use newSessionTitle instead).
             - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
                 Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").

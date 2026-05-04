@@ -89,6 +89,7 @@ public class AssistantController : ControllerBase
                 birthYear = studentExtraction.BirthYear,
                 profession = studentExtraction.Profession,
                 cityOfResidence = studentExtraction.CityOfResidence,
+                countryOfResidence = studentExtraction.CountryOfResidence,
                 nativeLanguages = studentExtraction.NativeLanguages,
                 learningLanguage = studentExtraction.LearningLanguage,
                 cefrLevel = studentExtraction.CefrLevel,

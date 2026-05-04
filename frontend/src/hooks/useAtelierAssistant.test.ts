@@ -239,6 +239,32 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
+  it('apply: passes cityOfResidence and countryOfResidence to createStudent', async () => {
+    const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1', cityOfResidence: 'Madrid', countryOfResidence: 'Spain' }
+    const newStudentProposal = { id: 'p4b', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({
+      id: 'new-student-id', name: 'Sofía', learningLanguage: 'English',
+      level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: [], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: 'Spain', cityOfResidence: 'Madrid' },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '', updatedAt: '',
+    })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna Sofía de Madrid, España') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p4b') })
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({
+      cityOfResidence: 'Madrid',
+      countryOfResidence: 'Spain',
+    }))
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
   it('apply: normalizes Spanish language names to canonical English before creating student', async () => {
     const studentPayload = { name: 'María', learningLanguage: 'inglés', nativeLanguages: ['castellano'], cefrLevel: 'B1' }
     const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', newStudentPayload: studentPayload }
@@ -504,18 +530,15 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('error')
   })
 
-  it('apply: session proposal invalidates session-summary query', async () => {
-    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  it('apply: session proposal errors when sessionId is null (no open session)', async () => {
     mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]] })
-    mockApplySession.mockResolvedValueOnce(undefined)
-    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
-
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
     act(() => { result.current.submit('text') })
     await act(async () => { await vi.runAllTimersAsync() })
 
     await act(async () => { await result.current.apply('p2') })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['session-summary', 'student-1'] })
-    invalidateSpy.mockRestore()
+    expect(mockApplySession).not.toHaveBeenCalled()
+    expect(result.current.proposals[0].status).toBe('error')
   })
 
   it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
