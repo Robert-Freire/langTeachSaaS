@@ -2831,16 +2831,17 @@ public class PromptServiceTests
     // --- True/False coherence constraints (#431) ---
 
     [Fact]
-    public void ExercisesPrompt_TrueFalse_SourcePassageEnforcedBySchemaNotPrompt()
+    public void ExercisesPrompt_TrueFalse_SourcePassageInstructionPresent()
     {
-        // Issue #422 (AC6): The CRITICAL sourcePassage instruction was removed from the prompt.
-        // Enforcement now lives in the JSON schema (required + minLength:1) and backend validator.
+        // Issue #610: Restore plain-language sourcePassage guidance alongside schema enforcement.
+        // Schema (minLength:1 + required) and backend validator remain the structural guards;
+        // the prompt instruction makes the requirement explicit for the model.
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
         req.UserPrompt.Should().NotContain("sourcePassage field MUST be non-empty",
-            because: "sourcePassage enforcement moved to schema + backend validator (#422)");
-        req.UserPrompt.Should().Contain("sourcePassage",
-            because: "the JSON template still includes the sourcePassage field so AI knows it exists");
+            because: "old CRITICAL phrasing was removed in #422; new instruction uses positive framing");
+        req.UserPrompt.Should().Contain("sourcePassage must quote the exact sentence or phrase",
+            because: "trueFalse sourcePassage requires explicit prompt guidance (#610) so the model populates it");
     }
 
     [Fact]
