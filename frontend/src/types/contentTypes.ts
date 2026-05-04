@@ -436,7 +436,8 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
       : []).filter((item: unknown): item is ExercisesMultipleChoice => {
         if (typeof item !== 'object' || item === null) return false
         const it = item as Record<string, unknown>
-        return typeof it.question === 'string' && Array.isArray(it.options) && typeof it.answer === 'string'
+        return typeof it.question === 'string' && Array.isArray(it.options) &&
+          (it.options as unknown[]).every((o) => typeof o === 'string') && typeof it.answer === 'string'
       }),
     matching: (Array.isArray(obj.matching) ? obj.matching : [])
       .filter((item: unknown): item is ExercisesMatching => {
