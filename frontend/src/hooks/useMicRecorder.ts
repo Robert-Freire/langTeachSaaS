@@ -44,6 +44,9 @@ export function useMicRecorder({
   const discardRef = useRef(false)
   const elapsedRef = useRef(0)
   const startInFlightRef = useRef(false)
+  // Set to true by stop(true) or unmount while getUserMedia is still pending,
+  // so start() can abort cleanly after the await resolves.
+  const startCancelledRef = useRef(false)
 
   // Keep callback refs stable so callers need not wrap onBlob/onTooShort in useCallback
   const onBlobRef = useRef(onBlob)
@@ -60,7 +63,10 @@ export function useMicRecorder({
 
   const stop = useCallback((discard = false) => {
     stopInterval()
-    if (discard) discardRef.current = true
+    if (discard) {
+      discardRef.current = true
+      if (startInFlightRef.current) startCancelledRef.current = true
+    }
     const recorder = mediaRecorderRef.current
     if (recorder && recorder.state !== 'inactive') {
       recorder.stop()
@@ -77,6 +83,7 @@ export function useMicRecorder({
   const start = useCallback(async () => {
     if (startInFlightRef.current) return
     startInFlightRef.current = true
+    startCancelledRef.current = false
     setStartInFlight(true)
     setError(null)
 
@@ -97,6 +104,15 @@ export function useMicRecorder({
       } else {
         setError('permission-denied')
       }
+      startInFlightRef.current = false
+      setStartInFlight(false)
+      return
+    }
+
+    if (startCancelledRef.current) {
+      stream.getTracks().forEach((t) => t.stop())
+      startCancelledRef.current = false
+      discardRef.current = false
       startInFlightRef.current = false
       setStartInFlight(false)
       return
@@ -166,6 +182,7 @@ export function useMicRecorder({
   }, [stopInterval, maxDurationSeconds, minDurationSeconds, warnAtSecondsRemaining])
 
   useEffect(() => () => {
+    startCancelledRef.current = true
     stopInterval()
     streamRef.current?.getTracks().forEach((t) => t.stop())
     const recorder = mediaRecorderRef.current

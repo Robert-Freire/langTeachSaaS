@@ -114,6 +114,7 @@ export function AudioRecorder({
   }
 
   function reset() {
+    autoStartedRef.current = false
     setState('idle')
     setUploadError(null)
     clearMicError()

@@ -86,6 +86,7 @@ export default function AtelierAssistantPanel({
 
   function handleBlob(file: File) {
     uploadCancelledRef.current = false
+    setUploadError(null)
     setUploadState('uploading')
     slowSttTimerRef.current = setTimeout(() => {
       setShowSlowSttCancel(true)
@@ -146,6 +147,11 @@ export default function AtelierAssistantPanel({
 
   useEffect(() => {
     if (!open) {
+      uploadCancelledRef.current = true
+      if (slowSttTimerRef.current) {
+        clearTimeout(slowSttTimerRef.current)
+        slowSttTimerRef.current = null
+      }
       setInputValue('')
       setPendingClose(false)
       if (recording) stopMicRecording(true)
