@@ -16,7 +16,7 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
 
   // 1. Students list: verify heading and "Add Student" link
   await page.goto('/students')
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: 15000 })
+  await expect(page.locator('h1')).toHaveText('Student Roster', { timeout: 15000 })
 
   // Click "Add Student" to go to form
   await page.getByRole('link', { name: /Add Student/i }).click()

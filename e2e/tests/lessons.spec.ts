@@ -57,8 +57,8 @@ test('full lesson CRUD flow', async ({ browser }) => {
   await presentationSection.fill(presentationNotes)
   await presentationSection.blur()
 
-  // Wait for saved indicator (auto-save on blur can be slow under parallel load)
-  await expect(page.getByTestId('saved-indicator')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Wait for save to complete (not just for indicator to appear)
+  await expect(page.getByTestId('saved-indicator')).toContainText('All changes saved', { timeout: UI_TIMEOUT })
 
   // Reload and verify notes persisted
   await page.reload()

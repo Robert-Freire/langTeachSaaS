@@ -17,7 +17,7 @@ test('students list loads and renders the table with student rows', async ({ bro
   const page = await context.newPage()
 
   await page.goto('/students')
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Student Roster', { timeout: NAV_TIMEOUT })
 
   // Table renders with at least one student row (seeded by setupMockTeacher)
   const firstRow = page.locator('[data-testid^="student-row-"]').first()
@@ -36,7 +36,7 @@ test('student list row click navigates to student detail', async ({ browser }) =
   const page = await context.newPage()
 
   await page.goto('/students')
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Student Roster', { timeout: NAV_TIMEOUT })
 
   // Click the first student row (not the edit/delete buttons)
   const firstRow = page.locator('[data-testid^="student-row-"]').first()
@@ -88,7 +88,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Go to roster to find the student card and navigate to edit
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -104,7 +104,7 @@ test('creates student with lexical weakness and verifies round-trip', async ({ b
   await expect(typeSelect).toContainText('Lexical', { timeout: FEEDBACK_TIMEOUT })
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -131,7 +131,7 @@ test('full student CRUD flow', async ({ browser }) => {
   // Navigate to students list
   await page.goto('/students')
   await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT }).catch(() => {})
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: NAV_TIMEOUT })
+  await expect(page.locator('h1')).toHaveText('Student Roster', { timeout: NAV_TIMEOUT })
 
   // Navigate directly to create form
   await page.goto('/students/new')
@@ -195,8 +195,8 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to verify the new student appears
-  await page.goto('/students')
-  await expect(page.locator('h1')).toHaveText('Students', { timeout: UI_TIMEOUT })
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
+  await expect(page.locator('h1')).toHaveText('Student Roster', { timeout: UI_TIMEOUT })
 
   // Find the student card using the per-row testid (scoped by student ID)
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -237,7 +237,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to verify updated level
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const updatedCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -262,7 +262,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to re-enter edit for verification
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const finalCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -273,7 +273,7 @@ test('full student CRUD flow', async ({ browser }) => {
   await expect(page.getByText('No specific difficulties tracked yet.')).toBeVisible()
 
   // Go back to list for delete step
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
 
   // Delete
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
@@ -337,7 +337,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate to list to verify persistence
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -352,7 +352,7 @@ test('custom free-text learning goal persists after save', async ({ browser }) =
   await expect(page.getByTestId('weakness-description')).toHaveValue('irregular verb conjugation')
 
   // Clean up: go back and delete the student
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -380,13 +380,7 @@ test('"Create Course" button on student edit page navigates to CourseNew with st
   const studentName = `Create Course Test ${Date.now()}`
   await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B2' })
 
-  // Navigate to list then to edit page
-  await page.goto('/students')
-  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName })
-  })
-  await expect(studentCard).toBeVisible({ timeout: UI_TIMEOUT })
-  await studentCard.click()
+  // Navigate to edit page directly (createStudentViaUI leaves us on the detail page)
   await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: UI_TIMEOUT })
 
@@ -455,8 +449,7 @@ test('student detail shows 4 tabs and overview content by default', async ({ bro
   await expect(page.getByTestId('student-profile-tab')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Cleanup: go back and delete student
-  await page.goto('/students')
-  await expect(page).toHaveURL('/students', { timeout: UI_TIMEOUT })
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -491,8 +484,8 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await page.getByTestId('student-cefr').click()
   await page.getByRole('option', { name: 'B1' }).click()
 
-  // Set Official Level
-  await page.getByTestId('student-official-cefr').click()
+  // Set Official Level (click badge to reveal select, then select opens automatically)
+  await page.getByTestId('student-official-cefr-badge').click()
   await page.getByRole('option', { name: 'A2' }).click()
 
   // Add a spoken language
@@ -527,7 +520,7 @@ test('saves and displays SpokenLanguages, OfficialCefrLevel, and SkillLevelOverr
   await expect(skillSection).toContainText('B2')
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -575,9 +568,9 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   // Should redirect to student detail page
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
-  // Header shows profession and compact location (visible on all tabs)
-  await expect(page.getByTestId('student-header-profession')).toHaveText('Architect', { timeout: FEEDBACK_TIMEOUT })
-  await expect(page.getByTestId('student-header-location')).toHaveText('Lisbon / Madrid', { timeout: FEEDBACK_TIMEOUT })
+  // Header subtitle shows profession and city
+  await expect(page.getByTestId('student-header-subtitle')).toContainText('Architect', { timeout: FEEDBACK_TIMEOUT })
+  await expect(page.getByTestId('student-header-subtitle')).toContainText('Madrid', { timeout: FEEDBACK_TIMEOUT })
 
   // Navigate to Profile tab to check identity details
   await page.getByTestId('tab-profile').click()
@@ -597,7 +590,7 @@ test('identity fields round-trip: save and verify in profile view and edit form'
   await expect(page.getByTestId('student-city-residence')).toHaveValue('Madrid')
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCardIdentity = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -665,7 +658,7 @@ test('motivation fields: reason for studying and objectives round-trip', async (
   await expect(page.getByTestId('objective-text-input')).toHaveValue(objectiveText)
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const deleteCardM = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -692,13 +685,13 @@ test('Ana Visual profile tab shows Focus Areas section with difficulties and wea
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
-  // Find Ana Visual via the API (she is a demo seed student with difficulties and weaknesses)
-  const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
+  // Find Ana Visual via the API (she is a visual seed student with difficulties and weaknesses)
+  const res = await page.request.get(`${API_BASE}/api/students?pageSize=100`, { headers: AUTH_HEADER })
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
   const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
   const anaVisual = students.find((s) => s.name === 'Ana Visual')
-  if (!anaVisual) throw new Error('Ana Visual not found. Ensure the demo seeder has run.')
+  if (!anaVisual) throw new Error('Ana Visual not found. Ensure the visual seed step ran before tests.')
 
   await page.goto(`/students/${anaVisual.id}`)
 
@@ -743,7 +736,8 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   // Empty state is shown
   await expect(page.getByTestId('teaching-todos-empty')).toBeVisible()
 
-  // Add a teaching todo
+  // Add a teaching todo (click header button to reveal add input first)
+  await page.getByTestId('ideas-add-header-btn').click()
   const addInput = page.getByTestId('todo-add-input')
   await addInput.fill('Practice ser vs estar')
   await page.getByTestId('todo-add-btn').click()
@@ -781,7 +775,7 @@ test('teaching todos: add, toggle covered, verify ordering on overview tab', asy
   expect(lastText).toEqual(todoText)
 
   // Cleanup: delete the student
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const row = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -818,7 +812,8 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
       { timeout: FEEDBACK_TIMEOUT }
     )
 
-  // Add a todo (wait for server confirm before reading id)
+  // Add a todo (reveal add input first, then wait for server confirm before reading id)
+  await page.getByTestId('ideas-add-header-btn').click()
   const addDone = waitForTodoWrite()
   await page.getByTestId('todo-add-input').fill('ser vs estar reminder')
   await page.getByTestId('todo-add-btn').click()
@@ -859,7 +854,7 @@ test('teaching todos: toggle persists after reload and can be toggled back to pe
   await expect(page.getByTestId(`todo-text-${todoId}`)).not.toHaveClass(/line-through/, { timeout: FEEDBACK_TIMEOUT })
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const row = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -903,7 +898,7 @@ test('log session page: create session from full-page form and redirect back', a
   await page.getByTestId('actual-content').fill('Covered introduction to present tense.')
 
   // Submit
-  await page.getByTestId('submit-button').click()
+  await page.getByTestId('done-btn').click()
 
   // Should redirect back to student detail
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: NAV_TIMEOUT })
@@ -914,7 +909,7 @@ test('log session page: create session from full-page form and redirect back', a
   await expect(sessionEntries.first()).toBeVisible({ timeout: UI_TIMEOUT })
 
   // Cleanup: delete student
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const row = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
@@ -937,10 +932,10 @@ test('overview tab: header badges, pedagogical profile, teaching notes panel vis
 
   await createStudentViaUI(page, { name: studentName, language: 'Spanish', cefrLevel: 'B1' })
 
-  // Header status badge should show Active + Private
+  // Header status badge shows Active; type badge shows Private
   await expect(page.getByTestId('student-status-badge')).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(page.getByTestId('student-status-badge')).toContainText('Active')
-  await expect(page.getByTestId('student-status-badge')).toContainText('Private')
+  await expect(page.getByTestId('student-type-badge')).toContainText('Private')
 
   // Pedagogical Profile card present
   await expect(page.getByTestId('pedagogical-profile-card')).toBeVisible({ timeout: UI_TIMEOUT })
@@ -953,7 +948,7 @@ test('overview tab: header badges, pedagogical profile, teaching notes panel vis
   await expect(page.getByTestId('add-memory-btn')).toBeVisible()
 
   // Cleanup
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const overviewRow = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName }),
   })
@@ -987,12 +982,12 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
   // Navigate to commercial section via nav link
   await page.getByTestId('section-nav-section-commercial').click()
   await expect(page.getByTestId('toggle-is-active')).toBeVisible({ timeout: FEEDBACK_TIMEOUT })
-  await expect(page.getByTestId('toggle-is-corporate')).toBeVisible()
+  await expect(page.getByTestId('type-corporate')).toBeVisible()
   await expect(page.getByTestId('student-rate')).toBeVisible()
 
   // Fill commercial fields - each change triggers autosave
   await page.getByTestId('student-rate').fill('55/hr')
-  await page.getByTestId('toggle-is-corporate').click()
+  await page.getByTestId('type-corporate').click()
   await page.getByTestId('toggle-is-active').click()
   await expect(page.getByTestId('inactive-badge')).toBeVisible()
 
@@ -1030,12 +1025,12 @@ test('sessions tab redesign: timeline, search, status filter, and expand', async
   const page = await context.newPage()
 
   // Find Diego Seed who has seeded session logs
-  const res = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADER })
+  const res = await page.request.get(`${API_BASE}/api/students?pageSize=100`, { headers: AUTH_HEADER })
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
   const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
   const diego = students.find((s) => s.name === 'Diego Seed')
-  if (!diego) throw new Error('Diego Seed not found. Ensure the demo seeder has run.')
+  if (!diego) throw new Error('Diego Seed not found. Ensure the visual seed step ran before tests.')
 
   await page.goto(`/students/${diego.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
@@ -1117,7 +1112,7 @@ test('nested learning goal with sub-goal persists after save', async ({ browser 
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 
   // Navigate back to edit and verify structure persists
-  await page.goto('/students')
+  await page.goto('/students?q=' + encodeURIComponent(studentName))
   const studentCard = page.locator('[data-testid^="student-row-"]').filter({
     has: page.getByTestId('student-name').filter({ hasText: studentName })
   })
