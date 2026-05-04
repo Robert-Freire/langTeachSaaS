@@ -81,7 +81,7 @@ public class AssistantController : ControllerBase
 
         var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-        if (isNewStudentIntent)
+        if (isNewStudentIntent && !string.IsNullOrWhiteSpace(extractedName))
         {
             var newStudentPayload = new
             {

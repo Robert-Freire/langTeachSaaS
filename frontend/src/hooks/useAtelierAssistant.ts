@@ -101,6 +101,7 @@ export function useAtelierAssistant(
                   newValue: incoming.newValue,
                   oldValue: incoming.oldValue,
                   payload: incoming.payload ?? updated[idx].payload,
+                  newStudentPayload: incoming.newStudentPayload ?? updated[idx].newStudentPayload,
                 }
               }
               // applied/dismissed — leave untouched
