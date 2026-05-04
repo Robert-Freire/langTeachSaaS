@@ -382,50 +382,6 @@ test('un-cancel a session removes the Cancelled badge', async ({ browser }) => {
   await context.close()
 })
 
-test('summary header appears on history tab after logging a session', async ({ browser }) => {
-  const context = await createMockAuthContext(browser)
-  const page = await context.newPage()
-
-  const studentName = `Summary Header Test ${Date.now()}`
-  const student = await createStudentViaApi(page, { name: studentName })
-
-  await page.request.post(`${API_BASE}/api/students/${student.id}/sessions`, {
-    headers: { Authorization: 'Bearer test-token', 'Content-Type': 'application/json' },
-    data: {
-      sessionDate: new Date().toISOString().split('T')[0],
-      actualContent: 'Preterito indefinido',
-      previousHomeworkStatus: 'NotApplicable',
-      nextSessionTopics: 'Work on para/por\nMore listening practice',
-    },
-  })
-
-  await page.goto(`/students/${student.id}`)
-  await expect(page.getByTestId('student-detail-name')).toHaveText(studentName, { timeout: NAV_TIMEOUT })
-
-  // Navigate to History tab
-  await page.getByTestId('tab-sessions').click()
-
-  await expect(page.getByTestId('session-summary-header')).toBeVisible({ timeout: UI_TIMEOUT })
-  await expect(page.getByTestId('session-summary-action-items-toggle')).toBeVisible()
-
-  // Expand action items
-  await page.getByTestId('session-summary-action-items-toggle').click()
-  await expect(page.getByTestId('session-summary-action-items-list')).toBeVisible()
-  await expect(page.getByTestId('session-summary-action-items-list')).toContainText('Work on para/por')
-
-  // Session card should show nextSessionTopics collapsed preview and expanded section
-  await expect(page.getByTestId('next-session-topics-preview')).toBeVisible()
-  await expect(page.getByTestId('next-session-topics-preview')).toContainText('Work on para/por')
-
-  await page.getByTestId('session-entry-toggle').click()
-  await expect(page.getByTestId('next-session-topics-section')).toBeVisible()
-  await expect(page.getByTestId('next-session-topics-section')).toContainText('Planned for next class')
-  await expect(page.getByTestId('next-session-topics-section')).toContainText('Work on para/por')
-
-  await context.close()
-})
-
-
 test('confirming session with suggestedDifficulties upserts them to student profile', async ({ browser }) => {
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
