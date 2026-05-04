@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;

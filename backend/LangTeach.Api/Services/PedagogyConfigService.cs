@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data.Models;
-using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
@@ -132,6 +131,7 @@ public class PedagogyConfigService : IPedagogyConfigService
         // Load prompt fragments
         PromptFragments = LoadJson<PromptFragmentsConfig>(assembly, "LangTeach.Api.Pedagogy.prompt-fragments.json");
         ProposalFields = LoadJson<ProposalFieldsConfig>(assembly, "LangTeach.Api.Assistant.proposal-fields.json");
+        ValidateProposalFields(ProposalFields);
         ValidatePromptFragments(PromptFragments);
 
         // Validate cross-layer references — fail fast on dangling IDs
@@ -459,6 +459,16 @@ public class PedagogyConfigService : IPedagogyConfigService
     {
         "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}", "{language}"
     };
+
+    private static void ValidateProposalFields(ProposalFieldsConfig f)
+    {
+        if (f.StudentFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields is missing or empty.");
+        if (f.SkillLevelFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json skillLevelFields is missing or empty.");
+        if (f.SessionFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields is missing or empty.");
+    }
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
     {

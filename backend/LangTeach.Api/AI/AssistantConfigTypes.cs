@@ -1,4 +1,4 @@
-namespace LangTeach.Api.DTOs;
+namespace LangTeach.Api.AI;
 
 public record ProposalFieldEntry(string Field, string Label);
 
