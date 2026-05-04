@@ -697,8 +697,8 @@ export default function LogSession() {
         {/* Student header */}
         <div className="flex items-start gap-3">
           <div
-            className="flex items-center justify-center rounded-xl text-white text-sm font-bold shrink-0"
-            style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #3525CD, #4F46E5)' }}
+            className="flex items-center justify-center rounded-xl text-white text-sm font-bold shrink-0 lt-gradient-primary"
+            style={{ width: 44, height: 44 }}
             aria-hidden
           >
             {getInitials(student.name)}
