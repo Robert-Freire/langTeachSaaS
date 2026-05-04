@@ -272,8 +272,10 @@ describe('coerceExercisesContent (sentenceTransformation)', () => {
     const result = coerceExercisesContent(validExercises)
     expect(result?.sentenceTransformation).toBeUndefined()
   })
+})
 
-  it('strips non-string alternatives even when base ExercisesContent structure is already valid', () => {
+describe('coerceExercisesContent (item shape validation)', () => {
+  it('strips non-string alternatives in sentenceTransformation even when base ExercisesContent structure is already valid', () => {
     const input = {
       ...validExercises,
       sentenceTransformation: [{ prompt: 'P', original: 'O', expected: 'E', alternatives: [123, 'valid', null] }],
@@ -283,7 +285,7 @@ describe('coerceExercisesContent (sentenceTransformation)', () => {
     expect(result?.sentenceTransformation?.[0].alternatives).toEqual(['valid'])
   })
 
-  it('filters invalid items when wrapped in an extra key (unwrapWrapper path)', () => {
+  it('filters invalid sentenceTransformation items when wrapped in an extra key (unwrapWrapper path)', () => {
     const wrapped = {
       exercises: {
         ...validExercises,
@@ -296,9 +298,7 @@ describe('coerceExercisesContent (sentenceTransformation)', () => {
     const result = coerceExercisesContent(wrapped)
     expect(result?.sentenceTransformation).toHaveLength(1)
   })
-})
 
-describe('coerceExercisesContent (item shape validation)', () => {
   it('filters out fillInBlank items missing required fields', () => {
     const input = {
       fillInBlank: [

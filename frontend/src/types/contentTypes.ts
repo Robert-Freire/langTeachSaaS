@@ -444,9 +444,14 @@ export function coerceExercisesContent(v: unknown): ExercisesContent | null {
         const it = item as Record<string, unknown>
         return typeof it.left === 'string' && typeof it.right === 'string'
       }),
-    trueFalse: Array.isArray(obj.trueFalse) ? obj.trueFalse
+    trueFalse: (Array.isArray(obj.trueFalse) ? obj.trueFalse
       : Array.isArray(obj.true_false) ? obj.true_false
-      : [],
+      : []).filter((item: unknown): item is ExercisesTrueFalse => {
+        if (typeof item !== 'object' || item === null) return false
+        const it = item as Record<string, unknown>
+        return typeof it.statement === 'string' && typeof it.isTrue === 'boolean' &&
+          typeof it.justification === 'string'
+      }),
     sentenceOrdering: rawSo
       ? rawSo.filter((item: unknown): item is ExercisesSentenceOrdering => {
           if (typeof item !== 'object' || item === null) return false
