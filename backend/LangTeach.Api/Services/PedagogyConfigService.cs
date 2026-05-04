@@ -454,12 +454,17 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     private static readonly HashSet<string> KnownPromptTokens = new(StringComparer.Ordinal)
     {
-        "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}"
+        "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}", "{language}"
     };
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
     {
-        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix }
+        if (string.IsNullOrWhiteSpace(f.LessonSystemOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing lessonSystemOpener.");
+        if (string.IsNullOrWhiteSpace(f.CurriculumSystemOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing curriculumSystemOpener.");
+
+        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix, f.LessonSystemOpener, f.CurriculumSystemOpener }
             .Concat(f.NativeLanguageBullets);
         foreach (var s in allStrings)
         {

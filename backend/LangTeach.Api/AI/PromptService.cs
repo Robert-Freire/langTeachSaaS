@@ -104,7 +104,7 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
-        var system = CurriculumSystemPrompt(ctx);
+        var system = CurriculumSystemPrompt(ctx, _pedagogy.PromptFragments);
         var level  = ctx.TargetCefrLevel ?? "(none)";
         if (ctx.TemplateUnits is { Count: > 0 })
         {
@@ -395,7 +395,7 @@ public class PromptService : IPromptService
 
         var sb = new StringBuilder();
 
-        sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
+        sb.AppendLine(RenderTemplate(fragments.LessonSystemOpener, new() { ["{language}"] = language, ["{cefrLevel}"] = cefrLevel }));
         sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
         sb.AppendLine(RenderTemplate(fragments.CefrCue, new() { ["{cefrLevel}"] = cefrLevel }));
@@ -1251,11 +1251,11 @@ public class PromptService : IPromptService
 
     // --- Curriculum prompts ---
 
-    private static string CurriculumSystemPrompt(CurriculumContext ctx)
+    private static string CurriculumSystemPrompt(CurriculumContext ctx, PromptFragmentsConfig fragments)
     {
         var language = InputSanitizer.Sanitize(ctx.Language);
         var sb = new StringBuilder();
-        sb.AppendLine($"You are an expert {language} language teacher and curriculum designer.");
+        sb.AppendLine(RenderTemplate(fragments.CurriculumSystemOpener, new() { ["{language}"] = language }));
 
         if (ctx.StudentName is not null)
         {
