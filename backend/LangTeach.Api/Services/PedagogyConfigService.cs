@@ -472,11 +472,18 @@ public class PedagogyConfigService : IPedagogyConfigService
         if (f.SessionFields is not { Length: > 0 })
             throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields is missing or empty.");
 
+        if (f.StudentFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields has an entry with a blank field or label.");
+        if (f.SkillLevelFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json skillLevelFields has an entry with a blank field or label.");
+        if (f.SessionFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields has an entry with a blank field or label.");
+
         var allFields = f.StudentFields.Select(e => e.Field)
             .Concat(f.SkillLevelFields.Select(e => e.Field))
             .Concat(f.SessionFields.Select(e => e.Field))
             .ToList();
-        var duplicates = allFields.GroupBy(x => x).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        var duplicates = allFields.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
         if (duplicates.Count > 0)
             throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json has duplicate field names: {string.Join(", ", duplicates)}.");
 
