@@ -2,7 +2,7 @@
 
 **Authoritative reference for all UI work.** Any bot or developer implementing or reviewing a screen must read this first.
 
-Last updated: 2026-04-16
+Last updated: 2026-05-04
 
 ---
 
@@ -106,6 +106,57 @@ Depth comes from tonal layering, not shadows.
 
 All buttons: consistent height, no XL or oversized variants unless it's a full-width CTA on an empty state.
 
+**Card micro-action exception:** inline action buttons inside transient AI cards (proposal cards, suggestion cards) may use raw `<button>` elements with hardcoded Tailwind classes instead of the DS Button component variants. These are micro-CTAs scoped to the card lifecycle, not page-level actions. They must still follow DS color tokens and sizing norms (see §11.10 for the canonical proposal card action row spec).
+
+**Known violation (filed for fix #1105):** The student detail header (`/students/:id`) places "Update via voice" and "Edit Student" as custom `bg-indigo-50 text-indigo-600` buttons next to the filled-primary "Log Session" button. These should be Secondary variant.
+
+### FAB (Floating Action Button)
+
+A single app-level FAB triggers the Atelier Assistant. There is at most one FAB per screen.
+
+- **Size:** `h-14 w-14` (56px) circular — `rounded-full`
+- **Background:** `lt-gradient-primary` (indigo gradient, same as Primary buttons)
+- **Shadow:** `shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]` — glow shadow, not drop shadow
+- **Position:** `fixed bottom-6 right-6 z-30`
+- **Visibility:** `hidden lg:flex` — desktop only. Mobile uses a button in the top bar.
+- **Icon:** Sparkles (`h-5 w-5`) when closed, X (`h-5 w-5`) when open. The swap communicates toggle state without a label.
+- **Hover/active:** `hover:brightness-105 hover:shadow-[0_16px_48px_0_rgb(53_37_205_/_0.28)] active:brightness-90`
+- **Disabled (no context):** `opacity-50 cursor-not-allowed`
+- **Focus:** `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`
+- **Accessibility:** always include `aria-label` ("Open Assistant" / "Close Assistant"). Pair with a Tooltip showing the keyboard shortcut.
+
+Do not create secondary FABs. If a second persistent floating trigger is needed, use a fixed-position toolbar, not another FAB.
+
+### Compound Input Bar
+
+Used in the Atelier Assistant panel footer. Combines a mode-toggle icon button, a text input, and a submit CTA in a single `flex items-center gap-2` row.
+
+```
+[mic toggle]  [text input ─────────────────]  [send →]
+```
+
+- **Mic toggle:** borderless icon button, `text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl`, min 44px touch target. This is **not** a Primary, Secondary, or Ghost DS button variant — it is a mode-toggle that switches the bar into recording state. The ghost-next-to-filled rule in §5 does not apply because the mic is not a CTA on the same semantic level as Send.
+- **Text input:** `flex-1 bg-[#F4F2FD] border-0 focus-visible:ring-0 rounded-xl h-10 px-4 text-sm font-inter`
+- **Send button:** filled primary gradient (`lt-gradient-primary`), `rounded-xl`, min 44px touch target. Disabled at `opacity-40` when input is empty.
+- **When recording:** the entire row is replaced by a waveform + timer + Stop + Cancel row. The input and send button are hidden during recording.
+
+**Role-distinction rule:** the ghost-next-to-filled prohibition in §5 targets same-level CTAs. Mode-toggle controls (mic, record) are exempt because they switch interaction state rather than submit data. When using this exception, the mode-toggle must be visually subordinate (icon-only, muted color at rest) and must not carry primary-action weight.
+
+### Keyboard Shortcut Hint
+
+A `<kbd>` element displayed inside a Tooltip to surface keyboard shortcuts for sidebar CTAs.
+
+```tsx
+<TooltipContent>
+  Open Assistant <kbd data-slot="kbd">⌘K</kbd>
+</TooltipContent>
+```
+
+- Place the hint inside `TooltipContent`, not in the button label itself.
+- Use only where a keyboard shortcut is genuinely registered (do not document non-existent shortcuts).
+- `data-slot="kbd"` is required for correct Tooltip styling.
+- Do not add keyboard hints to secondary or destructive actions.
+
 ### CEFR Badges
 
 **Valid levels:** A1, A2, B1, B2, C1, C2 only. No sublevel (B2.1) or plus (B2+) notation anywhere in the system. If sublevels are introduced as a product decision, update `CefrConstants.cs` (backend) and `CEFR_LEVELS` in `frontend/src/lib/cefr-colors.ts` first; never introduce sublevel strings ad hoc.
@@ -153,6 +204,22 @@ All authenticated screens render inside the AppShell: a fixed sidebar (left) + m
 - **Main content:** `flex-1 overflow-y-auto`, `surface` background, generous left/right margins.
 - **Asymmetric margins encouraged:** if left margin is 40px, try 64px right for editorial feel.
 - **Active nav item:** primary color indicator, not a background fill.
+
+### Responsive Icon-Only Labels
+
+When a toolbar or header row contains buttons that should collapse to icon-only at narrow breakpoints, use one of two canonical forms depending on density.
+
+**Dense header rows (3 or more buttons side by side):** `md:hidden lg:inline`
+- Collapses to icon-only at `md` (768px), shows label from `lg` (1024px)
+- Use when the row would overflow at `md` with all labels visible
+- Example: student detail header (`StudentDetailHeader.tsx`)
+
+**Single-button or sparse toolbars:** `hidden sm:inline`
+- Shows icon-only below `sm` (640px), shows label from `sm`
+- Use for isolated action buttons that have ample row space at most sizes
+- Example: CourseDetail toolbar, LessonEditor preview button
+
+Never mix these forms for buttons that appear in the same row. Pick the form that matches the density of the densest row where the button appears.
 
 ---
 
@@ -207,6 +274,12 @@ Use for: dedicated edit screens covering many fields at once.
 - No per-field or per-section Save/Cancel buttons.
 
 Examples: `/students/:id/edit`, `/sessions/:id/edit`.
+
+**One Done per screen:** do not place a second Done in a sticky section nav if the page header already shows one. The sticky nav may repeat Done only if the page header Done has scrolled fully out of view (i.e., the sticky row is the only visible exit path). When both are simultaneously visible, remove the sticky one.
+
+**Competing top-right affordances:** do not place two distinct action buttons at the top-right of the same screen across adjacent rows. A "Create Course" shortcut in the page header row and a "Done" button in the sticky nav row one pixel below create two competing exit affordances. If a contextual shortcut (e.g. "Create Course") belongs on the edit screen, place it in the page body near the relevant section, not at top-right.
+
+**Known violation (filed for fix #1106):** `/students/:id/edit` (`StudentForm.tsx`) shows "Create Course" in the PageHeader actions at top-right and "Done" in the sticky section nav.
 
 ---
 
@@ -289,6 +362,20 @@ Each list type has a fixed color family. Use these exact values everywhere the l
 | Teaching Todos | `bg-indigo-50` | `bg-indigo-600` | `#F0EFFF` | indigo |
 | Followups | `bg-amber-50` | `bg-amber-500` | `#FFFBEB` | amber |
 | Interests | `bg-white` | n/a (Enter-to-add) | n/a | indigo chips |
+
+#### Proposal Card Accent Palette
+
+Each AI proposal type has a fixed accent color used for the left-edge accent bar, the icon background, and the icon color. Do not reuse these tokens outside proposal cards.
+
+| Proposal type | Accent bar | Icon bg | Icon color | Semantic meaning |
+|---------------|-----------|---------|-----------|-----------------|
+| `student` | `bg-indigo-500` | `bg-indigo-100` | `text-indigo-600` | Update to an existing student field |
+| `session` | `bg-violet-500` | `bg-violet-100` | `text-violet-600` | Update to an existing session field |
+| `todo` | `bg-emerald-500` | `bg-emerald-100` | `text-emerald-600` | New teaching todo |
+| `newStudent` | `bg-teal-500` | `bg-teal-100` | `text-teal-600` | Create a new student record |
+| `newSession` | `bg-amber-500` | `bg-amber-100` | `text-amber-600` | Schedule a new session |
+
+Reference implementation: `ProposalCard.tsx` `TYPE_CONFIG`.
 
 ### 11.3 Canonical Placeholders and Labels
 
@@ -386,3 +473,114 @@ All drawer footers (side drawers overlaying the screen) use this exact button pa
 - **Layout:** `flex items-center justify-end gap-3` row, Cancel left of primary action
 - **Disabled state:** Primary action disabled while saving; Cancel also disabled while saving to prevent double-dismiss
 - The primary action label describes the operation (e.g. "Save 3 changes", "Create student"), not a generic "Save"
+
+### 11.10 Proposal Card Action Row (Apply / Dismiss / Modify)
+
+AI proposal cards in the Atelier Assistant panel show up to three actions on the bottom of the card.
+
+**Button styles (not DS Button component variants — these are inline `<button>` elements):**
+
+| Action | Style | When visible |
+|--------|-------|-------------|
+| Apply | `text-white bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold px-3 py-1 rounded-lg` | `proposed` status only |
+| Dismiss | `text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 text-xs font-semibold px-3 py-1 rounded-lg` | `proposed` status only |
+| Modify | `text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 text-xs font-semibold px-3 py-1 rounded-lg` | `proposed` status, not `newStudent` or `newSession` types |
+| Undo | same style as Apply | `applied` status only |
+| Retry | same style as Apply | `error` status only |
+| Save / Cancel | Apply / Dismiss styles respectively | While editing (after Modify) |
+
+**Status pills** (top-right of card header, not action buttons):
+
+| Status | Style |
+|--------|-------|
+| Applied | `bg-emerald-100 text-emerald-700 text-[0.625rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full` |
+| Dismissed | same shape, `bg-zinc-100 text-zinc-400` |
+| Error | same shape, `bg-red-100 text-red-600` |
+
+**`newStudent` and `newSession` types** use payload editing fields (date input, NewStudentFields) instead of a Modify button. They always require Apply to commit.
+
+Reference implementation: `ProposalCard.tsx`.
+
+### 11.11 Inline Discard Confirm
+
+Used inside the Atelier Assistant Sheet panel when the user attempts to close with unsaved proposals. Replaces any browser-native `confirm()` call.
+
+```tsx
+<div className="mx-4 mb-3 px-4 py-3 rounded-xl bg-amber-50 flex items-center justify-between gap-3 shrink-0">
+  <span className="text-sm font-inter text-zinc-700 flex-1">Close and discard?</span>
+  <div className="flex items-center gap-2">
+    <button className="text-sm font-inter font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50">
+      Discard
+    </button>
+    <button className="text-sm font-inter font-medium text-zinc-500 hover:text-zinc-700 px-2 py-1 rounded-lg hover:bg-zinc-100">
+      Keep editing
+    </button>
+  </div>
+</div>
+```
+
+- Background: `bg-amber-50` signals mild caution (not an error, not a destructive confirm).
+- Always inline in the panel — never a floating modal or browser dialog.
+- Destructive action (Discard) is red text, non-destructive (Keep editing) is zinc text.
+- Do not add a header or icon — the `bg-amber-50` background and the question text provide sufficient context.
+- This pattern applies to any panel that captures unsaved work. Use `bg-amber-50` consistently.
+
+Reference implementation: `AtelierAssistantPanel.tsx` `pendingClose` state.
+
+### 11.12 Transcription Blockquote
+
+Displays the verbatim transcript of the teacher's recorded speech before the AI processes it.
+
+```tsx
+<blockquote className="border-l-2 border-indigo-300 pl-3 italic text-sm font-inter text-zinc-700">
+  {transcription}
+</blockquote>
+```
+
+- **Use only for verbatim content returned from the speech-to-text service.** Never use for AI-generated summaries, proposals, or synthesized text.
+- The left border (`border-l-2 border-indigo-300`) and italic style signal "this is the teacher's own words."
+- Do not add a quotation mark or attribution label — the context (transcription view) is sufficient.
+- Accessibility: use the `<blockquote>` element (not a `<div>`) so screen readers announce it as a quotation.
+
+Reference implementation: `AtelierAssistantPanel.tsx` `transcription-block` test id.
+
+### 11.13 Live-Status Indicator
+
+Used in panel headers where the background processing state needs to be passively visible without interrupting the teacher.
+
+```tsx
+<div role="status" aria-label={processing ? 'Status: Processing' : 'Status: Ready'}>
+  <span className={processing
+    ? 'h-2 w-2 rounded-full bg-amber-400 shrink-0 animate-pulse'
+    : 'h-2 w-2 rounded-full bg-emerald-500 shrink-0'}
+    aria-hidden="true"
+  />
+  <span className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter">
+    {processing ? 'Processing Insight' : 'Ready'}
+  </span>
+</div>
+```
+
+- Two states only: **Ready** (emerald dot, label "Ready") and **Processing** (amber dot, `animate-pulse`, label "Processing Insight").
+- Wrap in `role="status"` with a descriptive `aria-label` so screen readers announce state changes.
+- Mark the dot `aria-hidden="true"` — the label text carries the semantic meaning.
+- Use Label-SM scale (`text-[0.6875rem]`), all-caps, `text-zinc-400` (muted — not the primary reading focus).
+- Do not add a third state (error, warning, etc.) to this indicator. Errors surface via inline error UI in the content area.
+
+Reference implementation: `AtelierAssistantPanel.tsx` panel header.
+
+### 11.14 Inline Mini-Form Inside Proposal Card
+
+`newSession` and `newStudent` proposal types embed editable fields directly inside the card body instead of showing plain text. This is the only permitted use of form inputs inside a list item or card.
+
+**When to use:** only on proposal cards for types that require structured input before they can be applied. Do not use for editing already-applied data.
+
+**Rules:**
+- Field labels above the input (consistent with §5 Form Inputs).
+- Use `<input type="date">` or `<Input>` from `@/components/ui/input`, never a raw `<input>` outside of date pickers.
+- Edits commit via `onEditPayload` callback (equivalent to Pattern A autosave-on-blur semantics for this transient context).
+- Do NOT show `<SavedIndicator />` — the card is transient; Apply is the commit action.
+- Disabled state during non-editable statuses: `cursor-not-allowed opacity-60`.
+- Date input style: `text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300`.
+
+Reference implementation: `ProposalCard.tsx` (newSession date input, `NewStudentFields.tsx`).
