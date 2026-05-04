@@ -36,15 +36,10 @@ test('navigation flow using in-page Back buttons and links', async ({ browser })
   await page.getByRole('option', { name: 'A2' }).click()
   await page.getByRole('button', { name: 'Done' }).click()
 
-  // Should redirect back to students list
-  await expect(page).toHaveURL('/students', { timeout: 10000 })
-  await expect(page.getByTestId('student-name').filter({ hasText: studentName })).toBeVisible({ timeout: 10000 })
+  // Should redirect to student detail page (creation redirects to /students/{id})
+  await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: 10000 })
 
-  // 2. Click the student to edit, verify Back, then go back
-  const studentCard = page.locator('[data-testid^="student-row-"]').filter({
-    has: page.getByTestId('student-name').filter({ hasText: studentName }),
-  })
-  await studentCard.click()
+  // 2. Already on detail page -- navigate to edit, verify Back, then go back
   await page.getByTestId('edit-profile-link').click()
   await expect(page.locator('h1')).toHaveText('Edit Student', { timeout: 10000 })
   await expect(page.getByTestId('page-header-back')).toHaveAttribute('href', '/students')
