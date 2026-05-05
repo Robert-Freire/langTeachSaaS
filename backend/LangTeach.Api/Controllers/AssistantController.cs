@@ -217,6 +217,12 @@ public class AssistantController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var voiceNoteExists = await _db.VoiceNotes
+            .AnyAsync(v => v.Id == voiceNoteId && v.TeacherId == teacherId, ct);
+        if (!voiceNoteExists)
+            return NotFound();
+
         var now = DateTime.UtcNow;
 
         var existing = await _db.AssistantTurnFeedbacks
