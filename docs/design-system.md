@@ -108,8 +108,6 @@ All buttons: consistent height, no XL or oversized variants unless it's a full-w
 
 **Card micro-action exception:** inline action buttons inside transient AI cards (proposal cards, suggestion cards) may use raw `<button>` elements with hardcoded Tailwind classes instead of the DS Button component variants. These are micro-CTAs scoped to the card lifecycle, not page-level actions. They must still follow DS color tokens and sizing norms (see §11.10 for the canonical proposal card action row spec).
 
-**Known violation (filed for fix #1105):** The student detail header (`/students/:id`) places "Update via voice" and "Edit Student" as custom `bg-indigo-50 text-indigo-600` buttons next to the filled-primary "Log Session" button. These should be Secondary variant.
-
 ### FAB (Floating Action Button)
 
 A single app-level FAB triggers the Atelier Assistant. There is at most one FAB per screen.
@@ -278,8 +276,6 @@ Examples: `/students/:id/edit`, `/sessions/:id/edit`.
 **One Done per screen:** do not place a second Done in a sticky section nav if the page header already shows one. The sticky nav may repeat Done only if the page header Done has scrolled fully out of view (i.e., the sticky row is the only visible exit path). When both are simultaneously visible, remove the sticky one.
 
 **Competing top-right affordances:** do not place two distinct action buttons at the top-right of the same screen across adjacent rows. A "Create Course" shortcut in the page header row and a "Done" button in the sticky nav row one pixel below create two competing exit affordances. If a contextual shortcut (e.g. "Create Course") belongs on the edit screen, place it in the page body near the relevant section, not at top-right.
-
-**Known violation (filed for fix #1106):** `/students/:id/edit` (`StudentForm.tsx`) shows "Create Course" in the PageHeader actions at top-right and "Done" in the sticky section nav.
 
 ---
 
