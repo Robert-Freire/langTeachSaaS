@@ -254,7 +254,14 @@ public class AssistantController : ControllerBase
             });
         }
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException) when (existing is null)
+        {
+            // Concurrent request (e.g. mobile double-tap) inserted first; unique constraint honoured.
+        }
         return NoContent();
     }
 

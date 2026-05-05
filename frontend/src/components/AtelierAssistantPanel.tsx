@@ -90,6 +90,13 @@ export default function AtelierAssistantPanel({
   const uploadCancelledRef = useRef(false)
   const slowSttTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const feedbackInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (feedbackState === 'chip-open') {
+      feedbackInputRef.current?.focus()
+    }
+  }, [feedbackState])
 
   function handleBlob(file: File) {
     uploadCancelledRef.current = false
@@ -237,7 +244,8 @@ export default function AtelierAssistantPanel({
   function handleThumbsUp() {
     if (!currentVoiceNoteId) return
     setFeedbackState('done-up')
-    void submitVoiceFeedback(currentVoiceNoteId, 'up', undefined, studentId, sessionId, buildProposalsJson())
+    submitVoiceFeedback(currentVoiceNoteId, 'up', undefined, studentId, sessionId, buildProposalsJson())
+      .catch(() => { /* best-effort signal — swallow silently */ })
   }
 
   function handleThumbsDown() {
@@ -247,7 +255,8 @@ export default function AtelierAssistantPanel({
   function handleFeedbackSend() {
     if (!currentVoiceNoteId) return
     setFeedbackState('done-down')
-    void submitVoiceFeedback(currentVoiceNoteId, 'down', feedbackReason.trim() || undefined, studentId, sessionId, buildProposalsJson())
+    submitVoiceFeedback(currentVoiceNoteId, 'down', feedbackReason.trim() || undefined, studentId, sessionId, buildProposalsJson())
+      .catch(() => { /* best-effort signal — swallow silently */ })
     setFeedbackReason('')
   }
 
@@ -517,6 +526,7 @@ export default function AtelierAssistantPanel({
                   </button>
                 )}
                 <Input
+                  ref={feedbackInputRef}
                   value={feedbackState === 'chip-open' ? feedbackReason : inputValue}
                   onChange={(e) => {
                     if (feedbackState === 'chip-open') {
@@ -536,7 +546,6 @@ export default function AtelierAssistantPanel({
                   }}
                   placeholder={feedbackState === 'chip-open' ? "What's wrong with these suggestions?" : 'What did you cover today?'}
                   disabled={feedbackState !== 'chip-open' && processing}
-                  autoFocus={feedbackState === 'chip-open'}
                   className="flex-1 bg-[#F4F2FD] border-0 focus-visible:ring-0 rounded-xl h-10 px-4 text-sm font-inter disabled:opacity-50"
                   data-testid="assistant-input"
                 />
