@@ -16,7 +16,7 @@ public class AssistantProposeRequest
 
 public class AssistantFeedbackRequest
 {
-    [Required, MaxLength(4)]
+    [Required, RegularExpression("^(up|down)$", ErrorMessage = "Rating must be 'up' or 'down'.")]
     public string Rating { get; set; } = "";
 
     [MaxLength(2000)]

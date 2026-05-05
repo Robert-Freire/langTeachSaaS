@@ -215,10 +215,9 @@ public class AssistantController : ControllerBase
     public async Task<IActionResult> SubmitFeedback(Guid voiceNoteId, [FromBody] AssistantFeedbackRequest request, CancellationToken ct)
     {
         if (Auth0Id is null) return Unauthorized();
-        if (request.Rating != "up" && request.Rating != "down")
-            return BadRequest("Rating must be 'up' or 'down'.");
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var now = DateTime.UtcNow;
 
         var existing = await _db.AssistantTurnFeedbacks
             .FirstOrDefaultAsync(f => f.VoiceNoteId == voiceNoteId && f.TeacherId == teacherId, ct);
@@ -230,7 +229,7 @@ public class AssistantController : ControllerBase
             existing.ProposalsJson = request.ProposalsJson;
             existing.StudentId = request.StudentId;
             existing.SessionLogId = request.SessionLogId;
-            existing.CreatedAt = DateTime.UtcNow;
+            existing.UpdatedAt = now;
         }
         else
         {
@@ -244,7 +243,8 @@ public class AssistantController : ControllerBase
                 Rating = request.Rating,
                 Reason = request.Reason,
                 ProposalsJson = request.ProposalsJson,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = now,
+                UpdatedAt = now,
             });
         }
 

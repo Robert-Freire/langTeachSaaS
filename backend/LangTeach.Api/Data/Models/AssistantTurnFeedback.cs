@@ -11,6 +11,7 @@ public class AssistantTurnFeedback
     public string? Reason { get; set; }
     public string ProposalsJson { get; set; } = "";
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
     public Teacher Teacher { get; set; } = null!;
     public VoiceNote? VoiceNote { get; set; }
