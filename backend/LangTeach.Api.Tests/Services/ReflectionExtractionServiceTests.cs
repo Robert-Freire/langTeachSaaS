@@ -1092,8 +1092,8 @@ public class ReflectionExtractionServiceTests
 
         captured!.SystemPrompt.Should().Contain("present-day anchor",
             because: "the prompt must have the guard that treats 'hoy' reflections as post-class, not retrospective");
-        captured.SystemPrompt.Should().Contain("newSessionTitle and newSessionDate null",
-            because: "the prompt must explicitly instruct null new-session fields when a today anchor is present");
+        captured.SystemPrompt.Should().Contain("newSessionTitle field rule for the null-when-today constraint",
+            because: "the context block must reference the newSessionTitle field rule instead of duplicating the null constraint");
     }
 
     [Fact]

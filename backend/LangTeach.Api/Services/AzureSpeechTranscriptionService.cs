@@ -88,7 +88,10 @@ public class AzureSpeechTranscriptionService(
 
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
         if (status == "InitialSilenceTimeout" || status == "NoMatch")
+        {
+            logger.LogWarning("Azure Speech chunk returned silent/no-match status. Status={Status}", status);
             return string.Empty;
+        }
 
         if (status != "Success")
         {
