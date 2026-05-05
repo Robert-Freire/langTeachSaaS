@@ -10,7 +10,7 @@
   <rect x="10" y="22" width="12" height="2.5" rx="1.25" fill="white" opacity="0.7"/>
   <rect x="10" y="28" width="8" height="2.5" rx="1.25" fill="white" opacity="0.4"/>
 
-  <!-- Wordmark: "Lang" + "Teach" -->
+  <!-- Wordmark: "Atelier" -->
   <text
     x="58"
     y="32"
@@ -19,6 +19,6 @@
     font-weight="600"
     letter-spacing="-0.4px"
   >
-    <tspan fill="#4338ca">Lang</tspan><tspan fill="#6366f1">Teach</tspan>
+    <tspan fill="#6366f1">Atelier</tspan>
   </text>
 </svg>

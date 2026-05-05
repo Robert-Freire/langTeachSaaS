@@ -196,7 +196,7 @@ describe('AppShell', () => {
 
   it('renders the mobile top bar with logo text', () => {
     renderShell()
-    const logoTexts = screen.getAllByText('LangTeach')
+    const logoTexts = screen.getAllByText('Atelier')
     // At least one in mobile top bar and one in desktop sidebar
     expect(logoTexts.length).toBeGreaterThanOrEqual(2)
   })
