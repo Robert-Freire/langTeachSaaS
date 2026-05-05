@@ -5,6 +5,7 @@ import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
@@ -201,7 +202,7 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
           <Link
             to={`/students/${student.id}/edit`}
             aria-label="Edit Student"
-            className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'rounded-xl' })}
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'rounded-xl')}
             data-testid="edit-profile-link"
           >
             <Pencil className="h-3.5 w-3.5" />
