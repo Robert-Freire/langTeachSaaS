@@ -11,6 +11,22 @@ public class AssistantProposeRequest
 
     public Guid? StudentId { get; set; }
     public Guid? SessionId { get; set; }
+    public Guid? VoiceNoteId { get; set; }
+}
+
+public class AssistantFeedbackRequest
+{
+    [Required, RegularExpression("^(up|down)$", ErrorMessage = "Rating must be 'up' or 'down'.")]
+    public string Rating { get; set; } = "";
+
+    [MaxLength(2000)]
+    public string? Reason { get; set; }
+
+    public Guid? StudentId { get; set; }
+    public Guid? SessionLogId { get; set; }
+
+    [Required]
+    public string ProposalsJson { get; set; } = "";
 }
 
 // Payload carries structured data for compound or append proposal types.
@@ -29,7 +45,7 @@ public record ProposalDto(
     JsonElement? NewStudentPayload = null
 );
 
-public record AssistantProposeResponse(List<ProposalDto> Proposals);
+public record AssistantProposeResponse(List<ProposalDto> Proposals, Guid? VoiceNoteId = null);
 
 public class PatchStudentRequest
 {

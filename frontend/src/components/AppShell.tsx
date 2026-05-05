@@ -314,6 +314,7 @@ export default function AppShell() {
         onDismissAll={assistant.dismissAll}
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
+        sessionId={sessionId}
       />
     </div>
   )
