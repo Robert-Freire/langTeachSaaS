@@ -4,7 +4,8 @@ import type { Student } from '@/api/students'
 import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
@@ -185,21 +186,23 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0 md:self-start">
           {onVoiceUpdateClick && (
-            <button
+            <Button
               onClick={onVoiceUpdateClick}
               disabled={voiceFlowActive}
               aria-label="Update via voice"
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="secondary"
+              size="sm"
+              className="rounded-xl"
               data-testid="voice-update-button"
             >
               <Mic className="h-3.5 w-3.5" />
               <span className="md:hidden lg:inline">Update via voice</span>
-            </button>
+            </Button>
           )}
           <Link
             to={`/students/${student.id}/edit`}
             aria-label="Edit Student"
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'rounded-xl')}
             data-testid="edit-profile-link"
           >
             <Pencil className="h-3.5 w-3.5" />
