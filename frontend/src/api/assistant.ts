@@ -32,19 +32,39 @@ export interface ProposalDto {
 
 export interface ProposeResponse {
   proposals: ProposalDto[]
+  voiceNoteId?: string
 }
 
 export async function proposeAssistant(
   text: string,
   studentId?: string,
   sessionId?: string,
+  voiceNoteId?: string,
 ): Promise<ProposeResponse> {
   const res = await apiClient.post<ProposeResponse>('/api/assistant/propose', {
     text,
     studentId: studentId ?? null,
     sessionId: sessionId ?? null,
+    voiceNoteId: voiceNoteId ?? null,
   })
   return res.data
+}
+
+export async function submitVoiceFeedback(
+  voiceNoteId: string,
+  rating: 'up' | 'down',
+  reason: string | undefined,
+  studentId: string | null | undefined,
+  sessionLogId: string | null | undefined,
+  proposalsJson: string,
+): Promise<void> {
+  await apiClient.post(`/api/assistant/voice-notes/${voiceNoteId}/feedback`, {
+    rating,
+    reason: reason ?? null,
+    studentId: studentId ?? null,
+    sessionLogId: sessionLogId ?? null,
+    proposalsJson,
+  })
 }
 
 export async function applyStudentProposal(

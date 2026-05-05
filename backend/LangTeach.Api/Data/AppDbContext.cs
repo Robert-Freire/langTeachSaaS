@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<CourseSuggestion> CourseSuggestions => Set<CourseSuggestion>();
     public DbSet<TelegramLink> TelegramLinks => Set<TelegramLink>();
     public DbSet<TeacherFollowup> TeacherFollowups => Set<TeacherFollowup>();
+    public DbSet<AssistantTurnFeedback> AssistantTurnFeedbacks => Set<AssistantTurnFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -291,6 +292,24 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(t => t.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AssistantTurnFeedback — cascade delete from Teacher; set null on VoiceNote delete
+        modelBuilder.Entity<AssistantTurnFeedback>(e =>
+        {
+            e.HasKey(f => f.Id);
+            e.HasIndex(f => new { f.VoiceNoteId, f.TeacherId }).IsUnique();
+            e.HasOne(f => f.Teacher)
+             .WithMany()
+             .HasForeignKey(f => f.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(f => f.VoiceNote)
+             .WithMany()
+             .HasForeignKey(f => f.VoiceNoteId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.SetNull);
+            e.Property(f => f.Rating).HasMaxLength(4).IsRequired();
+            e.Property(f => f.Reason).HasMaxLength(2000);
         });
 
         // TeacherFollowup — cascade delete from Teacher, no-action from Student and SessionLog (nullable)

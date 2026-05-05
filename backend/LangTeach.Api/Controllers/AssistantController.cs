@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using System.Text.Json;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Controllers;
 
@@ -19,6 +22,7 @@ public class AssistantController : ControllerBase
     private readonly IReflectionExtractionService _reflectionExtractionService;
     private readonly IProfileService _profileService;
     private readonly IPedagogyConfigService _pedagogy;
+    private readonly AppDbContext _db;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -28,6 +32,7 @@ public class AssistantController : ControllerBase
         IReflectionExtractionService reflectionExtractionService,
         IProfileService profileService,
         IPedagogyConfigService pedagogy,
+        AppDbContext db,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -36,6 +41,7 @@ public class AssistantController : ControllerBase
         _reflectionExtractionService = reflectionExtractionService;
         _profileService = profileService;
         _pedagogy = pedagogy;
+        _db = db;
         _logger = logger;
     }
 
@@ -202,7 +208,48 @@ public class AssistantController : ControllerBase
                 payloadElement));
         }
 
-        return Ok(new AssistantProposeResponse(proposals));
+        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId));
+    }
+
+    [HttpPost("voice-notes/{voiceNoteId:guid}/feedback")]
+    public async Task<IActionResult> SubmitFeedback(Guid voiceNoteId, [FromBody] AssistantFeedbackRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (request.Rating != "up" && request.Rating != "down")
+            return BadRequest("Rating must be 'up' or 'down'.");
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var existing = await _db.AssistantTurnFeedbacks
+            .FirstOrDefaultAsync(f => f.VoiceNoteId == voiceNoteId && f.TeacherId == teacherId, ct);
+
+        if (existing is not null)
+        {
+            existing.Rating = request.Rating;
+            existing.Reason = request.Reason;
+            existing.ProposalsJson = request.ProposalsJson;
+            existing.StudentId = request.StudentId;
+            existing.SessionLogId = request.SessionLogId;
+            existing.CreatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.AssistantTurnFeedbacks.Add(new AssistantTurnFeedback
+            {
+                Id = Guid.NewGuid(),
+                TeacherId = teacherId,
+                VoiceNoteId = voiceNoteId,
+                StudentId = request.StudentId,
+                SessionLogId = request.SessionLogId,
+                Rating = request.Rating,
+                Reason = request.Reason,
+                ProposalsJson = request.ProposalsJson,
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     private static void EmitProposal(

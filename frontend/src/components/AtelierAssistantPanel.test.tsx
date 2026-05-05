@@ -51,6 +51,14 @@ vi.mock('@/api/voiceNotes', () => ({
 import { uploadVoiceNote } from '@/api/voiceNotes'
 const mockUpload = uploadVoiceNote as ReturnType<typeof vi.fn>
 
+// ---------------------------------------------------------------------------
+// assistant API mock (keeps all exports, replaces submitVoiceFeedback)
+// ---------------------------------------------------------------------------
+vi.mock('@/api/assistant', async () => {
+  const actual = await vi.importActual<typeof import('@/api/assistant')>('@/api/assistant')
+  return { ...actual, submitVoiceFeedback: vi.fn().mockResolvedValue(undefined) }
+})
+
 const SAMPLE_NOTE: VoiceNote = {
   id: 'note-1',
   originalFileName: 'recording.webm',
@@ -571,5 +579,120 @@ describe('AtelierAssistantPanel', () => {
     expect(onClose).toHaveBeenCalled()
     expect(onSubmit).not.toHaveBeenCalled()
     expect(mockUpload).not.toHaveBeenCalled()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Voice feedback (thumbs up / down)
+  // ---------------------------------------------------------------------------
+
+  describe('voice feedback', () => {
+    let mockSubmitFeedback: ReturnType<typeof vi.fn>
+
+    beforeEach(async () => {
+      // Grab the (already hoisted) mock and reset it
+      const mod = await import('@/api/assistant')
+      mockSubmitFeedback = mod.submitVoiceFeedback as ReturnType<typeof vi.fn>
+      mockSubmitFeedback.mockReset()
+      mockSubmitFeedback.mockResolvedValue(undefined)
+    })
+
+    async function renderWithVoiceTurn(overrides: Partial<typeof defaultProps> = {}) {
+      vi.useFakeTimers()
+      renderPanel({
+        transcription: 'Past perfect with Ana.',
+        proposals: [makeProposal()],
+        processing: false,
+        ...overrides,
+      })
+      // Go through a full recording+upload cycle so currentVoiceNoteId is set.
+      // useMicRecorder has a minDurationSeconds=1 guard so we must advance by >1s.
+      await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+      act(() => { vi.advanceTimersByTime(2000) })
+      await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+      vi.useRealTimers()
+      await waitFor(() => expect(screen.getByTestId('thumbs-pair')).toBeInTheDocument())
+      // Create a new user after restoring real timers (the fake-timer user would error on click)
+      const user = userEvent.setup()
+      return { user }
+    }
+
+    it('thumbs pair renders when voice-originated with proposals and not processing', async () => {
+      await renderWithVoiceTurn()
+      expect(screen.getByTestId('thumbs-pair')).toBeInTheDocument()
+    })
+
+    it('thumbs pair does NOT render for text-only turns (no voiceNoteId)', () => {
+      renderPanel({
+        transcription: 'Some text',
+        proposals: [makeProposal()],
+        processing: false,
+      })
+      expect(screen.queryByTestId('thumbs-pair')).not.toBeInTheDocument()
+    })
+
+    it('thumbs pair does NOT render while processing', () => {
+      renderPanel({
+        transcription: 'Some text',
+        proposals: [makeProposal()],
+        processing: true,
+      })
+      expect(screen.queryByTestId('thumbs-pair')).not.toBeInTheDocument()
+    })
+
+    it('thumbs-up collapses to Thanks and fires submitVoiceFeedback', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-up-btn'))
+      expect(await screen.findByTestId('feedback-thanks')).toBeInTheDocument()
+      expect(screen.queryByTestId('thumbs-pair')).not.toBeInTheDocument()
+      expect(mockSubmitFeedback).toHaveBeenCalledWith('note-1', 'up', undefined, undefined, undefined, expect.any(String))
+    })
+
+    it('thumbs-down opens chip with swapped placeholder', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-down-btn'))
+      expect(screen.getByTestId('feedback-chip')).toBeInTheDocument()
+      expect(screen.getByTestId('assistant-input')).toHaveAttribute('placeholder', "What's wrong with these suggestions?")
+    })
+
+    it('thumbs-down send with reason fires submitVoiceFeedback and shows Reported', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-down-btn'))
+      await user.type(screen.getByTestId('assistant-input'), 'wrong level')
+      await user.click(screen.getByTestId('assistant-send-btn'))
+      expect(mockSubmitFeedback).toHaveBeenCalledWith('note-1', 'down', 'wrong level', undefined, undefined, expect.any(String))
+      expect(await screen.findByTestId('feedback-reported')).toBeInTheDocument()
+      expect(screen.queryByTestId('feedback-chip')).not.toBeInTheDocument()
+    })
+
+    it('thumbs-down send without reason fires submitVoiceFeedback with undefined reason', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-down-btn'))
+      await user.click(screen.getByTestId('assistant-send-btn'))
+      expect(mockSubmitFeedback).toHaveBeenCalledWith('note-1', 'down', undefined, undefined, undefined, expect.any(String))
+    })
+
+    it('cancel chip (X) restores idle state without calling submitVoiceFeedback', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-down-btn'))
+      await user.click(screen.getByTestId('feedback-chip-cancel'))
+      expect(screen.queryByTestId('feedback-chip')).not.toBeInTheDocument()
+      expect(screen.getByTestId('assistant-input')).toHaveAttribute('placeholder', 'What did you cover today?')
+      expect(mockSubmitFeedback).not.toHaveBeenCalled()
+    })
+
+    it('turn replacement: new voice upload resets thumbs to idle pair', async () => {
+      const { user } = await renderWithVoiceTurn()
+      await user.click(screen.getByTestId('thumbs-up-btn'))
+      expect(await screen.findByTestId('feedback-thanks')).toBeInTheDocument()
+
+      // Second voice upload -- thumbs should reset to a fresh idle pair
+      vi.useFakeTimers()
+      await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
+      act(() => { vi.advanceTimersByTime(2000) })
+      await act(async () => { fireEvent.click(screen.getByTestId('stop-recording-btn')) })
+      vi.useRealTimers()
+      await waitFor(() => expect(screen.getByTestId('thumbs-pair')).toBeInTheDocument())
+      expect(screen.queryByTestId('feedback-thanks')).not.toBeInTheDocument()
+    })
   })
 })
