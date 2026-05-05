@@ -303,11 +303,15 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(f => f.TeacherId)
              .OnDelete(DeleteBehavior.Cascade);
+            // SetNull is desired when a VoiceNote is deleted standalone, but SQL Server error 1785
+            // (multiple cascade paths: Teacher→VoiceNote→AssistantTurnFeedback and
+            // Teacher→AssistantTurnFeedback) prevents it. NoAction is used instead; application
+            // code must null VoiceNoteId before standalone VoiceNote deletion if needed.
             e.HasOne(f => f.VoiceNote)
              .WithMany()
              .HasForeignKey(f => f.VoiceNoteId)
              .IsRequired(false)
-             .OnDelete(DeleteBehavior.SetNull);
+             .OnDelete(DeleteBehavior.NoAction);
             e.Property(f => f.Rating).HasMaxLength(4).IsRequired();
             e.Property(f => f.Reason).HasMaxLength(2000);
         });

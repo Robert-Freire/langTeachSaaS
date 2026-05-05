@@ -23,7 +23,8 @@ namespace LangTeach.Api.Migrations
                     Rating = table.Column<string>(type: "nvarchar(4)", maxLength: 4, nullable: false),
                     Reason = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     ProposalsJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -38,8 +39,7 @@ namespace LangTeach.Api.Migrations
                         name: "FK_AssistantTurnFeedbacks_VoiceNotes_VoiceNoteId",
                         column: x => x.VoiceNoteId,
                         principalTable: "VoiceNotes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(

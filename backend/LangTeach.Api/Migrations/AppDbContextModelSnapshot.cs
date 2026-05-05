@@ -978,7 +978,7 @@ namespace LangTeach.Api.Migrations
                     b.HasOne("LangTeach.Api.Data.Models.VoiceNote", "VoiceNote")
                         .WithMany()
                         .HasForeignKey("VoiceNoteId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Teacher");
 

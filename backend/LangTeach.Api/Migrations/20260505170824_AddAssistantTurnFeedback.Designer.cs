@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260505170045_AddAssistantTurnFeedbackUpdatedAt")]
-    partial class AddAssistantTurnFeedbackUpdatedAt
+    [Migration("20260505170824_AddAssistantTurnFeedback")]
+    partial class AddAssistantTurnFeedback
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -981,7 +981,7 @@ namespace LangTeach.Api.Migrations
                     b.HasOne("LangTeach.Api.Data.Models.VoiceNote", "VoiceNote")
                         .WithMany()
                         .HasForeignKey("VoiceNoteId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Teacher");
 
