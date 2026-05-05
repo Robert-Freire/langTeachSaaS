@@ -1,6 +1,6 @@
 # LangTeach SaaS — Entity-Relationship Diagram (Phase 1)
 
-> Reflects the EF Core schema introduced in T4. JSON-serialized columns are noted but shown as scalar strings in the diagram.
+> **STALE — DO NOT TRUST AS CURRENT SCHEMA.** Reflects the EF Core schema introduced in T4 (Phase 1 only). It is missing many tables added since: `Course`, `CurriculumEntry`, `LessonContentBlock`, `LessonNote`, `Material`, `SessionLog`, `VoiceNote`, `VoiceNoteApplication`, `GenerationUsage`, `TeacherFollowup`, `TeachingTodo`, and more. For the current entity model see `docs/architecture-model.md` §4 and the EF migrations in `backend/LangTeach.Api/Migrations/`. This diagram is preserved as historical context for the T4 milestone.
 
 ```mermaid
 erDiagram

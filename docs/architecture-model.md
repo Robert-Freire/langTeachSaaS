@@ -20,8 +20,9 @@ LangTeach is a SaaS for language teachers. A teacher creates students, plans cou
 |--------|------|------|-------|
 | Auth0 | Identity provider | JWT Bearer | One tenant, teacher = Auth0 user |
 | Claude API (Anthropic) | Content generation | API key (Key Vault) | Haiku for small blocks, Sonnet for lessons/curricula |
-| Azure Blob Storage | Material files (PDFs, images) | Connection string (Key Vault) | Single container "materials", SAS URLs (15min) |
-| Azure Key Vault | Secrets | Managed identity | 5 required secrets validated at startup |
+| Azure Blob Storage | Material files + teacher voice notes | Connection string (Key Vault) | Two containers: `materials` (lesson PDFs/images) and `voice-notes` (teacher recordings); SAS URLs (15 min) |
+| Azure AI Speech | Speech-to-text for teacher voice notes | API key + region (Key Vault) | Simple recognition endpoint, ffmpeg-piped 16 kHz mono WAV; ~60 s cap. See `docs/voice-notes.md` |
+| Azure Key Vault | Secrets | Managed identity | Required secrets validated at startup (incl. `AzureSpeech:ApiKey`/`Region`) |
 | Azure Container Apps | Hosting | OIDC (ACR) | North Europe, CD from main branch |
 | Azure Static Web Apps | Frontend hosting | N/A | West Europe |
 
@@ -231,6 +232,25 @@ CurriculumValidationService
 Store CurriculumEntries in Course
 ```
 
+### Reflection extraction flow (voice notes / free text)
+
+Separate from the SSE generation path. Used by the Atelier panel, Log Session, and Lesson Notes:
+
+```
+Audio (optional) -> POST /api/voice-notes
+  -> Azure Blob (voice-notes container) + Azure Speech transcription
+  -> VoiceNote row with Transcription
+Text (transcript or free text)
+  -> POST /api/{lesson-notes|sessions|assistant}/extract|propose
+  -> ReflectionExtractionService -> PromptService.BuildReflectionExtractionPrompt -> Claude
+  -> ExtractedReflectionDto (structured fields: covered, areas, homework, ...)
+Apply to SessionLog
+  -> SessionLogService writes VoiceNoteApplication audit row
+     (VoiceNoteId? + Transcription + RawExtractionJson)
+```
+
+Audio bytes never reach Claude. Full detail and invariants: `docs/voice-notes.md`.
+
 ---
 
 ## 8. Frontend Architecture
@@ -276,7 +296,7 @@ These rules must always hold. A PR that violates an invariant is a bug, not a de
 | 4 | Forbidden exercise types cannot appear in valid types, even via L1 additions | 8-step composition with double-filter |
 | 5 | Template overrides reorder only; they never add types not already valid | Step 6 of composition (reorder within existing set) |
 | 6 | Section content types are enforced at the CEFR level | SectionProfileService.IsAllowed(section, contentType, level) |
-| 7 | All 5 required Key Vault secrets must be present at startup | StartupConfigValidator (fail-fast) |
+| 7 | All required Key Vault secrets must be present at startup (incl. `AzureSpeech:ApiKey` and `AzureSpeech:Region`) | StartupConfigValidator (fail-fast) |
 | 8 | Content block types are a closed set (8 values) | C# enum + frontend ContentBlockType union + exercise catalog uiRenderer |
 | 9 | Student-Lesson FK uses NoAction delete | EF migration configuration |
 | 10 | Soft-deleted records are excluded from all queries | IsDeleted filter in service layer |
