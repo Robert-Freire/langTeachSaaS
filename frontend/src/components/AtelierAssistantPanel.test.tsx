@@ -680,6 +680,19 @@ describe('AtelierAssistantPanel', () => {
       expect(mockSubmitFeedback).not.toHaveBeenCalled()
     })
 
+    it('Apply All and Dismiss All remain functional while thumbs-down chip is open', async () => {
+      const onApplyAll = vi.fn()
+      const onDismissAll = vi.fn()
+      const { user } = await renderWithVoiceTurn({ onApplyAll, onDismissAll })
+      await user.click(screen.getByTestId('thumbs-down-btn'))
+      expect(screen.getByTestId('feedback-chip')).toBeInTheDocument()
+      // Batch actions are still present and clickable
+      await user.click(screen.getByTestId('apply-all-btn'))
+      expect(onApplyAll).toHaveBeenCalled()
+      await user.click(screen.getByTestId('dismiss-all-btn'))
+      expect(onDismissAll).toHaveBeenCalled()
+    })
+
     it('turn replacement: new voice upload resets thumbs to idle pair', async () => {
       const { user } = await renderWithVoiceTurn()
       await user.click(screen.getByTestId('thumbs-up-btn'))
