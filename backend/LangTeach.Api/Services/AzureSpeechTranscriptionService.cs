@@ -42,16 +42,15 @@ public class AzureSpeechTranscriptionService(
         if (wavStream.Length > MaxFullWavBytes)
             throw new InvalidOperationException($"Converted audio exceeds maximum allowed size ({MaxFullWavBytes / (1024 * 1024)} MB). Shorten the recording.");
 
-        var (dataOffset, dataLength) = ParseWavDataInfo(wavStream);
+        var wavBytes = wavStream.ToArray();
+        var (dataOffset, dataLength) = ParseWavDataInfo(wavBytes);
 
         var totalChunks = (int)Math.Ceiling((double)dataLength / MaxChunkDataBytes);
         logger.LogInformation(
             "Starting transcription. FileName={FileName} Language={Language} WavBytes={Bytes} DurationSeconds={Duration:F1} Chunks={Chunks}",
-            fileName, _opts.Language, wavStream.Length,
+            fileName, _opts.Language, wavBytes.Length,
             (double)dataLength / BytesPerSecond,
             totalChunks);
-
-        var wavBytes = wavStream.ToArray();
         var results = new List<string>(totalChunks);
 
         for (var i = 0; i < totalChunks; i++)
@@ -106,9 +105,8 @@ public class AzureSpeechTranscriptionService(
     /// Scans the RIFF chunk list to find the "data" chunk.
     /// Returns its byte offset within the stream and its declared length.
     /// </summary>
-    internal static (int dataOffset, int dataLength) ParseWavDataInfo(MemoryStream wav)
+    internal static (int dataOffset, int dataLength) ParseWavDataInfo(byte[] bytes)
     {
-        var bytes = wav.ToArray();
         var len = bytes.Length;
 
         // RIFF(4) + fileSize(4) + WAVE(4) = 12 bytes preamble

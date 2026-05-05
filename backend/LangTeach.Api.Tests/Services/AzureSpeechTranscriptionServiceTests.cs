@@ -36,9 +36,8 @@ public class AzureSpeechTranscriptionServiceTests
     {
         const int pcmLength = 64_000; // 2 seconds
         var wavBytes = BuildTestWav(pcmLength);
-        var ms = new MemoryStream(wavBytes);
 
-        var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(ms);
+        var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(wavBytes);
 
         offset.Should().Be(44);
         length.Should().Be(pcmLength);
@@ -96,9 +95,8 @@ public class AzureSpeechTranscriptionServiceTests
     {
         const int pcmLength = 3 * AzureSpeechTranscriptionService.BytesPerSecond; // 3 seconds
         var sourceBytes = BuildTestWav(pcmLength);
-        var ms = new MemoryStream(sourceBytes);
 
-        var (dataOffset, dataLength) = AzureSpeechTranscriptionService.ParseWavDataInfo(ms);
+        var (dataOffset, dataLength) = AzureSpeechTranscriptionService.ParseWavDataInfo(sourceBytes);
 
         var chunk = AzureSpeechTranscriptionService.BuildWavChunk(sourceBytes, dataOffset, dataLength);
         chunk.Length.Should().Be(44 + pcmLength);
