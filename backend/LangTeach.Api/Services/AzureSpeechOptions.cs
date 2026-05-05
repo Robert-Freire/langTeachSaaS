@@ -12,10 +12,6 @@ public class AzureSpeechOptions
     [Required]
     public string Region { get; set; } = string.Empty;
 
-    /// <summary>
-    /// BCP-47 language code for transcription. Defaults to es-ES (Spanish Spain).
-    /// Azure Speech real-time REST supports audio up to 60 seconds.
-    /// For longer recordings the teacher should record in shorter segments.
-    /// </summary>
+    /// <summary>BCP-47 language code for transcription. Defaults to es-ES (Spanish Spain).</summary>
     public string Language { get; set; } = "es-ES";
 }

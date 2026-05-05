@@ -1057,4 +1057,68 @@ public class ReflectionExtractionServiceTests
             TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
             TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
             IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null, ProposedNewSession: null);
+
+    // --- Regression tests: issue #1110 (today-anchor + past-date content reference) ---
+
+    [Fact]
+    public async Task ExtractAsync_TodayAnchor_NoOpenSession_SystemPromptContainsPresentDayGuard()
+    {
+        // Verify the prompt contains the exception text that prevents "hoy" reflections
+        // from being routed to the retrospective-registration path.
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse(
+                """{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""",
+                "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client, realPrompts, PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        const string jordiTranscript =
+            "En la clase de hoy de las 10:00 H de la mañana. " +
+            "Hemos trabajado las descripciones de hemos seguido trabajando mi barrio. " +
+            "Concretamente hemos hecho lo que está en la pizarra del 30 de abril. " +
+            "Para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día.";
+
+        await sut.ExtractAsync(jordiTranscript, hasOpenSession: false);
+
+        captured!.SystemPrompt.Should().Contain("present-day anchor",
+            because: "the prompt must have the guard that treats 'hoy' reflections as post-class, not retrospective");
+        captured.SystemPrompt.Should().Contain("newSessionTitle and newSessionDate null",
+            because: "the prompt must explicitly instruct null new-session fields when a today anchor is present");
+    }
+
+    [Fact]
+    public void ParseResponse_NewSessionTitleNull_ProposedNewSessionIsNull()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "sessionDate": "2026-05-05",
+              "sessionTitle": "Mi barrio — descripciones",
+              "whatWasCovered": { "value": "Vocabulario de barrio, página 104.", "mode": "replace" },
+              "newSessionTitle": null,
+              "newSessionDate": null,
+              "suggestedDifficulties": [],
+              "topicTags": [],
+              "teachingTodos": [],
+              "teacherFollowups": [],
+              "difficultiesWorkedOn": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.ProposedNewSession.Should().BeNull(
+            because: "when the LLM correctly returns null newSessionTitle there must be no new-session proposal");
+        result.SessionDate.Should().Be("2026-05-05");
+    }
 }
