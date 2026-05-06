@@ -13,3 +13,4 @@ The sprint-close procedure (Stage 1) audits this log and clears it after each sp
 | #1064 | 2026-05-04 | TBD | Documentation-only change to docs/design-system.md; zero frontend files changed, no component logic or state |
 | #1072 | 2026-05-04 | TBD | Added one FieldRow for "Country" to NewStudentFields.tsx; 5 lines, single file, no new component logic or state |
 | #1110 | 2026-05-05 | TBD | Zero frontend files changed; fix is pure backend (AzureSpeechTranscriptionService chunking + PromptService prompt patch) |
+| #1126 | 2026-05-06 | TBD | Zero frontend files changed; fix is a single-sentence prompt change in PromptService.cs (open-session context hint) with no component logic, no new elements, no state changes |
