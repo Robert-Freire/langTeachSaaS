@@ -24,7 +24,7 @@ resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
     tenantId: subscription().tenantId
     enableRbacAuthorization: true
     enableSoftDelete: true
-    softDeleteRetentionInDays: 90  // extended to 90d; purge protection makes this the minimum recovery window
+    softDeleteRetentionInDays: 7  // matches the live vault; immutable once set, so this must equal the provisioned value (7 is the Azure minimum)
     enablePurgeProtection: true    // irreversible once set — vault cannot be purged within retention window
   }
 }
