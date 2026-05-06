@@ -6,14 +6,14 @@ namespace LangTeach.Api.Tests.Services;
 public class AzureSpeechTranscriptionServiceTests
 {
     // Builds a minimal PCM WAV byte array: 44-byte standard header + pcmLength bytes.
-    // When zeroChunkSize=true the RIFF and data chunk size fields are written as 0,
-    // mimicking ffmpeg output to a non-seekable pipe.
-    private static byte[] BuildTestWav(int pcmLength, bool zeroChunkSize = false)
+    // dataChunkSize overrides the value written into the data chunk size field;
+    // pass 0 or -1 (0xFFFFFFFF) to simulate ffmpeg pipe-mode sentinels.
+    private static byte[] BuildTestWav(int pcmLength, int? dataChunkSize = null)
     {
         var buf = new byte[44 + pcmLength];
         // RIFF
         "RIFF"u8.CopyTo(buf.AsSpan(0));
-        BitConverter.TryWriteBytes(buf.AsSpan(4), zeroChunkSize ? 0 : 36 + pcmLength);
+        BitConverter.TryWriteBytes(buf.AsSpan(4), 36 + pcmLength);
         "WAVE"u8.CopyTo(buf.AsSpan(8));
         // fmt
         "fmt "u8.CopyTo(buf.AsSpan(12));
@@ -26,7 +26,7 @@ public class AzureSpeechTranscriptionServiceTests
         BitConverter.TryWriteBytes(buf.AsSpan(34), (short)16);  // bits/sample
         // data
         "data"u8.CopyTo(buf.AsSpan(36));
-        BitConverter.TryWriteBytes(buf.AsSpan(40), zeroChunkSize ? 0 : pcmLength);
+        BitConverter.TryWriteBytes(buf.AsSpan(40), dataChunkSize ?? pcmLength);
         // PCM payload: sequential bytes so we can verify slicing
         for (var i = 0; i < pcmLength; i++)
             buf[44 + i] = (byte)(i % 251);
@@ -95,8 +95,22 @@ public class AzureSpeechTranscriptionServiceTests
     [Fact]
     public void ParseWavDataInfo_StreamingWavZeroChunkSize_FallsBackToRemainingBytes()
     {
+        // ffmpeg pipe sentinel: chunkSize written as 0
         const int pcmLength = 64_000; // 2 seconds
-        var wavBytes = BuildTestWav(pcmLength, zeroChunkSize: true);
+        var wavBytes = BuildTestWav(pcmLength, dataChunkSize: 0);
+
+        var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(wavBytes);
+
+        offset.Should().Be(44);
+        length.Should().Be(pcmLength);
+    }
+
+    [Fact]
+    public void ParseWavDataInfo_StreamingWavNegativeOneChunkSize_FallsBackToRemainingBytes()
+    {
+        // ffmpeg pipe sentinel: chunkSize written as 0xFFFFFFFF (-1 as Int32)
+        const int pcmLength = 64_000; // 2 seconds
+        var wavBytes = BuildTestWav(pcmLength, dataChunkSize: -1);
 
         var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(wavBytes);
 
@@ -108,7 +122,7 @@ public class AzureSpeechTranscriptionServiceTests
     public void ParseWavDataInfo_ZeroChunkSizeAndNoData_ReturnsZero()
     {
         // Genuinely empty: data header present but no PCM bytes follow.
-        var wavBytes = BuildTestWav(0, zeroChunkSize: true);
+        var wavBytes = BuildTestWav(0, dataChunkSize: 0);
 
         var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(wavBytes);
 

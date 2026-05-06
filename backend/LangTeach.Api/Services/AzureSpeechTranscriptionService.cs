@@ -124,10 +124,12 @@ public class AzureSpeechTranscriptionService(
             var chunkSize = BitConverter.ToInt32(bytes, pos + 4);
             if (chunkId == "data")
             {
-                // ffmpeg writing to a non-seekable pipe leaves chunkSize=0 because it cannot
-                // seek back to fill in the size after writing PCM data. Fall back to the
-                // remaining bytes in the buffer, which is the actual PCM payload.
-                var actualLength = chunkSize == 0 ? bytes.Length - (pos + 8) : chunkSize;
+                // ffmpeg writing to a non-seekable pipe emits chunkSize=0 or 0xFFFFFFFF (-1 as
+                // Int32) because it cannot seek back to fill in the size. Fall back to the
+                // remaining bytes in the buffer (the actual PCM payload) in both cases, and
+                // also whenever the declared size exceeds what is actually in the buffer.
+                var remaining = bytes.Length - (pos + 8);
+                var actualLength = (chunkSize <= 0 || chunkSize > remaining) ? remaining : chunkSize;
                 return (pos + 8, actualLength);
             }
             pos += 8 + chunkSize;
