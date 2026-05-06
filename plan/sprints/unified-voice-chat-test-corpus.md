@@ -454,6 +454,90 @@ These cases exercise the `newSession` proposal type. The teacher dictates a futu
 
 ---
 
+### TC-34-jordi-gergana-pronombres — Real voice note (Jordi → Gergana, 2026-04-28)
+
+> "Delgada en la clase de hoy a las 10:00 H de la mañana. Hemos trabajado los pronombres interrogativos como estaba previsto y los controles los domina bien. Tiene como ejercicios un par de documentos. De completar qué pronombre interrogativo es el mejor para la próxima clase. Debo buscar información sobre el bueno, bien bonito. Su palabra favorita en español. Es. Barandero. ¿Y la palabra? Favorita en húngaro es prietoda."
+
+**Context:** Panel open on Gergana's session log for today (2026-04-28). Used during diagnosis of #1110 as a control (a normal reflection that worked correctly before the bug).
+
+**Audio evidence:** `voice_note_Gergana_20260428_0947.webm` (raw); persisted in DB as recording ID `12972ce1-2653-4695-814c-71fa23b14454`.
+
+**Expected extraction:**
+- `sessionDate`: 2026-04-28 (anchored to "en la clase de hoy a las 10:00")
+- `newSession`: null (today's session already exists, no second session implied)
+- `whatWasCovered`: pronombres interrogativos practiced as planned; student demonstrates good control
+- `homeworkAssigned`: "Completar dos documentos de pronombres interrogativos"
+- `nextLessonIdeas`: "Trabajar bueno / bien / bonito" (the "debo buscar información... para la próxima clase" planning aside)
+- `personalNotes` (student): "Palabra favorita en español: barandero. Palabra favorita en húngaro: prietoda" (lighthearted, harmless personal context)
+- `teachingTodos`: empty (no trigger phrase)
+- `teacherFollowups`: empty
+
+**Expected classification:** session update on today's open session. Personal-words aside is biographical context, not a difficulty.
+
+**Pedagogical note:** "Delgada" at the very start is an STT artefact (likely "Vale, eh,..." or a name). The extractor must NOT treat it as a name to be added to the student profile. The transcript also contains transliterated Hungarian ("prietoda" likely "pri to da" or similar), which is fine — the extractor should preserve it verbatim in personal notes without trying to normalize.
+
+**Why this case matters:** It anchors the truncation regression (#1123/#1127). The full transcript includes the closing personal-words anecdote; if a future transcription regression cuts off mid-sentence, this TC will surface it because the personal-notes field will be empty.
+
+---
+
+### TC-35-jordi-gergana-descripciones — Real voice note (Jordi → Gergana, 2026-05-05) [#1110 ground truth]
+
+> "En la clase de hoy de las 10:00 H de la mañana. Hemos trabajado. Las descripciones de hemos seguido trabajando mi barrio, hemos trabajado mi barrio. Concretamente hemos hecho lo que está en la pizarra del 30 de abril. Que es relacionar los lugares. Relacionar los adjetivos. Vale y la página 104. Que es la de un barrio típico. Y relacionar los diferentes sitios que hay en el en el barrio y lo ha hecho muy bien para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día."
+
+**Context:** Panel open on Gergana's session log for today (2026-05-05, open session in scope). Original failure case for #1110.
+
+**Audio evidence:** `voice_note_Gergana_20260505_0915.webm` (raw); persisted in DB as recording ID `a4f8811b-7bc2-46db-ab5c-94d0dee14733`.
+
+**Expected extraction:**
+- `sessionDate`: 2026-05-05 (anchored to "en la clase de hoy de las 10:00")
+- `newSession`: null
+- `whatWasCovered`: "Descripciones de mi barrio: relacionar lugares y adjetivos (continuación del trabajo de la pizarra del 30 de abril); página 104, barrio típico"
+- `nextLessonIdeas`: "Continuar con la pizarra (mañana 6 de mayo)"
+- `teachingTodos`: empty
+- `teacherFollowups`: empty
+
+**Expected classification:** single session update on today's open session.
+
+**Bug context (#1110):** Originally the extractor produced TWO proposals from this transcript:
+1. an UPDATE to the 30 April session (because "la pizarra del 30 de abril" was treated as a routing key), and
+2. a NEW SESSION for today (a duplicate of what should have been a simple reflection).
+
+Both were wrong. The fix anchors `sessionDate` to the opening clause ("en la clase de hoy de las 10:00") and treats past-date references inside the body as content, not routing keys.
+
+**What MUST NOT happen on this transcript:**
+- The 30 April session must NOT receive an update.
+- A separate `newSession` proposal must NOT be produced.
+- The transcript must NOT be silently truncated (post-#1127 the chunked WAV path covers full audio).
+
+**Forward-looking phrase routing:** "para la clase de mañana día 6, tenemos que continuar con la pizarra del día" → `nextLessonIdeas` (regression check for #1126). It is NOT a teachingTodo (no trigger phrase) and NOT a newSession (a planning aside, not an explicit "schedule a session for…").
+
+---
+
+### TC-36-jordi-gergana-albaicin — Real voice note (Jordi → Gergana, 2026-05-06)
+
+> "En la clase de hoy de las 11 hemos trabajado el barrio, hemos hecho el ser start ahí. Con el barrio de Albaicín también ejemplos cuando utilizar ser START y Ai. Hemos hecho el documento de Cachitos y tiene como deberes redactar sobre el barrio de Albaicín. Para la siguiente clase tengo que trabajar las preposiciones de lugar a la derecha, a la izquierda, arriba, abajo. Con el audio que hice con martón."
+
+**Context:** Panel open on Gergana's session log for today (2026-05-06, open session in scope).
+
+**Audio evidence:** `voice_note_Gergana_20260506_*.webm` (raw if present); persisted in DB as recording ID `6109f200-9261-4065-bf31-4aac2ab43c95`.
+
+**Expected extraction:**
+- `sessionDate`: 2026-05-06 (anchored to "en la clase de hoy de las 11")
+- `newSession`: null
+- `whatWasCovered`: "Barrio del Albaicín: práctica de ser/estar con ejemplos contextualizados; documento de Cachitos"
+- `homeworkAssigned`: "Redactar sobre el barrio del Albaicín"
+- `nextLessonIdeas`: "Preposiciones de lugar (derecha, izquierda, arriba, abajo) con audio grabado con Martón"
+- `teachingTodos`: empty
+- `teacherFollowups`: empty
+
+**Expected classification:** session update on today's open session.
+
+**Pedagogical note:** "ser start" is an STT artefact for "ser/estar" — the canonical Spanish copula contrast. The extractor must normalize this into a recognisable topic tag ("ser/estar" or similar), not pass through "ser start" verbatim. Likewise "Ai" ≈ "y", "martón" ≈ a person's name (Martín or similar) — preserve as audio context but do not create a new student or contact entity from it.
+
+**Why this case matters:** It is the cleanest happy-path real recording in the set. If TC-34 and TC-35 pass but TC-36 fails, the issue is STT-level normalization, not routing.
+
+---
+
 ## Appendix: CEFR level strings the system should recognise
 
 The following are all valid `CefrLevel` values in this codebase. The extractor should map natural teacher language to these strings.
