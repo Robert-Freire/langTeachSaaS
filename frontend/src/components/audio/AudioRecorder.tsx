@@ -3,8 +3,8 @@ import { Mic, Square, Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { uploadVoiceNote, type VoiceNote } from '../../api/voiceNotes'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
+import { MAX_RECORDING_SECONDS } from '@/lib/recordingLimits'
 
-const MAX_DURATION_SECONDS = 5 * 60 // 5 minutes
 const ALLOWED_UPLOAD_TYPES = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-m4a']
 
 export type RecorderState = 'idle' | 'recording' | 'uploading' | 'done' | 'error'
@@ -60,7 +60,7 @@ export function AudioRecorder({
     stop,
     clearError: clearMicError,
   } = useMicRecorder({
-    maxDurationSeconds: MAX_DURATION_SECONDS,
+    maxDurationSeconds: MAX_RECORDING_SECONDS,
     // warnAtSecondsRemaining=0 (default): warning fires only at the auto-stop second,
     // matching the original "Max duration reached" display at the exact cap.
     onBlob: uploadFile,
