@@ -12,8 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { streamText, QuotaExceededError, AuthExpiredError } from '../../lib/streamText'
-import type { GetAccessToken } from '../../lib/streamText'
+import { streamText, QuotaExceededError } from '../../lib/streamText'
+import { AuthExpiredError, makeRefreshOnce } from '../../lib/authHelpers'
+import type { GetAccessToken } from '../../lib/authHelpers'
 import { saveContentBlock, type ContentBlockDto } from '../../api/generate'
 import { useProfile } from '../../hooks/useProfile'
 import { useQueryClient } from '@tanstack/react-query'
@@ -135,6 +136,17 @@ export function FullLessonGenerateButton({
     const getToken: GetAccessToken = (opts) =>
       getAccessTokenSilently(opts?.forceRefresh ? { cacheMode: 'off' } : undefined)
 
+    // Shared across all parallel section streams: deduplicates concurrent forced-refresh
+    // calls (mirrors inflightRefresh in apiClient.ts). triggerReauth is guarded so
+    // loginWithRedirect fires at most once even when multiple sections get 401 together.
+    const refreshOnce = makeRefreshOnce(getToken)
+    let reauthTriggered = false
+    const triggerReauth = () => {
+      if (reauthTriggered) return
+      reauthTriggered = true
+      loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
+    }
+
     const errors: string[] = []
 
     const tName = lessonContext.templateName?.toLowerCase() ?? ''
@@ -160,7 +172,9 @@ export function FullLessonGenerateButton({
             sectionType,
           },
           getToken,
+          triggerReauth,
           controller.signal,
+          refreshOnce,
         )
         if (controller.signal.aborted) return
 
@@ -201,7 +215,6 @@ export function FullLessonGenerateButton({
 
     const authFailed = allResults.some(r => r.status === 'rejected' && r.reason instanceof AuthExpiredError)
     if (authFailed) {
-      loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
       setErrorMessage('Your session has expired. Redirecting to sign in...')
       setPhase('error')
       return

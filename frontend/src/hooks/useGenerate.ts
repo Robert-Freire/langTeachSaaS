@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { fetchWithAuthRetry, AuthExpiredError } from '../lib/authHelpers'
+import { fetchWithAuthRetry, makeRefreshOnce, AuthExpiredError } from '../lib/authHelpers'
 import type { GetAccessToken } from '../lib/authHelpers'
 import type { GenerateRequest, GenerateStatus } from '../api/generate'
 
@@ -39,6 +39,12 @@ export function useGenerate() {
       const getToken: GetAccessToken = (opts) =>
         getAccessTokenSilently(opts?.forceRefresh ? { cacheMode: 'off' } : undefined)
 
+      const triggerReauth = () => {
+        loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
+      }
+
+      const refreshOnce = makeRefreshOnce(getToken)
+
       try {
         const response = await fetchWithAuthRetry(
           `${BASE_URL}/api/generate/${taskType}/stream`,
@@ -49,6 +55,8 @@ export function useGenerate() {
             signal: controller.signal,
           },
           getToken,
+          triggerReauth,
+          refreshOnce,
         )
 
         if (response.status === 429) {
@@ -122,7 +130,6 @@ export function useGenerate() {
         if (err instanceof DOMException && err.name === 'AbortError') {
           setStatus('idle')
         } else if (err instanceof AuthExpiredError) {
-          loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
           setError('Your session has expired. Redirecting to sign in...')
           setStatus('error')
         } else {
