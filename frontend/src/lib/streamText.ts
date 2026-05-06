@@ -1,3 +1,9 @@
+import { fetchWithAuthRetry } from './authHelpers'
+import type { GetAccessToken } from './authHelpers'
+
+export type { GetAccessToken }
+export { AuthExpiredError } from './authHelpers'
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
 export class QuotaExceededError extends Error {
@@ -10,26 +16,22 @@ export class QuotaExceededError extends Error {
   }
 }
 
-/**
- * Streams an SSE generation endpoint and returns the full accumulated text.
- * Throws on non-2xx responses or stream errors.
- * Throws QuotaExceededError on 429 (quota exhausted).
- */
 export async function streamText(
   taskType: string,
   body: object,
-  token: string,
+  getAccessToken: GetAccessToken,
   signal?: AbortSignal,
 ): Promise<string> {
-  const response = await fetch(`${BASE_URL}/api/generate/${taskType}/stream`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+  const response = await fetchWithAuthRetry(
+    `${BASE_URL}/api/generate/${taskType}/stream`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
     },
-    body: JSON.stringify(body),
-    signal,
-  })
+    getAccessToken,
+  )
 
   if (response.status === 429) {
     let resetsAt = ''

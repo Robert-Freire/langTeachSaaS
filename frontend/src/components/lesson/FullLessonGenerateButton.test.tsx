@@ -7,8 +7,12 @@ import type { LessonSection } from '../../api/lessons'
 import type { ContentBlockDto } from '../../api/generate'
 
 // Mock Auth0
+const mockLoginWithRedirect = vi.fn().mockResolvedValue(undefined)
 vi.mock('@auth0/auth0-react', () => ({
-  useAuth0: () => ({ getAccessTokenSilently: vi.fn().mockResolvedValue('fake-token') }),
+  useAuth0: () => ({
+    getAccessTokenSilently: vi.fn().mockResolvedValue('fake-token'),
+    loginWithRedirect: mockLoginWithRedirect,
+  }),
 }))
 
 // Mock streamText
@@ -20,6 +24,12 @@ vi.mock('../../lib/streamText', () => ({
       super(message)
       this.name = 'QuotaExceededError'
       this.resetsAt = resetsAt
+    }
+  },
+  AuthExpiredError: class AuthExpiredError extends Error {
+    constructor() {
+      super('Session expired. Please sign in again.')
+      this.name = 'AuthExpiredError'
     }
   },
 }))

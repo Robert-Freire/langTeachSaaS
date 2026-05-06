@@ -1,15 +1,12 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import type { GetAccessToken, GetAccessTokenOptions } from './authHelpers'
+
+export type { GetAccessToken, GetAccessTokenOptions }
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5000',
 })
-
-export interface GetAccessTokenOptions {
-  forceRefresh?: boolean
-}
-
-export type GetAccessToken = (opts?: GetAccessTokenOptions) => Promise<string>
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 

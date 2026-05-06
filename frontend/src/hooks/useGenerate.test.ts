@@ -4,9 +4,13 @@ import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 import { useGenerate } from './useGenerate'
 
+const mockLoginWithRedirect = vi.fn().mockResolvedValue(undefined)
+const mockGetAccessTokenSilently = vi.fn().mockResolvedValue('test-token')
+
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => ({
-    getAccessTokenSilently: vi.fn().mockResolvedValue('test-token'),
+    getAccessTokenSilently: mockGetAccessTokenSilently,
+    loginWithRedirect: mockLoginWithRedirect,
   }),
 }))
 
@@ -15,7 +19,11 @@ const SSE_URL = 'http://localhost:5000/api/generate/vocabulary/stream'
 const server = setupServer()
 
 beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+  server.resetHandlers()
+  mockGetAccessTokenSilently.mockResolvedValue('test-token')
+  mockLoginWithRedirect.mockResolvedValue(undefined)
+})
 afterAll(() => server.close())
 
 function makeSseBody(...lines: string[]): ReadableStream<Uint8Array> {
@@ -157,6 +165,53 @@ describe('useGenerate', () => {
 
     expect(result.current.quotaExceeded).toBe(true)
     expect(result.current.error).toContain('Monthly generation limit reached.')
+  })
+
+  it('retries silently on 401 and completes the stream after token refresh', async () => {
+    let requestCount = 0
+    server.use(
+      http.post(SSE_URL, () => {
+        requestCount++
+        if (requestCount === 1) {
+          return new HttpResponse(null, { status: 401 })
+        }
+        const body = makeSseBody('data: "ok"\n\n', 'data: [DONE]\n\n')
+        return new HttpResponse(body, { headers: { 'Content-Type': 'text/event-stream' } })
+      }),
+    )
+    mockGetAccessTokenSilently
+      .mockResolvedValueOnce('expired-token')
+      .mockResolvedValueOnce('fresh-token')
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('done'), { timeout: 3000 })
+
+    expect(result.current.output).toBe('ok')
+    expect(result.current.error).toBeNull()
+    expect(requestCount).toBe(2)
+  })
+
+  it('triggers loginWithRedirect and surfaces error when both 401 attempts fail', async () => {
+    server.use(
+      http.post(SSE_URL, () => new HttpResponse(null, { status: 401 })),
+    )
+    mockGetAccessTokenSilently.mockResolvedValue('always-expired')
+
+    const { result } = renderHook(() => useGenerate())
+
+    act(() => {
+      result.current.generate('vocabulary', validRequest)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('error'), { timeout: 3000 })
+
+    expect(mockLoginWithRedirect).toHaveBeenCalledTimes(1)
+    expect(result.current.error).toContain('session')
   })
 
   it('aborts the in-flight request when the hook unmounts during streaming', async () => {

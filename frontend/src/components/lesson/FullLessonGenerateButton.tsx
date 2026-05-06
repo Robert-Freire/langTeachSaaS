@@ -12,7 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { streamText, QuotaExceededError } from '../../lib/streamText'
+import { streamText, QuotaExceededError, AuthExpiredError } from '../../lib/streamText'
+import type { GetAccessToken } from '../../lib/streamText'
 import { saveContentBlock, type ContentBlockDto } from '../../api/generate'
 import { useProfile } from '../../hooks/useProfile'
 import { useQueryClient } from '@tanstack/react-query'
@@ -102,7 +103,7 @@ export function FullLessonGenerateButton({
   lessonContext,
   onBlockSaved,
 }: FullLessonGenerateButtonProps) {
-  const { getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<Phase>('idle')
@@ -129,16 +130,10 @@ export function FullLessonGenerateButton({
     const controller = new AbortController()
     abortRef.current = controller
 
-    let token: string
-    try {
-      token = await getAccessTokenSilently()
-    } catch {
-      if (controller.signal.aborted) return
-      setErrorMessage('Failed to get auth token.')
-      setPhase('error')
-      return
-    }
     if (controller.signal.aborted) return
+
+    const getToken: GetAccessToken = (opts) =>
+      getAccessTokenSilently(opts?.forceRefresh ? { cacheMode: 'off' } : undefined)
 
     const errors: string[] = []
 
@@ -149,7 +144,7 @@ export function FullLessonGenerateButton({
     }
     const taskMap = resolvedMap ?? SECTION_TASK_MAP
 
-    await Promise.allSettled(activeSections.map(async (sectionType) => {
+    const allResults = await Promise.allSettled(activeSections.map(async (sectionType) => {
       const section = sections.find(s => s.sectionType === sectionType)!
       const taskType = taskMap[sectionType]
 
@@ -164,7 +159,7 @@ export function FullLessonGenerateButton({
             studentId: lessonContext.studentId,
             sectionType,
           },
-          token,
+          getToken,
           controller.signal,
         )
         if (controller.signal.aborted) return
@@ -188,6 +183,7 @@ export function FullLessonGenerateButton({
         setSectionStatus(prev => ({ ...prev, [sectionType]: 'done' }))
       } catch (err) {
         if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
+        if (err instanceof AuthExpiredError) throw err
         if (err instanceof QuotaExceededError) {
           controller.abort()
           setErrorMessage(err.message)
@@ -202,6 +198,14 @@ export function FullLessonGenerateButton({
     }))
 
     if (controller.signal.aborted) return
+
+    const authFailed = allResults.some(r => r.status === 'rejected' && r.reason instanceof AuthExpiredError)
+    if (authFailed) {
+      loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
+      setErrorMessage('Your session has expired. Redirecting to sign in...')
+      setPhase('error')
+      return
+    }
 
     queryClient.invalidateQueries({ queryKey: ['profile'] })
 
