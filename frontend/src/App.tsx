@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { apiClient, setupAuthInterceptor } from './lib/apiClient'
@@ -50,9 +50,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
-          <AuthSetup>
-            <Routes>
+        <AuthSetup>
+          <Routes>
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route element={<ProtectedRoute><OnboardingGuard /></ProtectedRoute>}>
                 <Route element={<AppShell />}>
@@ -74,9 +73,8 @@ export default function App() {
                   <Route path="/courses/:id" element={<CourseDetail />} />
                 </Route>
               </Route>
-            </Routes>
-          </AuthSetup>
-        </BrowserRouter>
+          </Routes>
+        </AuthSetup>
       </TooltipProvider>
     </QueryClientProvider>
   )
