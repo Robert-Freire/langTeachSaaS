@@ -45,6 +45,11 @@ public class AzureSpeechTranscriptionService(
         var wavBytes = wavStream.ToArray();
         var (dataOffset, dataLength) = ParseWavDataInfo(wavBytes);
 
+        if (dataLength == 0)
+            logger.LogWarning(
+                "WAV data chunk has zero length after parsing — transcription will be empty. FileName={FileName}",
+                fileName);
+
         var totalChunks = (int)Math.Ceiling((double)dataLength / MaxChunkDataBytes);
         logger.LogInformation(
             "Starting transcription. FileName={FileName} Language={Language} WavBytes={Bytes} DurationSeconds={Duration:F1} Chunks={Chunks}",
@@ -118,7 +123,13 @@ public class AzureSpeechTranscriptionService(
             var chunkId = System.Text.Encoding.ASCII.GetString(bytes, pos, 4);
             var chunkSize = BitConverter.ToInt32(bytes, pos + 4);
             if (chunkId == "data")
-                return (pos + 8, chunkSize);
+            {
+                // ffmpeg writing to a non-seekable pipe leaves chunkSize=0 because it cannot
+                // seek back to fill in the size after writing PCM data. Fall back to the
+                // remaining bytes in the buffer, which is the actual PCM payload.
+                var actualLength = chunkSize == 0 ? bytes.Length - (pos + 8) : chunkSize;
+                return (pos + 8, actualLength);
+            }
             pos += 8 + chunkSize;
             if (chunkSize % 2 != 0) pos++; // WAV padding byte
         }
