@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
+import { fetchWithAuthRetry, makeRefreshOnce, AuthExpiredError } from '../lib/authHelpers'
+import type { GetAccessToken } from '../lib/authHelpers'
 import type { GenerateRequest, GenerateStatus } from '../api/generate'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
 export function useGenerate() {
-  const { getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
   const [status, setStatus] = useState<GenerateStatus>('idle')
   const [output, setOutput] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -34,19 +36,27 @@ export function useGenerate() {
       setError(null)
       setQuotaExceeded(false)
 
+      const getToken: GetAccessToken = (opts) =>
+        getAccessTokenSilently(opts?.forceRefresh ? { cacheMode: 'off' } : undefined)
+
+      const triggerReauth = () => {
+        loginWithRedirect({ appState: { returnTo: window.location.pathname + window.location.search } }).catch(console.error)
+      }
+
+      const refreshOnce = makeRefreshOnce(getToken)
+
       try {
-        const token = await getAccessTokenSilently()
-        const response = await fetch(
+        const response = await fetchWithAuthRetry(
           `${BASE_URL}/api/generate/${taskType}/stream`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
             signal: controller.signal,
           },
+          getToken,
+          triggerReauth,
+          refreshOnce,
         )
 
         if (response.status === 429) {
@@ -119,13 +129,16 @@ export function useGenerate() {
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           setStatus('idle')
+        } else if (err instanceof AuthExpiredError) {
+          setError('Your session has expired. Redirecting to sign in...')
+          setStatus('error')
         } else {
           setError(err instanceof Error ? err.message : 'Unknown error')
           setStatus('error')
         }
       }
     },
-    [getAccessTokenSilently],
+    [getAccessTokenSilently, loginWithRedirect],
   )
 
   return { status, output, error, quotaExceeded, generate, abort }
