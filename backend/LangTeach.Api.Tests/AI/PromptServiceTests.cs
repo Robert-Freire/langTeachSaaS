@@ -3387,6 +3387,33 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_DirectsPlanningAsidesToNextLessonIdeas()
+    {
+        // bug #1126: open-session hint used to say "teachingTodos or nextLessonIdeas",
+        // causing the model to sometimes pick teachingTodos for plain planning asides
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Para la próxima clase tengo que trabajar verbos de cambio.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("nextLessonIdeas",
+            because: "the open-session hint must direct planning asides to nextLessonIdeas");
+        request.SystemPrompt.Should().NotContain("teachingTodos or nextLessonIdeas",
+            because: "ambiguous 'or' was the root cause of #1126 misclassification");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_TeachingTodosTriggerPhraseRulePresent()
+    {
+        // regression guard for #1065: teachingTodos must still require a trigger phrase
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy hemos visto el subjuntivo.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("apunta como teaching todo",
+            because: "trigger-phrase rule for teachingTodos must remain intact to prevent #1065 regression");
+    }
+
+    [Fact]
     public void BuildReflectionExtractionPrompt_SanitizesTeacherText_StripsControlCharactersAndNormalizesNewlines()
     {
         var today = new DateOnly(2026, 4, 11);

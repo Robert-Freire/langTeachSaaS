@@ -501,6 +501,46 @@ public class ReflectionExtractionServiceTests
         result.TeachingTodos.Should().AllSatisfy(t => t.DueDate.Should().BeNull());
     }
 
+    // regression tests for #1126: planning asides must land in nextLessonIdeas, not teachingTodos;
+    // and explicit todo trigger phrases must still land in teachingTodos, not nextLessonIdeas
+    [Fact]
+    public void ParseResponse_NextSessionPhrasing_LandsInNextLessonIdeas_NotTeachingTodos()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [],
+              "nextLessonIdeas": {"value": "Actividad práctica de verbos de cambio; posible introducción de tema nuevo", "mode": "replace"}
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.NextLessonIdeas.Should().NotBeNull();
+        result.NextLessonIdeas!.Value.Should().Contain("verbos de cambio");
+        result.TeachingTodos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseResponse_ExplicitTodoTriggerPhrasing_LandsInTeachingTodos_NotNextLessonIdeas()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [{"text": "Repasar la voz pasiva", "dueDate": null}],
+              "nextLessonIdeas": null
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Should().ContainSingle();
+        result.TeachingTodos[0].Text.Should().Be("Repasar la voz pasiva");
+        result.NextLessonIdeas.Should().BeNull();
+    }
+
     [Fact]
     public void ParseResponse_ExtractsTeacherFollowups()
     {
