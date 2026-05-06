@@ -22,6 +22,13 @@ createRoot(document.getElementById('root')!).render(
           audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         }}
         cacheLocation="localstorage"
+        onRedirectCallback={(appState) => {
+          const target =
+            appState && typeof appState.returnTo === 'string'
+              ? appState.returnTo
+              : window.location.pathname
+          window.history.replaceState({}, document.title, target)
+        }}
       >
         <App />
       </Auth0Provider>

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
-import { setupAuthInterceptor } from './lib/apiClient'
+import { apiClient, setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { OnboardingGuard } from './components/OnboardingGuard'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -26,14 +26,22 @@ import Onboarding from './pages/Onboarding'
 const queryClient = new QueryClient()
 
 function AuthSetup({ children }: { children: React.ReactNode }) {
-  const { getAccessTokenSilently, logout } = useAuth0()
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
 
   useEffect(() => {
-    return setupAuthInterceptor(getAccessTokenSilently, () => {
-      localStorage.clear()
-      logout({ logoutParams: { returnTo: window.location.origin } })
-    })
-  }, [getAccessTokenSilently, logout])
+    return setupAuthInterceptor(
+      apiClient,
+      (opts) =>
+        getAccessTokenSilently(
+          opts?.forceRefresh ? { cacheMode: 'off' } : undefined,
+        ),
+      () => {
+        const returnTo =
+          window.location.pathname + window.location.search + window.location.hash
+        void loginWithRedirect({ appState: { returnTo } })
+      },
+    )
+  }, [getAccessTokenSilently, loginWithRedirect])
 
   return <>{children}</>
 }
