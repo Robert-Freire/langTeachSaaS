@@ -7,10 +7,9 @@ import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import ProposalCard from '@/components/assistant/ProposalCard'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
 import { submitVoiceFeedback } from '@/api/assistant'
+import { MAX_RECORDING_SECONDS, WARN_REMAINING_SECONDS } from '@/lib/recordingLimits'
 
 const MIN_DURATION_S = 1
-const WARN_DURATION_S = 50
-const MAX_DURATION_S = 60
 
 type UploadError = 'upload-failed' | 'empty-transcription' | null
 type FeedbackState = 'idle' | 'chip-open' | 'done-up' | 'done-down'
@@ -147,9 +146,9 @@ export default function AtelierAssistantPanel({
     stop: stopMicRecording,
     clearError: clearMicError,
   } = useMicRecorder({
-    maxDurationSeconds: MAX_DURATION_S,
+    maxDurationSeconds: MAX_RECORDING_SECONDS,
     minDurationSeconds: MIN_DURATION_S,
-    warnAtSecondsRemaining: MAX_DURATION_S - WARN_DURATION_S,
+    warnAtSecondsRemaining: WARN_REMAINING_SECONDS,
     onBlob: handleBlob,
     onTooShort: () => {
       setTooShortHint(true)
@@ -505,7 +504,7 @@ export default function AtelierAssistantPanel({
           {/* Duration warning */}
           {durationWarning && recording && (
             <p className="text-xs font-inter text-amber-600 text-center" data-testid="duration-warning">
-              10 seconds left
+              {WARN_REMAINING_SECONDS} seconds left
             </p>
           )}
 
