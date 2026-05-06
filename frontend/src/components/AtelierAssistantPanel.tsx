@@ -504,7 +504,7 @@ export default function AtelierAssistantPanel({
           {/* Duration warning */}
           {durationWarning && recording && (
             <p className="text-xs font-inter text-amber-600 text-center" data-testid="duration-warning">
-              {WARN_REMAINING_SECONDS} seconds left
+              {Math.max(0, MAX_RECORDING_SECONDS - micElapsed)} seconds left
             </p>
           )}
 
