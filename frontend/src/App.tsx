@@ -38,7 +38,13 @@ function AuthSetup({ children }: { children: React.ReactNode }) {
       () => {
         const returnTo =
           window.location.pathname + window.location.search + window.location.hash
-        void loginWithRedirect({ appState: { returnTo } })
+        loginWithRedirect({ appState: { returnTo } }).catch((err) => {
+          // Auth0 unreachable or redirect blocked. Log so it surfaces in
+          // devtools instead of becoming an unhandled rejection. No toast
+          // infra to surface this to the user yet (see #1117 QA gap on
+          // auth-down vs session-expired copy).
+          console.error('Re-authentication redirect failed', err)
+        })
       },
     )
   }, [getAccessTokenSilently, loginWithRedirect])
