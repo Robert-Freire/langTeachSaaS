@@ -1527,7 +1527,7 @@ public class PromptService : IPromptService
             ? """
 
 
-            IMPORTANT CONTEXT: There IS an open session in scope. Future-tense planning asides ("la semana que viene quiero hacer el subjuntivo", "quiero trabajar X la próxima vez") are teaching ideas — capture them in teachingTodos or nextLessonIdeas, not as new session records.
+            IMPORTANT CONTEXT: There IS an open session in scope. Future-tense planning asides ("la semana que viene quiero hacer el subjuntivo", "quiero trabajar X la próxima vez", "para la próxima clase tengo que trabajar X") are planning ideas — capture them in nextLessonIdeas, not as new session records and not as teachingTodos. Teaching todos require an explicit trigger phrase ("apunta como teaching todo", "añade un teaching todo para", "añade como idea").
             """
             : """
 

@@ -426,6 +426,34 @@ These cases exercise the `newSession` proposal type. The teacher dictates a futu
 
 ---
 
+### TC-33-jordi-hanna-next-session — Real voice note (Jordi → Hanna, 2026-05-06)
+
+> "Hannah, en la clase de hoy hemos trabajado. Los verbos de cambio hemos hecho prácticas. Hemos tenido una conversación sobre sus gustos musicales porque también toca el piano y también toca un instrumento, que es como el piano, que va con palillos. Y para la próxima clase tengo que trabajar alguna actividad más de verbos, de cambio, de práctica, de verbos de cambio. ¿Y puedo introducir algún tema nuevo?"
+
+**Context:** Panel open on Hanna's session log for today (2026-05-06, open session in scope).
+
+**Audio evidence:** `backend/LangTeach.Api.Tests/TestData/voice-notes/jordi-hanna-20260506.webm`
+
+**Expected extraction:**
+- `whatWasCovered`: prose summary of verbos de cambio practice and musical conversation
+- `nextLessonIdeas`: "Actividad práctica de verbos de cambio; posible introducción de tema nuevo" (or equivalent — the "para la próxima clase" planning aside)
+- `teachingTodos`: empty array (no trigger phrase used)
+- `teacherFollowups`: empty array
+
+**Expected classification:** `nextLessonIdeas` (maps to `NextSessionTopics` on the session log card). NOT a teaching todo.
+
+**Bug context (#1126):** The original extraction routed the "para la próxima clase tengo que trabajar..." phrase to `teachingTodos` instead of `nextLessonIdeas`. Root cause: the open-session context hint ambiguously said "capture them in teachingTodos or nextLessonIdeas". Fix: hint now directs planning asides to `nextLessonIdeas` exclusively and clarifies that `teachingTodos` always requires a trigger phrase.
+
+**Similar phrasings that must also classify as nextLessonIdeas:**
+- "quiero trabajar X la próxima vez"
+- "en la próxima sesión vamos a repasar Y"
+- "me gustaría introducir Z en la siguiente clase"
+
+**Inverse (todo phrasing must stay as todo, not nextLessonIdeas):**
+- "apunta como teaching todo repasar la voz pasiva" → teachingTodos (regression check for #1065)
+
+---
+
 ## Appendix: CEFR level strings the system should recognise
 
 The following are all valid `CefrLevel` values in this codebase. The extractor should map natural teacher language to these strings.
