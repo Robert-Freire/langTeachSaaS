@@ -3,7 +3,7 @@ import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { createStudentViaApi } from '../helpers/students'
 
-const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5178'
+const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
 // Verbatim transcripts from the ground-truth test corpus (TC-33 to TC-36).
 // Source: plan/sprints/unified-voice-chat-test-corpus.md
