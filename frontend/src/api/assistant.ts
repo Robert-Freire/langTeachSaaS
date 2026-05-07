@@ -94,7 +94,7 @@ export async function applySessionProposal(
   field: string,
   value: string,
 ): Promise<void> {
-  // field is one of: title, actualContent, generalNotes, homeworkAssigned — matches PatchSessionRequest
+  // field is one of: title, actualContent, generalNotes, homeworkAssigned, nextSessionTopics — matches PatchSessionRequest
   await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: value })
 }
 

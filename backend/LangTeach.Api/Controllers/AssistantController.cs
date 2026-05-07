@@ -186,6 +186,7 @@ public class AssistantController : ControllerBase
             ["actualContent"] = (session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value),
             ["generalNotes"] = (session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value),
             ["homeworkAssigned"] = (session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value),
+            ["nextSessionTopics"] = (session?.NextSessionTopics, reflectionExtraction.NextLessonIdeas?.Value),
         };
         foreach (var f in _pedagogy.ProposalFields.SessionFields)
         {
