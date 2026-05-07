@@ -123,6 +123,7 @@ module openai 'modules/openai.bicep' = {
     name: openaiName
     location: location
     keyVaultName: keyVaultName
+    appPrincipalId: containerApp.outputs.principalId
   }
   dependsOn: [kv]
 }

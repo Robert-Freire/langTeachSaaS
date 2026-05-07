@@ -37,6 +37,9 @@ builder.Host.UseSerilog((ctx, services, config) => config
     .WriteTo.File("logs/api-.log", rollingInterval: RollingInterval.Day,
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
 
+// Resolve once; used in both startup validation and DI registration.
+var transcriptionProvider = builder.Configuration["Transcription:Provider"] ?? "AzureOpenAIWhisper";
+
 // Key Vault (production only — dev uses appsettings.Development.json)
 if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing") && !builder.Environment.IsEnvironment("E2ETesting"))
 {
@@ -46,8 +49,7 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
 
     // Validate all required config keys after Key Vault is loaded, before any service registration.
     // This ensures the app fails fast with a clear message instead of crashing mid-startup.
-    // The transcription-provider-specific keys vary based on the active provider flag.
-    var transcriptionProvider = builder.Configuration["Transcription:Provider"] ?? "AzureOpenAIWhisper";
+    // Provider-specific secrets are validated based on the active Transcription:Provider flag.
     var requiredKeys = new List<string>
     {
         "ConnectionStrings:Default",
@@ -186,8 +188,7 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
 }
 else
 {
-    var activeProvider = builder.Configuration["Transcription:Provider"] ?? "AzureOpenAIWhisper";
-    if (activeProvider == "AzureSpeech")
+    if (transcriptionProvider == "AzureSpeech")
         builder.Services.AddScoped<ITranscriptionService, AzureSpeechTranscriptionService>();
     else
         builder.Services.AddScoped<ITranscriptionService, WhisperTranscriptionService>();

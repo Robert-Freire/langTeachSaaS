@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
+
 namespace LangTeach.Api.Services;
 
 /// <summary>
@@ -27,7 +28,7 @@ public class WhisperTranscriptionService(
     public async Task<string> TranscribeAsync(Stream audio, string fileName, string contentType, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
-        var wav = await ConvertToWavAsync(audio, ct);
+        var wav = await FfmpegAudioConverter.ConvertToWavAsync(audio, ct);
 
         if (wav.Length > MaxWavBytes)
             throw new InvalidOperationException(
@@ -59,7 +60,16 @@ public class WhisperTranscriptionService(
 
         var json = await response.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(json);
-        var text = doc.RootElement.TryGetProperty("text", out var t) ? t.GetString() ?? string.Empty : string.Empty;
+        string text;
+        if (doc.RootElement.TryGetProperty("text", out var t))
+        {
+            text = t.GetString() ?? string.Empty;
+        }
+        else
+        {
+            logger.LogWarning("Whisper response did not contain a 'text' property. FileName={FileName} Body={Body}", fileName, json);
+            text = string.Empty;
+        }
 
         sw.Stop();
         logger.LogInformation(
@@ -69,53 +79,4 @@ public class WhisperTranscriptionService(
         return text;
     }
 
-    private static async Task<byte[]> ConvertToWavAsync(Stream input, CancellationToken ct)
-    {
-        var psi = new ProcessStartInfo("ffmpeg")
-        {
-            Arguments = "-i pipe:0 -ar 16000 -ac 1 -f wav pipe:1",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ffmpeg");
-
-        try
-        {
-            var writeTask = Task.Run(async () =>
-            {
-                await input.CopyToAsync(process.StandardInput.BaseStream, ct);
-                process.StandardInput.Close();
-            }, ct);
-
-            var wav = new MemoryStream();
-            var readStdoutTask = process.StandardOutput.BaseStream.CopyToAsync(wav, ct);
-            var stderrBuilder = new System.Text.StringBuilder();
-            var readStderrTask = Task.Run(async () =>
-            {
-                var line = await process.StandardError.ReadLineAsync(ct);
-                while (line is not null)
-                {
-                    stderrBuilder.AppendLine(line);
-                    line = await process.StandardError.ReadLineAsync(ct);
-                }
-            }, ct);
-
-            await Task.WhenAll(writeTask, readStdoutTask, readStderrTask);
-            await process.WaitForExitAsync(ct);
-
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException("Audio conversion failed.");
-
-            return wav.ToArray();
-        }
-        catch
-        {
-            process.Kill(entireProcessTree: true);
-            throw;
-        }
-    }
 }

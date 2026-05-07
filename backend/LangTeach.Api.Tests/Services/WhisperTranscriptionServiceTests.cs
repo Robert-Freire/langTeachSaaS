@@ -54,8 +54,8 @@ public class WhisperTranscriptionServiceTests
         using var stream = new MemoryStream([0x1A, 0x45, 0xDF, 0xA3]); // minimal WebM magic bytes
         var act = async () => await service.TranscribeAsync(stream, "test.webm", "audio/webm");
 
-        // ffmpeg is not available in the unit test environment; the service will throw.
-        await act.Should().ThrowAsync<Exception>();
+        // ffmpeg is not on the unit test PATH; expect InvalidOperationException from Process.Start
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory

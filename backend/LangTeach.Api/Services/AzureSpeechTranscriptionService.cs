@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -41,12 +40,10 @@ public class AzureSpeechTranscriptionService(
         var url = $"https://{_opts.Region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1" +
                   $"?language={Uri.EscapeDataString(_opts.Language)}&format=simple";
 
-        var wavStream = await ConvertToWavAsync(audio, ct);
+        var wavBytes = await FfmpegAudioConverter.ConvertToWavAsync(audio, ct);
 
-        if (wavStream.Length > MaxFullWavBytes)
+        if (wavBytes.Length > MaxFullWavBytes)
             throw new InvalidOperationException($"Converted audio exceeds maximum allowed size ({MaxFullWavBytes / (1024 * 1024)} MB). Shorten the recording.");
-
-        var wavBytes = wavStream.ToArray();
         var (dataOffset, dataLength) = ParseWavDataInfo(wavBytes);
 
         if (dataLength == 0)
@@ -185,58 +182,4 @@ public class AzureSpeechTranscriptionService(
         return ms;
     }
 
-    private async Task<MemoryStream> ConvertToWavAsync(Stream input, CancellationToken ct)
-    {
-        var psi = new ProcessStartInfo("ffmpeg")
-        {
-            Arguments = "-i pipe:0 -ar 16000 -ac 1 -f wav pipe:1",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ffmpeg");
-
-        try
-        {
-            var writeTask = Task.Run(async () =>
-            {
-                await input.CopyToAsync(process.StandardInput.BaseStream, ct);
-                process.StandardInput.Close();
-            }, ct);
-
-            var wav = new MemoryStream();
-            // Drain stdout and stderr concurrently to prevent buffer deadlock.
-            var readStdoutTask = process.StandardOutput.BaseStream.CopyToAsync(wav, ct);
-            var stderrBuilder = new System.Text.StringBuilder();
-            var readStderrTask = Task.Run(async () =>
-            {
-                var line = await process.StandardError.ReadLineAsync(ct);
-                while (line is not null)
-                {
-                    stderrBuilder.AppendLine(line);
-                    line = await process.StandardError.ReadLineAsync(ct);
-                }
-            }, ct);
-
-            await Task.WhenAll(writeTask, readStdoutTask, readStderrTask);
-            await process.WaitForExitAsync(ct);
-
-            if (process.ExitCode != 0)
-            {
-                logger.LogError("ffmpeg conversion failed. ExitCode={ExitCode} Stderr={Stderr}", process.ExitCode, stderrBuilder.ToString());
-                throw new InvalidOperationException("Audio conversion failed.");
-            }
-
-            wav.Position = 0;
-            return wav;
-        }
-        catch
-        {
-            process.Kill(entireProcessTree: true);
-            throw;
-        }
-    }
 }

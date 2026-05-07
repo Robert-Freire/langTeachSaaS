@@ -1,6 +1,10 @@
 param name string
 param location string
 param keyVaultName string
+param appPrincipalId string
+
+// Built-in role: Key Vault Secrets User — same ID in every Azure tenant
+var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
 resource openai 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: name
@@ -27,11 +31,20 @@ resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@202
   }
 }
 
-// Write endpoint, key, and deployment name to the existing Key Vault.
-// The Container App managed identity already has vault-level Key Vault Secrets User
-// access (granted in keyvault.bicep), so no new role assignment is needed here.
 resource kv 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
+}
+
+// Grant Container App managed identity read access to the secrets this module writes.
+// The role is vault-scoped so it is idempotent with the grant in keyvault.bicep.
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(kv.id, appPrincipalId, kvSecretsUserRoleId)
+  scope: kv
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsUserRoleId)
+    principalId: appPrincipalId
+    principalType: 'ServicePrincipal'
+  }
 }
 
 resource endpointSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
