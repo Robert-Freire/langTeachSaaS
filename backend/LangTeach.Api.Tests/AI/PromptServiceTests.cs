@@ -3414,6 +3414,34 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_ExplicitDateCueEmitsNewSessionNotNextLessonIdeas()
+    {
+        // regression guard for #1140: open-session + explicit date cue must route to proposedNewSession, not nextLessonIdeas
+        var today = new DateOnly(2026, 5, 5);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Para la clase de mañana tenemos que continuar con adjetivos.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("mañana",
+            because: "the open-session hint must list 'mañana' as an explicit date cue that triggers newSessionTitle");
+        request.SystemPrompt.Should().Contain("newSessionTitle",
+            because: "the open-session hint must instruct the model to emit newSessionTitle for date-bearing asides");
+        request.SystemPrompt.Should().Contain("Do NOT also put that same planning content in nextLessonIdeas",
+            because: "the hint must prohibit duplicate routing of date-bearing asides to nextLessonIdeas");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_TodoTriggerLeaveNewSessionTitleNull()
+    {
+        // regression guard for #1065: todo-trigger phrase must not produce a new session card
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Añade un teaching todo para repasar la voz pasiva el martes que viene.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("leave newSessionTitle null",
+            because: "todo-trigger rule must explicitly suppress newSessionTitle to prevent #1065 regression");
+    }
+
+    [Fact]
     public void BuildReflectionExtractionPrompt_SanitizesTeacherText_StripsControlCharactersAndNormalizesNewlines()
     {
         var today = new DateOnly(2026, 4, 11);

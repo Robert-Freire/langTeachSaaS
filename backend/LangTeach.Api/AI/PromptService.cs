@@ -1527,7 +1527,13 @@ public class PromptService : IPromptService
             ? """
 
 
-            IMPORTANT CONTEXT: There IS an open session in scope. Future-tense planning asides ("la semana que viene quiero hacer el subjuntivo", "quiero trabajar X la próxima vez", "para la próxima clase tengo que trabajar X") are planning ideas — capture them in nextLessonIdeas, not as new session records and not as teachingTodos. Teaching todos require an explicit trigger phrase ("apunta como teaching todo", "añade un teaching todo para", "añade como idea").
+            IMPORTANT CONTEXT: There IS an open session in scope. For forward-planning asides, apply these rules in order:
+
+            1. Todo-trigger phrases ("apunta como teaching todo", "añade un teaching todo para", "ponme un todo para", "añade como idea"): produce a todo object with dueDate; leave newSessionTitle null — the date belongs to the todo, not a new session.
+
+            2. Planning asides WITH an explicit date cue ("mañana", "el lunes", "el martes", "el miércoles", "el jueves", "el viernes", "la semana que viene", "next Monday", "día 6", "día 7", any weekday name, any explicit calendar date): emit newSessionTitle and newSessionDate for a NEW session record. Do NOT also put that same planning content in nextLessonIdeas — choose one routing only. (Separate, unrelated broader ideas that have no date cue may still go to nextLessonIdeas.)
+
+            3. Planning asides WITHOUT any date cue ("para la próxima clase tengo que trabajar X", "quiero trabajar X la próxima vez", "la siguiente clase", "next time"): capture in nextLessonIdeas only; do not create a new session record.
             """
             : """
 
