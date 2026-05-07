@@ -19,6 +19,7 @@ public class StubStudentProfileExtractionService : IStudentProfileExtractionServ
         var hasInterests = text.Contains("[has-interests]");
         var hasDifficulties = text.Contains("[has-difficulties]");
         var hasLearningGoals = text.Contains("[has-learning-goals]");
+        var noLearningGoals = text.Contains("[no-learning-goals]");
         var hasTeachingNotes = text.Contains("[has-teaching-notes]");
 
         return Task.FromResult(new ExtractedStudentProfileDto(
@@ -33,9 +34,11 @@ public class StubStudentProfileExtractionService : IStudentProfileExtractionServ
             LearningLanguage: "[Extracted] English",
             CefrLevel: "B2",
             OfficialCefrLevel: null,
-            ShortTermObjectives: hasLearningGoals
-                ? [new ExtractedObjectiveDto("[Extracted] Presentaciones en español", null)]
-                : [new ExtractedObjectiveDto("[Extracted] Pass B2 exam", "2026-06-30")],
+            ShortTermObjectives: noLearningGoals
+                ? []
+                : hasLearningGoals
+                    ? [new ExtractedObjectiveDto("[Extracted] Presentaciones en español", null)]
+                    : [new ExtractedObjectiveDto("[Extracted] Pass B2 exam", "2026-06-30")],
             Difficulties: hasDifficulties
                 ? [new ExtractedDifficultyDto("[Extracted] Indefinido vs perfecto", "Grammar", "past tense")]
                 : [new ExtractedDifficultyDto("[Extracted] Subjunctive usage", "Grammar", "subjunctive")],
