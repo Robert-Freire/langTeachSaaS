@@ -1,6 +1,6 @@
 ---
 name: sprint-close
-description: Sprint close process (mechanical phases). Run AFTER backlog triage is done and user has approved. Verifies board/issues, then runs a three-phase quality gate: Teacher QA, prompt health review (PromptService.cs + section profiles), and pedagogy review. Returns a READY/NOT READY verdict.
+description: Sprint close process (mechanical phases). Run AFTER backlog triage is done and user has approved. Verifies board/issues, then runs quality gates: UI review, sprint story walkthrough (live runtime, including extraction TC-33-36 for extraction sprints), Teacher QA, prompt health review, and pedagogy review. Returns a READY/NOT READY verdict.
 model: opus
 ---
 
@@ -38,6 +38,95 @@ Invoke the `review-ui-sprint` agent (use the Agent tool with `subagent_type: "re
 
 If verdict is NEEDS WORK with Critical findings, include them as blocking items in the pre-merge summary. Important and Minor findings should be logged to `plan/ui-review-backlog.md` for the next sprint.
 
+## Phase 2b: Sprint Story Walkthrough
+
+**Purpose:** Verify that the sprint story's user-facing claims hold in the live running app. Static reviews (prompt audit, code consistency) cannot detect missing wiring or broken flows. This phase catches it.
+
+**This phase is mandatory for every sprint close.** The walkthrough must be driven against the running dev stack, not against static code.
+
+**Steps:**
+
+1. Read the sprint story: `plan/sprints/<slug>.md` (replace `<slug>` with the active sprint slug, e.g. `hardening`).
+
+2. Check if the visual stack is already running:
+   ```bash
+   docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
+   ```
+   If `langteachsaas-e2e-api-1` and `langteachsaas-e2e-frontend-1` are listed: stack is up, leave it running and note that you did NOT start it (do not tear down after).
+   If not running: start it:
+   ```bash
+   bash e2e/scripts/start-visual-stack.sh
+   ```
+   Note that YOU started the stack; you must tear it down after.
+
+3. Build the walkthrough prompt. Construct the text below, inserting the full sprint story content:
+
+   ```
+   You are running the sprint-close story walkthrough for LangTeach.
+
+   The app is running at http://localhost:5174 with mock auth — no login needed, navigate directly.
+   API is at http://localhost:5178. Use Authorization: Bearer test-token for any direct API calls.
+
+   <sprint-story>
+   [PASTE FULL CONTENTS OF plan/sprints/<slug>.md HERE]
+   </sprint-story>
+
+   Your task:
+   1. Walk every user-facing claim in "The teacher's story" section. Navigate the app, interact with the UI, verify the described behaviour exists in the live runtime.
+   2. Walk every scenario in "## Smoke Test Appendix" (if present) the same way.
+   3. For any scenario describing Atelier Assistant or voice extraction: type the following verbatim transcripts one at a time into the Atelier text box, submit each, and verify the expected proposal cards appear:
+
+      TC-33 (Hanna): "Hannah, en la clase de hoy hemos trabajado. Los verbos de cambio hemos hecho prácticas. Hemos tenido una conversación sobre sus gustos musicales porque también toca el piano y también toca un instrumento, que es como el piano, que va con palillos. Y para la próxima clase tengo que trabajar alguna actividad más de verbos, de cambio, de práctica, de verbos de cambio. ¿Y puedo introducir algún tema nuevo?"
+      Expected: nextSessionTopics card present. No teachingTodo card.
+
+      TC-34 (Gergana 28-Apr): "Delgada en la clase de hoy a las 10:00 H de la mañana. Hemos trabajado los pronombres interrogativos como estaba previsto y los controles los domina bien. Tiene como ejercicios un par de documentos. De completar qué pronombre interrogativo es el mejor para la próxima clase. Debo buscar información sobre el bueno, bien bonito. Su palabra favorita en español. Es. Barandero. ¿Y la palabra? Favorita en húngaro es prietoda."
+      Expected: nextSessionTopics card present. homeworkAssigned card present.
+
+      TC-35 (Gergana 05-May): "En la clase de hoy de las 10:00 H de la mañana. Hemos trabajado. Las descripciones de hemos seguido trabajando mi barrio, hemos trabajado mi barrio. Concretamente hemos hecho lo que está en la pizarra del 30 de abril. Que es relacionar los lugares. Relacionar los adjetivos. Vale y la página 104. Que es la de un barrio típico. Y relacionar los diferentes sitios que hay en el en el barrio y lo ha hecho muy bien para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día."
+      Expected: nextSessionTopics card present. No newSession card for 30-Apr.
+
+      TC-36 (Gergana 06-May): "En la clase de hoy de las 11 hemos trabajado el barrio, hemos hecho el ser start ahí. Con el barrio de Albaicín también ejemplos cuando utilizar ser START y Ai. Hemos hecho el documento de Cachitos y tiene como deberes redactar sobre el barrio de Albaicín. Para la siguiente clase tengo que trabajar las preposiciones de lugar a la derecha, a la izquierda, arriba, abajo. Con el audio que hice con martón."
+      Expected: nextSessionTopics card present. homeworkAssigned card present.
+
+      If the sprint story does NOT mention extraction or Atelier Assistant, skip the TC tests — they are only required for sprints that touched extraction logic.
+
+   4. For each scenario, create any missing data via the API using Bearer test-token.
+   5. Collect anything broken, confusing, or improvable as Observations (out-of-scope from scenario claims).
+   6. Before marking any scenario FAIL: check the original issue AC. If the screen is out of scope per AC, record PASS with a scope note.
+
+   Output:
+   1. Result table: | Scenario | Source (issue #) | Result | Notes |
+   2. Extraction check table (if run): | TC | Expected cards | Actual cards | PASS/FAIL |
+   3. Observations: | #walkthrough-<slug> | <date> | <severity> | <description> |
+   4. Any FAILs with a one-line fix description.
+
+   Keep the report under 800 words.
+   ```
+
+4. Write the prompt to a temp file and output the launch command:
+   ```bash
+   SLUG=$(git rev-parse --abbrev-ref HEAD | sed 's|sprint/||' || echo "sprint")
+   PROMPT_FILE="/tmp/sprint-close-walkthrough-${SLUG}.txt"
+   # Write the prompt content (with story inserted) to the file
+   cat > "$PROMPT_FILE" << 'PROMPT_EOF'
+   <GENERATED PROMPT FROM STEP 3 — with story content inlined>
+   PROMPT_EOF
+   echo "Walkthrough prompt written to $PROMPT_FILE"
+   echo "Run: claude --chrome \"\$(cat $PROMPT_FILE)\""
+   ```
+
+   **Return the generated command to the main conversation.** `claude --chrome` requires a TTY and must be launched by the user in their terminal — not via Bash from this agent. Tell the user:
+   - Stack is at http://localhost:5174
+   - Command to run: `claude --chrome "$(cat /tmp/sprint-close-walkthrough-<slug>.txt)"`
+   - To paste the chrome session output back here when done.
+
+5. **After results arrive:** parse the result table. Append all Observations to `plan/observed-issues.md`. Any scenario FAIL or TC extraction FAIL is **blocking** — do NOT declare READY.
+
+6. Tear down the stack only if YOU started it in step 2:
+   ```bash
+   docker compose -f docker-compose.e2e.yml -f docker-compose.visual.yml --env-file .env.e2e down -v
+   ```
+
 ## Phase 3: Teacher QA
 
 Run the Teacher QA skill against the sprint branch to validate AI generation quality:
@@ -63,36 +152,6 @@ Review both:
 ```
 
 Log findings in `plan/sprints/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
-
-## Phase 3c: Extraction Smoke Test
-
-After the prompt health review completes, run the live extraction smoke test against the four ground-truth real-teacher transcripts (TC-33 to TC-36 in `plan/sprints/unified-voice-chat-test-corpus.md`).
-
-**Why this is required:** A static prompt audit cannot detect missing wiring downstream of the prompt (see #1132: nextLessonIdeas was silently dropped despite the prompt being correct). The live test calls the real propose endpoint and asserts the full proposal shape.
-
-**Steps:**
-
-1. Check if e2e containers are already running:
-   ```bash
-   docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
-   ```
-   If running, wait for them to finish (do not tear them down). If not running, start in UI review mode:
-   ```bash
-   docker compose -f docker-compose.e2e.yml --env-file .env.e2e up -d --build
-   ```
-   Wait until the API is healthy (check `http://localhost:5178/health` returns 200).
-
-2. Run the extraction smoke test:
-   ```bash
-   cd e2e && npx playwright test tests/extraction-smoke.spec.ts --project=extraction-smoke
-   ```
-
-3. Tear down the stack:
-   ```bash
-   docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
-   ```
-
-**If any test fails:** Report it as a **blocking** item in the pre-merge summary. Do NOT declare READY. The test is designed to fail when extraction wiring is missing (e.g., nextLessonIdeas proposals absent) and pass when the full pipeline is correctly wired.
 
 ## Phase 4: Pedagogy Review
 
@@ -131,6 +190,12 @@ Present the final summary:
 - Critical items: [list or "none"]
 - Report: e2e/screenshots/review-ui/REPORT.md
 
+### Story Walkthrough (Phase 2b)
+- Scenarios checked: N
+- Extraction TCs run (if applicable): TC-33 / TC-34 / TC-35 / TC-36 — PASS or SKIP
+- Verdict: PASS / FAIL
+- Failing scenarios: [list or "none"]
+
 ### Teacher QA
 - Personas run: [list]
 - Overall quality: [summary]
@@ -141,11 +206,6 @@ Present the final summary:
 - Findings: N redundant, N contradictory, N negative bloat, N stale, N duplication
 - Critical items: [list or "none"]
 - Report: plan/sprints/prompt-health-review-<sprint-slug>.md
-
-### Extraction Gate (Phase 3c)
-- Tests run: TC-33, TC-34, TC-35, TC-36
-- Verdict: PASS / FAIL
-- Failing tests: [list or "none"]
 
 ### Pedagogy Review
 - Verdict: SOUND / ADJUST / RETHINK
@@ -165,8 +225,8 @@ Return this summary to the main conversation. The main agent will present it to 
 
 - Never merge to main yourself. The user triggers the GitHub Action.
 - Never delete issues. Report open issues with no PR; the user decides.
-- UI review (Phase 2) runs first since it needs the e2e stack. Tear it down before proceeding.
+- UI review (Phase 2) runs first. The review-ui-sprint agent manages its own stack.
+- Story walkthrough (Phase 2b) is mandatory every sprint close. A FAIL is blocking. For sprints touching extraction, TC-33-36 checks are required within the walkthrough.
 - Prompt health review (Phase 3b) must run BEFORE pedagogy review (Phase 4). Clean the noise first, then the pedagogy expert reviews clean templates.
-- Extraction smoke test (Phase 3c) must run BEFORE declaring READY. A FAIL is blocking.
 - The pedagogy reviewer must see BOTH Teacher QA results AND section profile guidance strings. Never skip Phase 4.
 - Keep your final response under 3000 characters. Summary, not process narration.
