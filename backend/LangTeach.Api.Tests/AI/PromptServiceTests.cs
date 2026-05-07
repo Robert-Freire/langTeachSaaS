@@ -3464,15 +3464,14 @@ public class PromptServiceTests
     {
         var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
 
-        // The prompt must explicitly exclude session-scoped planning asides from shortTermObjectives.
-        // These phrases route to nextLessonIdeas (session extractor), not to the student profile.
-        request.SystemPrompt.Should().Contain("para la próxima clase");
+        // The prompt must define shortTermObjectives as persistent cross-session aims only.
+        request.SystemPrompt.Should().Contain("six months from now");
+        // Must call out session-scoped tell-tale phrases so the model recognises them.
         request.SystemPrompt.Should().Contain("para mañana");
+        request.SystemPrompt.Should().Contain("para la próxima clase");
         request.SystemPrompt.Should().Contain("next class");
-        request.SystemPrompt.Should().Contain("next session");
-        request.SystemPrompt.Should().Contain("nextLessonIdeas");
-        // Must also confirm genuine long-term aims are still expected (the rule narrows, not disables).
-        request.SystemPrompt.Should().Contain("long-term student aims");
+        // Must confirm genuine long-term aims are in scope (the rule narrows, not disables).
+        request.SystemPrompt.Should().Contain("quiere preparar el DELE B2 para octubre");
     }
 
     // --- BuildReplanSuggestionPrompt ---
