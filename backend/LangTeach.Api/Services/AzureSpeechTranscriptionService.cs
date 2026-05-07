@@ -26,6 +26,10 @@ public class AzureSpeechTranscriptionService(
     private const int MaxChunkSeconds = 55;
     internal const int MaxChunkDataBytes = MaxChunkSeconds * BytesPerSecond; // 1 760 000
 
+    // Placed in the transcript where Azure Speech rejects a chunk (InitialSilenceTimeout / NoMatch).
+    // Downstream consumers that need to detect or filter this value should reference this constant.
+    internal const string UnintelligibleMarker = "[unintelligible]";
+
     // Safety cap: full WAV in memory must not exceed 300 MB (~156 minutes of recording).
     // The upstream VoiceNoteService already rejects uploads over 50 MB (compressed),
     // which decompresses to well under this limit.
@@ -62,19 +66,26 @@ public class AzureSpeechTranscriptionService(
         {
             var chunkOffset = i * MaxChunkDataBytes;
             var chunkLength = Math.Min(MaxChunkDataBytes, dataLength - chunkOffset);
+            var chunkStartSec = (double)chunkOffset / BytesPerSecond;
+            var chunkEndSec = (double)(chunkOffset + chunkLength) / BytesPerSecond;
             var chunkStream = BuildWavChunk(wavBytes, dataOffset + chunkOffset, chunkLength);
 
-            var text = await TranscribeChunkAsync(client, url, chunkStream, ct);
-            if (!string.IsNullOrWhiteSpace(text))
-                results.Add(text);
+            var text = await TranscribeChunkAsync(client, url, chunkStream, i, chunkStartSec, chunkEndSec, ct);
+            results.Add(text);
         }
 
-        var joined = string.Join(" ", results);
-        logger.LogInformation("Transcription complete. Chunks={Chunks} TranscriptLength={Length}", totalChunks, joined.Length);
+        var joined = string.Join(" ", results.Where(r => !string.IsNullOrWhiteSpace(r)));
+        var unintelligibleCount = results.Count(r => r == UnintelligibleMarker);
+        if (unintelligibleCount > 0)
+            logger.LogWarning(
+                "Transcription complete with {Unintelligible} unintelligible chunk(s). Chunks={Chunks} TranscriptLength={Length}",
+                unintelligibleCount, totalChunks, joined.Length);
+        else
+            logger.LogInformation("Transcription complete. Chunks={Chunks} TranscriptLength={Length}", totalChunks, joined.Length);
         return joined;
     }
 
-    private async Task<string> TranscribeChunkAsync(HttpClient client, string url, MemoryStream chunkStream, CancellationToken ct)
+    private async Task<string> TranscribeChunkAsync(HttpClient client, string url, MemoryStream chunkStream, int chunkIndex, double startSec, double endSec, CancellationToken ct)
     {
         var content = new StreamContent(chunkStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
@@ -93,8 +104,10 @@ public class AzureSpeechTranscriptionService(
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
         if (status == "InitialSilenceTimeout" || status == "NoMatch")
         {
-            logger.LogWarning("Azure Speech chunk returned silent/no-match status. Status={Status}", status);
-            return string.Empty;
+            logger.LogWarning(
+                "Azure Speech chunk rejected — audio will appear as [unintelligible] in transcript. Chunk={Chunk} StartSec={Start:F1} EndSec={End:F1} Status={Status}",
+                chunkIndex, startSec, endSec, status);
+            return UnintelligibleMarker;
         }
 
         if (status != "Success")
