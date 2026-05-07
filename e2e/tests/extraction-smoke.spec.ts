@@ -69,7 +69,7 @@ async function propose(browser: Parameters<typeof createMockAuthContext>[0], tex
 test('TC-33: Hanna reflection emits nextLessonIdeas, not teachingTodo', async ({ browser }) => {
   const proposals = await propose(browser, TC33_HANNA, hannaId, hannaSessionId)
 
-  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextLessonIdeas')
+  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextSessionTopics')
   expect(nextIdeas.length, 'nextLessonIdeas proposal must be present').toBeGreaterThan(0)
   expect(nextIdeas[0].newValue, 'nextLessonIdeas must have content').toBeTruthy()
 
@@ -82,7 +82,7 @@ test('TC-33: Hanna reflection emits nextLessonIdeas, not teachingTodo', async ({
 test('TC-34: Gergana 28-Apr reflection emits nextLessonIdeas and homeworkAssigned', async ({ browser }) => {
   const proposals = await propose(browser, TC34_GERGANA_28APR, gerganaId, gerganaSessionId)
 
-  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextLessonIdeas')
+  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextSessionTopics')
   expect(nextIdeas.length, 'nextLessonIdeas proposal must be present').toBeGreaterThan(0)
   expect(nextIdeas[0].newValue, 'nextLessonIdeas must have content').toBeTruthy()
 
@@ -95,7 +95,7 @@ test('TC-34: Gergana 28-Apr reflection emits nextLessonIdeas and homeworkAssigne
 test('TC-35: Gergana 05-May reflection emits nextLessonIdeas, no phantom newSession', async ({ browser }) => {
   const proposals = await propose(browser, TC35_GERGANA_05MAY, gerganaId, gerganaSessionId)
 
-  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextLessonIdeas')
+  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextSessionTopics')
   expect(nextIdeas.length, 'nextLessonIdeas proposal must be present').toBeGreaterThan(0)
   expect(nextIdeas[0].newValue, 'nextLessonIdeas must have content').toBeTruthy()
 
@@ -108,7 +108,7 @@ test('TC-35: Gergana 05-May reflection emits nextLessonIdeas, no phantom newSess
 test('TC-36: Gergana 06-May reflection emits nextLessonIdeas and homeworkAssigned', async ({ browser }) => {
   const proposals = await propose(browser, TC36_GERGANA_06MAY, gerganaId, gerganaSessionId)
 
-  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextLessonIdeas')
+  const nextIdeas = proposals.filter(p => p.type === 'session' && p.field === 'nextSessionTopics')
   expect(nextIdeas.length, 'nextLessonIdeas proposal must be present').toBeGreaterThan(0)
   expect(nextIdeas[0].newValue, 'nextLessonIdeas must have content').toBeTruthy()
 
