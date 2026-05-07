@@ -1672,10 +1672,11 @@ public class PromptService : IPromptService
             - learningLanguage: string or null — the language the student is learning or being taught (e.g. "English", "French", "inglés"). Null if not mentioned.
             - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "C1"). Null if not mentioned.
             - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
-            - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:
+            - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher about the STUDENT (e.g. "quiere preparar el DELE B2 para octubre", "her goal is to work at a Spanish company", "wants to reach B1 by June"). Each object has:
                 - text: string — description of the objective
                 - targetDate: string or null — ISO 8601 date (YYYY-MM-DD) if a date is mentioned, otherwise null
               Empty array [] if no objectives mentioned.
+              IMPORTANT: Do NOT include session-scoped planning asides here. Phrases like "para la próxima clase / sesión", "para mañana", "para la siguiente clase", "next class", "next session", "tenemos que trabajar X la próxima vez", or any forward-looking aside about what to cover in the next class belong in nextLessonIdeas (handled by the session extractor), NOT here. If the same content would appear in nextLessonIdeas, it must NOT appear in shortTermObjectives. Only extract genuine long-term student aims that persist across many sessions.
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
                 - competency: string — must be one of: {competencies}
