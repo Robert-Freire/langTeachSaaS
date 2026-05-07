@@ -62,19 +62,26 @@ public class AzureSpeechTranscriptionService(
         {
             var chunkOffset = i * MaxChunkDataBytes;
             var chunkLength = Math.Min(MaxChunkDataBytes, dataLength - chunkOffset);
+            var chunkStartSec = (double)chunkOffset / BytesPerSecond;
+            var chunkEndSec = (double)(chunkOffset + chunkLength) / BytesPerSecond;
             var chunkStream = BuildWavChunk(wavBytes, dataOffset + chunkOffset, chunkLength);
 
-            var text = await TranscribeChunkAsync(client, url, chunkStream, ct);
-            if (!string.IsNullOrWhiteSpace(text))
-                results.Add(text);
+            var text = await TranscribeChunkAsync(client, url, chunkStream, i, chunkStartSec, chunkEndSec, ct);
+            results.Add(text);
         }
 
-        var joined = string.Join(" ", results);
-        logger.LogInformation("Transcription complete. Chunks={Chunks} TranscriptLength={Length}", totalChunks, joined.Length);
+        var joined = string.Join(" ", results.Where(r => !string.IsNullOrWhiteSpace(r)));
+        var unintelligibleCount = results.Count(r => r == "[unintelligible]");
+        if (unintelligibleCount > 0)
+            logger.LogWarning(
+                "Transcription complete with {Unintelligible} unintelligible chunk(s). Chunks={Chunks} TranscriptLength={Length}",
+                unintelligibleCount, totalChunks, joined.Length);
+        else
+            logger.LogInformation("Transcription complete. Chunks={Chunks} TranscriptLength={Length}", totalChunks, joined.Length);
         return joined;
     }
 
-    private async Task<string> TranscribeChunkAsync(HttpClient client, string url, MemoryStream chunkStream, CancellationToken ct)
+    private async Task<string> TranscribeChunkAsync(HttpClient client, string url, MemoryStream chunkStream, int chunkIndex, double startSec, double endSec, CancellationToken ct)
     {
         var content = new StreamContent(chunkStream);
         content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
@@ -93,8 +100,10 @@ public class AzureSpeechTranscriptionService(
         var status = doc.RootElement.TryGetProperty("RecognitionStatus", out var s) ? s.GetString() : null;
         if (status == "InitialSilenceTimeout" || status == "NoMatch")
         {
-            logger.LogWarning("Azure Speech chunk returned silent/no-match status. Status={Status}", status);
-            return string.Empty;
+            logger.LogWarning(
+                "Azure Speech chunk rejected — audio will appear as [unintelligible] in transcript. Chunk={Chunk} StartSec={Start:F1} EndSec={End:F1} Status={Status}",
+                chunkIndex, startSec, endSec, status);
+            return "[unintelligible]";
         }
 
         if (status != "Success")

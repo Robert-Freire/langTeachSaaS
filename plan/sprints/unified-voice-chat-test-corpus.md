@@ -482,7 +482,9 @@ These cases exercise the `newSession` proposal type. The teacher dictates a futu
 
 ### TC-35-jordi-gergana-descripciones — Real voice note (Jordi → Gergana, 2026-05-05) [#1110 ground truth]
 
-> "En la clase de hoy de las 10:00 H de la mañana. Hemos trabajado. Las descripciones de hemos seguido trabajando mi barrio, hemos trabajado mi barrio. Concretamente hemos hecho lo que está en la pizarra del 30 de abril. Que es relacionar los lugares. Relacionar los adjetivos. Vale y la página 104. Que es la de un barrio típico. Y relacionar los diferentes sitios que hay en el en el barrio y lo ha hecho muy bien para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día."
+> "En la clase de hoy de las 10:00 H de la mañana. Hemos trabajado. Las descripciones de hemos seguido trabajando mi barrio, hemos trabajado mi barrio. Concretamente hemos hecho lo que está en la pizarra del 30 de abril. Que es relacionar los lugares. Relacionar los adjetivos. Vale y la página 104. Que es la de un barrio típico. Y relacionar los diferentes sitios que hay en el en el barrio y lo ha hecho muy bien para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día. [unintelligible] atenta con el muy bastante algunos, etcétera"
+
+**Note (#1134):** The audio continues past "Continuar con la pizarra del día." with content that Azure Speech rejected (likely a pause at a 55-second chunk boundary causing InitialSilenceTimeout). Before #1134, the rejected chunk was silently dropped and "atenta" stitched directly after "del día", producing an apparent hallucination. After the #1134 fix, rejected chunks surface as `[unintelligible]` in the transcript. The above transcript reflects the expected post-fix output. Pending in-browser re-verification by Jordi (acceptance criterion 4 of #1134).
 
 **Context:** Panel open on Gergana's session log for today (2026-05-05, open session in scope). Original failure case for #1110.
 
