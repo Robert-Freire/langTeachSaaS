@@ -67,7 +67,15 @@ internal static class FfmpegAudioConverter
         }
         catch
         {
-            process.Kill(entireProcessTree: true);
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // Suppress kill failures so the original exception is preserved.
+            }
             throw;
         }
     }

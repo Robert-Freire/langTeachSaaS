@@ -47,7 +47,8 @@ public class WhisperTranscriptionService(
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         form.Add(fileContent, "file", Path.GetFileNameWithoutExtension(fileName) + ".wav");
         form.Add(new StringContent("json"), "response_format");
-        form.Add(new StringContent("es"), "language");
+        if (!string.IsNullOrWhiteSpace(_opts.Language))
+            form.Add(new StringContent(_opts.Language), "language");
 
         using var response = await client.PostAsync(url, form, ct);
 

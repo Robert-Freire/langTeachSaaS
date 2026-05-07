@@ -14,4 +14,7 @@ public class AzureOpenAIWhisperOptions
 
     [Required]
     public string DeploymentName { get; set; } = string.Empty;
+
+    /// <summary>ISO-639-1 language hint for Whisper (e.g. "es", "en"). Empty string = auto-detect.</summary>
+    public string Language { get; set; } = "es";
 }
