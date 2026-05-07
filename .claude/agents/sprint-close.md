@@ -64,6 +64,36 @@ Review both:
 
 Log findings in `plan/sprints/prompt-health-review-<sprint-slug>.md`. If any findings are severity critical, include them in the pre-merge summary as blocking items.
 
+## Phase 3c: Extraction Smoke Test
+
+After the prompt health review completes, run the live extraction smoke test against the four ground-truth real-teacher transcripts (TC-33 to TC-36 in `plan/sprints/unified-voice-chat-test-corpus.md`).
+
+**Why this is required:** A static prompt audit cannot detect missing wiring downstream of the prompt (see #1132: nextLessonIdeas was silently dropped despite the prompt being correct). The live test calls the real propose endpoint and asserts the full proposal shape.
+
+**Steps:**
+
+1. Check if e2e containers are already running:
+   ```bash
+   docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"
+   ```
+   If running, wait for them to finish (do not tear them down). If not running, start in UI review mode:
+   ```bash
+   docker compose -f docker-compose.e2e.yml --env-file .env.e2e up -d --build
+   ```
+   Wait until the API is healthy (check `http://localhost:5178/health` returns 200).
+
+2. Run the extraction smoke test:
+   ```bash
+   cd e2e && npx playwright test tests/extraction-smoke.spec.ts --project=extraction-smoke
+   ```
+
+3. Tear down the stack:
+   ```bash
+   docker compose -f docker-compose.e2e.yml --env-file .env.e2e down -v
+   ```
+
+**If any test fails:** Report it as a **blocking** item in the pre-merge summary. Do NOT declare READY. The test is designed to fail when extraction wiring is missing (e.g., nextLessonIdeas proposals absent) and pass when the full pipeline is correctly wired.
+
 ## Phase 4: Pedagogy Review
 
 After the prompt health review completes, invoke the `pedagogy-reviewer` agent (use the Agent tool with `subagent_type: "pedagogy-reviewer"`). Pass it both the Teacher QA output AND a request to evaluate the section profiles directly:
@@ -112,6 +142,11 @@ Present the final summary:
 - Critical items: [list or "none"]
 - Report: plan/sprints/prompt-health-review-<sprint-slug>.md
 
+### Extraction Gate (Phase 3c)
+- Tests run: TC-33, TC-34, TC-35, TC-36
+- Verdict: PASS / FAIL
+- Failing tests: [list or "none"]
+
 ### Pedagogy Review
 - Verdict: SOUND / ADJUST / RETHINK
 - Key findings: [summary]
@@ -132,5 +167,6 @@ Return this summary to the main conversation. The main agent will present it to 
 - Never delete issues. Report open issues with no PR; the user decides.
 - UI review (Phase 2) runs first since it needs the e2e stack. Tear it down before proceeding.
 - Prompt health review (Phase 3b) must run BEFORE pedagogy review (Phase 4). Clean the noise first, then the pedagogy expert reviews clean templates.
+- Extraction smoke test (Phase 3c) must run BEFORE declaring READY. A FAIL is blocking.
 - The pedagogy reviewer must see BOTH Teacher QA results AND section profile guidance strings. Never skip Phase 4.
 - Keep your final response under 3000 characters. Summary, not process narration.

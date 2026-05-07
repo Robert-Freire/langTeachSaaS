@@ -88,9 +88,18 @@ export default defineConfig({
         '**/lesson-sections.spec.ts',
         '**/courses.spec.ts',
         '**/cefr-mismatch-warning.spec.ts',
+        '**/extraction-smoke.spec.ts',
       ],
       fullyParallel: true,
       workers: 4,
+    },
+    {
+      // Live extraction smoke test against the four ground-truth teacher transcripts (TC-33 to TC-36).
+      // Requires a running e2e stack (real Claude API). Run during sprint close as Stage 3c.
+      // See .claude/agents/sprint-close.md for procedure.
+      name: 'extraction-smoke',
+      testMatch: ['**/extraction-smoke.spec.ts'],
+      workers: 1,
     },
     {
       name: 'serial',
