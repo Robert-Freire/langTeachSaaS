@@ -26,6 +26,10 @@ public class AzureSpeechTranscriptionService(
     private const int MaxChunkSeconds = 55;
     internal const int MaxChunkDataBytes = MaxChunkSeconds * BytesPerSecond; // 1 760 000
 
+    // Placed in the transcript where Azure Speech rejects a chunk (InitialSilenceTimeout / NoMatch).
+    // Downstream consumers that need to detect or filter this value should reference this constant.
+    internal const string UnintelligibleMarker = UnintelligibleMarker;
+
     // Safety cap: full WAV in memory must not exceed 300 MB (~156 minutes of recording).
     // The upstream VoiceNoteService already rejects uploads over 50 MB (compressed),
     // which decompresses to well under this limit.
@@ -71,7 +75,7 @@ public class AzureSpeechTranscriptionService(
         }
 
         var joined = string.Join(" ", results.Where(r => !string.IsNullOrWhiteSpace(r)));
-        var unintelligibleCount = results.Count(r => r == "[unintelligible]");
+        var unintelligibleCount = results.Count(r => r == UnintelligibleMarker);
         if (unintelligibleCount > 0)
             logger.LogWarning(
                 "Transcription complete with {Unintelligible} unintelligible chunk(s). Chunks={Chunks} TranscriptLength={Length}",
@@ -103,7 +107,7 @@ public class AzureSpeechTranscriptionService(
             logger.LogWarning(
                 "Azure Speech chunk rejected — audio will appear as [unintelligible] in transcript. Chunk={Chunk} StartSec={Start:F1} EndSec={End:F1} Status={Status}",
                 chunkIndex, startSec, endSec, status);
-            return "[unintelligible]";
+            return UnintelligibleMarker;
         }
 
         if (status != "Success")
