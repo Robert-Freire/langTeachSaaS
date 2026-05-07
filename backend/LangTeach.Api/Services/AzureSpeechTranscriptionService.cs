@@ -28,7 +28,7 @@ public class AzureSpeechTranscriptionService(
 
     // Placed in the transcript where Azure Speech rejects a chunk (InitialSilenceTimeout / NoMatch).
     // Downstream consumers that need to detect or filter this value should reference this constant.
-    internal const string UnintelligibleMarker = UnintelligibleMarker;
+    internal const string UnintelligibleMarker = "[unintelligible]";
 
     // Safety cap: full WAV in memory must not exceed 300 MB (~156 minutes of recording).
     // The upstream VoiceNoteService already rejects uploads over 50 MB (compressed),
