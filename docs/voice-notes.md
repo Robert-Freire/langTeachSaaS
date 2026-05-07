@@ -1,6 +1,6 @@
 # Voice Notes — Recording, Transcription, Analysis
 
-**Last updated:** 2026-05-05
+**Last updated:** 2026-05-07
 **Status:** Living document. Update when the upload boundary, transcription provider, or extraction pipeline changes.
 
 This document covers what happens when a teacher records audio in the app: where the audio lands, how it becomes text, and when (and how) that text is analysed by an LLM.
@@ -54,7 +54,7 @@ After upload, the audio lives in blob storage and the transcript lives on the ro
 | `BlobPath` | `teachers/{teacherId}/{id}{ext}`. |
 | `OriginalFileName`, `ContentType`, `SizeBytes` | As declared by the client, after MIME parameter stripping. |
 | `DurationSeconds` | **Reserved, always 0.** Duration extraction is not yet implemented. |
-| `Transcription` (nullable) | DisplayText returned by Azure Speech, or `null` if transcription failed and the row was retained. |
+| `Transcription` (nullable) | Text returned by the active transcription provider, or `null` if transcription failed and the row was retained. |
 | `TranscribedAt` | Set when transcription succeeds. |
 | `CreatedAt` | Upload time. |
 
@@ -64,34 +64,55 @@ The row is the only persistent representation of the transcript. Editing the tra
 
 ## 3. Transcription
 
-### 3.1 Provider: Azure AI Speech (Speech-to-Text REST, simple recognition)
+Active provider is selected by `Transcription:Provider` in configuration. Default: `"AzureOpenAIWhisper"`. Rollback: set to `"AzureSpeech"` (no redeploy needed, config-only flip).
+
+### 3.1 Provider: Azure OpenAI Whisper (default)
+
+`backend/LangTeach.Api/Services/WhisperTranscriptionService.cs`
+
+Configuration:
+
+- Endpoint: `AzureOpenAIWhisper:Endpoint` (e.g. `https://<name>.cognitiveservices.azure.com/`)
+- API key: `AzureOpenAIWhisper:ApiKey`
+- Deployment: `AzureOpenAIWhisper:DeploymentName` (e.g. `whisper`)
+- All three are required at startup when `Transcription:Provider` is not `"AzureSpeech"`.
+
+Behaviour: audio is converted to 16 kHz mono WAV via ffmpeg, then sent as a single multipart POST to `{Endpoint}/openai/deployments/{DeploymentName}/audio/transcriptions?api-version=2024-06-01`. No chunking. No chunk stitching. Response field `text` is returned as the transcript.
+
+Whisper accepts up to 25 MB per request. A 30-minute 16 kHz mono WAV is ~57.6 MB, but teacher voice notes are typically under 5 minutes (~9.6 MB). The upstream VoiceNoteService rejects uploads over 50 MB compressed, which decompresses well within this limit.
+
+Cost logging: each transcription logs `EstimatedCostUSD` at INFO level based on duration at $0.006/min (approximate; actual Azure OpenAI pricing may vary by region and tier).
+
+### 3.2 Provider: Azure AI Speech (legacy / rollback)
 
 `backend/LangTeach.Api/Services/AzureSpeechTranscriptionService.cs`
+
+Activate via `Transcription:Provider = "AzureSpeech"`. This provider was the default before #1142.
 
 Configuration:
 
 - Endpoint: `https://{Region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language={Language}&format=simple`
-- Options: `AzureSpeech:ApiKey`, `AzureSpeech:Region`, `AzureSpeech:Language` (`AzureSpeechOptions.cs`). Both ApiKey and Region are required at startup.
-- Constraints: simple recognition is capped at ~60 s per request. The service rejects converted audio over **10 MB of PCM WAV** (16 kHz / 16-bit / mono ≈ 1.92 MB per minute).
+- Options: `AzureSpeech:ApiKey`, `AzureSpeech:Region`, `AzureSpeech:Language` (`AzureSpeechOptions.cs`).
+- Constraint: simple recognition is capped at ~60 s per request. The service chunked audio into 55-second PCM slices and joined results. This caused hard byte-cut artefacts at chunk seams on conversational Spanish.
 
-### 3.2 Pre-processing: ffmpeg
+This provider is kept for one sprint as a documented rollback option, then removed in a dedicated cleanup task.
 
-The service does not send the original webm/mp4/etc. to Azure. It pipes the buffered audio through `ffmpeg -i pipe:0 -ar 16000 -ac 1 -f wav pipe:1`, producing 16 kHz mono PCM WAV. Azure's simple recognition endpoint is most reliable on this format. ffmpeg must be on the container PATH (it is in the API image).
+### 3.3 Pre-processing: ffmpeg
 
-The conversion runs in-process: stdin write, stdout copy, and stderr drain run concurrently to avoid pipe-buffer deadlock. On non-zero exit, stderr is logged and the upload fails with `"Audio conversion failed."`.
+Both live providers convert audio to 16 kHz mono PCM WAV via `ffmpeg -i pipe:0 -ar 16000 -ac 1 -f wav pipe:1`. ffmpeg must be on the container PATH (it is in the API image). stdin write, stdout copy, and stderr drain run concurrently to avoid pipe-buffer deadlock. On non-zero exit, the upload fails with `"Audio conversion failed."`.
 
-### 3.3 Stub for local dev
+### 3.4 Stub for local dev / testing
 
-`StubTranscriptionService.cs` is registered when configured (see `Program.cs:167-169`). Use it to develop without burning Azure Speech credits. Selection is by configuration, not env-name; read `Program.cs` for the current toggle.
+`StubTranscriptionService.cs` is registered in `E2ETesting` and `Testing` environments, regardless of the `Transcription:Provider` flag. It returns a fixed transcript string without calling any external API.
 
-### 3.4 Failure modes
+### 3.5 Failure modes
 
 | Failure | Effect |
 |---------|--------|
-| ffmpeg exits non-zero | `InvalidOperationException("Audio conversion failed.")`, request returns 400. **No row written, no blob retained** (blob upload precedes transcription, but the service throws before persistence — see note below). |
-| Converted WAV > 10 MB | Same path as ffmpeg failure (rejected with size message). |
+| ffmpeg exits non-zero | `InvalidOperationException("Audio conversion failed.")`, request returns 400. |
+| Converted WAV > 25 MB (Whisper) | `InvalidOperationException` with size message before the HTTP call. |
+| Whisper non-2xx | `InvalidOperationException("Whisper transcription failed: {status}")`. Body logged at ERROR. |
 | Azure Speech non-2xx | `InvalidOperationException("Transcription failed: {status}")`. |
-| `RecognitionStatus != "Success"` | `InvalidOperationException` with the returned status string. |
 
 **Known wart:** the blob is uploaded *before* transcription runs (`VoiceNoteService.cs:94` then `:99`). If transcription throws, the blob is left in storage with no DB row pointing at it. There is no orphan-cleanup job. Track this if storage cost ever matters.
 
@@ -153,9 +174,18 @@ The "transcription blockquote" component in `design-system.md §11.12` is the ca
 
 Required `appsettings` / Key Vault keys:
 
-- `AzureSpeech:ApiKey` (validated at startup)
-- `AzureSpeech:Region` (validated at startup)
-- `AzureSpeech:Language` (defaulted by `AzureSpeechOptions`)
+Default provider (`AzureOpenAIWhisper`):
+- `AzureOpenAIWhisper:ApiKey` (validated at startup)
+- `AzureOpenAIWhisper:Endpoint` (validated at startup)
+- `AzureOpenAIWhisper:DeploymentName` (validated at startup)
+
+Rollback provider (`AzureSpeech`):
+- `AzureSpeech:ApiKey` (validated at startup when provider = AzureSpeech)
+- `AzureSpeech:Region` (validated at startup when provider = AzureSpeech)
+- `AzureSpeech:Language` (defaulted by `AzureSpeechOptions`, not validated)
+
+Provider selection:
+- `Transcription:Provider` -- `"AzureOpenAIWhisper"` (default) or `"AzureSpeech"` (rollback)
 - Blob connection string (shared with materials, resolved by the `BlobServiceClient` registration in `Program.cs`)
 
 Voice-note storage adds **one extra blob container** (`voice-notes`) on top of the `materials` container described in `architecture-model.md §2`. There is no separate storage account.
@@ -179,5 +209,5 @@ Voice-note storage adds **one extra blob container** (`voice-notes`) on top of t
 
 - **Orphan blobs on transcription failure** (§3.4). Acceptable today; revisit if storage cost grows.
 - **`DurationSeconds` is always 0.** Reserved column. If/when surfaced in UI, populate it from ffprobe during the ffmpeg step rather than relying on the client.
-- **60 s simple-recognition cap.** Long teacher debriefs need to be broken up by the user or migrated to the batch / continuous-recognition endpoint. There is no chunking on the server today.
+- **60 s simple-recognition cap (resolved).** Azure Speech's 60 s limit was worked around by chunking, which caused seam artefacts. Resolved in #1142 by switching to Azure OpenAI Whisper (single request, no chunk limit up to 25 MB WAV).
 - **No retention policy** on `voice-notes` container or `VoiceNote` rows. Data accumulates forever until manual cleanup or teacher delete (`DELETE /api/voice-notes/{id}` removes the blob and row).

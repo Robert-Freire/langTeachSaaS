@@ -46,20 +46,30 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
 
     // Validate all required config keys after Key Vault is loaded, before any service registration.
     // This ensures the app fails fast with a clear message instead of crashing mid-startup.
-    // When adding a new Key Vault secret, add its key here so missing config is caught at startup.
-    StartupConfigValidator.ValidateRequiredConfig(
-        builder.Configuration,
-        [
-            "ConnectionStrings:Default",
-            "Auth0:Domain",
-            "Auth0:Audience",
-            "Claude:ApiKey",
-            "AzureBlobStorage:ConnectionString",
-            "AzureSpeech:ApiKey",
-            "AzureSpeech:Region",
-            "Telegram:BotToken",
-            "Telegram:WebhookSecret",
-        ]);
+    // The transcription-provider-specific keys vary based on the active provider flag.
+    var transcriptionProvider = builder.Configuration["Transcription:Provider"] ?? "AzureOpenAIWhisper";
+    var requiredKeys = new List<string>
+    {
+        "ConnectionStrings:Default",
+        "Auth0:Domain",
+        "Auth0:Audience",
+        "Claude:ApiKey",
+        "AzureBlobStorage:ConnectionString",
+        "Telegram:BotToken",
+        "Telegram:WebhookSecret",
+    };
+    if (transcriptionProvider == "AzureSpeech")
+    {
+        requiredKeys.Add("AzureSpeech:ApiKey");
+        requiredKeys.Add("AzureSpeech:Region");
+    }
+    else
+    {
+        requiredKeys.Add("AzureOpenAIWhisper:ApiKey");
+        requiredKeys.Add("AzureOpenAIWhisper:Endpoint");
+        requiredKeys.Add("AzureOpenAIWhisper:DeploymentName");
+    }
+    StartupConfigValidator.ValidateRequiredConfig(builder.Configuration, requiredKeys);
 }
 
 // CORS
@@ -129,6 +139,12 @@ builder.Services.AddHttpClient("AzureSpeech", client =>
     client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
     client.Timeout = TimeSpan.FromSeconds(60);
 });
+builder.Services.AddHttpClient("AzureOpenAIWhisper", client =>
+{
+    var apiKey = builder.Configuration["AzureOpenAIWhisper:ApiKey"] ?? "";
+    client.DefaultRequestHeaders.Add("api-key", apiKey);
+    client.Timeout = TimeSpan.FromSeconds(120);
+});
 builder.Services.AddScoped<IClaudeClient, ClaudeApiClient>();
 builder.Services.AddSingleton<ISectionProfileService, SectionProfileService>();
 builder.Services.AddSingleton<IPedagogyConfigService, PedagogyConfigService>();
@@ -162,11 +178,20 @@ builder.Services.AddSingleton<IBlobStorageService>(sp => sp.GetRequiredService<B
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
 builder.Services.Configure<AzureSpeechOptions>(builder.Configuration.GetSection(AzureSpeechOptions.SectionName));
+builder.Services.Configure<AzureOpenAIWhisperOptions>(builder.Configuration.GetSection(AzureOpenAIWhisperOptions.SectionName));
 
 if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+{
     builder.Services.AddScoped<ITranscriptionService, StubTranscriptionService>();
+}
 else
-    builder.Services.AddScoped<ITranscriptionService, AzureSpeechTranscriptionService>();
+{
+    var activeProvider = builder.Configuration["Transcription:Provider"] ?? "AzureOpenAIWhisper";
+    if (activeProvider == "AzureSpeech")
+        builder.Services.AddScoped<ITranscriptionService, AzureSpeechTranscriptionService>();
+    else
+        builder.Services.AddScoped<ITranscriptionService, WhisperTranscriptionService>();
+}
 
 builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());

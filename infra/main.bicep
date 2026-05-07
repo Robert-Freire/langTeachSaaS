@@ -46,6 +46,8 @@ var storageName   = 'stlangteach${env}'
 var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
 // ACR names: 5-50 chars, alphanumeric only, globally unique
 var acrName = 'crlangteach${env}'
+// Azure OpenAI resource name
+var openaiName = 'oai-langteach-${env}'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -113,6 +115,16 @@ module storage 'modules/storage.bicep' = {
     location: location
     appPrincipalId: containerApp.outputs.principalId
   }
+}
+
+module openai 'modules/openai.bicep' = {
+  name: 'openai'
+  params: {
+    name: openaiName
+    location: location
+    keyVaultName: keyVaultName
+  }
+  dependsOn: [kv]
 }
 
 // ── Outputs ───────────────────────────────────────────────────────────────────
