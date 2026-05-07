@@ -508,6 +508,7 @@ Both were wrong. The fix anchors `sessionDate` to the opening clause ("en la cla
 - The 30 April session must NOT receive an update.
 - A separate `newSession` proposal must NOT be produced.
 - The transcript must NOT be silently truncated (post-#1127 the chunked WAV path covers full audio).
+- A Learning Goals proposal card MUST NOT surface with the forward-planning content ("continuar con la pizarra del día"). That content belongs exclusively in Next Session Topics. `shortTermObjectives` expected = empty [] for this transcript (#1135).
 
 **Forward-looking phrase routing:** "para la clase de mañana día 6, tenemos que continuar con la pizarra del día" → `nextLessonIdeas` (regression check for #1126). It is NOT a teachingTodo (no trigger phrase) and NOT a newSession (a planning aside, not an explicit "schedule a session for…").
 

@@ -3459,6 +3459,21 @@ public class PromptServiceTests
         request.UserPrompt.Should().Contain("DELE");
     }
 
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_ShortTermObjectives_ExcludesSessionScopedPhrases()
+    {
+        var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
+
+        // The prompt must define shortTermObjectives as persistent cross-session aims only.
+        request.SystemPrompt.Should().Contain("six months from now");
+        // Must call out session-scoped tell-tale phrases so the model recognises them.
+        request.SystemPrompt.Should().Contain("para mañana");
+        request.SystemPrompt.Should().Contain("para la próxima clase");
+        request.SystemPrompt.Should().Contain("next class");
+        // Must confirm genuine long-term aims are in scope (the rule narrows, not disables).
+        request.SystemPrompt.Should().Contain("quiere preparar el DELE B2 para octubre");
+    }
+
     // --- BuildReplanSuggestionPrompt ---
 
     [Fact]

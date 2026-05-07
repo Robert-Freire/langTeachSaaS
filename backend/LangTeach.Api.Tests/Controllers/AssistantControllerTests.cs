@@ -327,6 +327,64 @@ public class AssistantControllerTests
     }
 
     [Fact]
+    public async Task Propose_WithLongTermAimAndNextLessonIdeas_EmitsBothProposalsSeparately()
+    {
+        // AC2 (#1135): a transcript containing BOTH a long-term student aim AND a next-class
+        // planning aside must produce exactly two separate proposal cards with no overlap.
+        // Stub: [has-learning-goals] returns ShortTermObjectives = "Presentaciones en español"
+        //       reflection stub always returns NextLessonIdeas = "[Extracted] Next lesson ideas"
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-dual-content", "assistant-dual-content@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Gergana quiere preparar el DELE B2 para octubre. Para mañana continuar con la pizarra. [has-learning-goals]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        var goalsProp = body!.Proposals.FirstOrDefault(p => p.Type == "student" && p.Field == "learningGoals");
+        goalsProp.Should().NotBeNull("a long-term aim must produce a Learning Goals proposal");
+        goalsProp!.NewValue.Should().Contain("Presentaciones");
+
+        var nextSessionProp = body.Proposals.FirstOrDefault(p => p.Type == "session" && p.Field == "nextSessionTopics");
+        nextSessionProp.Should().NotBeNull("a next-class aside must produce a Next Session Topics proposal");
+        nextSessionProp!.NewValue.Should().Contain("Next lesson ideas");
+
+        goalsProp.NewValue.Should().NotBe(nextSessionProp.NewValue, "the two proposals must not contain identical content");
+    }
+
+    [Fact]
+    public async Task Propose_WithSessionScopedContentOnly_NoLearningGoalsProposal()
+    {
+        // AC1 (#1135): when the student extractor correctly filters out session-scoped content,
+        // no Learning Goals proposal must be emitted, but Next Session Topics still appears.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-goals", "assistant-no-goals@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "Para mañana continuar con la pizarra del día. [no-learning-goals]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+
+        body!.Proposals.Should().NotContain(p => p.Type == "student" && p.Field == "learningGoals",
+            "session-scoped content must not leak into a Learning Goals proposal");
+
+        var nextSessionProp = body.Proposals.FirstOrDefault(p => p.Type == "session" && p.Field == "nextSessionTopics");
+        nextSessionProp.Should().NotBeNull("Next Session Topics proposal must still appear independently");
+    }
+
+    [Fact]
     public async Task Propose_EmptyText_Returns400()
     {
         var (client, _) = await SeedTeacherWithStudent(
