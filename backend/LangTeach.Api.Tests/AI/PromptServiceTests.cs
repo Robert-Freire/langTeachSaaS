@@ -1371,7 +1371,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("DECLARED WEAKNESSES");
+        req.UserPrompt.Should().Contain("STUDENT ERROR PROFILE");
         req.UserPrompt.Should().Contain("articles");
     }
 
@@ -1380,23 +1380,24 @@ public class PromptServiceTests
     {
         var req = _sut.BuildLessonPlanPrompt(BaseCtx());
 
-        req.UserPrompt.Should().NotContain("DECLARED WEAKNESSES");
+        req.UserPrompt.Should().NotContain("STUDENT ERROR PROFILE");
     }
 
     [Fact]
-    public void LessonPlanPrompt_WeaknessBlock_ContainsSectionSpecificGuidanceFromConfig()
+    public void LessonPlanPrompt_WeaknessBlock_IncludesProfileGuidanceAndOmitsSectionLabels()
     {
         var ctx = BaseCtx() with { StudentWeaknesses = [new StudentWeakness("subjunctive")] };
 
         var req = _sut.BuildLessonPlanPrompt(ctx);
 
-        // Verify section-specific labels and guidance are assembled from config
-        req.UserPrompt.Should().Contain("Practice (grammatical):", because: "practice has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("Production (grammatical):", because: "production has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().Contain("WrapUp (grammatical):", because: "wrapup has weaknessTargetingGuidance in config");
-        req.UserPrompt.Should().NotContain("WarmUp:", because: "warmup does not participate in weakness targeting");
-        req.UserPrompt.Should().NotContain("Presentation:", because: "presentation does not participate in weakness targeting");
-        req.UserPrompt.Should().Contain("subjunctive", because: "weakness text must be interpolated into the practice guidance");
+        req.UserPrompt.Should().Contain("at most 1-2 weakness-targeting exercises",
+            because: "lessonWeaknessProfileGuidance from config must appear in the error profile block");
+        req.UserPrompt.Should().Contain("subjunctive",
+            because: "weakness text must be listed in the error profile block");
+        req.UserPrompt.Should().NotContain("Practice (grammatical):",
+            because: "per-section DECLARED WEAKNESSES labels are removed from lesson plan prompt (#611)");
+        req.UserPrompt.Should().NotContain("Production (grammatical):",
+            because: "per-section DECLARED WEAKNESSES labels are removed from lesson plan prompt (#611)");
     }
 
     [Fact]
@@ -2211,14 +2212,14 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1Plus()
+    public void ExercisesPrompt_SentenceTransformationGuidanceMentionsB1AndAbove()
     {
         var ctx = BaseCtx() with { CefrLevel = "B2" };
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("B1+",
-            because: "guidance should specify B1+ as the target level range");
+        req.UserPrompt.Should().Contain("B1 and above",
+            because: "guidance should specify the target level range without sublevel notation");
         req.UserPrompt.Should().Contain("DELE",
             because: "guidance should reference DELE exam relevance");
     }
@@ -2831,16 +2832,17 @@ public class PromptServiceTests
     // --- True/False coherence constraints (#431) ---
 
     [Fact]
-    public void ExercisesPrompt_TrueFalse_SourcePassageEnforcedBySchemaNotPrompt()
+    public void ExercisesPrompt_TrueFalse_SourcePassageInstructionPresent()
     {
-        // Issue #422 (AC6): The CRITICAL sourcePassage instruction was removed from the prompt.
-        // Enforcement now lives in the JSON schema (required + minLength:1) and backend validator.
+        // Issue #610: Restore plain-language sourcePassage guidance alongside schema enforcement.
+        // Schema (minLength:1 + required) and backend validator remain the structural guards;
+        // the prompt instruction makes the requirement explicit for the model.
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
         req.UserPrompt.Should().NotContain("sourcePassage field MUST be non-empty",
-            because: "sourcePassage enforcement moved to schema + backend validator (#422)");
-        req.UserPrompt.Should().Contain("sourcePassage",
-            because: "the JSON template still includes the sourcePassage field so AI knows it exists");
+            because: "old CRITICAL phrasing was removed in #422; new instruction uses positive framing");
+        req.UserPrompt.Should().Contain("sourcePassage must quote the exact sentence or phrase",
+            because: "trueFalse sourcePassage requires explicit prompt guidance (#610) so the model populates it");
     }
 
     [Fact]
@@ -3384,6 +3386,73 @@ public class PromptServiceTests
         request.SystemPrompt.Should().NotContain("no open session in scope");
     }
 
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_DirectsPlanningAsidesToNextLessonIdeas()
+    {
+        // bug #1126: open-session hint used to say "teachingTodos or nextLessonIdeas",
+        // causing the model to sometimes pick teachingTodos for plain planning asides
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Para la próxima clase tengo que trabajar verbos de cambio.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("nextLessonIdeas",
+            because: "the open-session hint must direct planning asides to nextLessonIdeas");
+        request.SystemPrompt.Should().NotContain("teachingTodos or nextLessonIdeas",
+            because: "ambiguous 'or' was the root cause of #1126 misclassification");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_TeachingTodosTriggerPhraseRulePresent()
+    {
+        // regression guard for #1065: teachingTodos must still require a trigger phrase
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy hemos visto el subjuntivo.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("apunta como teaching todo",
+            because: "trigger-phrase rule for teachingTodos must remain intact to prevent #1065 regression");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_ExplicitDateCueEmitsNewSessionNotNextLessonIdeas()
+    {
+        // regression guard for #1140: open-session + explicit date cue must route to proposedNewSession, not nextLessonIdeas
+        var today = new DateOnly(2026, 5, 5);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Para la clase de mañana tenemos que continuar con adjetivos.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("mañana",
+            because: "the open-session hint must list 'mañana' as an explicit date cue that triggers newSessionTitle");
+        request.SystemPrompt.Should().Contain("newSessionTitle",
+            because: "the open-session hint must instruct the model to emit newSessionTitle for date-bearing asides");
+        request.SystemPrompt.Should().Contain("Do NOT also put that same planning content in nextLessonIdeas",
+            because: "the hint must prohibit duplicate routing of date-bearing asides to nextLessonIdeas");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_HasOpenSession_True_TodoTriggerLeaveNewSessionTitleNull()
+    {
+        // regression guard for #1065: todo-trigger phrase must not produce a new session card
+        var today = new DateOnly(2026, 5, 6);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Añade un teaching todo para repasar la voz pasiva el martes que viene.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("leave newSessionTitle null",
+            because: "todo-trigger rule must explicitly suppress newSessionTitle to prevent #1065 regression");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_SanitizesTeacherText_StripsControlCharactersAndNormalizesNewlines()
+    {
+        var today = new DateOnly(2026, 4, 11);
+        const string dirtyText = "Hoy trabajamos\nel subjuntivo\x00 y\r\ntambién\x1F repasamos.";
+        const string expectedText = "Hoy trabajamos el subjuntivo y  también repasamos.";
+
+        var request = _sut.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(today, dirtyText));
+
+        request.UserPrompt.Should().Be(expectedText);
+    }
+
     // --- BuildStudentProfileExtractionPrompt ---
 
     [Fact]
@@ -3416,6 +3485,21 @@ public class PromptServiceTests
 
         request.Model.Should().Be(ClaudeModel.Haiku);
         request.UserPrompt.Should().Contain("DELE");
+    }
+
+    [Fact]
+    public void BuildStudentProfileExtractionPrompt_ShortTermObjectives_ExcludesSessionScopedPhrases()
+    {
+        var request = _sut.BuildStudentProfileExtractionPrompt("teacher notes");
+
+        // The prompt must define shortTermObjectives as persistent cross-session aims only.
+        request.SystemPrompt.Should().Contain("six months from now");
+        // Must call out session-scoped tell-tale phrases so the model recognises them.
+        request.SystemPrompt.Should().Contain("para mañana");
+        request.SystemPrompt.Should().Contain("para la próxima clase");
+        request.SystemPrompt.Should().Contain("next class");
+        // Must confirm genuine long-term aims are in scope (the rule narrows, not disables).
+        request.SystemPrompt.Should().Contain("quiere preparar el DELE B2 para octubre");
     }
 
     // --- BuildReplanSuggestionPrompt ---

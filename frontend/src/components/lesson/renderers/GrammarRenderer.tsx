@@ -124,7 +124,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
         <button
           type="button"
           onClick={handleAddExample}
-          className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+          className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
           data-testid="grammar-add-example"
         >
           + Add example
@@ -158,7 +158,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
         <button
           type="button"
           onClick={handleAddMistake}
-          className="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+          className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
           data-testid="grammar-add-mistake"
         >
           + Add mistake

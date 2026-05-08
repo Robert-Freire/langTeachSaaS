@@ -138,8 +138,21 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals).toHaveLength(1)
 
     await act(async () => { await result.current.apply('p3') })
-    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Review passive voice')
+    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Review passive voice', null)
     expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('apply: passes dueDate from todo payload to applyTodoProposal', async () => {
+    const todoWithDate = { id: 'pt-date', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: '2026-05-12' } }
+    mockPropose.mockResolvedValueOnce({ proposals: [todoWithDate] })
+    mockApplyTodo.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('pt-date') })
+    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Repasar la voz pasiva', '2026-05-12')
   })
 
   it('apply: sets error status on failure without affecting other cards', async () => {
@@ -204,7 +217,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: routes newStudent proposal to createStudent and invalidates students query', async () => {
     const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-student-id', name: 'Sofía', learningLanguage: 'inglés',
@@ -226,9 +239,35 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
+  it('apply: passes cityOfResidence and countryOfResidence to createStudent', async () => {
+    const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1', cityOfResidence: 'Madrid', countryOfResidence: 'Spain' }
+    const newStudentProposal = { id: 'p4b', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
+    mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
+    mockCreateStudent.mockResolvedValueOnce({
+      id: 'new-student-id', name: 'Sofía', learningLanguage: 'English',
+      level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
+      languages: { nativeLanguages: [], spokenLanguages: [] },
+      identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: 'Spain', cityOfResidence: 'Madrid' },
+      profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
+      commercial: { isActive: true, isCorporate: false, rate: null },
+      createdAt: '', updatedAt: '',
+    })
+
+    const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('Nueva alumna Sofía de Madrid, España') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p4b') })
+    expect(mockCreateStudent).toHaveBeenCalledWith(expect.objectContaining({
+      cityOfResidence: 'Madrid',
+      countryOfResidence: 'Spain',
+    }))
+    expect(result.current.proposals[0].status).toBe('applied')
+  })
+
   it('apply: normalizes Spanish language names to canonical English before creating student', async () => {
     const studentPayload = { name: 'María', learningLanguage: 'inglés', nativeLanguages: ['castellano'], cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    const newStudentProposal = { id: 'p5', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'María', learningLanguage: 'English',
@@ -254,7 +293,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: English-only input passes through without normalization regression', async () => {
     const studentPayload = { name: 'John', learningLanguage: 'Spanish', nativeLanguages: ['English'], cefrLevel: 'A2' }
-    const newStudentProposal = { id: 'p6', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'John', payload: studentPayload }
+    const newStudentProposal = { id: 'p6', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'John', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'John', learningLanguage: 'Spanish',
@@ -280,7 +319,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: mixed Spanish aliases and canonical English in nativeLanguages both normalize correctly', async () => {
     const studentPayload = { name: 'María', learningLanguage: 'Spanish', nativeLanguages: ['Portuguese', 'castellano'], cefrLevel: 'B2' }
-    const newStudentProposal = { id: 'p8', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', payload: studentPayload }
+    const newStudentProposal = { id: 'p8', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'María', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
     mockCreateStudent.mockResolvedValueOnce({
       id: 'new-id', name: 'María', learningLanguage: 'Spanish',
@@ -306,7 +345,7 @@ describe('useAtelierAssistant', () => {
 
   it('apply: unrecognized language name sets proposal to error with offending value', async () => {
     const studentPayload = { name: 'Test', learningLanguage: 'klingon', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p7', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Test', payload: studentPayload }
+    const newStudentProposal = { id: 'p7', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Test', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -321,7 +360,7 @@ describe('useAtelierAssistant', () => {
 
   it('onEditPayload: updates payload of proposal with matching id', async () => {
     const studentPayload = { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' }
-    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', payload: studentPayload }
+    const newStudentProposal = { id: 'p4', type: 'newStudent' as const, field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía', newStudentPayload: studentPayload }
     mockPropose.mockResolvedValueOnce({ proposals: [newStudentProposal] })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -330,7 +369,7 @@ describe('useAtelierAssistant', () => {
 
     const updatedPayload = { name: 'Lucía', learningLanguage: 'inglés', cefrLevel: 'B1' }
     act(() => { result.current.onEditPayload('p4', updatedPayload) })
-    expect(result.current.proposals[0].payload).toEqual(updatedPayload)
+    expect(result.current.proposals[0].newStudentPayload).toEqual(updatedPayload)
   })
 
   it('reset: clears transcription, processing, and proposals', async () => {
@@ -491,18 +530,15 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('error')
   })
 
-  it('apply: session proposal invalidates session-summary query', async () => {
-    const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  it('apply: session proposal errors when sessionId is null (no open session)', async () => {
     mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]] })
-    mockApplySession.mockResolvedValueOnce(undefined)
-    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
-
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
     act(() => { result.current.submit('text') })
     await act(async () => { await vi.runAllTimersAsync() })
 
     await act(async () => { await result.current.apply('p2') })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['session-summary', 'student-1'] })
-    invalidateSpy.mockRestore()
+    expect(mockApplySession).not.toHaveBeenCalled()
+    expect(result.current.proposals[0].status).toBe('error')
   })
 
   it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
@@ -517,5 +553,26 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await result.current.apply('psk1') })
     expect(mockApplyStudent).toHaveBeenCalledWith('student-1', 'skillLevel.writing', 'B1')
     expect(result.current.proposals[0].status).toBe('applied')
+  })
+
+  it('reset: prevents stale submit from repopulating proposals', async () => {
+    let resolvePropose!: (v: { proposals: typeof sampleProposals }) => void
+    mockPropose.mockReturnValueOnce(new Promise(r => { resolvePropose = r }))
+
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+
+    act(() => { result.current.submit('text') })
+    expect(result.current.processing).toBe(true)
+
+    act(() => { result.current.reset() })
+    expect(result.current.processing).toBe(false)
+    expect(result.current.proposals).toHaveLength(0)
+
+    // Resolve the in-flight submit after reset
+    await act(async () => { resolvePropose({ proposals: sampleProposals }); await vi.runAllTimersAsync() })
+
+    // State must remain clear -- stale response discarded
+    expect(result.current.proposals).toHaveLength(0)
+    expect(result.current.processing).toBe(false)
   })
 })

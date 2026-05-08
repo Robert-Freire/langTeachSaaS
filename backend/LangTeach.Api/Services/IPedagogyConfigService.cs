@@ -178,4 +178,10 @@ public interface IPedagogyConfigService
     ContrastiveNoteResult? GetContrastivePattern(string nativeLang, string grammarTopic, string level);
 
     PromptFragmentsConfig PromptFragments { get; }
+
+    /// <summary>
+    /// Returns the proposal field taxonomy (student fields, skill-level fields, session fields)
+    /// shared between AssistantController and the frontend.
+    /// </summary>
+    ProposalFieldsConfig ProposalFields { get; }
 }

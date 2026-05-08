@@ -218,6 +218,10 @@ export function StudentRoster({ students }: StudentRosterProps) {
                     className="group hover:bg-[#ECEAFD] transition-colors cursor-pointer"
                     data-testid="zone3-student-row"
                     onClick={() => navigate(`/students/${student.studentId}`)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/students/${student.studentId}`) } }}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open student ${student.name}`}
                   >
                     <td className="px-6 py-2.5">
                       <Link
@@ -261,7 +265,7 @@ export function StudentRoster({ students }: StudentRosterProps) {
           <div className="px-6 py-3 border-t border-none bg-[#F4F2FD] rounded-b-2xl">
             <Link
               to="/students"
-              className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-800 font-inter transition-colors"
+              className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-700 font-inter transition-colors"
             >
               View entire student base &rarr;
             </Link>

@@ -22,6 +22,54 @@ namespace LangTeach.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.AssistantTurnFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProposalsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rating")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("SessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("VoiceNoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeacherId");
+
+                    b.HasIndex("VoiceNoteId", "TeacherId")
+                        .IsUnique()
+                        .HasFilter("[VoiceNoteId] IS NOT NULL");
+
+                    b.ToTable("AssistantTurnFeedbacks");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
                 {
                     b.Property<Guid>("Id")
@@ -917,6 +965,24 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("VoiceNoteId");
 
                     b.ToTable("VoiceNoteApplications");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.AssistantTurnFeedback", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LangTeach.Api.Data.Models.VoiceNote", "VoiceNote")
+                        .WithMany()
+                        .HasForeignKey("VoiceNoteId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Teacher");
+
+                    b.Navigation("VoiceNote");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>

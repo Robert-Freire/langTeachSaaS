@@ -1,8 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Tests.Controllers;
 
@@ -413,7 +417,7 @@ public class StudentsControllerTests
 
         var appendResponse = await client.PostAsJsonAsync(
             $"/api/students/{student.Id}/teaching-todos",
-            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+            new CreateTeachingTodoDto("Practicar subjuntivo", null, null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
         var todoId = withTodo!.Profile.TeachingTodos[0].Id;
@@ -444,7 +448,7 @@ public class StudentsControllerTests
 
         var appendResponse = await client.PostAsJsonAsync(
             $"/api/students/{student.Id}/teaching-todos",
-            new CreateTeachingTodoDto("Practicar subjuntivo", null));
+            new CreateTeachingTodoDto("Practicar subjuntivo", null, null));
         appendResponse.EnsureSuccessStatusCode();
         var withTodo = await appendResponse.Content.ReadFromJsonAsync<StudentDto>();
         var todoId = withTodo!.Profile.TeachingTodos[0].Id;
@@ -630,17 +634,17 @@ public class StudentsControllerTests
     }
 
     [Fact]
-    public async Task PatchStudent_SkillLevelWithSubLevel_StoresSubLevel()
+    public async Task PatchStudent_SkillLevelOverride_StoresBaseLevel()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-sublevel", "patch-skill-sublevel@example.com");
         var student = await CreateStudentAsync(client, "Marco");
 
-        var patch = new PatchStudentRequest { SkillLevelReading = "B1.2" };
+        var patch = new PatchStudentRequest { SkillLevelReading = "B1" };
         var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
 
         patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
-        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1.2");
+        updated!.Level.SkillLevelOverrides.Should().ContainKey("Reading").WhoseValue.Should().Be("B1");
     }
 
     [Fact]
@@ -653,6 +657,25 @@ public class StudentsControllerTests
         var patchResponse = await client.PatchAsJsonAsync($"/api/students/{student.Id}", patch);
 
         patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ExtractProfile_WhenClaudeRateLimited_Returns429()
+    {
+        var rateLimitFactory = _factory.WithWebHostBuilder(b =>
+            b.ConfigureServices(services =>
+            {
+                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IStudentProfileExtractionService));
+                if (descriptor is not null) services.Remove(descriptor);
+                services.AddScoped<IStudentProfileExtractionService, RateLimitThrowingExtractionService>();
+            }));
+
+        var client = rateLimitFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Auth0Id", "auth0|rate-limit-test");
+        client.DefaultRequestHeaders.Add("X-Test-Email", "rate-limit@example.com");
+        var response = await client.PostAsJsonAsync("/api/students/extract-profile", new { text = "any text" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(
@@ -671,4 +694,10 @@ public class StudentsControllerTests
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<StudentDto>())!;
     }
+}
+
+internal class RateLimitThrowingExtractionService : IStudentProfileExtractionService
+{
+    public Task<LangTeach.Api.DTOs.ExtractedStudentProfileDto> ExtractAsync(string text, CancellationToken ct = default)
+        => throw new ClaudeRateLimitException(TimeSpan.FromSeconds(30));
 }

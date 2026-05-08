@@ -32,6 +32,9 @@ param auth0Domain string
 @description('Auth0 API audience (e.g. https://api.langteach.io)')
 param auth0Audience string
 
+@description('Object ID of the GitHub Actions service principal used by the BACPAC backup workflow. Grants Key Vault Secrets User so it can read the SQL connection string. Leave empty to skip the role assignment.')
+param backupServicePrincipalId string = ''
+
 // ── Derived names ─────────────────────────────────────────────────────────────
 
 var sqlServerName = 'langteach-sql-${env}'
@@ -43,6 +46,8 @@ var storageName   = 'stlangteach${env}'
 var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
 // ACR names: 5-50 chars, alphanumeric only, globally unique
 var acrName = 'crlangteach${env}'
+// Azure OpenAI resource name
+var openaiName = 'oai-langteach-${env}'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -86,6 +91,7 @@ module kv 'modules/keyvault.bicep' = {
     location: location
     sqlConnectionString: 'Server=tcp:${sqlServerName}${environment().suffixes.sqlServerHostname},1433;Initial Catalog=${sqlDbName};User ID=${sqlAdminUser};Password=${sqlAdminPassword};Encrypt=True;Connection Timeout=30;'
     appPrincipalId: containerApp.outputs.principalId
+    backupServicePrincipalId: backupServicePrincipalId
     storageConnectionString: storage.outputs.connectionString
     auth0Domain: auth0Domain
     auth0Audience: auth0Audience
@@ -109,6 +115,17 @@ module storage 'modules/storage.bicep' = {
     location: location
     appPrincipalId: containerApp.outputs.principalId
   }
+}
+
+module openai 'modules/openai.bicep' = {
+  name: 'openai'
+  params: {
+    name: openaiName
+    location: location
+    keyVaultName: keyVaultName
+    appPrincipalId: containerApp.outputs.principalId
+  }
+  dependsOn: [kv]
 }
 
 // ── Outputs ───────────────────────────────────────────────────────────────────

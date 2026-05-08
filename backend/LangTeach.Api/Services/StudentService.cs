@@ -39,11 +39,8 @@ public class StudentService : IStudentService
             ["Speaking"] = "Speaking", ["Listening"] = "Listening",
         };
 
-    // Skill level override values accept sub-levels (e.g. B1.2) for per-skill granularity.
-    // The student's global CefrLevel stays at the standard 6-level set (A1-C2) — kept strict
-    // because curriculum generation maps directly to those 6 levels.
-    private static readonly System.Text.RegularExpressions.Regex SkillLevelValueRegex =
-        new(@"^[ABC][12](\.\d+)?[+]?$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    // Skill level override values are normalized to the canonical 6-level set (A1, A2, B1, B2, C1, C2)
+    // via CefrLevelNormalizer. Sublevel input from teacher speech is accepted and normalized to base levels.
 
     private readonly AppDbContext _db;
     private readonly ILogger<StudentService> _logger;
@@ -403,6 +400,7 @@ public class StudentService : IStudentService
             Kind = TeacherFollowupKinds.Pedagogical,
             CreatedAt = DateTime.UtcNow,
             SourceSessionLogId = sourceSessionLogId,
+            DueDate = ParseDueDate(request.DueDate),
         };
         _db.TeacherFollowups.Add(followup);
         await _db.SaveChangesAsync(cancellationToken);
@@ -491,10 +489,10 @@ public class StudentService : IStudentService
         {
             if (!CanonicalSkillKeys.TryGetValue(key, out var canonicalKey))
                 throw new ValidationException($"SkillLevelOverrides key '{key}' is not valid. Allowed: {string.Join(", ", CanonicalSkillKeys.Values)}.");
-            var trimmedValue = value?.Trim() ?? "";
-            if (!SkillLevelValueRegex.IsMatch(trimmedValue))
-                throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level (e.g. A1, B1, B1.2, C1).");
-            normalized[canonicalKey] = trimmedValue;
+            var normalizedValue = CefrLevelNormalizer.Normalize(value?.Trim() ?? "");
+            if (!CefrConstants.AllLevels.Contains(normalizedValue, StringComparer.OrdinalIgnoreCase))
+                throw new ValidationException($"SkillLevelOverrides value '{value}' for key '{key}' is not a valid CEFR level. Must be one of: A1, A2, B1, B2, C1, C2.");
+            normalized[canonicalKey] = normalizedValue;
         }
         return normalized;
     }
@@ -513,4 +511,15 @@ public class StudentService : IStudentService
 
     private static string Serialize<T>(List<T> list) =>
         JsonStorageHelper.Serialize(list);
+
+    private DateOnly? ParseDueDate(string? raw)
+    {
+        if (raw is null) return null;
+        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var parsed))
+            return parsed;
+        _logger.LogWarning("Teaching todo DueDate '{DueDate}' could not be parsed as yyyy-MM-dd; storing null", raw);
+        return null;
+    }
 }

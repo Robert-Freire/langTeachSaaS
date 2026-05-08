@@ -254,7 +254,7 @@ function RecentSessions({
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+            className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
             data-testid="view-all-sessions-btn"
           >
             View all sessions <ArrowRight className="h-3 w-3" />
@@ -277,7 +277,7 @@ function RecentSessions({
       {recent.length > 0 && onViewAll && (
         <button
           onClick={onViewAll}
-          className="mt-2 w-full text-center text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors py-1"
+          className="mt-2 w-full text-center text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors py-1"
           data-testid="view-all-sessions-inline"
         >
           View all sessions <ArrowRight className="inline h-3 w-3" />

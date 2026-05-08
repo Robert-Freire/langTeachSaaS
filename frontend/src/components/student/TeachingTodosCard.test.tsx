@@ -15,10 +15,12 @@ vi.mock('@/api/students', async (importOriginal) => {
   }
 })
 
+// Fixed dates so relative-time tests don't flake across midnight boundaries
+const FROZEN_NOW = new Date('2026-01-15T12:00:00Z')
 const PENDING_TODO: TeachingTodo = {
   id: '1',
   text: 'Explain subjunctive',
-  createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+  createdAt: '2026-01-14T12:00:00Z', // 1 day before FROZEN_NOW
   sourceSessionLogId: null,
   status: 'pending',
   coveredInSessionLogId: null,
@@ -26,7 +28,7 @@ const PENDING_TODO: TeachingTodo = {
 const COVERED_TODO: TeachingTodo = {
   id: '2',
   text: 'Past tense review',
-  createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+  createdAt: '2026-01-13T12:00:00Z', // 2 days before FROZEN_NOW
   sourceSessionLogId: null,
   status: 'covered',
   coveredInSessionLogId: 'session-1',
@@ -34,7 +36,7 @@ const COVERED_TODO: TeachingTodo = {
 const DONE_TODO: TeachingTodo = {
   id: '3',
   text: 'Pronunciation drills',
-  createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+  createdAt: '2026-01-12T12:00:00Z', // 3 days before FROZEN_NOW
   sourceSessionLogId: null,
   status: 'done',
   coveredInSessionLogId: null,
@@ -137,8 +139,14 @@ describe('TeachingTodosCard', () => {
   })
 
   it('shows relative time for each visible todo', () => {
-    render(<TeachingTodosCard todos={[PENDING_TODO]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
-    expect(screen.getAllByText(/yesterday|ago/)).toHaveLength(1)
+    vi.useFakeTimers()
+    vi.setSystemTime(FROZEN_NOW)
+    try {
+      render(<TeachingTodosCard todos={[PENDING_TODO]} studentId="s1" onStudentChange={vi.fn()} />, { wrapper })
+      expect(screen.getAllByText(/yesterday|ago/)).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('calls appendTeachingTodo on add and updates list optimistically', async () => {

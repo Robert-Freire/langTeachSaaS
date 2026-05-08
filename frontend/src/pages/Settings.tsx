@@ -54,6 +54,12 @@ export default function Settings() {
       return
     }
 
+    if (displayName.includes('<') || displayName.includes('>')) {
+      reset()
+      setValidationError('Display name must not contain < or > characters.')
+      return
+    }
+
     setValidationError(null)
     mutate(
       { displayName, teachingLanguages, cefrLevels, preferredStyle },
@@ -202,7 +208,7 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Integrations</CardTitle>
-          <CardDescription>Connect external services to LangTeach.</CardDescription>
+          <CardDescription>Connect external services to Atelier.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

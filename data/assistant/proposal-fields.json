@@ -1,0 +1,20 @@
+{
+  "studentFields": [
+    { "field": "cefrLevel", "label": "CEFR Level" },
+    { "field": "profession", "label": "Profession" },
+    { "field": "countryOfResidence", "label": "Country of Residence" }
+  ],
+  "skillLevelFields": [
+    { "field": "skillLevel.reading", "label": "Reading Level", "skillKey": "Reading" },
+    { "field": "skillLevel.writing", "label": "Writing Level", "skillKey": "Writing" },
+    { "field": "skillLevel.speaking", "label": "Speaking Level", "skillKey": "Speaking" },
+    { "field": "skillLevel.listening", "label": "Listening Level", "skillKey": "Listening" }
+  ],
+  "sessionFields": [
+    { "field": "title", "label": "Session Title", "multiline": false },
+    { "field": "actualContent", "label": "What Was Covered", "multiline": true },
+    { "field": "generalNotes", "label": "Areas to Improve", "multiline": true },
+    { "field": "homeworkAssigned", "label": "Homework Assigned", "multiline": true },
+    { "field": "nextSessionTopics", "label": "Next Session Topics", "multiline": true }
+  ]
+}

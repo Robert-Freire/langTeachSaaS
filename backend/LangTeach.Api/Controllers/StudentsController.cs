@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -338,8 +339,16 @@ public class StudentsController : ControllerBase
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
         _logger.LogInformation("POST /api/students/extract-profile. TeacherId={TeacherId} TextLength={TextLength}", teacherId, request.Text.Length);
-        var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
-        return Ok(extracted);
+        try
+        {
+            var extracted = await _extractionService.ExtractAsync(request.Text, cancellationToken);
+            return Ok(extracted);
+        }
+        catch (ClaudeRateLimitException ex)
+        {
+            _logger.LogWarning(ex, "POST /api/students/extract-profile rate limited. TeacherId={TeacherId}", teacherId);
+            return StatusCode(429, new { message = "Rate limit reached. Please try again later.", retryAfter = (int?)ex.RetryAfter?.TotalSeconds });
+        }
     }
 
     [HttpDelete("{id:guid}")]

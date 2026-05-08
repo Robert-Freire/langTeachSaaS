@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { LearningGoalTreeEditor } from '@/components/student/LearningGoalTreeEditor'
 import { StudentCoursesCard } from '@/components/student/StudentCoursesCard'
@@ -620,25 +619,6 @@ export default function StudentForm() {
         subtitle={isEdit ? "Update this student's profile." : 'Create a new student profile.'}
         actions={
           <div className="flex items-center gap-3">
-            {isEdit && id && (() => {
-              const canCreateCourse = !!language && !!cefrLevel
-              return canCreateCourse ? (
-                <Button type="button" variant="outline" data-testid="create-course-btn" onClick={() => navigate(`/courses/new?studentId=${id}`)}>
-                  Create Course
-                </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
-                    <Button type="button" variant="outline" disabled data-testid="create-course-btn">
-                      Create Course
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Complete student profile (language and CEFR level required) to create a course.
-                  </TooltipContent>
-                </Tooltip>
-              )
-            })()}
             {!isEdit && (
               <Button type="submit" form="student-form" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white" data-testid="done-btn">
                 {isPending ? 'Saving...' : 'Done'}

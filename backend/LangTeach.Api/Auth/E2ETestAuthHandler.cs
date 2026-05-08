@@ -10,7 +10,7 @@ public class E2ETestAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
 {
     public const string SchemeName = "Test";
     public const string Auth0Id = "auth0|e2e-test-teacher";
-    public const string Email = "e2e-test@langteach.io";
+    public static readonly string Email = Environment.GetEnvironmentVariable("E2E_TEST_EMAIL") ?? "e2e-test@langteach.dev";
     public const string Name = "E2E Teacher";
 
     public E2ETestAuthHandler(

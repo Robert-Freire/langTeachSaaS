@@ -1,9 +1,13 @@
 using System.Security.Claims;
 using System.Text.Json;
+using LangTeach.Api.AI;
+using LangTeach.Api.Data;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Controllers;
 
@@ -17,6 +21,8 @@ public class AssistantController : ControllerBase
     private readonly IStudentProfileExtractionService _studentExtractionService;
     private readonly IReflectionExtractionService _reflectionExtractionService;
     private readonly IProfileService _profileService;
+    private readonly IPedagogyConfigService _pedagogy;
+    private readonly AppDbContext _db;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -25,6 +31,8 @@ public class AssistantController : ControllerBase
         IStudentProfileExtractionService studentExtractionService,
         IReflectionExtractionService reflectionExtractionService,
         IProfileService profileService,
+        IPedagogyConfigService pedagogy,
+        AppDbContext db,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -32,6 +40,8 @@ public class AssistantController : ControllerBase
         _studentExtractionService = studentExtractionService;
         _reflectionExtractionService = reflectionExtractionService;
         _profileService = profileService;
+        _pedagogy = pedagogy;
+        _db = db;
         _logger = logger;
     }
 
@@ -77,7 +87,7 @@ public class AssistantController : ControllerBase
 
         var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-        if (isNewStudentIntent)
+        if (isNewStudentIntent && !string.IsNullOrWhiteSpace(extractedName))
         {
             var newStudentPayload = new
             {
@@ -85,34 +95,50 @@ public class AssistantController : ControllerBase
                 birthYear = studentExtraction.BirthYear,
                 profession = studentExtraction.Profession,
                 cityOfResidence = studentExtraction.CityOfResidence,
+                countryOfResidence = studentExtraction.CountryOfResidence,
                 nativeLanguages = studentExtraction.NativeLanguages,
                 learningLanguage = studentExtraction.LearningLanguage,
                 cefrLevel = studentExtraction.CefrLevel,
                 reasonForStudying = studentExtraction.ReasonForStudying,
             };
             var payloadElement = JsonSerializer.SerializeToElement(newStudentPayload, camelCaseOpts);
-            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, payloadElement));
+            proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "newStudent", "profile", "New Student", null, extractedName!, Payload: null, NewStudentPayload: payloadElement));
         }
 
         if (student != null)
         {
-            EmitProposal(proposals, "student", "cefrLevel", "CEFR Level", student.Level.CefrLevel, studentExtraction.CefrLevel);
-            EmitProposal(proposals, "student", "profession", "Profession", student.Identity.Profession, studentExtraction.Profession);
-            EmitProposal(proposals, "student", "countryOfResidence", "Country of Residence", student.Identity.CountryOfResidence, studentExtraction.CountryOfResidence);
+            var studentFieldValues = new Dictionary<string, (string? current, string? extracted)>
+            {
+                ["cefrLevel"] = (student.Level.CefrLevel, studentExtraction.CefrLevel),
+                ["profession"] = (student.Identity.Profession, studentExtraction.Profession),
+                ["countryOfResidence"] = (student.Identity.CountryOfResidence, studentExtraction.CountryOfResidence),
+            };
+            foreach (var f in _pedagogy.ProposalFields.StudentFields)
+            {
+                if (studentFieldValues.TryGetValue(f.Field, out var vals))
+                    EmitProposal(proposals, "student", f.Field, f.Label, vals.current, vals.extracted);
+            }
 
-            student.Level.SkillLevelOverrides.TryGetValue("Reading", out var curReading);
-            student.Level.SkillLevelOverrides.TryGetValue("Writing", out var curWriting);
-            student.Level.SkillLevelOverrides.TryGetValue("Speaking", out var curSpeaking);
-            student.Level.SkillLevelOverrides.TryGetValue("Listening", out var curListening);
-            EmitProposal(proposals, "student", "skillLevel.reading", "Reading Level", curReading, studentExtraction.SkillLevelReading);
-            EmitProposal(proposals, "student", "skillLevel.writing", "Writing Level", curWriting, studentExtraction.SkillLevelWriting);
-            EmitProposal(proposals, "student", "skillLevel.speaking", "Speaking Level", curSpeaking, studentExtraction.SkillLevelSpeaking);
-            EmitProposal(proposals, "student", "skillLevel.listening", "Listening Level", curListening, studentExtraction.SkillLevelListening);
+            var skillExtractedValues = new Dictionary<string, string?>
+            {
+                ["Reading"] = studentExtraction.SkillLevelReading,
+                ["Writing"] = studentExtraction.SkillLevelWriting,
+                ["Speaking"] = studentExtraction.SkillLevelSpeaking,
+                ["Listening"] = studentExtraction.SkillLevelListening,
+            };
+            foreach (var f in _pedagogy.ProposalFields.SkillLevelFields)
+            {
+                student.Level.SkillLevelOverrides.TryGetValue(f.SkillKey, out var curVal);
+                EmitProposal(proposals, "student", f.Field, f.Label, curVal, skillExtractedValues.GetValueOrDefault(f.SkillKey));
+            }
 
             foreach (var todo in reflectionExtraction.TeachingTodos)
             {
-                if (!string.IsNullOrWhiteSpace(todo))
-                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo));
+                if (!string.IsNullOrWhiteSpace(todo.Text))
+                {
+                    var todoPayload = JsonSerializer.SerializeToElement(new { dueDate = todo.DueDate }, camelCaseOpts);
+                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo.Text, Payload: todoPayload));
+                }
             }
 
             if (studentExtraction.Interests.Count > 0)
@@ -154,16 +180,24 @@ public class AssistantController : ControllerBase
             }
         }
 
-        EmitProposal(proposals, "session", "title", "Session Title", session?.Title, reflectionExtraction.SessionTitle);
-        EmitProposal(proposals, "session", "actualContent", "What Was Covered", session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value);
-        EmitProposal(proposals, "session", "generalNotes", "Areas to Improve", session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value);
-        EmitProposal(proposals, "session", "homeworkAssigned", "Homework Assigned", session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value);
-
-        if (!string.IsNullOrWhiteSpace(reflectionExtraction.NewSessionTitle))
+        var sessionFieldValues = new Dictionary<string, (string? current, string? extracted)>
         {
-            var sessionDate = reflectionExtraction.NewSessionDate
-                ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
-            var newSessionPayload = new { title = reflectionExtraction.NewSessionTitle, sessionDate };
+            ["title"] = (session?.Title, reflectionExtraction.SessionTitle),
+            ["actualContent"] = (session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value),
+            ["generalNotes"] = (session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value),
+            ["homeworkAssigned"] = (session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value),
+            ["nextSessionTopics"] = (session?.NextSessionTopics, reflectionExtraction.NextLessonIdeas?.Value),
+        };
+        foreach (var f in _pedagogy.ProposalFields.SessionFields)
+        {
+            if (sessionFieldValues.TryGetValue(f.Field, out var vals))
+                EmitProposal(proposals, "session", f.Field, f.Label, vals.current, vals.extracted);
+        }
+
+        if (reflectionExtraction.ProposedNewSession is { } proposed)
+        {
+            var sessionDate = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var newSessionPayload = new { title = proposed.Title, sessionDate };
             var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(
                 Guid.NewGuid().ToString(),
@@ -171,11 +205,65 @@ public class AssistantController : ControllerBase
                 "newSession",
                 "New Session",
                 null,
-                reflectionExtraction.NewSessionTitle,
+                proposed.Title,
                 payloadElement));
         }
 
-        return Ok(new AssistantProposeResponse(proposals));
+        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId));
+    }
+
+    [HttpPost("voice-notes/{voiceNoteId:guid}/feedback")]
+    public async Task<IActionResult> SubmitFeedback(Guid voiceNoteId, [FromBody] AssistantFeedbackRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var voiceNoteExists = await _db.VoiceNotes
+            .AnyAsync(v => v.Id == voiceNoteId && v.TeacherId == teacherId, ct);
+        if (!voiceNoteExists)
+            return NotFound();
+
+        var now = DateTime.UtcNow;
+
+        var existing = await _db.AssistantTurnFeedbacks
+            .FirstOrDefaultAsync(f => f.VoiceNoteId == voiceNoteId && f.TeacherId == teacherId, ct);
+
+        if (existing is not null)
+        {
+            existing.Rating = request.Rating;
+            existing.Reason = request.Reason;
+            existing.ProposalsJson = request.ProposalsJson;
+            existing.StudentId = request.StudentId;
+            existing.SessionLogId = request.SessionLogId;
+            existing.UpdatedAt = now;
+        }
+        else
+        {
+            _db.AssistantTurnFeedbacks.Add(new AssistantTurnFeedback
+            {
+                Id = Guid.NewGuid(),
+                TeacherId = teacherId,
+                VoiceNoteId = voiceNoteId,
+                StudentId = request.StudentId,
+                SessionLogId = request.SessionLogId,
+                Rating = request.Rating,
+                Reason = request.Reason,
+                ProposalsJson = request.ProposalsJson,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException) when (existing is null)
+        {
+            // Concurrent request (e.g. mobile double-tap) inserted first; unique constraint honoured.
+        }
+        return NoContent();
     }
 
     private static void EmitProposal(

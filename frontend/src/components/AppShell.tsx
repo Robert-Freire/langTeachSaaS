@@ -66,7 +66,7 @@ function SidebarContent({ user, initials, logout, location }: {
       <div className="px-6 pt-7 pb-8">
         <div className="flex items-center gap-2.5">
           <LangTeachLogo size={28} />
-          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">Atelier</span>
         </div>
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 mt-1 ml-[38px] font-inter">
           Language Curator
@@ -203,7 +203,7 @@ export default function AppShell() {
         </Button>
         <div className="flex items-center gap-2">
           <LangTeachLogo size={24} />
-          <span className="text-primary font-bold text-base tracking-tight font-manrope">LangTeach</span>
+          <span className="text-primary font-bold text-base tracking-tight font-manrope">Atelier</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Tooltip>
@@ -217,7 +217,7 @@ export default function AppShell() {
                   aria-disabled={!atelierEnabled || undefined}
                   data-testid="open-assistant-mobile-btn"
                   className={cn(
-                    'h-8 w-8 rounded-full flex items-center justify-center bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)] text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-all',
+                    'h-8 w-8 rounded-full flex items-center justify-center lt-gradient-primary text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring transition-all',
                     !atelierEnabled && 'opacity-50 cursor-not-allowed'
                   )}
                 />
@@ -273,7 +273,7 @@ export default function AppShell() {
               className={cn(
                 'hidden lg:flex fixed bottom-6 right-6 z-30',
                 'h-14 w-14 items-center justify-center rounded-full text-white',
-                'bg-[linear-gradient(135deg,var(--color-primary),#4F46E5)]',
+                'lt-gradient-primary',
                 'shadow-[0_12px_40px_0_rgb(26_27_34_/_0.10),0_4px_16px_0_rgb(53_37_205_/_0.18)]',
                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                 'transition-all duration-150',
@@ -314,6 +314,7 @@ export default function AppShell() {
         onDismissAll={assistant.dismissAll}
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
+        sessionId={sessionId}
       />
     </div>
   )

@@ -98,6 +98,8 @@ public class ProfileService : IProfileService
         if (string.IsNullOrWhiteSpace(auth0UserId))
             throw new ArgumentException("auth0UserId must be provided.", nameof(auth0UserId));
 
+        name = name.Replace("<", "").Replace(">", "");
+
         // 1. Email-first lookup: find existing teacher by email (stable across providers)
         Teacher? existing = null;
         if (!string.IsNullOrEmpty(email))

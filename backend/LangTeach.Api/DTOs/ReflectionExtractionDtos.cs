@@ -36,6 +36,10 @@ public record SuggestedDifficultyDto(
 
 public record TopicTagDto(string Tag, string? Category);
 
+public record ProposedNewSession(string Title, string? Date);
+
+public record ExtractedTeachingTodoDto(string Text, string? DueDate);
+
 public record ExtractedReflectionDto(
     ExtractedTextFieldDto? WhatWasCovered,
     ExtractedTextFieldDto? AreasToImprove,
@@ -48,13 +52,12 @@ public record ExtractedReflectionDto(
     string? SessionTitle,
     List<TopicTagDto> TopicTags,
     ExtractedHomeworkStatus? PreviousHomeworkStatus,
-    List<string> TeachingTodos,
+    List<ExtractedTeachingTodoDto> TeachingTodos,
     List<string> TeacherFollowups,
     string? LevelReassessment,
     int? DurationMinutes,
     bool? IsCancelled,
     List<string> DifficultiesWorkedOn,
     string? SessionStartTime,
-    string? NewSessionTitle,
-    string? NewSessionDate
+    ProposedNewSession? ProposedNewSession
 );

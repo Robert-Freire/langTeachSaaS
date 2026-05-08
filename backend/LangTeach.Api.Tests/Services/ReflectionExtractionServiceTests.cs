@@ -462,7 +462,29 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
-    public void ParseResponse_ExtractsTeachingTodos()
+    public void ParseResponse_ExtractsTeachingTodos_ObjectFormat()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [
+                {"text": "Trabajar conectores adversativos", "dueDate": null},
+                {"text": "Practicar el subjuntivo en concesivas", "dueDate": "2026-05-12"}
+              ]
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Select(t => t.Text).Should()
+            .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos[0].DueDate.Should().BeNull();
+        result.TeachingTodos[1].DueDate.Should().Be("2026-05-12");
+    }
+
+    [Fact]
+    public void ParseResponse_ExtractsTeachingTodos_LegacyStringFormat()
     {
         var sut = CreateSut("{}");
         var json = """
@@ -474,7 +496,49 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.TeachingTodos.Should().BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos.Select(t => t.Text).Should()
+            .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
+        result.TeachingTodos.Should().AllSatisfy(t => t.DueDate.Should().BeNull());
+    }
+
+    // regression tests for #1126: planning asides must land in nextLessonIdeas, not teachingTodos;
+    // and explicit todo trigger phrases must still land in teachingTodos, not nextLessonIdeas
+    [Fact]
+    public void ParseResponse_NextSessionPhrasing_LandsInNextLessonIdeas_NotTeachingTodos()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [],
+              "nextLessonIdeas": {"value": "Actividad práctica de verbos de cambio; posible introducción de tema nuevo", "mode": "replace"}
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.NextLessonIdeas.Should().NotBeNull();
+        result.NextLessonIdeas!.Value.Should().Contain("verbos de cambio");
+        result.TeachingTodos.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ParseResponse_ExplicitTodoTriggerPhrasing_LandsInTeachingTodos_NotNextLessonIdeas()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "suggestedDifficulties": [],
+              "teachingTodos": [{"text": "Repasar la voz pasiva", "dueDate": null}],
+              "nextLessonIdeas": null
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.TeachingTodos.Should().ContainSingle();
+        result.TeachingTodos[0].Text.Should().Be("Repasar la voz pasiva");
+        result.NextLessonIdeas.Should().BeNull();
     }
 
     [Fact]
@@ -1032,5 +1096,69 @@ public class ReflectionExtractionServiceTests
             SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
             TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
             TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
-            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null, NewSessionTitle: null, NewSessionDate: null);
+            IsCancelled: isCancelled, DifficultiesWorkedOn: [], SessionStartTime: null, ProposedNewSession: null);
+
+    // --- Regression tests: issue #1110 (today-anchor + past-date content reference) ---
+
+    [Fact]
+    public async Task ExtractAsync_TodayAnchor_NoOpenSession_SystemPromptContainsPresentDayGuard()
+    {
+        // Verify the prompt contains the exception text that prevents "hoy" reflections
+        // from being routed to the retrospective-registration path.
+        ClaudeRequest? captured = null;
+        var client = new ReflectionClaudeClient(req =>
+        {
+            captured = req;
+            return new ClaudeResponse(
+                """{"suggestedDifficulties":[],"topicTags":[],"teachingTodos":[],"teacherFollowups":[],"difficultiesWorkedOn":[]}""",
+                "claude-haiku", 10, 50);
+        });
+        var realPrompts = new PromptService(
+            new SectionProfileService(NullLogger<SectionProfileService>.Instance),
+            PedagogyService,
+            NullLogger<PromptService>.Instance,
+            NullContentSchemas.Instance);
+        var sut = new ReflectionExtractionService(
+            client, realPrompts, PedagogyService,
+            NullLogger<ReflectionExtractionService>.Instance);
+
+        const string jordiTranscript =
+            "En la clase de hoy de las 10:00 H de la mañana. " +
+            "Hemos trabajado las descripciones de hemos seguido trabajando mi barrio. " +
+            "Concretamente hemos hecho lo que está en la pizarra del 30 de abril. " +
+            "Para la clase de mañana día 6. Tenemos que. Continuar con la pizarra del día.";
+
+        await sut.ExtractAsync(jordiTranscript, hasOpenSession: false);
+
+        captured!.SystemPrompt.Should().Contain("present-day anchor",
+            because: "the prompt must have the guard that treats 'hoy' reflections as post-class, not retrospective");
+        captured.SystemPrompt.Should().Contain("newSessionTitle field rule for the null-when-today constraint",
+            because: "the context block must reference the newSessionTitle field rule instead of duplicating the null constraint");
+    }
+
+    [Fact]
+    public void ParseResponse_NewSessionTitleNull_ProposedNewSessionIsNull()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "sessionDate": "2026-05-05",
+              "sessionTitle": "Mi barrio — descripciones",
+              "whatWasCovered": { "value": "Vocabulario de barrio, página 104.", "mode": "replace" },
+              "newSessionTitle": null,
+              "newSessionDate": null,
+              "suggestedDifficulties": [],
+              "topicTags": [],
+              "teachingTodos": [],
+              "teacherFollowups": [],
+              "difficultiesWorkedOn": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.ProposedNewSession.Should().BeNull(
+            because: "when the LLM correctly returns null newSessionTitle there must be no new-session proposal");
+        result.SessionDate.Should().Be("2026-05-05");
+    }
 }

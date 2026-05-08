@@ -12,8 +12,8 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
     private static readonly Regex CefrLevelRegex =
         new(@"^[ABC][12]\+?$", RegexOptions.Compiled);
 
-    // Skill level values may include teacher-assigned sub-levels (e.g. B1.2, B2.1).
-    // The global cefrLevel field intentionally stays at standard 6-level granularity.
+    // Skill level values from AI extraction are accepted here with sublevel tolerance.
+    // StudentService.NormalizeSkillLevelOverrides collapses them to base levels before storage.
     private static readonly Regex SkillLevelRegex =
         new(@"^[ABC][12](\.\d+)?[+]?$", RegexOptions.Compiled);
 
@@ -39,6 +39,10 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
         try
         {
             response = await _claude.CompleteAsync(request, ct);
+        }
+        catch (ClaudeRateLimitException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

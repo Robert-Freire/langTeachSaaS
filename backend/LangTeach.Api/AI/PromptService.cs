@@ -104,7 +104,7 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildCurriculumPrompt(CurriculumContext ctx)
     {
-        var system = CurriculumSystemPrompt(ctx);
+        var system = CurriculumSystemPrompt(ctx, _pedagogy.PromptFragments);
         var level  = ctx.TargetCefrLevel ?? "(none)";
         if (ctx.TemplateUnits is { Count: > 0 })
         {
@@ -395,7 +395,7 @@ public class PromptService : IPromptService
 
         var sb = new StringBuilder();
 
-        sb.AppendLine($"You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.");
+        sb.AppendLine(RenderTemplate(fragments.LessonSystemOpener, new() { ["{language}"] = language, ["{cefrLevel}"] = cefrLevel }));
         sb.AppendLine($"Teaching style: {style}. Topic: {topic}. Duration: {ctx.DurationMinutes} minutes.");
         sb.AppendLine();
         sb.AppendLine(RenderTemplate(fragments.CefrCue, new() { ["{cefrLevel}"] = cefrLevel }));
@@ -724,8 +724,9 @@ public class PromptService : IPromptService
         var prompt = $$"""
         Generate practice exercises for the lesson on "{{topic}}". Return JSON using one or more of these formats:
         {"fillInBlank":[{"sentence":"","answer":"","hint":"","explanation":"","stage":""}],"multipleChoice":[{"question":"","options":[""],"answer":"","explanation":"","stage":""}],"matching":[{"left":"","right":"","explanation":"","stage":""}],"trueFalse":[{"statement":"","isTrue":true,"justification":"","sourcePassage":"","stage":""}],"sentenceOrdering":[{"fragments":[""],"correctOrder":[0],"hint":"","explanation":"","stage":""}],"sentenceTransformation":[{"prompt":"","original":"","expected":"","alternatives":[""],"explanation":"","stage":""}]}
+        trueFalse: sourcePassage must quote the exact sentence or phrase from the lesson text or Presentation examples that makes the statement verifiable; populate it for every trueFalse item.
         sentenceOrdering: fragments is an array of words or phrases; correctOrder is the array of fragment indices that form the correct sentence (e.g. fragments=["en","vivo","Barcelona","yo"], correctOrder=[3,1,0,2] gives "yo vivo en Barcelona"). CRITICAL: joining the fragments in correctOrder MUST produce a grammatically correct, natural Spanish sentence — verify this before outputting each item. Use sentenceOrdering for A1/A2/B1 levels where testing syntax awareness without requiring production is appropriate.
-        sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1+ levels for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
+        sentenceTransformation: prompt is the transformation instruction; original is the source sentence; expected is the primary correct answer; alternatives lists other acceptable answers. Use for B1 and above for tense changes, voice transformations, reported speech, and register shifts. Maps to DELE "transformaciones gramaticales".
         IMPORTANT: trueFalse statements must be consistent with the grammar rules and exceptions actually taught in the lesson. If the lesson presented a nuanced rule or exception (e.g. indicativo is also possible when the fact is confirmed), the trueFalse items must reflect that nuance and must not state the rule as absolute.
         {{levelGuidance}}
         Include at least 3 items for each format you use. For each exercise, include a concise explanation (2-3 sentences) of why the correct answer is correct, considering the student's level and common L1 interference patterns.
@@ -1216,22 +1217,6 @@ public class PromptService : IPromptService
             }
             profileSb.Append(_pedagogy.GetLessonWeaknessProfileGuidance());
             baseInstruction += profileSb.ToString();
-
-            var sb = new StringBuilder("\n\nDECLARED WEAKNESSES (max 1-2 targeted exercises per lesson):\n");
-            foreach (var section in SectionOrder)
-            {
-                var label = char.ToUpper(section[0]) + section[1..];
-                foreach (var group in weaknesses.GroupBy(w => w.WeaknessType))
-                {
-                    var guidance = _pedagogy.GetWeaknessTargetingGuidance(section, group.Key);
-                    if (!string.IsNullOrEmpty(guidance))
-                    {
-                        var typeText = string.Join("; ", group.Select(w => w.Description));
-                        sb.AppendLine($"{label} ({group.Key}): {guidance.Replace("{weaknesses}", typeText, StringComparison.Ordinal)}");
-                    }
-                }
-            }
-            baseInstruction += sb.ToString().TrimEnd();
         }
 
         // Section coherence rules from config
@@ -1266,11 +1251,11 @@ public class PromptService : IPromptService
 
     // --- Curriculum prompts ---
 
-    private static string CurriculumSystemPrompt(CurriculumContext ctx)
+    private static string CurriculumSystemPrompt(CurriculumContext ctx, PromptFragmentsConfig fragments)
     {
         var language = InputSanitizer.Sanitize(ctx.Language);
         var sb = new StringBuilder();
-        sb.AppendLine($"You are an expert {language} language teacher and curriculum designer.");
+        sb.AppendLine(RenderTemplate(fragments.CurriculumSystemOpener, new() { ["{language}"] = language }));
 
         if (ctx.StudentName is not null)
         {
@@ -1512,9 +1497,14 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildReflectionExtractionPrompt(ReflectionExtractionContext ctx)
     {
         var today = ctx.Today;
-        var teacherText = ctx.TeacherText;
+        var teacherText = InputSanitizer.Sanitize(ctx.TeacherText?.Replace('\r', ' ').Replace('\n', ' '));
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var severities = string.Join(" | ", _pedagogy.GetValidDifficultySeverities().OrderBy(x => x));
+        const string weekdayBackwardRule =
+            "\"el lunes pasado\"/\"el pasado lunes\" = the most recent Monday before today " +
+            "(not the Monday of this week if today is Monday), " +
+            "\"el martes pasado\"/\"el pasado martes\" = the most recent Tuesday before today, " +
+            "and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today.";
 
         var safeKnownDifficulties = ctx.KnownDifficulties?
             .Select(InputSanitizer.Sanitize)
@@ -1534,11 +1524,23 @@ public class PromptService : IPromptService
         var weekdayFactsSection = weekdayFacts != null ? $"\n            {weekdayFacts}" : string.Empty;
 
         var sessionContextHint = ctx.HasOpenSession
-            ? string.Empty
+            ? """
+
+
+            IMPORTANT CONTEXT: There IS an open session in scope. For forward-planning asides, apply these rules in order:
+
+            1. Todo-trigger phrases ("apunta como teaching todo", "añade un teaching todo para", "ponme un todo para", "añade como idea"): produce a todo object with dueDate; leave newSessionTitle null — the date belongs to the todo, not a new session.
+
+            2. Planning asides WITH an explicit date cue ("mañana", "el lunes", "el martes", "el miércoles", "el jueves", "el viernes", "la semana que viene", "next Monday", "día 6", "día 7", any weekday name, any explicit calendar date): emit newSessionTitle and newSessionDate for a NEW session record. Do NOT also put that same planning content in nextLessonIdeas — choose one routing only. (Separate, unrelated broader ideas that have no date cue may still go to nextLessonIdeas.)
+
+            3. Planning asides WITHOUT any date cue ("para la próxima clase tengo que trabajar X", "quiero trabajar X la próxima vez", "la siguiente clase", "next time"): capture in nextLessonIdeas only; do not create a new session record.
+            """
             : """
 
 
-            IMPORTANT CONTEXT: There is no open session in scope. If the teacher describes a class that already happened (past-tense cues: "le di clase", "ayer trabajamos", "trabajamos", "la semana pasada hicimos"), treat it as retrospective session registration: populate newSessionTitle and newSessionDate; sessionTitle and whatWasCovered do not apply.
+            IMPORTANT CONTEXT: There is no open session in scope.
+            Exception — present-day anchor: if the teacher's statement opens with a present-day anchor ("hoy", "en la clase de hoy", "esta mañana", "este mediodía", "today", "this morning", or an explicit time for today such as "de las 10:00"), treat this as a live post-class reflection for TODAY's session. Set sessionDate=today and populate sessionTitle and whatWasCovered as normal. See the newSessionTitle field rule for the null-when-today constraint. Past-tense verbs ("hemos trabajado", "hicimos") in a reflection that opens with a present-day anchor do NOT indicate retrospective registration.
+            Otherwise: if the teacher describes a class that already happened without a present-day anchor (cues: "le di clase", "ayer trabajamos", "la semana pasada hicimos"), treat it as retrospective session registration: populate newSessionTitle and newSessionDate; leave sessionTitle and whatWasCovered null.
             """;
 
         var system = $"""
@@ -1554,7 +1556,7 @@ public class PromptService : IPromptService
                 Set mode to "append" if the teacher adds to existing coverage notes (signal words: "además", "también", "y también cubrimos", "también hicimos").
                 Set mode to "replace" if the teacher corrects or restates what was covered (signal words: "me equivoqué", "en realidad", "no, mejor dicho", "quiero decir", "corrijo").
                 Set mode to "skip" if this field should not be updated.
-                Return null only if the teacher genuinely said nothing about session content. If any topics, grammar structures, vocabulary, or activities were mentioned, you MUST synthesise a prose summary here.
+                Return null only if the teacher genuinely said nothing about session content. If any topics, grammar structures, vocabulary, or activities were mentioned, you MUST synthesise a prose summary here. Null when there is no active session (use newSessionTitle instead).
             - areasToImprove: object or null. When present, the object has two keys: "value" (string, narrative summary of student difficulties and struggles — prose, not a list) and "mode" (one of "append", "replace", or "skip").
                 Set mode to "append" if teacher adds new difficulties to existing notes (signal words: "además", "también tiene problemas con", "y otra cosa").
                 Set mode to "replace" if teacher corrects prior notes (signal words: "me equivoqué", "en realidad", "no, mejor").
@@ -1571,20 +1573,25 @@ public class PromptService : IPromptService
                 Set mode to "replace" if teacher corrects prior plans (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
                 Set mode to "skip" if this field should not be updated.
                 Return null if no next-session ideas are mentioned.
-            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, "el lunes pasado"/"el pasado lunes" = the most recent Monday before today (not the Monday of this week if today is Monday), "el martes pasado"/"el pasado martes" = the most recent Tuesday before today, and so on for any weekday. Always pick the last occurrence of the named weekday strictly before today. Null if no date is mentioned.
+            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, {weekdayBackwardRule} Null if no date is mentioned. The opening clause is the primary temporal anchor: it wins over any date mentioned later in the body (past-date references inside the body, e.g. "la pizarra del 30 de abril", are content references, not session date anchors).
             - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Null if not mentioned.
             - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered, written in the same language as the teacher's input. Examples (Spanish input): "Subjuntivo en cláusulas temporales", "Pasado compuesto — revisión". Null if no content is mentioned. Null when there is no active session (use newSessionTitle instead).
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
             - topicTags: array of objects with "tag" (string) and "category" (string or null) — topics, grammar structures, vocabulary areas covered. Each tag as a concise noun phrase. Empty array if none mentioned.
             - previousHomeworkStatus: "done" | "partial" | "notDone" | null — whether the student completed homework from the previous session. Null if not mentioned.
-            - teachingTodos: array of strings — pedagogical ideas for future sessions (grammar points to revisit, vocabulary to practise, skills to develop; e.g. "hay que practicar el subjuntivo"). Also triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]". Empty array if none.
+            - teachingTodos: array of objects — pedagogical ideas for future sessions. Each object has:
+                - "text": string — the pedagogical idea (grammar points to revisit, vocabulary, skills to develop)
+                - "dueDate": string or null — ISO 8601 date (YYYY-MM-DD) if a specific target date is mentioned for this todo; resolve forward from today using the same rules as newSessionDate. Null if no date is mentioned.
+                Triggered by imperative phrases like "apunta como teaching todo [X]", "añade como idea [X]", "añade un teaching todo para [X]". Empty array if none.
+                Example: input "Añade un teaching todo para repasar la voz pasiva el martes que viene" produces one todo object with text "Repasar la voz pasiva" and dueDate set to the next Tuesday from today.
             - teacherFollowups: array of strings — operational actions owed by the teacher (send materials, book a test, contact a school; e.g. "le tengo que mandar ejercicios", "tengo que preparar ejercicios"). Also triggered by imperative phrases like "añade follow up [X]", "apunta follow up [X]", "añade como follow up [X]" — extract the action after the trigger phrase. Empty array if none.
             - levelReassessment: CEFR level string (e.g. "B1", "B2") or null — if the teacher mentions reassessing or updating the student's level. Null if not mentioned. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set to null even when CEFR strings appear elsewhere in the utterance. Examples: "ha mejorado mucho, creo que ya está en B2, súbele el nivel" → "B2" (positive: level change stated); "habla a nivel B2 pero el nivel global no lo toco" → null (negative: level mentioned but suppressed).
             - durationMinutes: integer or null — session duration in minutes. Null if not mentioned.
             - isCancelled: true | false | null — true only if the session was cancelled or the student did not show up. Null if not mentioned.
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
-            - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
-            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. For future dates: resolve forward from today — "el lunes" or "next Monday" = the next Monday strictly after today (count forward to the first occurrence of that weekday; if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. For retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"): resolve backward — "el lunes pasado" = the most recent Monday before today. Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
+            - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set to null when the transcript is a post-class reflection for today's session (i.e. the opening contains a present-day anchor such as "hoy", "en la clase de hoy", or a specific time). Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Past-date mentions inside the body of a reflection (e.g. "la pizarra del 30 de abril") are content references, not triggers for a new session record. Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
+                When the teacher uses a todo-creation trigger phrase ("añade un teaching todo", "apunta como teaching todo", "ponme un todo para", "añade como idea"), produce a todo object with dueDate and leave newSessionTitle null — the date belongs to the todo, not a new session.
+            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. For future dates: resolve forward from today — "el lunes" or "next Monday" = the next Monday strictly after today (count forward to the first occurrence of that weekday; if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. For retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"): resolve backward — {weekdayBackwardRule} Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language
@@ -1669,12 +1676,13 @@ public class PromptService : IPromptService
             - nativeLanguages: array of strings — student's native or mother tongue(s). Empty array [] if not mentioned.
             - spokenLanguages: array of strings — other languages the student speaks (not the target language, not the native language). Empty array [] if not mentioned.
             - learningLanguage: string or null — the language the student is learning or being taught (e.g. "English", "French", "inglés"). Null if not mentioned.
-            - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "B2+"). Null if not mentioned.
+            - cefrLevel: string or null — teacher's own CEFR assessment of the student (e.g. "B1", "C1"). Null if not mentioned.
             - officialCefrLevel: string or null — official/exam-certified CEFR level (e.g. from a DELE, DELF certificate). Null if not mentioned.
-            - shortTermObjectives: array of objects — near-term learning goals mentioned by the teacher. Each object has:
+            - shortTermObjectives: array of objects — aims that belong to the student's overall learning journey across many sessions (e.g. "quiere preparar el DELE B2 para octubre", "her goal is to work at a Spanish company", "wants to reach B1 by June"). Each object has:
                 - text: string — description of the objective
                 - targetDate: string or null — ISO 8601 date (YYYY-MM-DD) if a date is mentioned, otherwise null
               Empty array [] if no objectives mentioned.
+              IMPORTANT: Only extract aims that would still be meaningful six months from now. Session-level planning content must not appear here — a tell-tale sign is language like "para mañana", "para la próxima clase / sesión", "next class", or "next time I want to cover X". Those describe what happens in the next class, not what the student is trying to achieve overall.
             - difficulties: array of objects — student weaknesses or trouble areas explicitly mentioned. Each object has:
                 - description: string — full description of the difficulty
                 - competency: string — must be one of: {competencies}
@@ -1683,7 +1691,7 @@ public class PromptService : IPromptService
             - teachingTodoTexts: array of strings — action items or tasks for the teacher to do (e.g. "Send subjunctive exercises", "Prepare business vocabulary list"). Empty array [] if none.
             - teachingNotes: string or null — observations about how the student learns (learning style, what works, what does not). Null if not mentioned.
             - interests: array of strings — personal interests, hobbies, or topics the student enjoys. Empty array [] if not mentioned.
-            - skillLevel: object or null — per-skill CEFR level overrides when the teacher explicitly states a different level for a specific skill. Keys: "reading", "writing", "speaking", "listening". Values must match A1/A2/B1/B2/C1/C2 optionally followed by a dot and digit (e.g. "B1", "C1", "B1.2"). Omit a key if not explicitly mentioned. Null if no per-skill levels mentioned at all. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set skillLevel to null even when CEFR strings appear elsewhere in the utterance. Examples: "Carmen lee a nivel C1, escribe B2" → reading "C1", writing "B2" (positive: per-skill levels stated); "maneja B2 en comprensión, todavía no quiero cambiar el nivel" → null (negative: levels mentioned but suppressed).
+            - skillLevel: object or null — per-skill CEFR level overrides when the teacher explicitly states a different level for a specific skill. Keys: "reading", "writing", "speaking", "listening". Values must be exactly one of: A1, A2, B1, B2, C1, C2 (e.g. "B1", "C1"). Omit a key if not explicitly mentioned. Null if no per-skill levels mentioned at all. If the teacher explicitly states they are NOT changing the level (e.g. "no toco el nivel", "no quiero cambiar el nivel", "todavía no", "solo tomar nota"), set skillLevel to null even when CEFR strings appear elsewhere in the utterance. Examples: "Carmen lee a nivel C1, escribe B2" → reading "C1", writing "B2" (positive: per-skill levels stated); "maneja B2 en comprensión, todavía no quiero cambiar el nivel" → null (negative: levels mentioned but suppressed).
             - newStudentIntent: boolean — true ONLY if the teacher explicitly states they want to create a NEW student record (e.g. "nuevo alumno", "dame de alta a", "tengo un nuevo estudiante", "I have a new student", "register a new student").
 
             Use null for scalar fields that cannot be clearly inferred from the text.

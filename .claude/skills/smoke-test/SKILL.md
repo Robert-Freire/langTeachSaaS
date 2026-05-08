@@ -40,21 +40,10 @@ Read `plan/sprints/<slug>.md`. You need the full content: teacher narrative, app
 docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}\t{{.Status}}"
 ```
 
-If api + frontend are not healthy, start the stack:
+If api + frontend are not healthy, start the stack using the script (handles build, health checks, mock teacher registration, and visual seed):
 
 ```bash
-docker compose -f docker-compose.e2e.yml -f docker-compose.visual.yml --env-file .env.e2e up -d api sqlserver frontend 2>&1
-```
-
-Poll until healthy (max 90s):
-
-```bash
-for i in $(seq 1 18); do
-  HEALTHY=$(docker ps --filter "name=langteachsaas-e2e" --format "{{.Status}}" | grep -c "healthy" || true)
-  echo "[$i/18] healthy containers: $HEALTHY"
-  [ "$HEALTHY" -ge 3 ] && break
-  sleep 5
-done
+bash e2e/scripts/start-visual-stack.sh
 ```
 
 Note whether you started the stack or it was already running (affects teardown at the end).

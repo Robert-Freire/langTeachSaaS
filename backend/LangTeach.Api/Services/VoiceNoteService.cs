@@ -148,6 +148,17 @@ public class VoiceNoteService : IVoiceNoteService
         if (note is null) return false;
 
         var blobPath = note.BlobPath;
+
+        // Null out any feedback rows referencing this VoiceNote before deletion.
+        // The FK uses NoAction (SQL Server cascade cycle constraint), so we must
+        // clear the reference explicitly or the Remove will throw a FK violation.
+        // Load-and-set instead of ExecuteUpdateAsync so InMemory tests work.
+        var feedbackRows = await db.AssistantTurnFeedbacks
+            .Where(f => f.VoiceNoteId == id)
+            .ToListAsync(ct);
+        foreach (var row in feedbackRows)
+            row.VoiceNoteId = null;
+
         db.VoiceNotes.Remove(note);
         await db.SaveChangesAsync(ct);
 

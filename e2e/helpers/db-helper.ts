@@ -59,7 +59,7 @@ export async function updateTeacherAuth0Id(email: string, newAuth0UserId: string
   }
 }
 
-export const E2E_TEST_EMAIL = 'e2e-test@langteach.io'
+export const E2E_TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e-test@langteach.dev'
 
 export async function resetE2ETestTeacher(): Promise<void> {
   const pool = await new sql.ConnectionPool(config).connect()

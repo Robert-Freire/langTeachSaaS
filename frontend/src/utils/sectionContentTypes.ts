@@ -25,7 +25,7 @@ export const ALL_CONTENT_TYPES: ContentBlockType[] = [
 ]
 
 /**
- * Normalizes a CEFR level string to its base form (e.g. "B2.1" -> "B2").
+ * Normalizes a CEFR level string to its base form by stripping sublevel suffixes.
  */
 export function normalizeLevel(cefrLevel: string): string {
   return cefrLevel.replace(/\.\d+$/, '')

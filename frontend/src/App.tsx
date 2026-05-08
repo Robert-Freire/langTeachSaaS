@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
-import { setupAuthInterceptor } from './lib/apiClient'
+import { apiClient, setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { OnboardingGuard } from './components/OnboardingGuard'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -26,14 +26,28 @@ import Onboarding from './pages/Onboarding'
 const queryClient = new QueryClient()
 
 function AuthSetup({ children }: { children: React.ReactNode }) {
-  const { getAccessTokenSilently, logout } = useAuth0()
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
 
   useEffect(() => {
-    return setupAuthInterceptor(getAccessTokenSilently, () => {
-      localStorage.clear()
-      logout({ logoutParams: { returnTo: window.location.origin } })
-    })
-  }, [getAccessTokenSilently, logout])
+    return setupAuthInterceptor(
+      apiClient,
+      (opts) =>
+        getAccessTokenSilently(
+          opts?.forceRefresh ? { cacheMode: 'off' } : undefined,
+        ),
+      () => {
+        const returnTo =
+          window.location.pathname + window.location.search + window.location.hash
+        loginWithRedirect({ appState: { returnTo } }).catch((err) => {
+          // Auth0 unreachable or redirect blocked. Log so it surfaces in
+          // devtools instead of becoming an unhandled rejection. No toast
+          // infra to surface this to the user yet (see #1117 QA gap on
+          // auth-down vs session-expired copy).
+          console.error('Re-authentication redirect failed', err)
+        })
+      },
+    )
+  }, [getAccessTokenSilently, loginWithRedirect])
 
   return <>{children}</>
 }
@@ -42,9 +56,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
-          <AuthSetup>
-            <Routes>
+        <AuthSetup>
+          <Routes>
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route element={<ProtectedRoute><OnboardingGuard /></ProtectedRoute>}>
                 <Route element={<AppShell />}>
@@ -66,9 +79,8 @@ export default function App() {
                   <Route path="/courses/:id" element={<CourseDetail />} />
                 </Route>
               </Route>
-            </Routes>
-          </AuthSetup>
-        </BrowserRouter>
+          </Routes>
+        </AuthSetup>
       </TooltipProvider>
     </QueryClientProvider>
   )

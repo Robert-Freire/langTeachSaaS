@@ -44,6 +44,8 @@
                       Link="Pedagogy\difficulty-taxonomy.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\prompt-fragments.json"
                       Link="Pedagogy\prompt-fragments.json" />
+    <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json"
+                      Link="Assistant\proposal-fields.json" />
   </ItemGroup>
 
   <ItemGroup>

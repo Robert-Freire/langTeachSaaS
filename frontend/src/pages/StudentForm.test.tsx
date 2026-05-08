@@ -528,17 +528,6 @@ describe('StudentForm', () => {
     expect(descriptions[1]).toHaveValue('limited travel vocabulary')
   })
 
-  it('shows "Create Course" button and navigates correctly for a complete profile in edit mode', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
-    renderEdit()
-    const btn = await screen.findByTestId('create-course-btn')
-    expect(btn).toBeInTheDocument()
-    expect(btn).not.toBeDisabled()
-    await user.click(btn)
-    expect(mockNavigate).toHaveBeenCalledWith('/courses/new?studentId=stu-1')
-  })
-
   it('loads all native languages in edit mode and displays them as chips', async () => {
     mockGetStudent.mockResolvedValue(makeMockStudent({ nativeLanguages: ['Portuguese', 'English', 'Catalan'] }))
 
@@ -551,13 +540,6 @@ describe('StudentForm', () => {
     expect(chips[0]).toHaveTextContent('Portuguese')
     expect(chips[1]).toHaveTextContent('English')
     expect(chips[2]).toHaveTextContent('Catalan')
-  })
-
-  it('"Create Course" button is disabled when student is missing CEFR level', async () => {
-    mockGetStudent.mockResolvedValue(makeMockStudent({ cefrLevel: '' }))
-    renderEdit()
-    const btn = await screen.findByTestId('create-course-btn')
-    expect(btn).toBeDisabled()
   })
 
   it('renders Personal Background section with all 6 identity fields', () => {

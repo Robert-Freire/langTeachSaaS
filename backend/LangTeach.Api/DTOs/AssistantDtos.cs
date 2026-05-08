@@ -1,3 +1,4 @@
+using LangTeach.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -10,11 +11,28 @@ public class AssistantProposeRequest
 
     public Guid? StudentId { get; set; }
     public Guid? SessionId { get; set; }
+    public Guid? VoiceNoteId { get; set; }
+}
+
+public class AssistantFeedbackRequest
+{
+    [Required, RegularExpression("^(up|down)$", ErrorMessage = "Rating must be 'up' or 'down'.")]
+    public string Rating { get; set; } = "";
+
+    [MaxLength(2000)]
+    public string? Reason { get; set; }
+
+    public Guid? StudentId { get; set; }
+    public Guid? SessionLogId { get; set; }
+
+    [Required]
+    public string ProposalsJson { get; set; } = "";
 }
 
 // Payload carries structured data for compound or append proposal types.
 // Scalar replace proposals leave Payload null.
 // Action is "replace" (default) or "append".
+// NewStudentPayload is set only for Type == "newStudent"; Payload is null in that case.
 public record ProposalDto(
     string Id,
     string Type,
@@ -23,14 +41,15 @@ public record ProposalDto(
     string? OldValue,
     string NewValue,
     JsonElement? Payload = null,
-    string Action = "replace"
+    string Action = "replace",
+    JsonElement? NewStudentPayload = null
 );
 
-public record AssistantProposeResponse(List<ProposalDto> Proposals);
+public record AssistantProposeResponse(List<ProposalDto> Proposals, Guid? VoiceNoteId = null);
 
 public class PatchStudentRequest
 {
-    [RegularExpression(@"^(A1|A2|B1|B2|C1|C2)$", ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
+    [RegularExpression(CefrConstants.ValidationPattern, ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
     public string? CefrLevel { get; set; }
 
     [MaxLength(128)]

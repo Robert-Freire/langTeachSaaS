@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { NewSessionData, NewStudentData, ProposalWithStatus } from '@/hooks/useAtelierAssistant'
 import NewStudentFields from './NewStudentFields'
+import proposalFields from '@data/assistant/proposal-fields.json'
 
 interface Props {
   proposal: ProposalWithStatus
@@ -13,11 +14,13 @@ interface Props {
   onUndo: (id: string) => void
   onRetry: (id: string) => void
   onModify: (id: string, newValue: string) => void
-  onEditPayload?: (id: string, payload: NewStudentData | NewSessionData) => void
+  onEditPayload?: (id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
 }
 
-const MULTILINE_FIELDS = new Set(['actualContent', 'generalNotes', 'homeworkAssigned'])
+const MULTILINE_FIELDS = new Set(
+  proposalFields.sessionFields.filter((f) => f.multiline).map((f) => f.field)
+)
 
 const TYPE_CONFIG = {
   student: {
@@ -101,9 +104,12 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isMultiline = MULTILINE_FIELDS.has(proposal.field)
   const isNewStudent = proposal.type === 'newStudent'
   const isNewSession = proposal.type === 'newSession'
+  const isTodo = proposal.type === 'todo'
   const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
   const newSessionApplyDisabled = isNewSession && !studentId
   const newSessionDateEditable = isNewSession && (proposal.status === 'proposed' || proposal.status === 'error')
+  const todoPayload = isTodo ? (proposal.payload as { dueDate?: string | null } | null | undefined) : null
+  const todoDateEditable = isTodo && (proposal.status === 'proposed' || proposal.status === 'error')
 
   return (
     <div
@@ -177,7 +183,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
             </div>
           ) : isNewStudent ? (
             <NewStudentFields
-              payload={proposal.payload as NewStudentData ?? { name: proposal.newValue }}
+              payload={proposal.newStudentPayload as NewStudentData ?? { name: proposal.newValue }}
               proposalId={proposal.id}
               onEditPayload={onEditPayload ?? (() => {})}
             />
@@ -219,6 +225,27 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                 </span>
               ) : (
                 <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
+              )}
+              {isTodo && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-xs font-inter text-zinc-500">Due:</span>
+                  <input
+                    type="date"
+                    value={todoPayload?.dueDate ?? ''}
+                    disabled={!todoDateEditable}
+                    onChange={e => {
+                      const date = e.target.value || null
+                      if (onEditPayload && todoDateEditable) {
+                        onEditPayload(proposal.id, { dueDate: date })
+                      }
+                    }}
+                    data-testid={`todo-date-input-${proposal.id}`}
+                    className={cn(
+                      'text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300',
+                      !todoDateEditable && 'cursor-not-allowed opacity-60'
+                    )}
+                  />
+                </div>
               )}
             </div>
           )}

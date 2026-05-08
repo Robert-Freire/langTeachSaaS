@@ -45,12 +45,12 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
                 IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
-                NewSessionTitle: null, NewSessionDate: null);
+                ProposedNewSession: null);
         }
 
         var dto = ParseResponse(response.Content);
 
-        var isRetrospectiveNewSession = !hasOpenSession && !string.IsNullOrWhiteSpace(dto.NewSessionTitle);
+        var isRetrospectiveNewSession = !hasOpenSession && dto.ProposedNewSession is not null;
 
         if (!isRetrospectiveNewSession && NeedsWhatWasCoveredFallback(dto))
         {
@@ -147,15 +147,14 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 SessionTitle: GetStringOrNull(root, "sessionTitle"),
                 TopicTags: ParseTopicTags(root),
                 PreviousHomeworkStatus: ParseHomeworkStatus(root),
-                TeachingTodos: ParseStringArray(root, "teachingTodos"),
+                TeachingTodos: ParseTeachingTodos(root),
                 TeacherFollowups: ParseStringArray(root, "teacherFollowups"),
                 LevelReassessment: ParseCefrLevel(root, "levelReassessment"),
                 DurationMinutes: GetIntOrNull(root, "durationMinutes"),
                 IsCancelled: GetBoolOrNull(root, "isCancelled"),
                 DifficultiesWorkedOn: ParseStringArray(root, "difficultiesWorkedOn"),
                 SessionStartTime: GetHhMmOrNull(root, "sessionStartTime"),
-                NewSessionTitle: GetStringOrNull(root, "newSessionTitle"),
-                NewSessionDate: GetIsoDateOrNull(root, "newSessionDate")
+                ProposedNewSession: BuildProposedNewSession(root)
             );
         }
         catch (Exception ex)
@@ -169,7 +168,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
                 IsCancelled: null, DifficultiesWorkedOn: [], SessionStartTime: null,
-                NewSessionTitle: null, NewSessionDate: null);
+                ProposedNewSession: null);
         }
     }
 
@@ -229,6 +228,14 @@ public class ReflectionExtractionService : IReflectionExtractionService
         return null;
     }
 
+    private static ProposedNewSession? BuildProposedNewSession(JsonElement root)
+    {
+        var title = GetStringOrNull(root, "newSessionTitle");
+        if (string.IsNullOrWhiteSpace(title)) return null;
+        var date = GetIsoDateOrNull(root, "newSessionDate");
+        return new ProposedNewSession(title, date);
+    }
+
     private static string? GetStringOrNull(JsonElement root, string key)
     {
         if (root.TryGetProperty(key, out var prop) &&
@@ -274,6 +281,29 @@ public class ReflectionExtractionService : IReflectionExtractionService
         return TimeOnly.TryParseExact(raw, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
             ? raw
             : null;
+    }
+
+    private static List<ExtractedTeachingTodoDto> ParseTeachingTodos(JsonElement root)
+    {
+        var result = new List<ExtractedTeachingTodoDto>();
+        if (!root.TryGetProperty("teachingTodos", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return result;
+        foreach (var item in arr.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.String)
+            {
+                var s = item.GetString();
+                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s, null));
+            }
+            else if (item.ValueKind == JsonValueKind.Object)
+            {
+                var text = GetStringOrNull(item, "text");
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                var dueDate = GetIsoDateOrNull(item, "dueDate");
+                result.Add(new ExtractedTeachingTodoDto(text, dueDate));
+            }
+        }
+        return result;
     }
 
     private static List<string> ParseStringArray(JsonElement root, string key)

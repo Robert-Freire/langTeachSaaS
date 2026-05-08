@@ -68,7 +68,7 @@ function PhraseList({
         <button
           type="button"
           onClick={onAdd}
-          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
+          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap"
         >
           Add
         </button>
@@ -236,7 +236,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
       <button
         type="button"
         onClick={addScenario}
-        className="mt-3 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+        className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
         data-testid="scenario-add"
       >
         + Add scenario

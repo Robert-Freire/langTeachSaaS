@@ -39,7 +39,7 @@ export interface AtelierAssistantActions {
   applyAll: () => void
   dismissAll: () => void
   reset: () => void
-  onEditPayload: (id: string, payload: NewStudentData | NewSessionData) => void
+  onEditPayload: (id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => void
 }
 
 export function useAtelierAssistant(
@@ -52,6 +52,7 @@ export function useAtelierAssistant(
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const applyingIdsRef = useRef<Set<string>>(new Set())
+  const generationRef = useRef(0)
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
@@ -69,6 +70,7 @@ export function useAtelierAssistant(
   }, [])
 
   const submit = useCallback(async (text: string) => {
+    const gen = ++generationRef.current
     setTranscription(text)
     setProcessing(true)
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
@@ -79,6 +81,7 @@ export function useAtelierAssistant(
         studentId ?? undefined,
         sessionId ?? undefined,
       )
+      if (generationRef.current !== gen) return
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -101,6 +104,7 @@ export function useAtelierAssistant(
                   newValue: incoming.newValue,
                   oldValue: incoming.oldValue,
                   payload: incoming.payload ?? updated[idx].payload,
+                  newStudentPayload: incoming.newStudentPayload ?? updated[idx].newStudentPayload,
                 }
               }
               // applied/dismissed — leave untouched
@@ -114,7 +118,7 @@ export function useAtelierAssistant(
     } catch {
       // Error shown via empty proposals list; processing clears
     } finally {
-      setProcessing(false)
+      if (generationRef.current === gen) setProcessing(false)
     }
   }, [studentId, sessionId])
 
@@ -123,6 +127,7 @@ export function useAtelierAssistant(
     const proposal = proposalsRef.current.find(p => p.id === id)
     if (!proposal || (proposal.status !== 'proposed' && proposal.status !== 'error')) return
 
+    const gen = generationRef.current
     applyingIdsRef.current.add(id)
     updateProposal(id, { status: 'applying', errorMessage: undefined })
 
@@ -133,12 +138,15 @@ export function useAtelierAssistant(
         } else {
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
+      } else if (proposal.type === 'session' && studentId && !sessionId) {
+        throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        await applyTodoProposal(studentId, proposal.newValue)
+        const dueDate = (proposal.payload as { dueDate?: string | null } | null | undefined)?.dueDate ?? null
+        await applyTodoProposal(studentId, proposal.newValue, dueDate)
       } else if (proposal.type === 'newStudent') {
-        const data = proposal.payload as NewStudentData | null | undefined
+        const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
         if (!data.name?.trim()) throw new Error('Name is required.')
         if (!data.learningLanguage?.trim()) throw new Error('Learning Language is required.')
@@ -168,6 +176,7 @@ export function useAtelierAssistant(
           birthYear: data.birthYear ?? null,
           profession: data.profession ?? null,
           cityOfResidence: data.cityOfResidence ?? null,
+          countryOfResidence: data.countryOfResidence ?? null,
           nativeLanguages: normalizedNativeLanguages,
           reasonForStudying: data.reasonForStudying ?? null,
           interests: [],
@@ -181,6 +190,7 @@ export function useAtelierAssistant(
         if (!data?.title?.trim()) throw new Error('Session title is missing.')
         await applyNewSessionProposal(studentId, data.title, data.sessionDate)
       }
+      if (generationRef.current !== gen) return
       updateProposal(id, { status: 'applied' })
       // Invalidate relevant queries so the rest of the UI reflects the change
       if (proposal.type === 'student' && studentId) {
@@ -188,13 +198,16 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-        await queryClient.invalidateQueries({ queryKey: ['session-summary', studentId] })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'todo' && studentId) {
+        await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       }
     } catch (err) {
+      if (generationRef.current !== gen) return
       const message = err instanceof Error ? err.message : 'Failed to apply change.'
       updateProposal(id, { status: 'error', errorMessage: message })
     } finally {
@@ -238,11 +251,17 @@ export function useAtelierAssistant(
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
   }, [dismiss])
 
-  const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData) => {
-    setProposals(prev => prev.map(p => p.id === id ? { ...p, payload } : p))
+  const onEditPayload = useCallback((id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => {
+    setProposals(prev => prev.map(p => {
+      if (p.id !== id) return p
+      if (p.type === 'newStudent') return { ...p, newStudentPayload: payload as NewStudentData }
+      if (p.type === 'todo') return { ...p, payload: payload as Record<string, unknown> }
+      return { ...p, payload: payload as NewSessionData }
+    }))
   }, [])
 
   const reset = useCallback(() => {
+    generationRef.current++
     applyingIdsRef.current.clear()
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()

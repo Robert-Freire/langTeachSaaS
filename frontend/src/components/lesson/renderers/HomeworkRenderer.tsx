@@ -117,7 +117,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
             <button
               type="button"
               onClick={() => handleAddExample(ti)}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
               data-testid={`homework-add-example-${ti}`}
             >
               + Add example
@@ -128,7 +128,7 @@ function Editor({ parsedContent, rawContent, onChange, onRegenerate, isIncomplet
       <button
         type="button"
         onClick={handleAddTask}
-        className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
         data-testid="homework-add-task"
       >
         + Add task

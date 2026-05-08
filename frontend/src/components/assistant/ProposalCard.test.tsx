@@ -123,6 +123,31 @@ describe('ProposalCard', () => {
     expect(container.querySelector('.bg-emerald-500')).toBeInTheDocument()
   })
 
+  it('todo type: shows editable date chip when payload has dueDate', async () => {
+    const onEditPayload = vi.fn()
+    renderCard(
+      makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: '2026-05-12' } }),
+      { onEditPayload }
+    )
+    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
+    expect(dateInput).toBeInTheDocument()
+    expect(dateInput.value).toBe('2026-05-12')
+    fireEvent.change(dateInput, { target: { value: '2026-05-19' } })
+    expect(onEditPayload).toHaveBeenCalledWith('p1', { dueDate: '2026-05-19' })
+  })
+
+  it('todo type: shows empty date chip when payload has no dueDate', () => {
+    renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: null } }))
+    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
+    expect(dateInput.value).toBe('')
+  })
+
+  it('todo type: date chip is disabled when card is applied', () => {
+    renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', status: 'applied', payload: { dueDate: '2026-05-12' } }))
+    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
+    expect(dateInput).toBeDisabled()
+  })
+
   it('proposed: shows Modify button', () => {
     renderCard(makeProposal({ status: 'proposed' }))
     expect(screen.getByTestId('modify-btn-p1')).toBeInTheDocument()
@@ -207,7 +232,7 @@ describe('ProposalCard', () => {
   it('newStudent type: uses teal accent', () => {
     const { container } = renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(container.querySelector('.bg-teal-500')).toBeInTheDocument()
   })
@@ -215,7 +240,7 @@ describe('ProposalCard', () => {
   it('newStudent type: renders inline field inputs instead of diff', () => {
     renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(screen.getByDisplayValue('Sofía')).toBeInTheDocument()
     expect(screen.getByDisplayValue('inglés')).toBeInTheDocument()
@@ -224,7 +249,7 @@ describe('ProposalCard', () => {
   it('newStudent type: does not show Modify button', () => {
     renderCard(makeProposal({
       type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-      payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+      newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
     }))
     expect(screen.queryByTestId('modify-btn-p1')).not.toBeInTheDocument()
   })
@@ -235,7 +260,7 @@ describe('ProposalCard', () => {
     renderCard(
       makeProposal({
         type: 'newStudent', field: 'profile', label: 'New Student', oldValue: null, newValue: 'Sofía',
-        payload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
+        newStudentPayload: { name: 'Sofía', learningLanguage: 'inglés', cefrLevel: 'B1' },
       }),
       { onEditPayload },
     )

@@ -1,0 +1,2 @@
+export const MAX_RECORDING_SECONDS = 5 * 60
+export const WARN_REMAINING_SECONDS = 30

@@ -1,3 +1,6 @@
+import { fetchWithAuthRetry, makeRefreshOnce } from './authHelpers'
+import type { GetAccessToken } from './authHelpers'
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
 export class QuotaExceededError extends Error {
@@ -10,26 +13,28 @@ export class QuotaExceededError extends Error {
   }
 }
 
-/**
- * Streams an SSE generation endpoint and returns the full accumulated text.
- * Throws on non-2xx responses or stream errors.
- * Throws QuotaExceededError on 429 (quota exhausted).
- */
+// refreshOnce is optional: pass a shared instance when calling in parallel to
+// deduplicate concurrent forced-refresh calls across streams (mirrors apiClient.ts).
 export async function streamText(
   taskType: string,
   body: object,
-  token: string,
+  getAccessToken: GetAccessToken,
+  triggerReauth: () => void,
   signal?: AbortSignal,
+  refreshOnce?: () => Promise<string | null>,
 ): Promise<string> {
-  const response = await fetch(`${BASE_URL}/api/generate/${taskType}/stream`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+  const response = await fetchWithAuthRetry(
+    `${BASE_URL}/api/generate/${taskType}/stream`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
     },
-    body: JSON.stringify(body),
-    signal,
-  })
+    getAccessToken,
+    triggerReauth,
+    refreshOnce ?? makeRefreshOnce(getAccessToken),
+  )
 
   if (response.status === 429) {
     let resetsAt = ''

@@ -679,7 +679,7 @@ export default function CourseDetail() {
           <div>
             <Link
               to={`/students/${course.studentId}?tab=progress`}
-              className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+              className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
               data-testid="view-student-progress"
             >
               View student progress

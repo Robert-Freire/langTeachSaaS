@@ -4,9 +4,9 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-04-27)
+## In-Flight Tasks (2026-05-03)
 
-No tasks currently in flight. Next sprint not yet started.
+No tasks currently in flight. Hardening sprint just kicked off, branch created, no tasks picked yet.
 
 ## Live Tracker: GitHub Issues
 
@@ -18,13 +18,14 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/unified-voice-chat` (milestone #19, Unified Voice & Chat)
+**Active sprint branch:** `sprint/hardening` (milestone #20, Hardening)
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Unified Voice & Chat | ACTIVE | sprint/unified-voice-chat, milestone #19, 17 open issues. Sprint story: plan/sprints/unified-voice-chat.md |
+| Hardening | ACTIVE | sprint/hardening, milestone #20, ~19 open issues after 2026-05-03 PM scoping pass. Pure cleanup sprint, mostly invisible to Jordi (only visible change is the LangTeach -> Atelier rebrand). Sprint story: plan/sprints/hardening.md |
+| Unified Voice & Chat | CLOSED 2026-05-03 | milestone #19, merged to main (commit 774961b8), branch deleted. Atelier Assistant shipped: FAB launcher, multi-entity proposals, voice + text input, modify-in-place. Sprint story: plan/sprints/unified-voice-chat.md |
 | Student Profile Voice Input | CLOSED 2026-04-27 | milestone #18, merged to main, branch deleted |
 | Stabilisation | CLOSED 2026-04-25 | milestone #17, merged to main, branch deleted |
 | UI Redesign & Student Profile Polish | CLOSED 2026-04-22 | milestone #16, merged to main, branch deleted |
@@ -39,6 +40,7 @@ Key queries:
 
 ## Upcoming Milestones (not yet started)
 
+- Text Correction: AFTER Hardening (milestone #21, created 2026-05-03). Epic: #1085. Source: Jordi email 2026-05-03 (Fwd: Redacción). Categorized error markup (C/G/L/O) per Jordi's manual system.
 - Listening Comprehension: deferred
 - Solo Whiteboard: deferred
 - Group Classes: FUTURE

@@ -106,7 +106,7 @@ export default function Onboarding() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 py-12" data-testid="onboarding-wizard">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-zinc-900">Welcome to LangTeach</h1>
+        <h1 className="text-2xl font-bold text-zinc-900">Welcome to Atelier</h1>
         <p className="text-sm text-zinc-500 mt-1">Let's get you set up in a few quick steps.</p>
       </div>
 

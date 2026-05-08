@@ -27,6 +27,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly FrozenSet<string> _difficultyCompetencies;
     private readonly FrozenSet<string> _difficultySeverities;
     public PromptFragmentsConfig PromptFragments { get; }
+    public ProposalFieldsConfig ProposalFields { get; }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -129,6 +130,8 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Load prompt fragments
         PromptFragments = LoadJson<PromptFragmentsConfig>(assembly, "LangTeach.Api.Pedagogy.prompt-fragments.json");
+        ProposalFields = LoadJson<ProposalFieldsConfig>(assembly, "LangTeach.Api.Assistant.proposal-fields.json");
+        ValidateProposalFields(ProposalFields);
         ValidatePromptFragments(PromptFragments);
 
         // Validate cross-layer references — fail fast on dangling IDs
@@ -454,12 +457,49 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     private static readonly HashSet<string> KnownPromptTokens = new(StringComparer.Ordinal)
     {
-        "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}"
+        "{cefrLevel}", "{targetLanguage}", "{nativeLanguage}", "{reasonForStudying}", "{motivationSuffix}", "{language}"
     };
+
+    private static readonly HashSet<string> ValidSkillKeys = new(StringComparer.Ordinal)
+        { "Reading", "Writing", "Speaking", "Listening" };
+
+    private static void ValidateProposalFields(ProposalFieldsConfig f)
+    {
+        if (f.StudentFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields is missing or empty.");
+        if (f.SkillLevelFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json skillLevelFields is missing or empty.");
+        if (f.SessionFields is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields is missing or empty.");
+
+        if (f.StudentFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields has an entry with a blank field or label.");
+        if (f.SkillLevelFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json skillLevelFields has an entry with a blank field or label.");
+        if (f.SessionFields.Any(e => string.IsNullOrWhiteSpace(e.Field) || string.IsNullOrWhiteSpace(e.Label)))
+            throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json sessionFields has an entry with a blank field or label.");
+
+        var allFields = f.StudentFields.Select(e => e.Field)
+            .Concat(f.SkillLevelFields.Select(e => e.Field))
+            .Concat(f.SessionFields.Select(e => e.Field))
+            .ToList();
+        var duplicates = allFields.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicates.Count > 0)
+            throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json has duplicate field names: {string.Join(", ", duplicates)}.");
+
+        var invalidSkillKeys = f.SkillLevelFields.Select(e => e.SkillKey).Except(ValidSkillKeys).ToList();
+        if (invalidSkillKeys.Count > 0)
+            throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json skillLevelFields contains invalid skillKey values: {string.Join(", ", invalidSkillKeys)}. Expected: {string.Join(", ", ValidSkillKeys)}.");
+    }
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
     {
-        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix }
+        if (string.IsNullOrWhiteSpace(f.LessonSystemOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing lessonSystemOpener.");
+        if (string.IsNullOrWhiteSpace(f.CurriculumSystemOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing curriculumSystemOpener.");
+
+        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix, f.LessonSystemOpener, f.CurriculumSystemOpener }
             .Concat(f.NativeLanguageBullets);
         foreach (var s in allStrings)
         {
