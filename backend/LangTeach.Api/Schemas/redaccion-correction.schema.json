@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://langteach.local/schemas/redaccion-correction.schema.json",
+  "title": "RedaccionCorrectionOutput",
+  "description": "Structured output of the redaccion correction prompt (#1153). Tag indices are character offsets into originalText. Tags MUST NOT overlap.",
+  "type": "object",
+  "required": ["schemaVersion", "originalText", "tags"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "originalText": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tag" }
+    }
+  },
+  "$defs": {
+    "tag": {
+      "type": "object",
+      "required": ["category", "startIndex", "endIndex", "spannedText"],
+      "additionalProperties": false,
+      "properties": {
+        "category": { "enum": ["C", "G", "L", "O", "MuyBien"] },
+        "startIndex": { "type": "integer", "minimum": 0 },
+        "endIndex": { "type": "integer", "minimum": 1 },
+        "spannedText": { "type": "string", "minLength": 1 },
+        "explanation": { "type": ["string", "null"] },
+        "correctedForm": { "type": ["string", "null"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "category": { "const": "MuyBien" } } },
+          "then": {
+            "properties": {
+              "explanation": { "type": "null" },
+              "correctedForm": { "type": "null" }
+            }
+          },
+          "else": {
+            "properties": {
+              "explanation": { "type": "string", "minLength": 1 },
+              "correctedForm": { "type": "string", "minLength": 1 }
+            },
+            "required": ["explanation", "correctedForm"]
+          }
+        }
+      ]
+    }
+  }
+}
