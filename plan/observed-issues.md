@@ -8,6 +8,12 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1065 | 2026-05-04 | low | Todo trigger phrases ("añade un teaching todo", etc.) duplicated in two PromptService.cs blocks; should be extracted to data/atelier/intent-triggers.json in a future cleanup (Sophy) |
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate is string? while sibling CreateTeacherFollowupRequest.DueDate is DateOnly?; inconsistent binding strategy for same entity field (arch review) |
 | #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
+| #1155 | 2026-05-08 | low | Correction status pill (CORREGIDA/Entregada/Pendiente) is a new pattern, not covered by design-system.md; needs Vera spec before reuse (review-ui) |
+| #1155 | 2026-05-08 | low | Superscript C/G/L/O annotation chip + colored-underline span pattern is new; needs Vera spec entry in docs/design-system.md (review-ui) |
+| #1155 | 2026-05-08 | low | MuyBien bold-inline annotation variant is undocumented in design-system.md (review-ui) |
+| #1155 | 2026-05-08 | low | CorrectionDetailDto has no studentTextUpdatedAt field; stale-markup banner (issue #1155 edge case) deferred until DTO grows that field (plan revision) |
+| #1155 | 2026-05-08 | low | DemoSeeder Ana Visual correction duplicates marked-up JSON literal and tagSpecs array; could be serialized once from tagSpecs (Sophy) |
+| #1155 | 2026-05-08 | low | Visual stack DB_PORT=1435 is not in correction-detail.visual.spec.ts .env; pre-existing infra pattern across visual specs (review-ui) |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
