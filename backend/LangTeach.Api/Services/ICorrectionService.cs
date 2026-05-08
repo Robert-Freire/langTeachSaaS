@@ -1,4 +1,5 @@
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services.CorrectionDocxExport;
 
 namespace LangTeach.Api.Services;
 
@@ -16,8 +17,6 @@ public interface ICorrectionService
     // exists but is not yet in the Corregida status (caller surfaces 409).
     Task<CorrectionExportData?> GetForExportAsync(Guid teacherId, Guid studentId, Guid correctionId, CancellationToken cancellationToken = default);
 }
-
-public record CorrectionExportData(CorrectionDetailDto Detail, string StudentName);
 
 public class CorrectionStudentTextLockedException : Exception
 {

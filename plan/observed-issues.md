@@ -4,6 +4,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 | #1153 | 2026-05-08 | low | `frontend/src/pages/StudentForm.test.tsx > "includes identity fields in form submission"` is flaky under parallel vitest load (1 fail in full run, 72/72 pass when isolated). Pre-existing, unrelated to redacciones. |
+| #1156-arch | 2026-05-08 | low | Filename sanitization is now duplicated: `CorrectionsController.SlugifyName` (FormD diacritic strip + `[^a-z0-9]` regex) and `LessonsController.ExportPdf` inline `Path.GetInvalidFileNameChars()` filter. Two files now produce export filenames with different rules. Extract to `Helpers/FileNameHelper.cs` in a future cleanup. |
+| #1156 | 2026-05-08 | low | Docx category color hex map (`CorrectionDocxExportService.CategoryColors`) is provisional and not coordinated with frontend. Once #1155 lands a frontend category-to-hex map, align both sides or extract to a shared backend constant. Risk: docx visually drifts from on-screen rendering. |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
