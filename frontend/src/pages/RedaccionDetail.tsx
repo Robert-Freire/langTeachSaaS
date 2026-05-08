@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function RedaccionDetail() {
-  const { id } = useParams<{ id: string }>()
+  const { correctionId } = useParams<{ id: string; correctionId: string }>()
   const navigate = useNavigate()
 
   return (
@@ -12,11 +12,13 @@ export default function RedaccionDetail() {
         <ArrowLeft className="h-4 w-4 mr-1" /> Volver
       </Button>
       <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-        <p className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">Próximamente</p>
+        <p className="font-manrope text-[3.5rem] font-bold text-[#1A1B22] leading-tight">
+          Próximamente
+        </p>
         <p className="text-sm text-zinc-500 max-w-md">
           La vista detallada de la redacción aún no está disponible. Aparecerá aquí cuando esté lista.
         </p>
-        {id && <p className="text-xs text-zinc-400">ID: {id}</p>}
+        {correctionId && <p className="text-xs text-zinc-400">ID: {correctionId}</p>}
       </div>
     </div>
   )

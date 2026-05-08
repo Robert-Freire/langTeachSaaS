@@ -107,11 +107,19 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
 
       {generationError && (
         <div
-          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="flex items-start justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
           data-testid="redacciones-generation-error"
           role="alert"
         >
-          {generationError}
+          <span>{generationError}</span>
+          <button
+            onClick={() => setGenerationError(null)}
+            aria-label="Descartar"
+            className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-100"
+            data-testid="redacciones-generation-error-dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -147,7 +155,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
           className="flex flex-col items-center justify-center text-center py-20 gap-4"
           data-testid="redacciones-empty"
         >
-          <p className="font-manrope text-[1.75rem] font-bold text-[#1A1B22]">
+          <p className="font-manrope text-[3.5rem] font-bold text-[#1A1B22] leading-tight">
             Aún no hay redacciones
           </p>
           <p className="text-sm text-zinc-500 max-w-sm">
@@ -263,7 +271,7 @@ function CorrectionCard({
           )}
           {!isCorregida && (
             <Button
-              variant="ghost"
+              variant={showCorregir ? 'secondary' : 'ghost'}
               size="sm"
               onClick={onEdit}
               data-testid={`redaccion-edit-${id}`}
@@ -273,7 +281,7 @@ function CorrectionCard({
           )}
           {!isCorregida && (
             <Button
-              variant="ghost"
+              variant={showCorregir ? 'secondary' : 'ghost'}
               size="sm"
               onClick={onDelete}
               data-testid={`redaccion-delete-${id}`}
@@ -393,7 +401,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
         className="relative flex flex-col w-full sm:w-[520px] h-full overflow-hidden bg-white"
         data-testid="correction-drawer-panel"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100">
+        <div className="flex items-center justify-between px-6 py-4 bg-zinc-50/60">
           <h2 className="text-base font-semibold text-gray-900">
             {isEdit ? 'Editar redacción' : 'Nueva redacción'}
           </h2>
@@ -489,7 +497,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
           )}
         </div>
 
-        <div className="flex flex-col gap-2 px-6 py-4 border-t border-zinc-100">
+        <div className="flex flex-col gap-2 px-6 py-4 bg-zinc-50/60">
           {submitError && (
             <p className="text-sm text-red-500 text-right" data-testid="correction-drawer-error">
               {submitError}
