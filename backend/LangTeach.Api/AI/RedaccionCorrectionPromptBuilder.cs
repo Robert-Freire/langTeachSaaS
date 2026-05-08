@@ -38,19 +38,19 @@ public class RedaccionCorrectionPromptBuilder
     }
 
     private const string SystemPrompt = """
-You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories plus one "muy bien" category. Category fidelity is non-negotiable: a misspelling tagged G is a mistake.
+You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories plus one "muy bien" category.
 
 CATEGORIES (use the exact code letter):
 
 - C (Cohesión): missing connector, missing temporal marker, wrong connector, repetitive structure.
   Example: "Fui al cine. Vi una película." → missing connector → C.
-- G (Gramática): verb conjugation, prepositions, gender/number agreement, word order, articles.
+- G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
   Example: "*el problema es muy grande*" → if "el" is wrong gender for the noun, G.
 - L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage.
   Example: "*hago una foto*" (calque from English/French) → L.
 - O (Ortografía): accents (tildes), misspelled words, punctuation.
   Example: "*esta*" instead of "está" → O. "*ablar*" instead of "hablar" → O.
-- MuyBien: a phrase or word that demonstrates genuinely strong usage worth highlighting (idiomatic connector, well-handled subjunctive, precise vocabulary). Use sparingly.
+- MuyBien: a phrase or word that demonstrates genuinely strong usage worth highlighting (idiomatic connector, well-handled subjunctive, precise vocabulary). Use sparingly. spannedText is the highlighted phrase (non-empty).
 
 CRITICAL RULES:
 
@@ -65,7 +65,7 @@ Emit raw JSON only. No prose before or after. No markdown fences. The JSON must 
 
 {
   "schemaVersion": 1,
-  "originalText": "...the student text VERBATIM, character for character...",
+  "originalText": "...the student text...",
   "tags": [
     {
       "category": "G" | "C" | "L" | "O" | "MuyBien",
@@ -83,11 +83,9 @@ OFFSETS:
 - spannedText MUST equal originalText.Substring(startIndex, endIndex - startIndex).
 - Tags MUST NOT overlap. Sort tags by startIndex.
 
-MUY BIEN TAGS:
-- For "MuyBien" tags, set "explanation": null and "correctedForm": null.
-- For all other tags, "explanation" and "correctedForm" must be non-empty.
+"explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.
 
-DO NOT paraphrase, normalize, or correct originalText. It must be the verbatim text the user gave you.
+The originalText must reproduce the student text verbatim, character for character.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
@@ -131,9 +129,9 @@ DO NOT paraphrase, normalize, or correct originalText. It must be the verbatim t
 
     private static string LevelCalibrationCue(string cefr) => cefr switch
     {
-        "A1" or "A2" => "Calibration: at A1/A2, prioritize basic agreement (gender/number), core verb forms (ser/estar/haber, present, basic past), and high-frequency vocabulary. Keep explanations short and concrete. Do NOT correct stylistic subtleties beyond the student's level.",
-        "B1" or "B2" => "Calibration: at B1/B2, prioritize cohesion (connectors, temporal markers), register, prepositions, subordination (subjunctive in known triggers), and natural usage. Explanations may invoke the rule briefly.",
-        "C1" or "C2" => "Calibration: at C1/C2, only flag what a native peer would notice: subtle nuance, register mismatch, idiomaticity, advanced subjunctive uses. Do not flag features already mastered at lower levels unless genuinely wrong.",
+        "A1" or "A2" => "Calibration: at A1/A2, prioritize basic agreement (gender/number), core verb forms (ser/estar/haber, present, basic past), high-frequency vocabulary, and high-frequency tildes (está, qué, cómo, sé vs se). Keep explanations short and concrete. Do not correct stylistic subtleties beyond the student's level.",
+        "B1" or "B2" => "Calibration: at B1/B2, prioritize cohesion (connectors, temporal markers), register, prepositions, formulaic subjunctive triggers (quiero que, es importante que), and natural usage. Explanations may invoke the rule briefly.",
+        "C1" or "C2" => "Calibration: at C1/C2, flag genuine errors at any level, but treat as priority findings only what a native peer would notice: subtle nuance, register mismatch, idiomaticity, and non-formulaic subjunctive (volitional, doubt, concessive in extended contexts). Do not let lower-level features dominate the markup if the student handles them well.",
         _ => "Calibration: treat the student as a generic intermediate learner; emphasize the core categories and avoid stylistic nitpicks.",
     };
 

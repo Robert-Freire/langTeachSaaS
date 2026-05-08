@@ -152,19 +152,22 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         // Reload tags through the tracked context so DTO ordering is stable.
         var persistedTags = correction.Tags.OrderBy(t => t.OrderIndex).ToList();
-        return ToDetail(correction, persistedTags);
+        return CorrectionDtoMapper.ToDetail(correction, persistedTags);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
     {
-        var sanitizedText = correction.StudentText ?? string.Empty;
+        // StudentText is preserved verbatim (no InputSanitizer call): tag offsets must
+        // address the same string the model echoes back as originalText. Sanitization
+        // happens at write time on POST /corrections (DTO layer); we trust what's in DB.
+        var studentText = correction.StudentText ?? string.Empty;
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
 
         var l1 = ParseFirstString(student.NativeLanguages);
         var difficulties = ParseStringArray(student.Difficulties);
 
         return new RedaccionCorrectionPromptContext(
-            StudentText: sanitizedText,
+            StudentText: studentText,
             StudentCefr: cefr,
             StudentL1: l1,
             StudentDifficulties: difficulties,
@@ -296,23 +299,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         return nonOverlapping;
     }
-
-    private static CorrectionDetailDto ToDetail(Correction c, IEnumerable<CorrectionTag> tags) =>
-        new(
-            c.Id,
-            c.StudentId,
-            c.SchemaVersion,
-            c.Status,
-            c.AssignmentTitle,
-            c.AssignmentPrompt,
-            c.StudentText,
-            c.MarkedUpOutput,
-            tags.OrderBy(t => t.OrderIndex)
-                .Select(t => new CorrectionTagDto(t.Category, t.SpannedText, t.StartIndex, t.EndIndex, t.Explanation, t.CorrectedForm, t.OrderIndex))
-                .ToList(),
-            c.CreatedAt,
-            c.UpdatedAt,
-            c.CorrectedAt);
 
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests
     // can construct fixture payloads against the same shape the production code parses.
