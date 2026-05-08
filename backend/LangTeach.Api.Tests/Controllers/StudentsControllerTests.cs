@@ -410,6 +410,21 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task AppendTeachingTodo_WithInvalidDueDate_Returns400()
+    {
+        // #1147 AC2: DueDate is now DateOnly?, so model binding rejects malformed
+        // date strings at the boundary instead of silently coercing to null.
+        var client = _factory.CreateAuthenticatedClient("auth0|todo-baddate-test", "todo-baddate@example.com");
+        var student = await CreateStudentAsync(client, "Todo BadDate Student");
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/students/{student.Id}/teaching-todos",
+            new { text = "Practicar subjuntivo", sourceSessionLogId = (string?)null, dueDate = "not-a-date" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task DeleteTeachingTodo_Succeeds()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|delete-todo-test", "delete-todo@example.com");

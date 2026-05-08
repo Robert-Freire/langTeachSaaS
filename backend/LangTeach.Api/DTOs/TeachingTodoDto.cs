@@ -14,7 +14,7 @@ public record TeachingTodoDto(
 public record CreateTeachingTodoDto(
     [MaxLength(500)] string Text,
     string? SourceSessionLogId,
-    string? DueDate);
+    DateOnly? DueDate);
 
 public record UpdateTeachingTodoDto(
     [Required]

@@ -74,8 +74,8 @@ public class SessionsControllerTests
         dto.AreasToImprove!.Value.Should().Be("[Extracted] Areas to improve");
         dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
         dto.HomeworkAssigned!.Value.Should().Be("[Extracted] Homework assigned");
-        dto.NextLessonIdeas!.Value.Should().Be("[Extracted] Next lesson ideas");
-        dto.NextLessonIdeas.Mode.Should().Be(ExtractionMode.Append);
+        dto.NextSessionTopics!.Value.Should().Be("[Extracted] Next lesson ideas");
+        dto.NextSessionTopics.Mode.Should().Be(ExtractionMode.Append);
     }
 
     [Fact]

@@ -246,7 +246,7 @@ public class TelegramConversationService : ITelegramConversationService
             SessionDate = ParseSessionDate(extracted.SessionDate),
             ActualContent = extracted.WhatWasCovered?.Value,
             HomeworkAssigned = extracted.HomeworkAssigned?.Value,
-            NextSessionTopics = extracted.NextLessonIdeas?.Value,
+            NextSessionTopics = extracted.NextSessionTopics?.Value,
             GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
             SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
                 ? extracted.SuggestedDifficulties

@@ -79,7 +79,7 @@ public class ReflectionExtractionServiceTests
         result.AreasToImprove!.Value.Should().Be("Irregular verbs");
         result.EmotionalSignals.Should().Be("Very engaged");
         result.HomeworkAssigned!.Value.Should().Be("Exercises 1-5");
-        result.NextLessonIdeas!.Value.Should().Be("Present perfect");
+        result.NextSessionTopics!.Value.Should().Be("Present perfect");
         result.SessionDate.Should().BeNull();
         result.SuggestedDifficulties.Should().BeEmpty();
     }
@@ -187,7 +187,7 @@ public class ReflectionExtractionServiceTests
         result.AreasToImprove.Should().BeNull();
         result.EmotionalSignals.Should().BeNull();
         result.HomeworkAssigned.Should().BeNull();
-        result.NextLessonIdeas.Should().BeNull();
+        result.NextSessionTopics.Should().BeNull();
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class ReflectionExtractionServiceTests
         result.AreasToImprove.Should().BeNull();
         result.EmotionalSignals.Should().BeNull();
         result.HomeworkAssigned.Should().BeNull();
-        result.NextLessonIdeas.Should().BeNull();
+        result.NextSessionTopics.Should().BeNull();
     }
 
     [Fact]
@@ -504,7 +504,7 @@ public class ReflectionExtractionServiceTests
     // regression tests for #1126: planning asides must land in nextLessonIdeas, not teachingTodos;
     // and explicit todo trigger phrases must still land in teachingTodos, not nextLessonIdeas
     [Fact]
-    public void ParseResponse_NextSessionPhrasing_LandsInNextLessonIdeas_NotTeachingTodos()
+    public void ParseResponse_NextSessionPhrasing_LandsInNextSessionTopics_NotTeachingTodos()
     {
         var sut = CreateSut("{}");
         var json = """
@@ -517,13 +517,13 @@ public class ReflectionExtractionServiceTests
 
         var result = sut.ParseResponse(json);
 
-        result.NextLessonIdeas.Should().NotBeNull();
-        result.NextLessonIdeas!.Value.Should().Contain("verbos de cambio");
+        result.NextSessionTopics.Should().NotBeNull();
+        result.NextSessionTopics!.Value.Should().Contain("verbos de cambio");
         result.TeachingTodos.Should().BeEmpty();
     }
 
     [Fact]
-    public void ParseResponse_ExplicitTodoTriggerPhrasing_LandsInTeachingTodos_NotNextLessonIdeas()
+    public void ParseResponse_ExplicitTodoTriggerPhrasing_LandsInTeachingTodos_NotNextSessionTopics()
     {
         var sut = CreateSut("{}");
         var json = """
@@ -538,7 +538,7 @@ public class ReflectionExtractionServiceTests
 
         result.TeachingTodos.Should().ContainSingle();
         result.TeachingTodos[0].Text.Should().Be("Repasar la voz pasiva");
-        result.NextLessonIdeas.Should().BeNull();
+        result.NextSessionTopics.Should().BeNull();
     }
 
     [Fact]
@@ -742,8 +742,8 @@ public class ReflectionExtractionServiceTests
 
         result.WhatWasCovered!.Value.Should().Be("Present perfect");
         result.WhatWasCovered.Mode.Should().Be(ExtractionMode.Append);
-        result.NextLessonIdeas!.Value.Should().Be("Subjunctive");
-        result.NextLessonIdeas.Mode.Should().Be(ExtractionMode.Append);
+        result.NextSessionTopics!.Value.Should().Be("Subjunctive");
+        result.NextSessionTopics.Mode.Should().Be(ExtractionMode.Append);
     }
 
     [Fact]
@@ -1092,7 +1092,7 @@ public class ReflectionExtractionServiceTests
         bool? isCancelled = null) =>
         new(
             WhatWasCovered: whatWasCovered, AreasToImprove: areasToImprove, EmotionalSignals: null,
-            HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+            HomeworkAssigned: null, NextSessionTopics: null, SessionDate: null,
             SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
             TopicTags: topicTags ?? [], PreviousHomeworkStatus: null, TeachingTodos: [],
             TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,

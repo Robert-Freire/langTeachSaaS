@@ -1162,7 +1162,7 @@ export default function LogSession() {
                       saveOverride.homeworkAssigned = nextHomeworkAssigned
                       setHomeworkAssigned(nextHomeworkAssigned)
                     }
-                    const nextSessionTopicsNext = applyMode(curNextSessionTopics, extracted.nextLessonIdeas)
+                    const nextSessionTopicsNext = applyMode(curNextSessionTopics, extracted.nextSessionTopics)
                     if (nextSessionTopicsNext !== null) {
                       saveOverride.nextSessionTopics = nextSessionTopicsNext
                       setNextSessionTopics(nextSessionTopicsNext)

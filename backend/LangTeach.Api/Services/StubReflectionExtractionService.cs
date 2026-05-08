@@ -27,7 +27,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             AreasToImprove: new ExtractedTextFieldDto("[Extracted] Areas to improve", ExtractionMode.Replace),
             EmotionalSignals: "[Extracted] Emotional signals",
             HomeworkAssigned: new ExtractedTextFieldDto("[Extracted] Homework assigned", ExtractionMode.Replace),
-            NextLessonIdeas: new ExtractedTextFieldDto("[Extracted] Next lesson ideas", ExtractionMode.Append),
+            NextSessionTopics: new ExtractedTextFieldDto("[Extracted] Next lesson ideas", ExtractionMode.Append),
             SessionDate: "2026-01-15",
             SuggestedDifficulties: [],
             RawExtractionJson: null,

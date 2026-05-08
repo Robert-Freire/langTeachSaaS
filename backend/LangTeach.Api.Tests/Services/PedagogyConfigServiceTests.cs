@@ -1,4 +1,5 @@
 using FluentAssertions;
+using LangTeach.Api.AI;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -24,6 +25,68 @@ public class PedagogyConfigServiceTests
     }
 
     // --- Cross-layer validation ---
+
+    // --- #1147: intent triggers + sessionFields drift validation ---
+
+    [Fact]
+    public void IntentTriggers_LoadedFromJsonConfig_ContainCanonicalTodoPhrases()
+    {
+        // AC1: trigger phrases must be loaded from intent-triggers.json, not hardcoded.
+        _sut.IntentTriggers.TeachingTodos.Should().Contain("apunta como teaching todo");
+        _sut.IntentTriggers.TeachingTodos.Should().Contain("añade un teaching todo para");
+        _sut.IntentTriggers.TeacherFollowups.Should().Contain("añade follow up");
+    }
+
+    [Fact]
+    public void ValidateProposalFields_SessionFieldKeyMissing_Throws()
+    {
+        // AC3: drift between proposal-fields.json sessionFields and the C# handler set fails fast.
+        var driftedConfig = new ProposalFieldsConfig(
+            StudentFields: [new ProposalFieldEntry("cefrLevel", "CEFR")],
+            SkillLevelFields: [new SkillLevelFieldEntry("skillLevel.reading", "R", "Reading")],
+            // Missing "nextSessionTopics" — simulates a typo or out-of-sync removal
+            SessionFields:
+            [
+                new SessionFieldEntry("title", "T", false),
+                new SessionFieldEntry("actualContent", "A", true),
+                new SessionFieldEntry("generalNotes", "G", true),
+                new SessionFieldEntry("homeworkAssigned", "H", true),
+            ]);
+
+        var act = () => PedagogyConfigService.ValidateProposalFields(driftedConfig);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*sessionFields drift*nextSessionTopics*");
+    }
+
+    [Fact]
+    public void ValidateProposalFields_SessionFieldKeyUnexpected_Throws()
+    {
+        // AC3: a typo in JSON (extra/wrong key) fails fast at startup.
+        var driftedConfig = new ProposalFieldsConfig(
+            StudentFields: [new ProposalFieldEntry("cefrLevel", "CEFR")],
+            SkillLevelFields: [new SkillLevelFieldEntry("skillLevel.reading", "R", "Reading")],
+            SessionFields:
+            [
+                new SessionFieldEntry("title", "T", false),
+                new SessionFieldEntry("actualContent", "A", true),
+                new SessionFieldEntry("generalNotes", "G", true),
+                new SessionFieldEntry("homeworkAssigned", "H", true),
+                new SessionFieldEntry("nextSessionTopics", "N", true),
+                new SessionFieldEntry("newTypoField", "X", false),
+            ]);
+
+        var act = () => PedagogyConfigService.ValidateProposalFields(driftedConfig);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*sessionFields drift*newTypoField*");
+    }
+
+    [Fact]
+    public void ValidateIntentTriggers_EmptyTodoList_Throws()
+    {
+        var bad = new IntentTriggersConfig(TeachingTodos: [], TeacherFollowups: ["x"]);
+        var act = () => PedagogyConfigService.ValidateIntentTriggers(bad);
+        act.Should().Throw<InvalidOperationException>().WithMessage("*teachingTodos*");
+    }
 
     [Fact]
     public void StartupValidation_ServiceConstructsWithoutThrowing_AllCrossLayerRefsValid()

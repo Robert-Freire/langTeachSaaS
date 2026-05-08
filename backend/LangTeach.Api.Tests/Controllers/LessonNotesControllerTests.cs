@@ -341,7 +341,7 @@ public class LessonNotesControllerTests
         dto.AreasToImprove!.Value.Should().Be("[Extracted] Areas to improve");
         dto.EmotionalSignals.Should().Be("[Extracted] Emotional signals");
         dto.HomeworkAssigned!.Value.Should().Be("[Extracted] Homework assigned");
-        dto.NextLessonIdeas!.Value.Should().Be("[Extracted] Next lesson ideas");
+        dto.NextSessionTopics!.Value.Should().Be("[Extracted] Next lesson ideas");
     }
 
     [Fact]

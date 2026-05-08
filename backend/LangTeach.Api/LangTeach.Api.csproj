@@ -46,6 +46,8 @@
                       Link="Pedagogy\prompt-fragments.json" />
     <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json"
                       Link="Assistant\proposal-fields.json" />
+    <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json"
+                      Link="Assistant\intent-triggers.json" />
   </ItemGroup>
 
   <ItemGroup>

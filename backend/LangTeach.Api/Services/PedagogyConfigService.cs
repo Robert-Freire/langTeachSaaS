@@ -28,6 +28,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly FrozenSet<string> _difficultySeverities;
     public PromptFragmentsConfig PromptFragments { get; }
     public ProposalFieldsConfig ProposalFields { get; }
+    public IntentTriggersConfig IntentTriggers { get; }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -132,6 +133,8 @@ public class PedagogyConfigService : IPedagogyConfigService
         PromptFragments = LoadJson<PromptFragmentsConfig>(assembly, "LangTeach.Api.Pedagogy.prompt-fragments.json");
         ProposalFields = LoadJson<ProposalFieldsConfig>(assembly, "LangTeach.Api.Assistant.proposal-fields.json");
         ValidateProposalFields(ProposalFields);
+        IntentTriggers = LoadJson<IntentTriggersConfig>(assembly, "LangTeach.Api.Assistant.intent-triggers.json");
+        ValidateIntentTriggers(IntentTriggers);
         ValidatePromptFragments(PromptFragments);
 
         // Validate cross-layer references — fail fast on dangling IDs
@@ -463,7 +466,13 @@ public class PedagogyConfigService : IPedagogyConfigService
     private static readonly HashSet<string> ValidSkillKeys = new(StringComparer.Ordinal)
         { "Reading", "Writing", "Speaking", "Listening" };
 
-    private static void ValidateProposalFields(ProposalFieldsConfig f)
+    // Session field names handled by AssistantController.sessionFieldValues. Adding a new
+    // session proposal field requires updating BOTH this set AND proposal-fields.json
+    // sessionFields[]. Drift is caught at startup by ValidateProposalFields.
+    internal static readonly HashSet<string> ExpectedSessionProposalFieldKeys = new(StringComparer.Ordinal)
+        { "title", "actualContent", "generalNotes", "homeworkAssigned", "nextSessionTopics" };
+
+    internal static void ValidateProposalFields(ProposalFieldsConfig f)
     {
         if (f.StudentFields is not { Length: > 0 })
             throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields is missing or empty.");
@@ -490,6 +499,32 @@ public class PedagogyConfigService : IPedagogyConfigService
         var invalidSkillKeys = f.SkillLevelFields.Select(e => e.SkillKey).Except(ValidSkillKeys).ToList();
         if (invalidSkillKeys.Count > 0)
             throw new InvalidOperationException($"PedagogyConfigService: proposal-fields.json skillLevelFields contains invalid skillKey values: {string.Join(", ", invalidSkillKeys)}. Expected: {string.Join(", ", ValidSkillKeys)}.");
+
+        // Drift check: JSON sessionFields[].field must match the C# session-proposal handler set
+        // exactly. A typo on either side would otherwise silently drop a proposal card.
+        var jsonSessionKeys = f.SessionFields.Select(e => e.Field).ToHashSet(StringComparer.Ordinal);
+        if (!jsonSessionKeys.SetEquals(ExpectedSessionProposalFieldKeys))
+        {
+            var missingFromJson = ExpectedSessionProposalFieldKeys.Except(jsonSessionKeys).ToList();
+            var unexpectedInJson = jsonSessionKeys.Except(ExpectedSessionProposalFieldKeys).ToList();
+            throw new InvalidOperationException(
+                "PedagogyConfigService: proposal-fields.json sessionFields drift from AssistantController handler. " +
+                $"Missing from JSON: [{string.Join(", ", missingFromJson)}]. " +
+                $"Unexpected in JSON: [{string.Join(", ", unexpectedInJson)}]. " +
+                "Both sides must update together.");
+        }
+    }
+
+    internal static void ValidateIntentTriggers(IntentTriggersConfig c)
+    {
+        if (c.TeachingTodos is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teachingTodos is missing or empty.");
+        if (c.TeacherFollowups is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teacherFollowups is missing or empty.");
+        if (c.TeachingTodos.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teachingTodos has a blank entry.");
+        if (c.TeacherFollowups.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teacherFollowups has a blank entry.");
     }
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
