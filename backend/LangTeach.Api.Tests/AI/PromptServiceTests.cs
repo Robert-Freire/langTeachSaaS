@@ -2783,13 +2783,13 @@ public class PromptServiceTests
     [Fact]
     public void SessionHistory_SkillLevelOverrides_IncludedInPrompt()
     {
-        var overrides = new Dictionary<string, string> { ["speaking"] = "A1.2", ["writing"] = "B1.2" };
+        var overrides = new Dictionary<string, string> { ["speaking"] = "A1", ["writing"] = "B1" };
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(overrides: overrides) };
 
         var req = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("speaking A1.2");
-        req.SystemPrompt.Should().Contain("writing B1.2");
+        req.SystemPrompt.Should().Contain("speaking A1");
+        req.SystemPrompt.Should().Contain("writing B1");
     }
 
     [Fact]

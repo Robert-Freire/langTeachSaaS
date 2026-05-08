@@ -8,17 +8,13 @@ import ProposalCard from '@/components/assistant/ProposalCard'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
 import { submitVoiceFeedback } from '@/api/assistant'
 import { MAX_RECORDING_SECONDS, WARN_REMAINING_SECONDS } from '@/lib/recordingLimits'
+import { formatDuration } from '@/lib/formatDuration'
+import { BRAND_NAME } from '@/lib/brand'
 
 const MIN_DURATION_S = 1
 
 type UploadError = 'upload-failed' | 'empty-transcription' | null
 type FeedbackState = 'idle' | 'chip-open' | 'done-up' | 'done-down'
-
-function formatTimer(secs: number) {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0')
-  const s = (secs % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
 
 function WaveformBars() {
   return (
@@ -284,7 +280,7 @@ export default function AtelierAssistantPanel({
           <div className="h-7 w-7 rounded-full lt-gradient-primary flex items-center justify-center shrink-0">
             <Sparkles className="h-3.5 w-3.5 text-white" aria-hidden="true" />
           </div>
-          <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">Atelier Assistant</span>
+          <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">{BRAND_NAME} Assistant</span>
           <div
             className="flex items-center gap-1.5 mr-3"
             role="status"
@@ -339,7 +335,7 @@ export default function AtelierAssistantPanel({
             <div className="flex flex-col items-center justify-center h-full text-center gap-3" data-testid="mic-permission-error">
               <AlertCircle className="h-8 w-8 text-zinc-300" aria-hidden="true" />
               <p className="text-sm font-inter text-zinc-500">
-                Atelier needs microphone access to listen.
+                {BRAND_NAME} needs microphone access to listen.
               </p>
               <p className="text-xs font-inter text-zinc-400">
                 Open your browser settings to allow microphone access, then try again.
@@ -564,7 +560,7 @@ export default function AtelierAssistantPanel({
               <div className="flex items-center gap-3 flex-1 px-1" data-testid="recording-bar">
                 <WaveformBars />
                 <span className="text-sm font-inter text-zinc-500 tabular-nums" data-testid="recording-timer">
-                  {formatTimer(micElapsed)}
+                  {formatDuration(micElapsed)}
                 </span>
                 <div className="flex-1" />
                 <button

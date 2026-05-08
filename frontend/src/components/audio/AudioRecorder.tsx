@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { uploadVoiceNote, type VoiceNote } from '../../api/voiceNotes'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
 import { MAX_RECORDING_SECONDS } from '@/lib/recordingLimits'
+import { formatDuration } from '@/lib/formatDuration'
 
 const ALLOWED_UPLOAD_TYPES = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-m4a']
 
@@ -107,12 +108,6 @@ export function AudioRecorder({
     uploadFile(file)
   }
 
-  function formatTime(secs: number) {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0')
-    const s = (secs % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
-  }
-
   function reset() {
     autoStartedRef.current = false
     setState('idle')
@@ -180,7 +175,7 @@ export function AudioRecorder({
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 text-sm text-red-600 font-medium">
               <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              Recording {formatTime(elapsed)}
+              Recording {formatDuration(elapsed)}
             </span>
             {durationWarning && (
               <span className="text-xs text-amber-600">Max duration reached</span>

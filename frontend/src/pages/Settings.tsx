@@ -11,6 +11,7 @@ import { SelectionChip } from '@/components/SelectionChip'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { LANGUAGES } from '@/lib/languages'
 import { TelegramCard } from '@/components/settings/TelegramCard'
+import { BRAND_NAME } from '@/lib/brand'
 
 const STYLES = ['Formal', 'Conversational', 'Exam-prep']
 
@@ -208,7 +209,7 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Integrations</CardTitle>
-          <CardDescription>Connect external services to Atelier.</CardDescription>
+          <CardDescription>Connect external services to {BRAND_NAME}.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
