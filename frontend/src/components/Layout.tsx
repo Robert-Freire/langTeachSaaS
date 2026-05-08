@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
+import { BRAND_NAME } from '@/lib/brand'
 
 export default function Layout() {
   const { user, logout } = useAuth0()
@@ -7,7 +8,7 @@ export default function Layout() {
   return (
     <div className="app-layout">
       <header>
-        <h1>Atelier</h1>
+        <h1>{BRAND_NAME}</h1>
         <div>
           <span>{user?.email}</span>
           <Link to="/settings">Settings</Link>

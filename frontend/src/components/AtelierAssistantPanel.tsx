@@ -8,17 +8,12 @@ import ProposalCard from '@/components/assistant/ProposalCard'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
 import { submitVoiceFeedback } from '@/api/assistant'
 import { MAX_RECORDING_SECONDS, WARN_REMAINING_SECONDS } from '@/lib/recordingLimits'
+import { formatDuration } from '@/lib/formatDuration'
 
 const MIN_DURATION_S = 1
 
 type UploadError = 'upload-failed' | 'empty-transcription' | null
 type FeedbackState = 'idle' | 'chip-open' | 'done-up' | 'done-down'
-
-function formatTimer(secs: number) {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0')
-  const s = (secs % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
 
 function WaveformBars() {
   return (
@@ -564,7 +559,7 @@ export default function AtelierAssistantPanel({
               <div className="flex items-center gap-3 flex-1 px-1" data-testid="recording-bar">
                 <WaveformBars />
                 <span className="text-sm font-inter text-zinc-500 tabular-nums" data-testid="recording-timer">
-                  {formatTimer(micElapsed)}
+                  {formatDuration(micElapsed)}
                 </span>
                 <div className="flex-1" />
                 <button

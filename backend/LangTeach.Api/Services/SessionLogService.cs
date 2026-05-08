@@ -19,9 +19,8 @@ public class SessionLogService : ISessionLogService
         { "Speaking", "Writing", "Reading", "Listening" };
 
 
-    // TODO: source CEFR sub-levels from config if the set ever changes
-    private static readonly HashSet<string> ValidCefrSubLevels = new(StringComparer.OrdinalIgnoreCase)
-        { "A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1.1", "C1.2", "C2.1", "C2.2" };
+    private static readonly HashSet<string> ValidCefrLevels =
+        new(CefrConstants.AllLevels, StringComparer.OrdinalIgnoreCase);
 
     private static readonly JsonSerializerOptions JsonOptions =
         new() { PropertyNameCaseInsensitive = true };
@@ -298,9 +297,9 @@ public class SessionLogService : ISessionLogService
             throw new System.ComponentModel.DataAnnotations.ValidationException(
                 $"Invalid LevelReassessmentSkill '{skill}'. Valid values: {string.Join(", ", ValidSkills)}");
 
-        if (level is not null && !ValidCefrSubLevels.Contains(level))
+        if (level is not null && !ValidCefrLevels.Contains(level))
             throw new System.ComponentModel.DataAnnotations.ValidationException(
-                $"Invalid LevelReassessmentLevel '{level}'. Valid values: {string.Join(", ", ValidCefrSubLevels)}");
+                $"Invalid LevelReassessmentLevel '{level}'. Valid values: {string.Join(", ", ValidCefrLevels)}");
     }
 
     private static void PropagateReassessment(Student student, string skill, string level, ILogger logger)

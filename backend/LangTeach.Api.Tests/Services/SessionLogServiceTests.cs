@@ -436,7 +436,7 @@ public class SessionLogServiceTests : IDisposable
     {
         var request = BaseRequest();
         request.LevelReassessmentSkill = "Pronunciation";
-        request.LevelReassessmentLevel = "B1.1";
+        request.LevelReassessmentLevel = "B1";
 
         var act = () => _sut.CreateAsync(_teacherId, _studentId, request);
         await act.Should().ThrowAsync<System.ComponentModel.DataAnnotations.ValidationException>()
@@ -473,13 +473,13 @@ public class SessionLogServiceTests : IDisposable
     {
         var request = BaseRequest();
         request.LevelReassessmentSkill = "Speaking";
-        request.LevelReassessmentLevel = "A1.2";
+        request.LevelReassessmentLevel = "A1";
 
         await _sut.CreateAsync(_teacherId, _studentId, request);
 
         var student = await _db.Students.FindAsync(_studentId);
         student!.SkillLevelOverrides.Should().Contain("\"speaking\"");
-        student.SkillLevelOverrides.Should().Contain("\"A1.2\"");
+        student.SkillLevelOverrides.Should().Contain("\"A1\"");
     }
 
     [Fact]
@@ -490,11 +490,11 @@ public class SessionLogServiceTests : IDisposable
         {
             Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
             SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-            LevelReassessmentSkill = "Speaking", LevelReassessmentLevel = "A1.2",
+            LevelReassessmentSkill = "Speaking", LevelReassessmentLevel = "A1",
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
         });
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = """{"speaking":"A1.2"}""";
+        student!.SkillLevelOverrides = """{"speaking":"A1"}""";
         await _db.SaveChangesAsync();
 
         var request = new UpdateSessionLogRequest
@@ -502,14 +502,14 @@ public class SessionLogServiceTests : IDisposable
             SessionDate = DateTime.UtcNow,
             PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
             LevelReassessmentSkill = "Speaking",
-            LevelReassessmentLevel = "A2.1",
+            LevelReassessmentLevel = "A2",
         };
 
         await _sut.UpdateAsync(_teacherId, _studentId, sessionId, request);
 
         var updatedStudent = await _db.Students.FindAsync(_studentId);
-        updatedStudent!.SkillLevelOverrides.Should().Contain("\"A2.1\"");
-        updatedStudent.SkillLevelOverrides.Should().NotContain("\"A1.2\"");
+        updatedStudent!.SkillLevelOverrides.Should().Contain("\"A2\"");
+        updatedStudent.SkillLevelOverrides.Should().NotContain("\"A1\"");
     }
 
     [Fact]
@@ -523,7 +523,7 @@ public class SessionLogServiceTests : IDisposable
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
         });
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = """{"speaking":"A1.2"}""";
+        student!.SkillLevelOverrides = """{"speaking":"A1"}""";
         await _db.SaveChangesAsync();
 
         var request = new UpdateSessionLogRequest
@@ -538,7 +538,7 @@ public class SessionLogServiceTests : IDisposable
 
         var updatedStudent = await _db.Students.FindAsync(_studentId);
         updatedStudent!.SkillLevelOverrides.Should().Contain("\"speaking\"");
-        updatedStudent.SkillLevelOverrides.Should().Contain("\"A1.2\"");
+        updatedStudent.SkillLevelOverrides.Should().Contain("\"A1\"");
     }
 
     [Fact]
@@ -549,18 +549,18 @@ public class SessionLogServiceTests : IDisposable
         {
             Id = sessionId, StudentId = _studentId, TeacherId = _teacherId,
             SessionDate = DateTime.UtcNow, PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
-            LevelReassessmentSkill = "Writing", LevelReassessmentLevel = "B1.2",
+            LevelReassessmentSkill = "Writing", LevelReassessmentLevel = "B1",
             CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
         });
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = """{"writing":"B1.2"}""";
+        student!.SkillLevelOverrides = """{"writing":"B1"}""";
         await _db.SaveChangesAsync();
 
         await _sut.SoftDeleteAsync(_teacherId, _studentId, sessionId);
 
         var updatedStudent = await _db.Students.FindAsync(_studentId);
         updatedStudent!.SkillLevelOverrides.Should().Contain("\"writing\"");
-        updatedStudent.SkillLevelOverrides.Should().Contain("\"B1.2\"");
+        updatedStudent.SkillLevelOverrides.Should().Contain("\"B1\"");
     }
 
     [Fact]

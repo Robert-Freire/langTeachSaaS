@@ -30,6 +30,7 @@ import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
 import { HOMEWORK_STATUS_PILL_OPTIONS } from '@/utils/homeworkStatusUtils'
+import { CEFR_LEVELS } from '@/lib/cefr-colors'
 
 const PULSE_TIMEOUT_MS = 2800
 
@@ -57,12 +58,6 @@ const DURATION_OPTIONS = [
 ]
 
 const PREV_HOMEWORK_STATUSES = HOMEWORK_STATUS_PILL_OPTIONS
-
-const CEFR_SUBLEVELS = [
-  'A1.1','A1.2','A2.1','A2.2',
-  'B1.1','B1.2','B2.1','B2.2',
-  'C1.1','C1.2','C2.1','C2.2',
-]
 
 const todayISO = todayLocalDateStr
 
@@ -1689,13 +1684,13 @@ export default function LogSession() {
                     </div>
                     {reassessmentEnabled && (
                       <div className="space-y-1 ml-10">
-                        <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR sub-level</Label>
+                        <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR level</Label>
                         <Select value={reassessmentLevel} onValueChange={(v) => { setReassessmentLevel(v ?? reassessmentLevel); markChangedAndSaveNow({ levelReassessmentLevel: v || null }) }}>
                           <SelectTrigger id="reassessment-level" className="text-sm bg-white w-40" data-testid="reassessment-level">
-                            <SelectValue placeholder="e.g. B1.1" />
+                            <SelectValue placeholder="e.g. B1" />
                           </SelectTrigger>
                           <SelectContent>
-                            {CEFR_SUBLEVELS.map(l => (
+                            {CEFR_LEVELS.map(l => (
                               <SelectItem key={l} value={l}>{l}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1756,13 +1751,13 @@ export default function LogSession() {
                 </div>
                 {reassessmentEnabled && (
                   <div className="space-y-1 ml-10">
-                    <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR sub-level</Label>
+                    <Label htmlFor="reassessment-level" className="text-xs text-zinc-500">New CEFR level</Label>
                     <Select value={reassessmentLevel} onValueChange={(v) => { setReassessmentLevel(v ?? reassessmentLevel); markChangedAndSaveNow({ levelReassessmentLevel: v || null }) }}>
                       <SelectTrigger id="reassessment-level" className="text-sm bg-white w-40" data-testid="reassessment-level">
-                        <SelectValue placeholder="e.g. B1.1" />
+                        <SelectValue placeholder="e.g. B1" />
                       </SelectTrigger>
                       <SelectContent>
-                        {CEFR_SUBLEVELS.map(l => (
+                        {CEFR_LEVELS.map(l => (
                           <SelectItem key={l} value={l}>{l}</SelectItem>
                         ))}
                       </SelectContent>

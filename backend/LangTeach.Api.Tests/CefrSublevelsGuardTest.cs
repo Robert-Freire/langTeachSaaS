@@ -14,12 +14,10 @@ public class CefrSublevelsGuardTest
     {
         "CefrConstants.cs",                 // canonical source -- doc comment deliberately names invalid forms
         "CefrLevelNormalizer.cs",           // normalization helper -- intentionally handles sublevel input
-        "SessionLogService.cs",             // normalization helper -- intentionally handles sublevel input
         "StudentProfileExtractionService.cs", // accepts sublevel AI output before normalization
         "CurriculumTemplateService.cs",     // loads curriculum JSON files that use sublevel resource names
         "CefrSublevelsGuardTest.cs",
         "cefrUtils.ts",                     // normalization helper -- intentionally handles sublevel input
-        "LogSession.tsx",                   // intentional UI feature: per-skill sublevel level tracking
     };
 
 
