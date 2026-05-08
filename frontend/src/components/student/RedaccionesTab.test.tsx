@@ -1,0 +1,199 @@
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RedaccionesTab } from './RedaccionesTab'
+import * as correctionsApi from '../../api/corrections'
+import type { CorrectionDetail, CorrectionSummary } from '../../api/corrections'
+
+vi.mock('../../api/corrections')
+
+const STUDENT_ID = 'student-1'
+
+const pendiente: CorrectionSummary = {
+  id: 'c-pend',
+  assignmentTitle: 'Mi rutina',
+  status: 'Pendiente',
+  createdAt: '2026-05-06T10:00:00Z',
+  correctedAt: null,
+}
+const entregada: CorrectionSummary = {
+  id: 'c-ent',
+  assignmentTitle: 'Carta a un extraterrestre',
+  status: 'Entregada',
+  createdAt: '2026-05-07T10:00:00Z',
+  correctedAt: null,
+}
+const corregida: CorrectionSummary = {
+  id: 'c-cor',
+  assignmentTitle: 'Una redacción muy larga sobre una experiencia inolvidable de mi infancia',
+  status: 'Corregida',
+  createdAt: '2026-05-04T10:00:00Z',
+  correctedAt: '2026-05-04T11:00:00Z',
+}
+
+const detail: CorrectionDetail = {
+  id: 'c-pend',
+  studentId: STUDENT_ID,
+  schemaVersion: 1,
+  status: 'Pendiente',
+  assignmentTitle: 'Mi rutina',
+  assignmentPrompt: null,
+  studentText: null,
+  markedUpOutput: null,
+  tags: [],
+  createdAt: '2026-05-06T10:00:00Z',
+  updatedAt: '2026-05-06T10:00:00Z',
+  correctedAt: null,
+}
+
+function wrapper(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('RedaccionesTab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders empty state with CTA when no corrections', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    expect(await screen.findByTestId('redacciones-empty')).toBeInTheDocument()
+    expect(screen.getByText(/Aún no hay redacciones/)).toBeInTheDocument()
+    expect(screen.getByTestId('redacciones-empty-cta')).toBeInTheDocument()
+  })
+
+  it('renders list with correct status badges', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([pendiente, entregada, corregida])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    expect(await screen.findByTestId('redacciones-list')).toBeInTheDocument()
+    expect(screen.getByTestId('redaccion-status-c-pend')).toHaveTextContent('Pendiente')
+    expect(screen.getByTestId('redaccion-status-c-ent')).toHaveTextContent('Entregada')
+    expect(screen.getByTestId('redaccion-status-c-cor')).toHaveTextContent('Corregida')
+  })
+
+  it('does NOT render Corregir on Pendiente cards', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([pendiente])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    await screen.findByTestId('redaccion-card-c-pend')
+    expect(screen.queryByTestId('redaccion-corregir-c-pend')).not.toBeInTheDocument()
+  })
+
+  it('renders Corregir on Entregada cards and shows Generando state when clicked', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([entregada])
+    let resolveCorregir: () => void = () => {}
+    vi.mocked(correctionsApi.corregirCorrection).mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveCorregir = resolve
+      }),
+    )
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    const button = await screen.findByTestId('redaccion-corregir-c-ent')
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('redaccion-status-c-ent')).toHaveTextContent('Generando…')
+    })
+    expect(button).toBeDisabled()
+
+    resolveCorregir()
+    await waitFor(() => {
+      expect(correctionsApi.corregirCorrection).toHaveBeenCalledWith(STUDENT_ID, 'c-ent')
+    })
+  })
+
+  it('shows generation error when corregir rejects with backend message', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([entregada])
+    vi.mocked(correctionsApi.corregirCorrection).mockRejectedValue({
+      response: { status: 501, data: { message: 'AI correction generation is not implemented yet.' } },
+    })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redaccion-corregir-c-ent'))
+    expect(await screen.findByTestId('redacciones-generation-error')).toHaveTextContent(
+      'AI correction generation is not implemented yet.',
+    )
+  })
+
+  it('create form requires title (Save disabled until typed)', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+
+    const save = screen.getByTestId('correction-drawer-save')
+    expect(save).toBeDisabled()
+
+    fireEvent.change(screen.getByTestId('correction-drawer-title'), { target: { value: 'Carta' } })
+    expect(save).not.toBeDisabled()
+  })
+
+  it('submitting create form calls createCorrection with trimmed title and optional fields', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.createCorrection).mockResolvedValue({
+      ...detail,
+      id: 'new',
+      assignmentTitle: 'Carta',
+    })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    fireEvent.change(screen.getByTestId('correction-drawer-title'), {
+      target: { value: '  Carta  ' },
+    })
+    fireEvent.change(screen.getByTestId('correction-drawer-prompt'), {
+      target: { value: 'Escribe sobre tu rutina' },
+    })
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      expect(correctionsApi.createCorrection).toHaveBeenCalledWith(STUDENT_ID, {
+        assignmentTitle: 'Carta',
+        assignmentPrompt: 'Escribe sobre tu rutina',
+        studentText: null,
+      })
+    })
+  })
+
+  it('Cancel discards form, no create call', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    fireEvent.change(screen.getByTestId('correction-drawer-title'), { target: { value: 'Carta' } })
+    fireEvent.click(screen.getByTestId('correction-drawer-cancel'))
+
+    expect(correctionsApi.createCorrection).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('correction-drawer')).not.toBeInTheDocument()
+  })
+
+  it('Delete removes the card via mutation and refetch', async () => {
+    vi.mocked(correctionsApi.listCorrections)
+      .mockResolvedValueOnce([pendiente])
+      .mockResolvedValueOnce([])
+    vi.mocked(correctionsApi.deleteCorrection).mockResolvedValue()
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redaccion-delete-c-pend'))
+
+    await waitFor(() => {
+      expect(correctionsApi.deleteCorrection).toHaveBeenCalledWith(STUDENT_ID, 'c-pend')
+    })
+    await waitFor(() => {
+      expect(screen.queryByTestId('redaccion-card-c-pend')).not.toBeInTheDocument()
+    })
+  })
+})
