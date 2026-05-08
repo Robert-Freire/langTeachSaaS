@@ -209,3 +209,28 @@ Fix: skill-level proposals wired, Issue #1039 (PR #1045), Deployed? Yes, merged 
 The student profile extraction prompt now includes a `skillLevel` sub-object with keys `reading`, `writing`, `speaking`, `listening`. Values are validated against pattern `^[ABC][12](\.\d+)?[+]?$` (allows sub-levels like B1.2). `AssistantController.Propose` emits `student` proposals with `field = "skillLevel.<key>"` for each non-null extracted skill override. Frontend `applyStudentProposal` splits the dotted field and sends `{ skillLevelWriting: "B1" }` etc. to PATCH.
 
 **Verify:** A teacher saying "sube el nivel de escritura a B1" should produce a `student` proposal card with `field = skillLevel.writing` and `newValue = B1`. A teacher saying "no toco el nivel global" while specifying per-skill levels should produce only skill-level proposals, not a spurious `cefrLevel` proposal.
+
+---
+
+## From: #1153 - Redacción correction prompt (2026-05-08)
+
+### New `RedaccionCorrectionPromptBuilder` added for student-text correction
+
+A new prompt builder lives at `backend/LangTeach.Api/AI/RedaccionCorrectionPromptBuilder.cs` (separate from the 1784-line `PromptService` because the lifecycle is per-correction, not per-lesson-block).
+
+**Prompt structure (system + user):**
+- System: identity + verbatim category definitions for C / G / L / O / MuyBien (with explicit anti-pattern rules: misspelling is O not G; wrong preposition is G not L; literal translation is L not G; missing connector is C not G). Output contract demands raw JSON only, with character offsets into a verbatim `originalText`, non-overlapping tags, and null `explanation`/`correctedForm` for `MuyBien`.
+- User: `STUDENT LEVEL: {cefr}` + a calibration cue per band (A1/A2 = basic agreement & core verbs; B1/B2 = cohesion & natural usage; C1/C2 = subtle nuance). `L1 INTERFERENCE` block when L1 is set, sourcing hot-spots from `IPedagogyConfigService.GetL1Adjustments`. `WEAK POINTS TO WATCH` when student difficulties are tracked (top 3, sanitized). `ASSIGNMENT CONTEXT` when the teacher provided a prompt note. Then the verbatim student text.
+
+**Validation gates** (in `RedaccionCorrectionService`, applied before persisting):
+- `originalText` round-trip: response must equal sent text byte-for-byte; mismatch → 502 `original_text_mismatch`.
+- Per-tag: category must be in the allowlist; offsets in-bounds; `spannedText` must equal `originalText.Substring(start, end-start)`; non-MuyBien tags must have non-empty `explanation` and `correctedForm`. Bad tags are logged + dropped, not fatal.
+- Sort by `startIndex`; drop any tag that overlaps a prior tag's range.
+- MuyBien tags are coerced to null `explanation`/`correctedForm` (with a warning if the model populated them).
+
+**Known limitations going into Teacher QA:**
+- Model can still mislabel categories (e.g. tag a misspelling as G). The dual-level integration test (`RedaccionCorrectionDualLevelTests`, opt-in via `[SkipIfNoClaudeApiKey]`) asserts the ablar misspelling is tagged O at both A2 and B2; failures here mean the prompt drifted on category fidelity.
+- `original_text_mismatch` is a hard 502 (no auto-retry, teacher hits Retry). If the model develops a habit of normalizing whitespace, this will surface as recurring 502s and should be addressed in the prompt, not by relaxing the gate.
+- Tag `OrderIndex` matches the post-validation sorted-by-startIndex order. Frontend rendering must use this, not the raw AI order.
+
+**Verify:** Same redacción submitted by an A2 student vs a B2 student should produce substantively different markup (different category distribution OR different explanations). If the dual-level smoke test ever returns identical output, the moat is broken.
