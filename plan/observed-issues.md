@@ -15,6 +15,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1155 | 2026-05-08 | low | CorrectionDetailDto has no studentTextUpdatedAt field; stale-markup banner (issue #1155 edge case) deferred until DTO grows that field (plan revision) |
 | #1155 | 2026-05-08 | low | DemoSeeder Ana Visual correction duplicates marked-up JSON literal and tagSpecs array; could be serialized once from tagSpecs (Sophy) |
 | #1155 | 2026-05-08 | low | Visual stack DB_PORT=1435 is not in correction-detail.visual.spec.ts .env; pre-existing infra pattern across visual specs (review-ui) |
+| #1154 | 2026-05-08 | low | StudentRoster.test.tsx fails 3 tests on sprint/text-correction head (Review pending / HMWK NOT DONE / HMWK PARTIAL); pre-existing on sprint, unrelated to redacciones; landed via #1154 merge |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
