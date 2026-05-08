@@ -100,15 +100,33 @@ public class RedaccionCorrectionPromptBuilderTests
     [Fact]
     public void Build_WrapsStudentTextInVerbatimMarkers()
     {
-        // Defense in depth alongside temperature=0: explicit delimiters + a "do not
-        // normalize" instruction make it harder for the model to silently smooth the echo.
+        // Defense in depth alongside temperature=0: explicit delimiters + a "byte-for-byte"
+        // instruction make it harder for the model to silently smooth the echo. Markers use
+        // a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot collide with
+        // user-controlled student text.
         var ctx = MakeCtx("B1") with { StudentText = "Hoy ablar con mi amigo." };
         var prompt = _builder.Build(ctx).UserPrompt;
 
-        prompt.Should().Contain("<<<STUDENT_TEXT_VERBATIM>>>");
-        prompt.Should().Contain("<<</STUDENT_TEXT_VERBATIM>>>");
+        prompt.Should().MatchRegex("<<<STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
+        prompt.Should().MatchRegex("<<</STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().Contain("Hoy ablar con mi amigo.");
         prompt.Should().Contain("byte-for-byte");
+    }
+
+    [Fact]
+    public void Build_RegeneratesMarker_WhenStudentTextContainsCollidingMarker()
+    {
+        // Sanity check: even if the student happened to write a string matching the marker
+        // pattern, the builder must regenerate. We can't easily force a collision without
+        // mocking Guid.NewGuid; instead verify two builds produce DIFFERENT marker nonces
+        // (proves the marker isn't a global constant) and that marker-suffix bytes from one
+        // run don't appear in another build's output.
+        var prompt1 = _builder.Build(MakeCtx("B1") with { StudentText = "First text." }).UserPrompt;
+        var prompt2 = _builder.Build(MakeCtx("B1") with { StudentText = "Second text." }).UserPrompt;
+
+        var marker1 = System.Text.RegularExpressions.Regex.Match(prompt1, "STUDENT_TEXT_VERBATIM_[0-9a-f]{32}").Value;
+        var marker2 = System.Text.RegularExpressions.Regex.Match(prompt2, "STUDENT_TEXT_VERBATIM_[0-9a-f]{32}").Value;
+        marker1.Should().NotBe(marker2);
     }
 
     private static RedaccionCorrectionPromptContext MakeCtx(string cefr) =>

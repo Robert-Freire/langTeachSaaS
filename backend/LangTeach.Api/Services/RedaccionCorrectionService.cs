@@ -67,7 +67,14 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var ctx = BuildPromptContext(correction, student);
         var request = _promptBuilder.Build(ctx);
-        var sentText = ctx.StudentText;
+        // The model treats the text inside the STUDENT_TEXT_VERBATIM markers as ending at the
+        // last non-whitespace character and does NOT echo the trailing newline (the marker on
+        // the next line is its own token boundary). The strict ordinal check therefore compares
+        // against the trim-end-ed version, NOT against ctx.StudentText raw - otherwise a
+        // student submission ending with whitespace produces a false mismatch every time.
+        // ctx.StudentText itself stays raw, and the persisted Correction.StudentText (what the
+        // student wrote) is never modified.
+        var sentText = ctx.StudentText.TrimEnd();
 
         // One-shot retry on originalText mismatch only. Sonnet 4.6 occasionally paraphrases
         // longer inputs even with temperature=0 + delimited markers; a second attempt almost
@@ -83,12 +90,24 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             {
                 response = await _claude.CompleteAsync(request, cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                // Caller-driven cancellation flows up unchanged.
+                throw;
+            }
             catch (ClaudeRateLimitException ex)
             {
                 throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
             }
             catch (ClaudeApiException ex)
             {
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                // Any other transport / parsing / serialization failure from the Claude
+                // client maps to upstream_error so the controller returns 502 (consistent
+                // with the existing two specific catches), not an unhandled 500.
                 throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
             }
 
@@ -201,12 +220,11 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         // address the same string the model echoes back as originalText. Sanitization
         // happens at write time on POST /corrections (DTO layer); we trust what's in DB.
         //
-        // Trim trailing whitespace once: when we wrap the text in <<<STUDENT_TEXT_VERBATIM>>>
-        // markers in the user prompt, the model treats the text as ending at the last
-        // non-whitespace character (the marker on the next line is its own token boundary)
-        // and does NOT echo the trailing newline back into originalText. Trimming once here
-        // keeps the prompt and the strict ordinal-check baseline aligned.
-        var studentText = (correction.StudentText ?? string.Empty).TrimEnd();
+        // The trim-trailing-whitespace concern (the model treats the text as ending at the
+        // last non-whitespace character when wrapped in markers and does NOT echo the
+        // trailing newline back) is handled at the equality-check site in CorregirAsync, not
+        // here, so the persisted Correction.StudentText stays exactly what the student wrote.
+        var studentText = correction.StudentText ?? string.Empty;
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
 
         var l1 = ParseFirstString(student.NativeLanguages);
