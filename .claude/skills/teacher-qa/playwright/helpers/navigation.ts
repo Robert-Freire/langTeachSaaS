@@ -199,17 +199,18 @@ export async function ensureStudentHasSessionLog(
 ): Promise<void> {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
 
-  // Check existing sessions via the summary endpoint
-  const [summaryResponse] = await Promise.all([
-    page.waitForResponse(
-      resp =>
-        resp.url().includes(`/api/students/${studentId}/sessions/summary`) &&
-        resp.status() === 200 &&
-        resp.request().resourceType() === 'xhr',
-      { timeout: 10000 }
-    ),
-    page.goto(`${baseURL}/students/${studentId}?tab=sessions`),
-  ])
+  // Check existing sessions via the summary endpoint.
+  // Attach the response listener BEFORE goto so it is bound to a stable
+  // promise reference before navigation kicks off the request.
+  const summaryResponsePromise = page.waitForResponse(
+    resp =>
+      resp.url().includes(`/api/students/${studentId}/sessions/summary`) &&
+      resp.status() === 200 &&
+      resp.request().resourceType() === 'xhr',
+    { timeout: 15000 }
+  )
+  await page.goto(`${baseURL}/students/${studentId}?tab=sessions`)
+  const summaryResponse = await summaryResponsePromise
 
   const summary: { totalSessions?: number } = await summaryResponse.json()
   if ((summary.totalSessions ?? 0) > 0) return
