@@ -73,3 +73,20 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1152 (Sophy review notes, APPROVE with follow-ups)
 - Pre-prompt-service: add a CHECK constraint or service-level guard so Status/Category writes are restricted to the string-constant sets. Today only CorrectionService writes; risk surfaces when the AI service starts pushing values directly. Land before #PROMPT_SERVICE issue.
 - Sprint-level decision: pick a soft-delete convention (DeletedAt timestamp vs IsDeleted bool) and either fold Corrections back or migrate the rest. Should not leave both patterns drifting.
+
+## #1153 (Architecture review notes, PASS WITH NOTES)
+- StubClaudeClient (test helper) and SequentialClaudeClient (CurriculumGenerationServiceTests-local) overlap in scope. Consider consolidating into a single shared `Helpers/` test double. Functional difference is real (singleton-suitable for WebAppFactory vs unit-test-local), but the API surfaces should converge to one class.
+
+## #1153 (Sophy review notes, APPROVE with follow-ups)
+- Externalize category definitions (C/G/L/O/MuyBien names, definitions, anti-pattern rules) from `RedaccionCorrectionPromptBuilder.SystemPrompt` to `data/pedagogy/correction-categories.json`. Drives the prompt from `CorrectionTagCategory` + JSON description map; eliminates duplicate truth between code enum and prompt text.
+- Externalize per-CEFR-band calibration cues (`LevelCalibrationCue`) to `data/pedagogy/` (new `correction-calibration.json` or extend `prompt-fragments.json`). Pedagogical voice should be editable without redeploy.
+- Document the relationship between `Correction.MarkedUpOutput` (verbatim AI JSON, audit) and `CorrectionTag` rows (queryable truth) in the `Correction` entity XML doc so future maintainers don't try to "clean it up".
+- The published JSON Schema at `backend/LangTeach.Api/Schemas/redaccion-correction.schema.json` is reference-only; C# field validation in `ValidateAndOrderTags` is the enforcement layer. Either wire schema validation in or document the schema as reference-only.
+
+## #1153 (Prompt-health review notes, NEEDS CLEANUP — partially addressed)
+- Findings #3-#6 (MuyBien null discipline, "VERBATIM" duplication, "DO NOT paraphrase" negative-bloat, opening "category fidelity is non-negotiable" sentence) addressed inline in the same PR.
+- Findings #1 and #2 (offset bounds + non-overlap + span-match instructions) deferred: the service drops bad tags rather than coercing, so the model still benefits from explicit guidance to maximize useful output. Re-evaluate if a future iteration adds offset autocorrection.
+
+## #1153 (CodeRabbit findings, partially addressed)
+- **Schema (Minor):** Added `endIndex > startIndex` cross-field constraint to `redaccion-correction.schema.json`. Schema is reference-only; C# `ValidateAndOrderTags` is the runtime enforcement layer.
+- **TOCTOU race on /corregir (Major) — partially addressed:** Added a fresh-status recheck in `RedaccionCorrectionService.CorregirAsync` between Claude's response and the SaveChanges. Closes the duplicate-tag-rows half of the race. Does NOT prevent both concurrent calls from invoking Claude (double cost). True atomic claim requires either (a) a `Corrigiendo` enum value + DB CHECK constraint update + flip-and-save before the LLM call, or (b) a `RowVersion`/`[Timestamp]` concurrency token on `Correction`. Both options need a migration. Defer until the frontend exposes the corregir button to a multi-tab/double-click vector — for v1, the UI debounces and the blast radius is bounded.

@@ -12,15 +12,18 @@ namespace LangTeach.Api.Controllers;
 public class CorrectionsController : ControllerBase
 {
     private readonly ICorrectionService _corrections;
+    private readonly IRedaccionCorrectionService _redaccionCorrections;
     private readonly IProfileService _profileService;
     private readonly ILogger<CorrectionsController> _logger;
 
     public CorrectionsController(
         ICorrectionService corrections,
+        IRedaccionCorrectionService redaccionCorrections,
         IProfileService profileService,
         ILogger<CorrectionsController> logger)
     {
         _corrections = corrections;
+        _redaccionCorrections = redaccionCorrections;
         _profileService = profileService;
         _logger = logger;
     }
@@ -84,16 +87,30 @@ public class CorrectionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/corregir")]
-    public IActionResult Corregir(Guid studentId, Guid id)
+    public async Task<IActionResult> Corregir(Guid studentId, Guid id, CancellationToken cancellationToken)
     {
-        // Stub: real AI generation lands in the prompt-service follow-up issue.
-        // The endpoint exists so the frontend contract is fixed and clients receive a
-        // deterministic 501 until generation is wired up.
-        _logger.LogInformation("POST corregir stub. StudentId={StudentId} CorrectionId={CorrectionId}", studentId, id);
-        return StatusCode(StatusCodes.Status501NotImplemented, new
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        try
         {
-            message = "AI correction generation is not implemented yet."
-        });
+            var detail = await _redaccionCorrections.CorregirAsync(teacherId, studentId, id, cancellationToken);
+            return Ok(detail);
+        }
+        catch (CorrectionNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (CorrectionInvalidStateException ex)
+        {
+            return Conflict(new { code = ex.Code, message = ex.Message });
+        }
+        catch (CorrectionGenerationException ex)
+        {
+            _logger.LogWarning(ex, "Redaccion generation failed. StudentId={StudentId} CorrectionId={CorrectionId} Code={Code}",
+                studentId, id, ex.Code);
+            return StatusCode(StatusCodes.Status502BadGateway, new { code = ex.Code, message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]

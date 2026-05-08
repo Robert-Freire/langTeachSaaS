@@ -88,46 +88,159 @@ public class CorrectionsControllerTests
     }
 
     [Fact]
-    public async Task Corregir_ReturnsNotImplemented()
+    public async Task Corregir_OnEntregada_FlipsToCorregidaWithTags()
     {
-        var (client, studentId) = await SetupAsync("auth0|corr-corregir-stub");
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-ok");
+        var text = "Hoy ablar con mi amigo.";
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
         {
             AssignmentTitle = "Stub test",
-            StudentText = "Texto del estudiante.",
+            StudentText = text,
         });
+
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse(BuildSampleAiJson(text));
 
         var resp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
 
-        resp.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Corregida");
+        detail.CorrectedAt.Should().NotBeNull();
+        detail.Tags.Should().HaveCount(1);
+        detail.Tags[0].Category.Should().Be("O");
+        detail.MarkedUpOutput.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
-    public async Task ColdPaste_CreateThenCorregir_StubReturns501()
+    public async Task Corregir_OnPendiente_Returns409NoStudentText()
     {
-        // Pins the cold-paste flow described in the sprint story so the prompt-service
-        // follow-up has a single test to flip from 501 to 200.
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-pendiente");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Pendiente test",
+        });
+        created.Status.Should().Be("Pendiente");
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Corregir_OnAlreadyCorregida_Returns409()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-already");
+        var text = "Texto ya corregido.";
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Already test",
+            StudentText = text,
+        });
+
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse(BuildEmptyAiJson(text));
+
+        var first = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var second = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Corregir_OnInvalidJson_Returns502()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-badjson");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Bad json",
+            StudentText = "Texto del estudiante.",
+        });
+
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse("This is not JSON at all.");
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+        resp.StatusCode.Should().Be(HttpStatusCode.BadGateway);
+
+        // Status reverts (was never committed): row remains Entregada, retryable.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+        var row = db.Corrections.First(c => c.Id == created.Id);
+        row.Status.Should().Be(LangTeach.Api.Data.Models.CorrectionStatus.Entregada);
+    }
+
+    [Fact]
+    public async Task ColdPaste_CreateThenCorregir_FlipsToCorregida()
+    {
+        // Pins the cold-paste flow described in the sprint story.
         var (client, studentId) = await SetupAsync("auth0|corr-cold-paste");
 
+        var text = "El sábado fui al cine y el domingo descansé.";
         var createResp = await client.PostAsJsonAsync(
             $"/api/students/{studentId}/corrections",
             new CreateCorrectionRequest
             {
                 AssignmentTitle = "Cold paste",
                 AssignmentPrompt = "Describe tu fin de semana.",
-                StudentText = "El sábado fui al cine y el domingo descansé.",
+                StudentText = text,
             });
         createResp.StatusCode.Should().Be(HttpStatusCode.Created);
         var detail = (await createResp.Content.ReadFromJsonAsync<CorrectionDetailDto>())!;
         detail.Status.Should().Be("Entregada");
 
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse(BuildEmptyAiJson(text));
+
         var corregirResp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{detail.Id}/corregir",
             content: null);
-        corregirResp.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+        corregirResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var corrected = await corregirResp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        corrected!.Status.Should().Be("Corregida");
     }
+
+    private static string BuildSampleAiJson(string originalText)
+    {
+        // "ablar" misspelling (without the h) at index 4 in "Hoy ablar con mi amigo." -> O
+        var idx = originalText.IndexOf("ablar", StringComparison.Ordinal);
+        return System.Text.Json.JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            originalText,
+            tags = new[]
+            {
+                new
+                {
+                    category = "O",
+                    startIndex = idx,
+                    endIndex = idx + "ablar".Length,
+                    spannedText = "ablar",
+                    explanation = "Falta la 'h'. El verbo es 'hablar'.",
+                    correctedForm = "hablar",
+                }
+            }
+        });
+    }
+
+    private static string BuildEmptyAiJson(string originalText) =>
+        System.Text.Json.JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            originalText,
+            tags = Array.Empty<object>(),
+        });
 
     [Fact]
     public async Task List_ExcludesSoftDeleted()
@@ -258,7 +371,8 @@ public class CorrectionsControllerTests
     public async Task Patch_StudentTextOnCorregida_Returns400()
     {
         // Once a correction is Corregida, StudentText is locked (markup tag offsets reference it).
-        // We force the status to Corregida directly via the DbContext because POST /corregir is a 501 stub.
+        // We force the status to Corregida directly via the DbContext to keep this test focused
+        // on the locked-text rule rather than the corregir generation flow.
         var (client, studentId) = await SetupAsync("auth0|corr-locked-text");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
         {

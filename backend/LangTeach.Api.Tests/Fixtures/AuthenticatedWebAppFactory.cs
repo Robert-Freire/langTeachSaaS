@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
@@ -55,8 +56,21 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
             services.AddSingleton<IBlobStorageService>(inMemoryBlob);
             services.AddSingleton(inMemoryBlob);
             services.AddSingleton<IVoiceNoteBlobStorage>(new InMemoryVoiceNoteBlobStorage());
+
+            // Replace the live Claude client with a stub so corregir tests don't hit the network.
+            // Tests can resolve StubClaudeClient from the factory's services to enqueue responses.
+            var claudeDescriptors = services
+                .Where(d => d.ServiceType == typeof(IClaudeClient))
+                .ToList();
+            foreach (var d in claudeDescriptors)
+                services.Remove(d);
+            var stubClaude = new StubClaudeClient();
+            services.AddSingleton(stubClaude);
+            services.AddSingleton<IClaudeClient>(stubClaude);
         });
     }
+
+    public StubClaudeClient ClaudeStub => Services.GetRequiredService<StubClaudeClient>();
 
     public HttpClient CreateAuthenticatedClient(
         string auth0Id = TestAuthHandler.DefaultAuth0Id,
