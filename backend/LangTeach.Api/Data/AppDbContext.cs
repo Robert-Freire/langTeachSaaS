@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<TelegramLink> TelegramLinks => Set<TelegramLink>();
     public DbSet<TeacherFollowup> TeacherFollowups => Set<TeacherFollowup>();
     public DbSet<AssistantTurnFeedback> AssistantTurnFeedbacks => Set<AssistantTurnFeedback>();
+    public DbSet<Correction> Corrections => Set<Correction>();
+    public DbSet<CorrectionTag> CorrectionTags => Set<CorrectionTag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -352,6 +354,68 @@ public class AppDbContext : DbContext
              .HasForeignKey(f => f.CoveredInSessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // Correction — cascade from Teacher; NoAction from Student/Lesson/SessionLog
+        // (avoids SQL Server multi-cascade-path errors). Soft-delete via DeletedAt timestamp
+        // (null = active). Unidirectional nav: WithMany() with no argument so the principal
+        // entities (Student, Teacher, Lesson, SessionLog) do not need a Corrections collection.
+        // CHECK constraints are a backstop against non-API writes (the AI generation service
+        // will write Status/Category directly once #PROMPT_SERVICE lands).
+        modelBuilder.Entity<Correction>(e =>
+        {
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_Corrections_Status",
+                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corregida')"));
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => new { c.TeacherId, c.DeletedAt });
+            e.HasIndex(c => new { c.StudentId, c.DeletedAt });
+            e.HasOne<Teacher>()
+             .WithMany()
+             .HasForeignKey(c => c.TeacherId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Student>()
+             .WithMany()
+             .HasForeignKey(c => c.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<Lesson>()
+             .WithMany()
+             .HasForeignKey(c => c.LessonId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<SessionLog>()
+             .WithMany()
+             .HasForeignKey(c => c.SessionLogId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(c => c.SchemaVersion).HasDefaultValue(1);
+            e.Property(c => c.Status).HasMaxLength(20).HasDefaultValue(CorrectionStatus.Pendiente).IsRequired();
+            e.Property(c => c.AssignmentTitle).HasMaxLength(200).IsRequired();
+            e.Property(c => c.AssignmentPrompt).HasMaxLength(2000);
+        });
+
+        // CorrectionTag — cascade from Correction; index on (CorrectionId, Category)
+        modelBuilder.Entity<CorrectionTag>(e =>
+        {
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_Category",
+                    "Category COLLATE Latin1_General_100_BIN2 IN ('C', 'G', 'L', 'O', 'MuyBien')");
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_Span",
+                    "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
+            });
+            e.HasKey(t => t.Id);
+            e.HasIndex(t => new { t.CorrectionId, t.Category });
+            e.HasOne(t => t.Correction)
+             .WithMany(c => c.Tags)
+             .HasForeignKey(t => t.CorrectionId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.Property(t => t.Category).HasMaxLength(10).IsRequired();
+            e.Property(t => t.SpannedText).HasMaxLength(500).IsRequired();
+            e.Property(t => t.Explanation).HasMaxLength(1000);
+            e.Property(t => t.CorrectedForm).HasMaxLength(500);
         });
     }
 }

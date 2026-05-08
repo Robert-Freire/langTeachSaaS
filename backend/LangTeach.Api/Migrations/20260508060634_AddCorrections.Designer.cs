@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508060634_AddCorrections")]
+    partial class AddCorrections
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,10 +140,7 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("TeacherId", "DeletedAt");
 
-                    b.ToTable("Corrections", t =>
-                        {
-                            t.HasCheckConstraint("CK_Corrections_Status", "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corregida')");
-                        });
+                    b.ToTable("Corrections");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.CorrectionTag", b =>
@@ -183,12 +183,7 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("CorrectionId", "Category");
 
-                    b.ToTable("CorrectionTags", t =>
-                        {
-                            t.HasCheckConstraint("CK_CorrectionTags_Category", "Category COLLATE Latin1_General_100_BIN2 IN ('C', 'G', 'L', 'O', 'MuyBien')");
-
-                            t.HasCheckConstraint("CK_CorrectionTags_Span", "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
-                        });
+                    b.ToTable("CorrectionTags");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
