@@ -5,14 +5,17 @@ import { StudentRoster } from './StudentRoster'
 import type { ActiveStudent } from '@/api/dashboard'
 
 function makeStudent(overrides: Partial<ActiveStudent> = {}): ActiveStudent {
+  // Defaults must avoid triggering the time-based "Returning" signal
+  // (>21d gap with a future session) so tests of higher priority signals
+  // can run from these defaults.
   return {
     studentId: 'student-1',
     name: 'Ana García',
     cefrLevel: 'B1',
     nativeLanguages: ['English'],
     isActive: true,
-    lastSessionDate: '2026-04-16T10:00:00Z',
-    nextSessionDate: '2026-04-30T10:00:00Z',
+    lastSessionDate: new Date(Date.now() - 7 * 86400000).toISOString(),
+    nextSessionDate: new Date(Date.now() + 7 * 86400000).toISOString(),
     totalSessions: 5,
     teachingTodosCount: 0,
     pendingTodos: [],

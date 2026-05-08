@@ -19,6 +19,7 @@ import Courses from './pages/Courses'
 import CourseNew from './pages/CourseNew'
 import CourseDetail from './pages/CourseDetail'
 import StudentDetail from './pages/StudentDetail'
+import RedaccionDetail from './pages/RedaccionDetail'
 import LogSession from './pages/LogSession'
 import Sessions from './pages/Sessions'
 import Onboarding from './pages/Onboarding'
@@ -70,6 +71,7 @@ export default function App() {
                   <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
+                  <Route path="/students/:id/redacciones/:correctionId" element={<RedaccionDetail />} />
                   <Route path="/lessons" element={<Lessons />} />
                   <Route path="/lessons/new" element={<LessonNew />} />
                   <Route path="/lessons/:id" element={<LessonEditor />} />

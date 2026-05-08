@@ -14,6 +14,7 @@ import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
 import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
+import { RedaccionesTab } from '@/components/student/RedaccionesTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
@@ -274,6 +275,7 @@ export default function StudentDetail() {
     { key: 'overview', label: 'Overview' },
     { key: 'profile', label: 'Profile' },
     { key: 'sessions', label: 'Sessions' },
+    { key: 'redacciones', label: 'Redacciones' },
     { key: 'progress', label: 'Progress' },
   ]
 
@@ -376,6 +378,10 @@ export default function StudentDetail() {
 
       {activeTab === 'sessions' && (
         <SessionHistoryTab studentId={student.id} />
+      )}
+
+      {activeTab === 'redacciones' && (
+        <RedaccionesTab studentId={student.id} />
       )}
 
       {activeTab === 'progress' && (
