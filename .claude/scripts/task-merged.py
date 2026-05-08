@@ -43,30 +43,29 @@ def gh(*args: str, token: str) -> str:
 
 
 def find_item_id(issue_num: int, token: str) -> str:
-    """Find project item ID via GraphQL (reliable regardless of board size)."""
-    query = """
-    { user(login: "%s") { projectV2(number: %s) {
-        items(first: 100) { nodes { id content { ... on Issue { number } } }
-          pageInfo { hasNextPage endCursor } } } } }
-    """ % (OWNER, PROJECT_NUM)
+    """Find the project item ID for an issue via the issue->projectItems edge.
 
-    cursor = None
-    while True:
-        if cursor:
-            q = query.replace("items(first: 100)",
-                              'items(first: 100, after: "%s")' % cursor)
-        else:
-            q = query
-        raw = gh("api", "graphql", "-f", f"query={q}", token=token)
-        data = json.loads(raw)
-        items_data = data["data"]["user"]["projectV2"]["items"]
-        for node in items_data["nodes"]:
-            content = node.get("content") or {}
-            if content.get("number") == issue_num:
-                return node["id"]
-        if not items_data["pageInfo"]["hasNextPage"]:
-            break
-        cursor = items_data["pageInfo"]["endCursor"]
+    Previously this paginated through every item on the board to locate the match.
+    That approach is O(N) in board size and fatally fragile: a single corrupted
+    ProjectV2Item anywhere on the board causes GitHub's GraphQL resolver to reject
+    batch fetches that include it, jamming the loop forever (observed 2026-05-08:
+    item at position around 228 broke the resolver for any first>=3 query, and
+    `gh project item-list` failed identically). The issue->projectItems edge
+    resolves the linkage directly without enumerating siblings.
+    """
+    query = """
+    { repository(owner: "%s", name: "langTeachSaaS") {
+        issue(number: %d) {
+          projectItems(first: 10) { nodes { id project { number } } } } } }
+    """ % (OWNER, issue_num)
+    raw = gh("api", "graphql", "-f", f"query={query}", token=token)
+    data = json.loads(raw)
+    issue = data["data"]["repository"].get("issue")
+    if not issue:
+        return ""
+    for node in issue["projectItems"]["nodes"]:
+        if node["project"]["number"] == int(PROJECT_NUM):
+            return node["id"]
     return ""
 
 
