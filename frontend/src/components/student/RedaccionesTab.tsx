@@ -306,7 +306,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
   const [statusFromLoad, setStatusFromLoad] = useState<CorrectionStatus | null>(null)
 
   const detailQuery = useQuery({
-    queryKey: ['correction-detail', studentId, editId],
+    queryKey: ['corrections', studentId, editId],
     queryFn: () => getCorrection(studentId, editId as string),
     enabled: isEdit,
   })
