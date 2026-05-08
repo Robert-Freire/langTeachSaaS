@@ -119,6 +119,25 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId);
 
+        // TOCTOU guard: a concurrent /corregir call could have completed during our Claude
+        // round-trip. Re-check the persisted status before writing tags to avoid duplicate
+        // tag rows (last-write-wins on the parent row is acceptable; duplicate child rows
+        // are not). True atomicity requires a Corrigiendo state + DB-level claim, which
+        // needs a migration; deferred to a follow-up. See plan/code-review-backlog.md.
+        var freshStatus = await _db.Corrections
+            .AsNoTracking()
+            .Where(c => c.Id == correctionId)
+            .Select(c => c.Status)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (freshStatus != CorrectionStatus.Entregada)
+        {
+            _logger.LogWarning(
+                "Redaccion correction: another request completed first (status now {Status}). Discarding this run. CorrectionId={CorrectionId}",
+                freshStatus, correctionId);
+            throw new CorrectionInvalidStateException("already_corrected",
+                "Another request completed this correction concurrently.");
+        }
+
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped;
         correction.Status = CorrectionStatus.Corregida;

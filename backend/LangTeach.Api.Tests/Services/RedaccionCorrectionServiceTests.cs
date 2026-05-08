@@ -13,6 +13,7 @@ namespace LangTeach.Api.Tests.Services;
 public class RedaccionCorrectionServiceTests : IDisposable
 {
     private readonly AppDbContext _db;
+    private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
@@ -20,10 +21,10 @@ public class RedaccionCorrectionServiceTests : IDisposable
 
     public RedaccionCorrectionServiceTests()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
+        _dbOptions = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new AppDbContext(options);
+        _db = new AppDbContext(_dbOptions);
 
         var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
         var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
@@ -186,6 +187,46 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
         result.Tags.Should().BeEmpty();
         result.Status.Should().Be(CorrectionStatus.Corregida);
+    }
+
+    [Fact]
+    public async Task CorregirAsync_ConcurrentCallCompletesFirst_AbortsWithoutDuplicateTags()
+    {
+        var text = "Hoy ablar.";
+        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
+
+        // Simulate a concurrent /corregir call that completes during this one's Claude
+        // round-trip: hook into the stub so it flips status + persists tags via a SEPARATE
+        // DbContext (mirrors what a parallel HTTP request would do).
+        _claude.DuringCompleteAsync = async () =>
+        {
+            // Mirror a parallel HTTP request: open a separate DbContext on the same
+            // in-memory store, claim the correction, persist a tag, dispose.
+            using var concurrentDb = new AppDbContext(_dbOptions);
+            var concurrent = await concurrentDb.Corrections.FirstAsync(c => c.Id == id);
+            concurrent.Status = CorrectionStatus.Corregida;
+            concurrent.CorrectedAt = DateTime.UtcNow;
+            concurrentDb.CorrectionTags.Add(new CorrectionTag
+            {
+                Id = Guid.NewGuid(), CorrectionId = id, Category = "O",
+                StartIndex = 4, EndIndex = 9, SpannedText = "ablar",
+                Explanation = "Concurrent call.", CorrectedForm = "hablar", OrderIndex = 0,
+            });
+            await concurrentDb.SaveChangesAsync();
+        };
+        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        {
+            ("O", 4, 9, "ablar", "Stub call.", "hablar"),
+        }));
+
+        var ex = await Assert.ThrowsAsync<CorrectionInvalidStateException>(() =>
+            _sut.CorregirAsync(_teacherId, _studentId, id));
+        ex.Code.Should().Be("already_corrected");
+
+        // The concurrent call's single tag is the only one in the DB; this call's tag
+        // was never persisted thanks to the recheck.
+        var tagCount = _db.CorrectionTags.Count(t => t.CorrectionId == id);
+        tagCount.Should().Be(1);
     }
 
     [Fact]

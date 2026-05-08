@@ -35,6 +35,15 @@
       },
       "allOf": [
         {
+          "$comment": "Tag spans must be strictly positive length (endIndex > startIndex). The C# validator enforces this; this schema entry documents the contract for downstream consumers.",
+          "if": { "required": ["startIndex", "endIndex"] },
+          "then": {
+            "properties": {
+              "endIndex": { "exclusiveMinimum": { "$data": "1/startIndex" } }
+            }
+          }
+        },
+        {
           "if": { "properties": { "category": { "const": "MuyBien" } } },
           "then": {
             "properties": {
