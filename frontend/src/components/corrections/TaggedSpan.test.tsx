@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TaggedSpan } from './TaggedSpan'
-import type { CorrectionTagDto } from '@/types/correction'
+import type { CorrectionTag } from '@/api/corrections'
 
-const baseTag: CorrectionTagDto = {
+const baseTag: CorrectionTag = {
   category: 'G',
   spannedText: 'voy',
   startIndex: 0,

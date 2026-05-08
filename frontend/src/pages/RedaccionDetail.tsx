@@ -3,41 +3,43 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Download, Loader2, RefreshCw } from 'lucide-react'
 import {
+  corregirCorrection,
   downloadCorrectionDocx,
-  generateCorrection,
   getCorrection,
+  type CorrectionDetail,
 } from '../api/corrections'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
-import type { CorrectionDetailDto, CorrectionViewState } from '@/types/correction'
 import { logger } from '../lib/logger'
 
-export default function CorrectionDetail() {
+type ViewState = 'idle' | 'generating' | 'failed'
+
+export default function RedaccionDetail() {
   const { id, correctionId } = useParams<{ id: string; correctionId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [viewState, setViewState] = useState<CorrectionViewState>('idle')
+  const [viewState, setViewState] = useState<ViewState>('idle')
   const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const studentId = id
   const queryKey = ['correction', studentId, correctionId]
 
-  const { data, isLoading, isError } = useQuery<CorrectionDetailDto>({
+  const { data, isLoading, isError } = useQuery<CorrectionDetail>({
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
   })
 
   const corregir = useMutation({
-    mutationFn: () => generateCorrection(studentId!, correctionId!),
+    mutationFn: () => corregirCorrection(studentId!, correctionId!),
     onMutate: () => setViewState('generating'),
-    onSuccess: (fresh) => {
-      queryClient.setQueryData(queryKey, fresh)
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey })
       setViewState('idle')
     },
     onError: (err) => {
-      logger.error('CorrectionDetail', 'Generation failed', err)
+      logger.error('RedaccionDetail', 'Generation failed', err)
       setViewState('failed')
     },
   })
@@ -48,7 +50,7 @@ export default function CorrectionDetail() {
     try {
       await downloadCorrectionDocx(studentId!, correctionId!, data.assignmentTitle)
     } catch (err) {
-      logger.error('CorrectionDetail', '.docx download failed', err)
+      logger.error('RedaccionDetail', '.docx download failed', err)
       setDownloadError('Descarga aún no disponible')
     }
   }
@@ -174,8 +176,8 @@ export default function CorrectionDetail() {
 }
 
 interface StatusPillProps {
-  status: CorrectionDetailDto['status']
-  viewState: CorrectionViewState
+  status: CorrectionDetail['status']
+  viewState: ViewState
 }
 
 function StatusPill({ status, viewState }: StatusPillProps) {

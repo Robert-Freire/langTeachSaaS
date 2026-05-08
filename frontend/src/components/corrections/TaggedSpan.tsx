@@ -1,11 +1,11 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getCategoryStyle } from '@/lib/correction-colors'
-import type { CorrectionTagCategory, CorrectionTagDto } from '@/types/correction'
+import type { CorrectionTag, CorrectionTagCategory } from '@/api/corrections'
 
 export type ChipCategory = Exclude<CorrectionTagCategory, 'MuyBien'>
 
 interface TaggedSpanProps {
-  tag: CorrectionTagDto
+  tag: CorrectionTag
   text: string
 }
 

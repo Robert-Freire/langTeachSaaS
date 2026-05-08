@@ -1,4 +1,4 @@
-import type { CorrectionTagCategory } from '../types/correction'
+import type { CorrectionTagCategory } from '../api/corrections'
 
 export interface CategoryStyle {
   label: string

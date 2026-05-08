@@ -1,25 +1,25 @@
 import { Fragment } from 'react'
-import type { CorrectionTagDto } from '@/types/correction'
+import type { CorrectionTag } from '@/api/corrections'
 import { TaggedSpan } from './TaggedSpan'
 
 interface MarkedUpTextProps {
   studentText: string
-  tags: CorrectionTagDto[]
+  tags: CorrectionTag[]
 }
 
 interface AcceptedTag {
-  tag: CorrectionTagDto
+  tag: CorrectionTag
   index: number
 }
 
 interface SegmentResult {
   accepted: AcceptedTag[]
-  footnotes: CorrectionTagDto[]
+  footnotes: CorrectionTag[]
 }
 
-function partitionTags(text: string, tags: CorrectionTagDto[]): SegmentResult {
+function partitionTags(text: string, tags: CorrectionTag[]): SegmentResult {
   const accepted: AcceptedTag[] = []
-  const footnotes: CorrectionTagDto[] = []
+  const footnotes: CorrectionTag[] = []
   const sorted = [...tags].sort((a, b) => a.startIndex - b.startIndex)
   let cursor = 0
   for (const tag of sorted) {
@@ -47,7 +47,7 @@ function partitionTags(text: string, tags: CorrectionTagDto[]): SegmentResult {
 interface Piece {
   kind: 'text' | 'tag'
   text: string
-  tag?: CorrectionTagDto
+  tag?: CorrectionTag
   key: string
 }
 

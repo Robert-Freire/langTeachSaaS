@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MarkedUpText } from './MarkedUpText'
-import type { CorrectionTagDto } from '@/types/correction'
+import type { CorrectionTag } from '@/api/corrections'
 
-function tag(over: Partial<CorrectionTagDto>): CorrectionTagDto {
+function tag(over: Partial<CorrectionTag>): CorrectionTag {
   return {
     category: 'G',
     spannedText: '',

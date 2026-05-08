@@ -34,7 +34,7 @@ test('@visual correction detail (Corregida)', async ({ browser }) => {
   const consoleErrors: string[] = []
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
 
-  await page.goto(`/students/${studentId}/corrections/${SEEDED_CORRECTION_ID}`)
+  await page.goto(`/students/${studentId}/redacciones/${SEEDED_CORRECTION_ID}`)
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await expect(page.getByTestId('marked-up-text')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('domcontentloaded', { timeout: UI_TIMEOUT })
