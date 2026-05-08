@@ -1,6 +1,11 @@
+using System.Globalization;
+using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text;
+using System.Text.RegularExpressions;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
+using LangTeach.Api.Services.CorrectionDocxExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,17 +18,23 @@ public class CorrectionsController : ControllerBase
 {
     private readonly ICorrectionService _corrections;
     private readonly IRedaccionCorrectionService _redaccionCorrections;
+    private readonly ICorrectionDocxExportService _docxExport;
     private readonly IProfileService _profileService;
     private readonly ILogger<CorrectionsController> _logger;
+
+    private const string DocxContentType =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     public CorrectionsController(
         ICorrectionService corrections,
         IRedaccionCorrectionService redaccionCorrections,
+        ICorrectionDocxExportService docxExport,
         IProfileService profileService,
         ILogger<CorrectionsController> logger)
     {
         _corrections = corrections;
         _redaccionCorrections = redaccionCorrections;
+        _docxExport = docxExport;
         _profileService = profileService;
         _logger = logger;
     }
@@ -111,6 +122,57 @@ public class CorrectionsController : ControllerBase
                 studentId, id, ex.Code);
             return StatusCode(StatusCodes.Status502BadGateway, new { code = ex.Code, message = ex.Message });
         }
+    }
+
+    [HttpGet("{id:guid}/export.docx")]
+    public async Task<IActionResult> ExportDocx(Guid studentId, Guid id, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        CorrectionExportData? data;
+        try
+        {
+            data = await _corrections.GetForExportAsync(teacherId, studentId, id, cancellationToken);
+        }
+        catch (CorrectionInvalidStateException ex)
+        {
+            return Conflict(new { code = ex.Code, message = ex.Message });
+        }
+
+        if (data is null) return NotFound();
+
+        var bytes = _docxExport.Generate(data.Detail, data.StudentName);
+        var dateStr = (data.Detail.CorrectedAt ?? data.Detail.UpdatedAt).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var slug = SlugifyName(data.StudentName);
+        var asciiName = $"redaccion-{slug}-{dateStr}.docx";
+        var utf8Name = $"redaccion-{data.StudentName}-{dateStr}.docx";
+
+        // RFC 5987: emit both filename= (ASCII fallback) and filename*=UTF-8'' so non-ASCII
+        // student names survive across Word for macOS / Firefox. The default File(...,
+        // fileDownloadName) overload only writes filename=, percent-encoded.
+        var disposition = new ContentDispositionHeaderValue("attachment")
+        {
+            FileName = asciiName,
+            FileNameStar = utf8Name,
+        };
+        Response.Headers.ContentDisposition = disposition.ToString();
+
+        return File(bytes, DocxContentType);
+    }
+
+    private static string SlugifyName(string name)
+    {
+        var folded = name.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+        foreach (var ch in folded)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark) continue;
+            sb.Append(ch);
+        }
+        var ascii = sb.ToString().ToLowerInvariant();
+        var slug = Regex.Replace(ascii, "[^a-z0-9]+", "-").Trim('-');
+        return string.IsNullOrEmpty(slug) ? "student" : slug;
     }
 
     [HttpDelete("{id:guid}")]

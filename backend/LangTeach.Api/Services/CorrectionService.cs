@@ -1,6 +1,7 @@
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Services.CorrectionDocxExport;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -138,6 +139,31 @@ public class CorrectionService : ICorrectionService
         correction.UpdatedAt = correction.DeletedAt.Value;
         await _db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<CorrectionExportData?> GetForExportAsync(
+        Guid teacherId, Guid studentId, Guid correctionId, CancellationToken cancellationToken = default)
+    {
+        var row = await (
+            from c in _db.Corrections.Include(c => c.Tags)
+            join s in _db.Students on c.StudentId equals s.Id
+            where c.Id == correctionId
+                  && c.TeacherId == teacherId
+                  && c.StudentId == studentId
+                  && c.DeletedAt == null
+                  && s.TeacherId == teacherId
+                  && !s.IsDeleted
+            select new { Correction = c, StudentName = s.Name }
+        ).FirstOrDefaultAsync(cancellationToken);
+
+        if (row is null) return null;
+
+        if (row.Correction.Status != CorrectionStatus.Corregida)
+            throw new CorrectionInvalidStateException("not_corregida", "Correction is not in the Corregida state.");
+
+        return new CorrectionExportData(
+            CorrectionDtoMapper.ToDetail(row.Correction, row.Correction.Tags),
+            row.StudentName);
     }
 
     private async Task<bool> StudentBelongsToTeacherAsync(Guid teacherId, Guid studentId, CancellationToken ct) =>

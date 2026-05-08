@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Infrastructure;
 using LangTeach.Api.Services;
+using LangTeach.Api.Services.CorrectionDocxExport;
 using LangTeach.Api.Services.PdfExport;
 using Microsoft.Extensions.Options;
 using QuestPDF.Infrastructure;
@@ -167,6 +168,7 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
+builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>
 {
