@@ -1,5 +1,6 @@
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -63,11 +64,15 @@ public class AssistantFeedbackService : IAssistantFeedbackService
         {
             await _db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException) when (existing is null)
+        catch (DbUpdateException ex) when (existing is null && IsSqlServerUniqueViolation(ex))
         {
             // Concurrent request (e.g. mobile double-tap) inserted first; unique constraint honoured.
         }
 
         return AssistantFeedbackResult.Saved;
     }
+
+    // SQL Server error codes: 2601 = unique index violation, 2627 = unique constraint violation.
+    private static bool IsSqlServerUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
 }
