@@ -460,7 +460,7 @@ public class SessionLogServiceTests : IDisposable
     {
         var request = BaseRequest();
         request.LevelReassessmentSkill = "speaking";
-        request.LevelReassessmentLevel = "a1.2";
+        request.LevelReassessmentLevel = "a1";
 
         var result = await _sut.CreateAsync(_teacherId, _studentId, request);
         result.LevelReassessmentSkill.Should().Be("speaking");

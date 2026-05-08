@@ -295,7 +295,7 @@ public class SessionHistoryServiceTests : IDisposable
     public async Task SkillLevelOverrides_NonEmpty_Deserialized()
     {
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = "{\"speaking\":\"A1\",\"writing\":\"B1\"}";
+        student!.SkillLevelOverrides = "{\"speaking\":\"A1\",\"writing\":\"A2\"}";
         await _db.SaveChangesAsync();
 
         _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-1)));
@@ -305,7 +305,7 @@ public class SessionHistoryServiceTests : IDisposable
 
         result!.SkillLevelOverrides.Should().HaveCount(2);
         result.SkillLevelOverrides["speaking"].Should().Be("A1");
-        result.SkillLevelOverrides["writing"].Should().Be("B1");
+        result.SkillLevelOverrides["writing"].Should().Be("A2");
     }
 
     [Fact]

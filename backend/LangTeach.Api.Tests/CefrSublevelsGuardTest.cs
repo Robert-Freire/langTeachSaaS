@@ -17,6 +17,7 @@ public class CefrSublevelsGuardTest
         "StudentProfileExtractionService.cs", // accepts sublevel AI output before normalization
         "CurriculumTemplateService.cs",     // loads curriculum JSON files that use sublevel resource names
         "CefrSublevelsGuardTest.cs",
+        "20260508124854_RemoveCefrSublevels.cs", // data migration that maps stored sublevel values to base levels
         "cefrUtils.ts",                     // normalization helper -- intentionally handles sublevel input
     };
 
