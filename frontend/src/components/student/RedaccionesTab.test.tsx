@@ -180,6 +180,52 @@ describe('RedaccionesTab', () => {
     expect(screen.queryByTestId('correction-drawer')).not.toBeInTheDocument()
   })
 
+  it('renders loading skeleton while fetching', () => {
+    vi.mocked(correctionsApi.listCorrections).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+    expect(screen.getByTestId('redacciones-loading')).toBeInTheDocument()
+  })
+
+  it('renders error state with Retry that refetches', async () => {
+    vi.mocked(correctionsApi.listCorrections)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce([pendiente])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    expect(await screen.findByTestId('redacciones-error')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Reintentar'))
+
+    expect(await screen.findByTestId('redaccion-card-c-pend')).toBeInTheDocument()
+  })
+
+  it('list fetch is scoped to the current student', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId="other-student-42" />)
+
+    await screen.findByTestId('redacciones-empty')
+    expect(correctionsApi.listCorrections).toHaveBeenCalledWith('other-student-42')
+    expect(correctionsApi.listCorrections).not.toHaveBeenCalledWith(STUDENT_ID)
+  })
+
+  it('truncates long titles with ellipsis class', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([corregida])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    const title = await screen.findByTestId(`redaccion-title-${corregida.id}`)
+    expect(title.className).toContain('truncate')
+    expect(title).toHaveAttribute('title', corregida.assignmentTitle)
+  })
+
+  it('Corregida card navigates to the detail route on click', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([corregida])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    const card = await screen.findByTestId(`redaccion-card-${corregida.id}`)
+    expect(card.className).toContain('cursor-pointer')
+    expect(screen.queryByTestId(`redaccion-edit-${corregida.id}`)).not.toBeInTheDocument()
+    expect(screen.queryByTestId(`redaccion-corregir-${corregida.id}`)).not.toBeInTheDocument()
+  })
+
   it('Delete removes the card via mutation and refetch', async () => {
     vi.mocked(correctionsApi.listCorrections)
       .mockResolvedValueOnce([pendiente])
