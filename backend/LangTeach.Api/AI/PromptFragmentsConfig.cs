@@ -6,4 +6,9 @@ public sealed record PromptFragmentsConfig(
     string PersonalisationDirective,
     string MotivationSuffix,
     string LessonSystemOpener,
-    string CurriculumSystemOpener);
+    string CurriculumSystemOpener,
+    string ReplanSuggestionOpener,
+    string ReflectionExtractionOpener,
+    string WhatWasCoveredFallbackOpener,
+    string StudentProfileExtractionOpener,
+    string GrammarLevelExpertOpener);

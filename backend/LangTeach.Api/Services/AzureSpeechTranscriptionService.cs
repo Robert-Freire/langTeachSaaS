@@ -142,8 +142,11 @@ public class AzureSpeechTranscriptionService(
                 var actualLength = (chunkSize <= 0 || chunkSize > remaining) ? remaining : chunkSize;
                 return (pos + 8, actualLength);
             }
+            if (chunkSize < 0 || (long)pos + 8 + chunkSize > len)
+                throw new InvalidOperationException(
+                    $"WAV chunk '{chunkId}' has invalid size {chunkSize} at offset {pos} (buffer length {len}).");
             pos += 8 + chunkSize;
-            if (chunkSize % 2 != 0) pos++; // WAV padding byte
+            if (chunkSize % 2 != 0 && pos < len) pos++; // WAV padding byte
         }
 
         throw new InvalidOperationException("WAV 'data' chunk not found.");

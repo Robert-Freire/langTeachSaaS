@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
 import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { NAV_TIMEOUT, UI_TIMEOUT, FEEDBACK_TIMEOUT } from '../helpers/timeouts'
-import { createStudentViaUI } from '../helpers/students'
+import { createStudentViaUI, findStudentByName } from '../helpers/students'
 
 test.beforeAll(async ({ browser }) => {
   const ctx = await createMockAuthContext(browser)
@@ -679,19 +679,11 @@ test('motivation fields: reason for studying and objectives round-trip', async (
 })
 
 test('Ana Visual profile tab shows Focus Areas section with difficulties and weaknesses', async ({ browser }) => {
-  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
-  const AUTH_HEADER = { Authorization: 'Bearer test-token' }
-
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   // Find Ana Visual via the API (she is a visual seed student with difficulties and weaknesses)
-  const res = await page.request.get(`${API_BASE}/api/students?pageSize=100`, { headers: AUTH_HEADER })
-  expect(res.ok()).toBeTruthy()
-  const body = await res.json()
-  const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
-  const anaVisual = students.find((s) => s.name === 'Ana Visual')
-  if (!anaVisual) throw new Error('Ana Visual not found. Ensure the visual seed step ran before tests.')
+  const anaVisual = await findStudentByName(page, 'Ana Visual')
 
   await page.goto(`/students/${anaVisual.id}`)
 
@@ -1018,19 +1010,11 @@ test('commercial fields round-trip: isActive, isCorporate, rate', async ({ brows
 })
 
 test('sessions tab redesign: timeline, search, status filter, and expand', async ({ browser }) => {
-  const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
-  const AUTH_HEADER = { Authorization: 'Bearer test-token' }
-
   const context = await createMockAuthContext(browser)
   const page = await context.newPage()
 
   // Find Diego Seed who has seeded session logs
-  const res = await page.request.get(`${API_BASE}/api/students?pageSize=100`, { headers: AUTH_HEADER })
-  expect(res.ok()).toBeTruthy()
-  const body = await res.json()
-  const students: Array<{ name: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
-  const diego = students.find((s) => s.name === 'Diego Seed')
-  if (!diego) throw new Error('Diego Seed not found. Ensure the visual seed step ran before tests.')
+  const diego = await findStudentByName(page, 'Diego Seed')
 
   await page.goto(`/students/${diego.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
