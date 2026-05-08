@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/apiClient'
+import { triggerBlobDownload } from '../lib/downloadBlob'
 import type { CorrectionDetailDto } from '../types/correction'
 
 export async function getCorrection(
@@ -32,15 +33,8 @@ export async function downloadCorrectionDocx(
     `/api/students/${studentId}/corrections/${correctionId}/docx`,
     { responseType: 'blob' },
   )
-  const blob = response.data
-  const url = window.URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${sanitizeFilename(filenameHint)}.docx`
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  window.URL.revokeObjectURL(url)
+  const fallback = `${sanitizeFilename(filenameHint)}.docx`
+  triggerBlobDownload(response, fallback)
 }
 
 function sanitizeFilename(value: string): string {
