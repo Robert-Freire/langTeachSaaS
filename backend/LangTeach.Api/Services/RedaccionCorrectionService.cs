@@ -67,51 +67,72 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var ctx = BuildPromptContext(correction, student);
         var request = _promptBuilder.Build(ctx);
-
-        ClaudeResponse response;
-        try
-        {
-            response = await _claude.CompleteAsync(request, cancellationToken);
-        }
-        catch (ClaudeRateLimitException ex)
-        {
-            throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-        }
-        catch (ClaudeApiException ex)
-        {
-            throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-        }
-
-        var raw = response.Content;
-        var stripped = ContentJsonHelper.StripFences(raw);
-        if (string.IsNullOrWhiteSpace(stripped))
-        {
-            _logger.LogWarning("Redaccion correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
-            throw new CorrectionGenerationException("invalid_json", "Claude returned empty content.");
-        }
-
-        RedaccionCorrectionDto? dto;
-        try
-        {
-            dto = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
-        }
-        catch (JsonException ex)
-        {
-            var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
-            _logger.LogWarning(ex, "Redaccion correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
-                correctionId, excerpt);
-            throw new CorrectionGenerationException("invalid_json", "Claude response did not parse as the expected JSON shape.", ex);
-        }
-
-        if (dto is null || dto.SchemaVersion != 1)
-            throw new CorrectionGenerationException("invalid_json", "Claude response is missing or has an unsupported schemaVersion.");
-
         var sentText = ctx.StudentText;
-        if (!string.Equals(dto.OriginalText, sentText, StringComparison.Ordinal))
+
+        // One-shot retry on originalText mismatch only. Sonnet 4.6 occasionally paraphrases
+        // longer inputs even with temperature=0 + delimited markers; a second attempt almost
+        // always succeeds. Other failure codes (invalid_json, upstream_error) propagate
+        // immediately - they are not transient and retrying wastes a round-trip.
+        const int MaxAttempts = 2;
+        ClaudeResponse response = null!;
+        string? stripped = null;
+        RedaccionCorrectionDto dto = null!;
+        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
+            try
+            {
+                response = await _claude.CompleteAsync(request, cancellationToken);
+            }
+            catch (ClaudeRateLimitException ex)
+            {
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
+            catch (ClaudeApiException ex)
+            {
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
+
+            var raw = response.Content;
+            stripped = ContentJsonHelper.StripFences(raw);
+            if (string.IsNullOrWhiteSpace(stripped))
+            {
+                _logger.LogWarning("Redaccion correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
+                throw new CorrectionGenerationException("invalid_json", "Claude returned empty content.");
+            }
+
+            RedaccionCorrectionDto? parsed;
+            try
+            {
+                parsed = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
+            }
+            catch (JsonException ex)
+            {
+                var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
+                _logger.LogWarning(ex, "Redaccion correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
+                    correctionId, excerpt);
+                throw new CorrectionGenerationException("invalid_json", "Claude response did not parse as the expected JSON shape.", ex);
+            }
+
+            if (parsed is null || parsed.SchemaVersion != 1)
+                throw new CorrectionGenerationException("invalid_json", "Claude response is missing or has an unsupported schemaVersion.");
+
+            if (string.Equals(parsed.OriginalText, sentText, StringComparison.Ordinal))
+            {
+                dto = parsed;
+                break;
+            }
+
+            if (attempt < MaxAttempts)
+            {
+                _logger.LogWarning(
+                    "Redaccion correction: originalText mismatch on attempt {Attempt}/{MaxAttempts}; retrying once. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+                    attempt, MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
+                continue;
+            }
+
             _logger.LogWarning(
-                "Redaccion correction: originalText mismatch (model paraphrased input). CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
-                correctionId, sentText.Length, dto.OriginalText?.Length ?? 0);
+                "Redaccion correction: originalText mismatch after {MaxAttempts} attempts (model paraphrased input). CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+                MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
             throw new CorrectionGenerationException(
                 "original_text_mismatch",
                 "Claude returned a paraphrased originalText; tag offsets cannot be trusted.");
@@ -139,7 +160,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var now = DateTime.UtcNow;
-        correction.MarkedUpOutput = stripped;
+        correction.MarkedUpOutput = stripped!;
         correction.Status = CorrectionStatus.Corregida;
         correction.CorrectedAt = now;
         correction.UpdatedAt = now;
@@ -179,7 +200,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         // StudentText is preserved verbatim (no InputSanitizer call): tag offsets must
         // address the same string the model echoes back as originalText. Sanitization
         // happens at write time on POST /corrections (DTO layer); we trust what's in DB.
-        var studentText = correction.StudentText ?? string.Empty;
+        //
+        // Trim trailing whitespace once: when we wrap the text in <<<STUDENT_TEXT_VERBATIM>>>
+        // markers in the user prompt, the model treats the text as ending at the last
+        // non-whitespace character (the marker on the next line is its own token boundary)
+        // and does NOT echo the trailing newline back into originalText. Trimming once here
+        // keeps the prompt and the strict ordinal-check baseline aligned.
+        var studentText = (correction.StudentText ?? string.Empty).TrimEnd();
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
 
         var l1 = ParseFirstString(student.NativeLanguages);

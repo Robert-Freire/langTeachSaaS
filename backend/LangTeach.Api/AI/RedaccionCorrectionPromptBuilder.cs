@@ -34,7 +34,11 @@ public class RedaccionCorrectionPromptBuilder
             "PromptUser | blockType=redaccion-correction level={Level} l1={L1}\n{UserPrompt}",
             ctx.StudentCefr, ctx.StudentL1 ?? "(none)", user);
 
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096);
+        // temperature=0: the verbatim originalText echo is non-negotiable; default sampling
+        // (1.0) leads the model to silently smooth typos and normalize punctuation while
+        // copying the student text into originalText, which then fails the strict ordinal
+        // guard in RedaccionCorrectionService. Sonnet 4.6 still supports temperature.
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096, Temperature: 0);
     }
 
     private const string SystemPrompt = """
@@ -85,7 +89,7 @@ OFFSETS:
 
 "explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.
 
-The originalText must reproduce the student text verbatim, character for character.
+Copy the student text byte-for-byte into the originalText field, preserving every typo, missing accent, and punctuation mark exactly as written between the STUDENT_TEXT_VERBATIM markers. Do not normalize or rewrite. The errors and irregularities are precisely the signal we are here to mark - if you silently "fix" them during the echo, the corresponding tags lose their anchor and the correction is unusable.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
@@ -121,8 +125,10 @@ The originalText must reproduce the student text verbatim, character for charact
             sb.AppendLine();
         }
 
-        sb.AppendLine("STUDENT TEXT (verbatim, copy character-for-character into originalText):");
+        sb.AppendLine("STUDENT TEXT (copy byte-for-byte into originalText; see OUTPUT CONTRACT for why):");
+        sb.AppendLine("<<<STUDENT_TEXT_VERBATIM>>>");
         sb.AppendLine(ctx.StudentText);
+        sb.AppendLine("<<</STUDENT_TEXT_VERBATIM>>>");
 
         return sb.ToString().TrimEnd();
     }

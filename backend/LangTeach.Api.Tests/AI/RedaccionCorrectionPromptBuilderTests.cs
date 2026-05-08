@@ -88,6 +88,29 @@ public class RedaccionCorrectionPromptBuilderTests
         prompt.Should().NotContain("- five");
     }
 
+    [Fact]
+    public void Build_SetsTemperatureToZero_ForVerbatimFidelity()
+    {
+        // Issue #1166: temperature=0 is the primary fix for the "model paraphrases
+        // originalText on long inputs" failure mode. Removing this would re-open the bug.
+        var req = _builder.Build(MakeCtx("B1"));
+        req.Temperature.Should().Be(0);
+    }
+
+    [Fact]
+    public void Build_WrapsStudentTextInVerbatimMarkers()
+    {
+        // Defense in depth alongside temperature=0: explicit delimiters + a "do not
+        // normalize" instruction make it harder for the model to silently smooth the echo.
+        var ctx = MakeCtx("B1") with { StudentText = "Hoy ablar con mi amigo." };
+        var prompt = _builder.Build(ctx).UserPrompt;
+
+        prompt.Should().Contain("<<<STUDENT_TEXT_VERBATIM>>>");
+        prompt.Should().Contain("<<</STUDENT_TEXT_VERBATIM>>>");
+        prompt.Should().Contain("Hoy ablar con mi amigo.");
+        prompt.Should().Contain("byte-for-byte");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx(string cefr) =>
         new("Texto.", cefr, null, Array.Empty<string>(), null);
 }
