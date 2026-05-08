@@ -110,17 +110,48 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CorregirAsync_ParaphrasedOriginalText_502OriginalTextMismatch()
+    public async Task CorregirAsync_ParaphrasedOriginalText_BothAttempts_502OriginalTextMismatch()
     {
+        // Issue #1166: when BOTH attempts paraphrase, the service surfaces the mismatch.
         var id = SeedCorrection(text: "Texto original.", status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse(BuildAiJson("Different text.", Array.Empty<(string, int, int, string, string, string)>()));
+        _claude.EnqueueResponse(BuildAiJson("Yet another paraphrase.", Array.Empty<(string, int, int, string, string, string)>()));
 
         var ex = await Assert.ThrowsAsync<CorrectionGenerationException>(() =>
             _sut.CorregirAsync(_teacherId, _studentId, id));
         ex.Code.Should().Be("original_text_mismatch");
 
+        _claude.CompleteCallCount.Should().Be(2, "the service must retry exactly once before giving up");
+
         var row = _db.Corrections.First(c => c.Id == id);
         row.Status.Should().Be(CorrectionStatus.Entregada);
+        _db.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CorregirAsync_ParaphrasedThenVerbatim_RetrySucceeds()
+    {
+        // Issue #1166: a single paraphrased response triggers exactly one retry; if the
+        // second attempt echoes verbatim, the correction succeeds without surfacing an
+        // error to the teacher.
+        var text = "Hoy ablar con mi amigo.";
+        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
+
+        // First call: paraphrased originalText (model "fixed" the typo while echoing)
+        _claude.EnqueueResponse(BuildAiJson("Hoy hablar con mi amigo.", Array.Empty<(string, int, int, string, string, string)>()));
+        // Second call: verbatim originalText with the expected O tag on "ablar"
+        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        {
+            ("O", text.IndexOf("ablar"), text.IndexOf("ablar") + "ablar".Length, "ablar",
+                "Falta la 'h'.", "hablar"),
+        }));
+
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+
+        result.Status.Should().Be(CorrectionStatus.Corregida);
+        result.Tags.Should().HaveCount(1);
+        result.Tags[0].SpannedText.Should().Be("ablar");
+        _claude.CompleteCallCount.Should().Be(2, "the service must call Claude twice when the first attempt paraphrased");
     }
 
     [Fact]

@@ -67,51 +67,91 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var ctx = BuildPromptContext(correction, student);
         var request = _promptBuilder.Build(ctx);
+        // The model treats the text inside the STUDENT_TEXT_VERBATIM markers as ending at the
+        // last non-whitespace character and does NOT echo the trailing newline (the marker on
+        // the next line is its own token boundary). The strict ordinal check therefore compares
+        // against the trim-end-ed version, NOT against ctx.StudentText raw - otherwise a
+        // student submission ending with whitespace produces a false mismatch every time.
+        // ctx.StudentText itself stays raw, and the persisted Correction.StudentText (what the
+        // student wrote) is never modified.
+        var sentText = ctx.StudentText.TrimEnd();
 
-        ClaudeResponse response;
-        try
+        // One-shot retry on originalText mismatch only. Sonnet 4.6 occasionally paraphrases
+        // longer inputs even with temperature=0 + delimited markers; a second attempt almost
+        // always succeeds. Other failure codes (invalid_json, upstream_error) propagate
+        // immediately - they are not transient and retrying wastes a round-trip.
+        const int MaxAttempts = 2;
+        ClaudeResponse response = null!;
+        string? stripped = null;
+        RedaccionCorrectionDto dto = null!;
+        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            response = await _claude.CompleteAsync(request, cancellationToken);
-        }
-        catch (ClaudeRateLimitException ex)
-        {
-            throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-        }
-        catch (ClaudeApiException ex)
-        {
-            throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-        }
+            try
+            {
+                response = await _claude.CompleteAsync(request, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Caller-driven cancellation flows up unchanged.
+                throw;
+            }
+            catch (ClaudeRateLimitException ex)
+            {
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
+            catch (ClaudeApiException ex)
+            {
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                // Any other transport / parsing / serialization failure from the Claude
+                // client maps to upstream_error so the controller returns 502 (consistent
+                // with the existing two specific catches), not an unhandled 500.
+                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
+            }
 
-        var raw = response.Content;
-        var stripped = ContentJsonHelper.StripFences(raw);
-        if (string.IsNullOrWhiteSpace(stripped))
-        {
-            _logger.LogWarning("Redaccion correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
-            throw new CorrectionGenerationException("invalid_json", "Claude returned empty content.");
-        }
+            var raw = response.Content;
+            stripped = ContentJsonHelper.StripFences(raw);
+            if (string.IsNullOrWhiteSpace(stripped))
+            {
+                _logger.LogWarning("Redaccion correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
+                throw new CorrectionGenerationException("invalid_json", "Claude returned empty content.");
+            }
 
-        RedaccionCorrectionDto? dto;
-        try
-        {
-            dto = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
-        }
-        catch (JsonException ex)
-        {
-            var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
-            _logger.LogWarning(ex, "Redaccion correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
-                correctionId, excerpt);
-            throw new CorrectionGenerationException("invalid_json", "Claude response did not parse as the expected JSON shape.", ex);
-        }
+            RedaccionCorrectionDto? parsed;
+            try
+            {
+                parsed = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
+            }
+            catch (JsonException ex)
+            {
+                var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
+                _logger.LogWarning(ex, "Redaccion correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
+                    correctionId, excerpt);
+                throw new CorrectionGenerationException("invalid_json", "Claude response did not parse as the expected JSON shape.", ex);
+            }
 
-        if (dto is null || dto.SchemaVersion != 1)
-            throw new CorrectionGenerationException("invalid_json", "Claude response is missing or has an unsupported schemaVersion.");
+            if (parsed is null || parsed.SchemaVersion != 1)
+                throw new CorrectionGenerationException("invalid_json", "Claude response is missing or has an unsupported schemaVersion.");
 
-        var sentText = ctx.StudentText;
-        if (!string.Equals(dto.OriginalText, sentText, StringComparison.Ordinal))
-        {
+            if (string.Equals(parsed.OriginalText, sentText, StringComparison.Ordinal))
+            {
+                dto = parsed;
+                break;
+            }
+
+            if (attempt < MaxAttempts)
+            {
+                _logger.LogWarning(
+                    "Redaccion correction: originalText mismatch on attempt {Attempt}/{MaxAttempts}; retrying once. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+                    attempt, MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
+                continue;
+            }
+
             _logger.LogWarning(
-                "Redaccion correction: originalText mismatch (model paraphrased input). CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
-                correctionId, sentText.Length, dto.OriginalText?.Length ?? 0);
+                "Redaccion correction: originalText mismatch after {MaxAttempts} attempts (model paraphrased input). CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+                MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
             throw new CorrectionGenerationException(
                 "original_text_mismatch",
                 "Claude returned a paraphrased originalText; tag offsets cannot be trusted.");
@@ -139,7 +179,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var now = DateTime.UtcNow;
-        correction.MarkedUpOutput = stripped;
+        correction.MarkedUpOutput = stripped!;
         correction.Status = CorrectionStatus.Corregida;
         correction.CorrectedAt = now;
         correction.UpdatedAt = now;
@@ -179,6 +219,11 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         // StudentText is preserved verbatim (no InputSanitizer call): tag offsets must
         // address the same string the model echoes back as originalText. Sanitization
         // happens at write time on POST /corrections (DTO layer); we trust what's in DB.
+        //
+        // The trim-trailing-whitespace concern (the model treats the text as ending at the
+        // last non-whitespace character when wrapped in markers and does NOT echo the
+        // trailing newline back) is handled at the equality-check site in CorregirAsync, not
+        // here, so the persisted Correction.StudentText stays exactly what the student wrote.
         var studentText = correction.StudentText ?? string.Empty;
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
 

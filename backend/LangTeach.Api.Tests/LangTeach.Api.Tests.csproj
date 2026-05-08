@@ -27,4 +27,8 @@
     <ProjectReference Include="..\LangTeach.Api\LangTeach.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="TestData\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

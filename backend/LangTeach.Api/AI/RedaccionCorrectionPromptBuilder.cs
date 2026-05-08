@@ -34,7 +34,11 @@ public class RedaccionCorrectionPromptBuilder
             "PromptUser | blockType=redaccion-correction level={Level} l1={L1}\n{UserPrompt}",
             ctx.StudentCefr, ctx.StudentL1 ?? "(none)", user);
 
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096);
+        // temperature=0: the verbatim originalText echo is non-negotiable; default sampling
+        // (1.0) leads the model to silently smooth typos and normalize punctuation while
+        // copying the student text into originalText, which then fails the strict ordinal
+        // guard in RedaccionCorrectionService. Sonnet 4.6 still supports temperature.
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096, Temperature: 0);
     }
 
     private const string SystemPrompt = """
@@ -85,7 +89,7 @@ OFFSETS:
 
 "explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.
 
-The originalText must reproduce the student text verbatim, character for character.
+Copy the student text byte-for-byte into the originalText field, preserving every typo, missing accent, and punctuation mark exactly as written between the STUDENT_TEXT_VERBATIM_... marker lines in the user prompt. Do not normalize or rewrite. The errors and irregularities are precisely the signal we are here to mark - if you silently "fix" them during the echo, the corresponding tags lose their anchor and the correction is unusable.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
@@ -121,8 +125,19 @@ The originalText must reproduce the student text verbatim, character for charact
             sb.AppendLine();
         }
 
-        sb.AppendLine("STUDENT TEXT (verbatim, copy character-for-character into originalText):");
+        // Per-request nonce so the markers cannot collide with anything the student wrote.
+        // A user-controlled redacción could in principle contain the literal string
+        // "<<<STUDENT_TEXT_VERBATIM>>>"; with a fixed marker that would either truncate the
+        // model's view of the text or be parsed as instructions. Re-roll the nonce in the
+        // (vanishingly rare) case it appears in the student text.
+        var marker = "STUDENT_TEXT_VERBATIM_" + Guid.NewGuid().ToString("N");
+        while (ctx.StudentText.Contains(marker, StringComparison.Ordinal))
+            marker = "STUDENT_TEXT_VERBATIM_" + Guid.NewGuid().ToString("N");
+
+        sb.AppendLine($"STUDENT TEXT (copy byte-for-byte into originalText; see OUTPUT CONTRACT for why; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
+        sb.AppendLine($"<<<{marker}>>>");
         sb.AppendLine(ctx.StudentText);
+        sb.AppendLine($"<<</{marker}>>>");
 
         return sb.ToString().TrimEnd();
     }
