@@ -40,6 +40,8 @@ public class CorrectionDocxExportServiceTests
         spannedRun.RunProperties!.Bold.Should().NotBeNull();
         spannedRun.RunProperties.Color!.Val!.Value.Should().Be("059669");
 
+        (spannedRunIdx + 1).Should().BeLessThan(runs.Count,
+            "error-tagged span must be followed by its parenthetical run");
         var parenRun = runs[spannedRunIdx + 1];
         parenRun.RunProperties!.Italic.Should().NotBeNull();
         var parenText = parenRun.Descendants<Text>().Single().Text;

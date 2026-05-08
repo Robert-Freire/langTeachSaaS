@@ -76,6 +76,10 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         var cursor = 0;
         foreach (var tag in tags)
         {
+            // Schema (#1153) forbids overlapping tags; this guard is defensive against
+            // a future regression and keeps the linear walk well-defined.
+            if (tag.StartIndex < cursor) continue;
+
             if (tag.StartIndex > cursor)
             {
                 AppendTextWithLineBreaks(body, ref currentParagraph, text.Substring(cursor, tag.StartIndex - cursor), runFactory: PlainRun);
