@@ -407,7 +407,8 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            disabled={isSaving}
+            className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Cerrar"
             data-testid="correction-drawer-close"
           >
