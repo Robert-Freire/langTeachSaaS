@@ -1,0 +1,289 @@
+using System.Net;
+using System.Net.Http.Json;
+using FluentAssertions;
+using LangTeach.Api.DTOs;
+using LangTeach.Api.Tests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LangTeach.Api.Tests.Controllers;
+
+[Collection("ApiTests")]
+public class CorrectionsControllerTests
+{
+    private readonly AuthenticatedWebAppFactory _factory;
+
+    public CorrectionsControllerTests(AuthenticatedWebAppFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task Create_WithTitleOnly_ReturnsPendiente()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-create-title");
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest { AssignmentTitle = "Carta a un extraterrestre" });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Pendiente");
+        detail.AssignmentTitle.Should().Be("Carta a un extraterrestre");
+        detail.StudentText.Should().BeNull();
+        detail.MarkedUpOutput.Should().BeNull();
+        detail.SchemaVersion.Should().Be(1);
+        resp.Headers.Location.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Create_WithStudentText_ReturnsEntregada()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-create-text");
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest
+            {
+                AssignmentTitle = "Diálogo en un café",
+                AssignmentPrompt = "Pide un café y conversa con el camarero.",
+                StudentText = "Hola, quiero un café por favor.",
+            });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Entregada");
+        detail.StudentText.Should().Be("Hola, quiero un café por favor.");
+    }
+
+    [Fact]
+    public async Task Create_BlankTitle_DefaultsToRedaccionDate()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-default-title");
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest { AssignmentTitle = "  " });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.AssignmentTitle.Should().Be($"Redacción {DateTime.UtcNow:yyyy-MM-dd}");
+    }
+
+    [Fact]
+    public async Task Patch_AddingStudentText_TransitionsPendienteToEntregada()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-patch-text");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Mi día" });
+        created.Status.Should().Be("Pendiente");
+
+        var resp = await client.PatchAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}",
+            new UpdateCorrectionRequest { StudentText = "Hoy fui al parque." });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Entregada");
+        detail.StudentText.Should().Be("Hoy fui al parque.");
+    }
+
+    [Fact]
+    public async Task Corregir_ReturnsNotImplemented()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-stub");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Stub test",
+            StudentText = "Texto del estudiante.",
+        });
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+    }
+
+    [Fact]
+    public async Task ColdPaste_CreateThenCorregir_StubReturns501()
+    {
+        // Pins the cold-paste flow described in the sprint story so the prompt-service
+        // follow-up has a single test to flip from 501 to 200.
+        var (client, studentId) = await SetupAsync("auth0|corr-cold-paste");
+
+        var createResp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest
+            {
+                AssignmentTitle = "Cold paste",
+                AssignmentPrompt = "Describe tu fin de semana.",
+                StudentText = "El sábado fui al cine y el domingo descansé.",
+            });
+        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = (await createResp.Content.ReadFromJsonAsync<CorrectionDetailDto>())!;
+        detail.Status.Should().Be("Entregada");
+
+        var corregirResp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{detail.Id}/corregir",
+            content: null);
+        corregirResp.StatusCode.Should().Be(HttpStatusCode.NotImplemented);
+    }
+
+    [Fact]
+    public async Task List_ExcludesSoftDeleted()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-soft-delete");
+        var keep = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Keep" });
+        var drop = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Drop" });
+
+        var del = await client.DeleteAsync($"/api/students/{studentId}/corrections/{drop.Id}");
+        del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var listResp = await client.GetAsync($"/api/students/{studentId}/corrections");
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await listResp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>();
+        list!.Select(x => x.Id).Should().ContainSingle().And.BeEquivalentTo([keep.Id]);
+    }
+
+    [Fact]
+    public async Task GetById_AfterDelete_Returns404()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-get-after-delete");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Doomed" });
+
+        await client.DeleteAsync($"/api/students/{studentId}/corrections/{created.Id}");
+
+        var getResp = await client.GetAsync($"/api/students/{studentId}/corrections/{created.Id}");
+        getResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetById_OtherTeacher_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-rls-a", "rls-a@example.com");
+        var clientB = _factory.CreateAuthenticatedClient("auth0|corr-rls-b", "rls-b@example.com");
+
+        var created = await CreateCorrectionAsync(clientA, studentA, new CreateCorrectionRequest { AssignmentTitle = "Private" });
+
+        var resp = await clientB.GetAsync($"/api/students/{studentA}/corrections/{created.Id}");
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Patch_OtherTeacher_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-rls-patch-a", "rls-patch-a@example.com");
+        var clientB = _factory.CreateAuthenticatedClient("auth0|corr-rls-patch-b", "rls-patch-b@example.com");
+
+        var created = await CreateCorrectionAsync(clientA, studentA, new CreateCorrectionRequest { AssignmentTitle = "Private" });
+
+        var resp = await clientB.PatchAsJsonAsync(
+            $"/api/students/{studentA}/corrections/{created.Id}",
+            new UpdateCorrectionRequest { AssignmentTitle = "Hijack" });
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Delete_OtherTeacher_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-rls-del-a", "rls-del-a@example.com");
+        var clientB = _factory.CreateAuthenticatedClient("auth0|corr-rls-del-b", "rls-del-b@example.com");
+
+        var created = await CreateCorrectionAsync(clientA, studentA, new CreateCorrectionRequest { AssignmentTitle = "Private" });
+
+        var resp = await clientB.DeleteAsync($"/api/students/{studentA}/corrections/{created.Id}");
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task List_OrderedByCreatedAtDesc()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-list-order");
+
+        var first = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "First" });
+        await Task.Delay(15);
+        var second = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Second" });
+        await Task.Delay(15);
+        var third = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Third" });
+
+        var listResp = await client.GetAsync($"/api/students/{studentId}/corrections");
+        var list = (await listResp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>())!;
+        list.Select(x => x.Id).Should().Equal(third.Id, second.Id, first.Id);
+    }
+
+    [Fact]
+    public async Task List_StudentNotOwnedByTeacher_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-list-rls-a", "list-rls-a@example.com");
+        var clientB = _factory.CreateAuthenticatedClient("auth0|corr-list-rls-b", "list-rls-b@example.com");
+
+        var resp = await clientB.GetAsync($"/api/students/{studentA}/corrections");
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task List_StudentExistsButNoCorrections_ReturnsEmpty200()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-list-empty");
+
+        var resp = await client.GetAsync($"/api/students/{studentId}/corrections");
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await resp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>();
+        list.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Patch_StudentTextOnCorregida_Returns400()
+    {
+        // Once a correction is Corregida, StudentText is locked (markup tag offsets reference it).
+        // We force the status to Corregida directly via the DbContext because POST /corregir is a 501 stub.
+        var (client, studentId) = await SetupAsync("auth0|corr-locked-text");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Locked test",
+            StudentText = "Original text.",
+        });
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            var row = db.Corrections.First(c => c.Id == created.Id);
+            row.Status = LangTeach.Api.Data.Models.CorrectionStatus.Corregida;
+            row.CorrectedAt = DateTime.UtcNow;
+            db.SaveChanges();
+        }
+
+        var resp = await client.PatchAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}",
+            new UpdateCorrectionRequest { StudentText = "Edited after correction." });
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // --- helpers ---
+
+    private async Task<(HttpClient client, Guid studentId)> SetupAsync(string auth0Id, string? email = null)
+    {
+        var client = _factory.CreateAuthenticatedClient(auth0Id, email ?? $"{auth0Id.Replace("|", "-")}@example.com");
+        var student = await CreateStudentAsync(client);
+        return (client, student.Id);
+    }
+
+    private static async Task<StudentDto> CreateStudentAsync(HttpClient client)
+    {
+        var resp = await client.PostAsJsonAsync("/api/students", new CreateStudentRequest
+        {
+            Name = "Test Student",
+            LearningLanguage = "Spanish",
+            CefrLevel = "B1",
+        });
+        resp.EnsureSuccessStatusCode();
+        return (await resp.Content.ReadFromJsonAsync<StudentDto>())!;
+    }
+
+    private static async Task<CorrectionDetailDto> CreateCorrectionAsync(HttpClient client, Guid studentId, CreateCorrectionRequest req)
+    {
+        var resp = await client.PostAsJsonAsync($"/api/students/{studentId}/corrections", req);
+        resp.EnsureSuccessStatusCode();
+        return (await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>())!;
+    }
+}
