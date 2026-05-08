@@ -49,7 +49,7 @@ export interface ExtractedReflection {
   areasToImprove: ExtractedTextField | null
   emotionalSignals: string | null
   homeworkAssigned: ExtractedTextField | null
-  nextLessonIdeas: ExtractedTextField | null
+  nextSessionTopics: ExtractedTextField | null
   sessionDate?: string | null
   sessionTitle?: string | null
   suggestedDifficulties: SuggestedDifficulty[]
