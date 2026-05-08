@@ -140,6 +140,31 @@ public class CorrectionService : ICorrectionService
         return true;
     }
 
+    public async Task<CorrectionExportData?> GetForExportAsync(
+        Guid teacherId, Guid studentId, Guid correctionId, CancellationToken cancellationToken = default)
+    {
+        var row = await (
+            from c in _db.Corrections.Include(c => c.Tags)
+            join s in _db.Students on c.StudentId equals s.Id
+            where c.Id == correctionId
+                  && c.TeacherId == teacherId
+                  && c.StudentId == studentId
+                  && c.DeletedAt == null
+                  && s.TeacherId == teacherId
+                  && !s.IsDeleted
+            select new { Correction = c, StudentName = s.Name }
+        ).FirstOrDefaultAsync(cancellationToken);
+
+        if (row is null) return null;
+
+        if (row.Correction.Status != CorrectionStatus.Corregida)
+            throw new CorrectionInvalidStateException("not_corregida", "Correction is not in the Corregida state.");
+
+        return new CorrectionExportData(
+            CorrectionDtoMapper.ToDetail(row.Correction, row.Correction.Tags),
+            row.StudentName);
+    }
+
     private async Task<bool> StudentBelongsToTeacherAsync(Guid teacherId, Guid studentId, CancellationToken ct) =>
         await _db.Students.AnyAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, ct);
 
