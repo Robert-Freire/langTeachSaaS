@@ -360,8 +360,13 @@ public class AppDbContext : DbContext
         // (avoids SQL Server multi-cascade-path errors). Soft-delete via DeletedAt timestamp
         // (null = active). Unidirectional nav: WithMany() with no argument so the principal
         // entities (Student, Teacher, Lesson, SessionLog) do not need a Corrections collection.
+        // CHECK constraints are a backstop against non-API writes (the AI generation service
+        // will write Status/Category directly once #PROMPT_SERVICE lands).
         modelBuilder.Entity<Correction>(e =>
         {
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_Corrections_Status",
+                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corregida')"));
             e.HasKey(c => c.Id);
             e.HasIndex(c => new { c.TeacherId, c.DeletedAt });
             e.HasIndex(c => new { c.StudentId, c.DeletedAt });
@@ -392,6 +397,15 @@ public class AppDbContext : DbContext
         // CorrectionTag — cascade from Correction; index on (CorrectionId, Category)
         modelBuilder.Entity<CorrectionTag>(e =>
         {
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_Category",
+                    "Category COLLATE Latin1_General_100_BIN2 IN ('C', 'G', 'L', 'O', 'MuyBien')");
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_Span",
+                    "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
+            });
             e.HasKey(t => t.Id);
             e.HasIndex(t => new { t.CorrectionId, t.Category });
             e.HasOne(t => t.Correction)

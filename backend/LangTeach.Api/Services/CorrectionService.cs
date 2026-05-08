@@ -112,6 +112,8 @@ public class CorrectionService : ICorrectionService
             correction.StudentText = trimmed;
             if (trimmed is not null && correction.Status == CorrectionStatus.Pendiente)
                 correction.Status = CorrectionStatus.Entregada;
+            else if (trimmed is null && correction.Status == CorrectionStatus.Entregada)
+                correction.Status = CorrectionStatus.Pendiente;
         }
 
         correction.UpdatedAt = DateTime.UtcNow;

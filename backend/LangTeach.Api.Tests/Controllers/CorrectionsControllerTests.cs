@@ -151,7 +151,8 @@ public class CorrectionsControllerTests
         var (client, studentId) = await SetupAsync("auth0|corr-get-after-delete");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Doomed" });
 
-        await client.DeleteAsync($"/api/students/{studentId}/corrections/{created.Id}");
+        var delResp = await client.DeleteAsync($"/api/students/{studentId}/corrections/{created.Id}");
+        delResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var getResp = await client.GetAsync($"/api/students/{studentId}/corrections/{created.Id}");
         getResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -230,6 +231,27 @@ public class CorrectionsControllerTests
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var list = await resp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>();
         list.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Patch_ClearStudentText_RevertsEntregadaToPendiente()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-revert");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Revert test",
+            StudentText = "Texto inicial.",
+        });
+        created.Status.Should().Be("Entregada");
+
+        var resp = await client.PatchAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}",
+            new UpdateCorrectionRequest { StudentText = "   " });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Pendiente");
+        detail.StudentText.Should().BeNull();
     }
 
     [Fact]
