@@ -8,6 +8,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1065 | 2026-05-04 | low | Todo trigger phrases ("añade un teaching todo", etc.) duplicated in two PromptService.cs blocks; should be extracted to data/atelier/intent-triggers.json in a future cleanup (Sophy) |
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate is string? while sibling CreateTeacherFollowupRequest.DueDate is DateOnly?; inconsistent binding strategy for same entity field (arch review) |
 | #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
+| #1153 | 2026-05-08 | low | `frontend/src/pages/StudentForm.test.tsx > "includes identity fields in form submission"` is flaky under parallel vitest load (1 fail in full run, 72/72 pass when isolated). Pre-existing — unrelated to redacciones. |
 | #1155 | 2026-05-08 | low | Correction status pill (CORREGIDA/Entregada/Pendiente) is a new pattern, not covered by design-system.md; needs Vera spec before reuse (review-ui) |
 | #1155 | 2026-05-08 | low | Superscript C/G/L/O annotation chip + colored-underline span pattern is new; needs Vera spec entry in docs/design-system.md (review-ui) |
 | #1155 | 2026-05-08 | low | MuyBien bold-inline annotation variant is undocumented in design-system.md (review-ui) |

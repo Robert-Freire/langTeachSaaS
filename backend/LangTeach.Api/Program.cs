@@ -165,6 +165,8 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
+builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
+builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>
 {
