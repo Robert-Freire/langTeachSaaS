@@ -130,6 +130,65 @@ public class AzureSpeechTranscriptionServiceTests
         length.Should().Be(0);
     }
 
+    // Builds a WAV with a JUNK chunk before the data chunk; chunkSizeOverride controls
+    // the JUNK chunk's declared size so we can simulate a malformed non-data chunk.
+    private static byte[] BuildWavWithJunkChunk(int junkPayloadLength, int junkChunkSizeOverride, int pcmLength)
+    {
+        // RIFF(12) + fmt(24) + JUNK header(8) + JUNK payload + data(8) + payload
+        var buf = new byte[12 + 24 + 8 + junkPayloadLength + 8 + pcmLength];
+        "RIFF"u8.CopyTo(buf.AsSpan(0));
+        BitConverter.TryWriteBytes(buf.AsSpan(4), buf.Length - 8);
+        "WAVE"u8.CopyTo(buf.AsSpan(8));
+        "fmt "u8.CopyTo(buf.AsSpan(12));
+        BitConverter.TryWriteBytes(buf.AsSpan(16), 16);
+        BitConverter.TryWriteBytes(buf.AsSpan(20), (short)1);
+        BitConverter.TryWriteBytes(buf.AsSpan(22), (short)1);
+        BitConverter.TryWriteBytes(buf.AsSpan(24), 16_000);
+        BitConverter.TryWriteBytes(buf.AsSpan(28), 32_000);
+        BitConverter.TryWriteBytes(buf.AsSpan(32), (short)2);
+        BitConverter.TryWriteBytes(buf.AsSpan(34), (short)16);
+        "JUNK"u8.CopyTo(buf.AsSpan(36));
+        BitConverter.TryWriteBytes(buf.AsSpan(40), junkChunkSizeOverride);
+        var dataStart = 44 + junkPayloadLength;
+        "data"u8.CopyTo(buf.AsSpan(dataStart));
+        BitConverter.TryWriteBytes(buf.AsSpan(dataStart + 4), pcmLength);
+        return buf;
+    }
+
+    [Fact]
+    public void ParseWavDataInfo_NegativeNonDataChunkSize_Throws()
+    {
+        var bytes = BuildWavWithJunkChunk(junkPayloadLength: 4, junkChunkSizeOverride: -16, pcmLength: 32);
+
+        var act = () => AzureSpeechTranscriptionService.ParseWavDataInfo(bytes);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*JUNK*invalid size*");
+    }
+
+    [Fact]
+    public void ParseWavDataInfo_OversizedNonDataChunkSize_Throws()
+    {
+        // Declared size is larger than what's actually in the buffer.
+        var bytes = BuildWavWithJunkChunk(junkPayloadLength: 4, junkChunkSizeOverride: 1_000_000, pcmLength: 32);
+
+        var act = () => AzureSpeechTranscriptionService.ParseWavDataInfo(bytes);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*JUNK*invalid size*");
+    }
+
+    [Fact]
+    public void ParseWavDataInfo_ValidNonDataChunkBeforeData_AdvancesAndFindsData()
+    {
+        var bytes = BuildWavWithJunkChunk(junkPayloadLength: 4, junkChunkSizeOverride: 4, pcmLength: 32);
+
+        var (offset, length) = AzureSpeechTranscriptionService.ParseWavDataInfo(bytes);
+
+        offset.Should().Be(12 + 24 + 8 + 4 + 8); // = 56
+        length.Should().Be(32);
+    }
+
     [Fact]
     public void ParseWavDataInfo_ThenBuildChunks_RoundTripsCorrectly()
     {

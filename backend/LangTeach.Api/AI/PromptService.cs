@@ -1549,7 +1549,7 @@ public class PromptService : IPromptService
             """;
 
         var system = $"""
-            You are a tool that helps language teachers structure their post-class notes.
+            {_pedagogy.PromptFragments.ReflectionExtractionOpener}
             Extract structured information from a teacher's free-form reflection text.{sessionContextHint}
 
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
@@ -1620,8 +1620,8 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildWhatWasCoveredFallbackPrompt(WhatWasCoveredFallbackContext ctx)
     {
-        const string system = """
-            You are a tool that summarises a language class in one sentence.
+        var system = $"""
+            {_pedagogy.PromptFragments.WhatWasCoveredFallbackOpener}
 
             Given the topic tags and any difficulty notes from a class, write ONE short sentence (under 30 words) describing what was covered in the class.
 
@@ -1661,7 +1661,7 @@ public class PromptService : IPromptService
         var currentYear = DateTime.UtcNow.Year;
         var competencies = string.Join(", ", _pedagogy.GetValidDifficultyCompetencies().OrderBy(x => x));
         var system = $"""
-            You are a tool that helps language teachers capture student information from free-form voice notes.
+            {_pedagogy.PromptFragments.StudentProfileExtractionOpener}
             Extract structured student profile fields from a teacher's free-form text.
 
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value (including profession, reasonForStudying, shortTermObjectives.text, difficulties.description, difficulties.subcategory, interests, and teachingTodoTexts) must be in Spanish. Never translate or switch to English.
@@ -1710,8 +1710,8 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx)
     {
-        const string system = """
-            You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.
+        var system = $$"""
+            {{_pedagogy.PromptFragments.ReplanSuggestionOpener}}
             Your job is to identify gaps between what was taught and what is planned, and suggest specific adjustments.
 
             Rules:
@@ -1770,7 +1770,7 @@ public class PromptService : IPromptService
 
     public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx)
     {
-        const string system = "You are a CEFR-level grammar expert. Evaluate whether grammar structures in a generated curriculum match the target level.";
+        var system = _pedagogy.PromptFragments.GrammarLevelExpertOpener;
 
         var grammarList = string.Join("\n", ctx.AllowedGrammar.Select(g => $"- {g}"));
         var entriesList = string.Join("\n", ctx.EntriesWithGrammar.Select(e =>

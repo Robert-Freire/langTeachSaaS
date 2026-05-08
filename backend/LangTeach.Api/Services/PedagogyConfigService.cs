@@ -533,8 +533,25 @@ public class PedagogyConfigService : IPedagogyConfigService
             throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing lessonSystemOpener.");
         if (string.IsNullOrWhiteSpace(f.CurriculumSystemOpener))
             throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing curriculumSystemOpener.");
+        if (string.IsNullOrWhiteSpace(f.ReplanSuggestionOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing replanSuggestionOpener.");
+        if (string.IsNullOrWhiteSpace(f.ReflectionExtractionOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing reflectionExtractionOpener.");
+        if (string.IsNullOrWhiteSpace(f.WhatWasCoveredFallbackOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing whatWasCoveredFallbackOpener.");
+        if (string.IsNullOrWhiteSpace(f.StudentProfileExtractionOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing studentProfileExtractionOpener.");
+        if (string.IsNullOrWhiteSpace(f.GrammarLevelExpertOpener))
+            throw new InvalidOperationException("PedagogyConfigService: prompt-fragments.json is missing grammarLevelExpertOpener.");
 
-        var allStrings = new[] { f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix, f.LessonSystemOpener, f.CurriculumSystemOpener }
+        var allStrings = new[]
+            {
+                f.CefrCue, f.PersonalisationDirective, f.MotivationSuffix,
+                f.LessonSystemOpener, f.CurriculumSystemOpener,
+                f.ReplanSuggestionOpener, f.ReflectionExtractionOpener,
+                f.WhatWasCoveredFallbackOpener, f.StudentProfileExtractionOpener,
+                f.GrammarLevelExpertOpener,
+            }
             .Concat(f.NativeLanguageBullets);
         foreach (var s in allStrings)
         {

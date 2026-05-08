@@ -70,7 +70,7 @@ test('voice upload: extracted fields pre-fill form, autosave saves as Confirmed'
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
 
   // Navigate to session history tab and verify no "Pending review" badge
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
   await expect(page.getByTestId('session-entry')).toBeVisible()
   expect(await page.getByTestId('draft-badge').count()).toBe(0)
@@ -103,7 +103,7 @@ test('Draft session shows "Pending review" badge in history', async ({ browser }
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
   // Draft badge should be visible
@@ -165,7 +165,7 @@ test('editing a Draft session and saving confirms it', async ({ browser }) => {
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
   // Draft badge is present
@@ -182,7 +182,7 @@ test('editing a Draft session and saving confirms it', async ({ browser }) => {
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}(\\?tab=sessions)?$`), { timeout: 10000 })
 
   // Draft badge should be gone
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('draft-badge')).toBeHidden({ timeout: 5000 })
 
   await context.close()
@@ -208,7 +208,7 @@ test('voice recorder is accessible in edit mode', async ({ browser }) => {
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
   // Open edit via full-page route
@@ -252,7 +252,7 @@ test('second voice note updates session, does not create a duplicate', async ({ 
   await expect(page).toHaveURL(new RegExp(`/students/${student.id}$`), { timeout: 10000 })
 
   // Navigate to session history tab and verify only ONE session exists
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
   const sessionEntries = page.getByTestId('session-entry')
   await expect(sessionEntries).toHaveCount(1, { timeout: 5000 })
@@ -284,7 +284,7 @@ test('voice extraction append mode: concatenates extracted value with existing f
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
   // Open the Draft in edit mode via full-page route
@@ -336,7 +336,7 @@ test('voice extraction replace mode: overwrites existing field content', async (
   await page.goto(`/students/${student.id}`)
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: 15000 })
 
-  await page.getByRole('tab', { name: /history/i }).click()
+  await page.getByTestId('tab-sessions').click()
   await expect(page.getByTestId('session-history-list')).toBeVisible({ timeout: 10000 })
 
   // Open the Draft in edit mode via full-page route
