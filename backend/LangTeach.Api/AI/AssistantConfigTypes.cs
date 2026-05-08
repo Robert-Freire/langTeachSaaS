@@ -11,3 +11,8 @@ public record ProposalFieldsConfig(
     SkillLevelFieldEntry[] SkillLevelFields,
     SessionFieldEntry[] SessionFields
 );
+
+public record IntentTriggersConfig(
+    string[] TeachingTodos,
+    string[] TeacherFollowups
+);

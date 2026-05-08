@@ -40,7 +40,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
             return new ExtractedReflectionDto(
                 WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
-                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                HomeworkAssigned: null, NextSessionTopics: null, SessionDate: null,
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
@@ -140,7 +140,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 AreasToImprove: ParseTextFieldOrNull(root, "areasToImprove"),
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
                 HomeworkAssigned: ParseTextFieldOrNull(root, "homeworkAssigned"),
-                NextLessonIdeas: ParseTextFieldOrNull(root, "nextLessonIdeas"),
+                NextSessionTopics: ParseTextFieldOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
                 RawExtractionJson: cleaned,
@@ -163,7 +163,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             _logger.LogDebug("Unparseable Claude response: {Preview}...", json is null ? null : json[..Math.Min(200, json.Length)]);
             return new ExtractedReflectionDto(
                 WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
-                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                HomeworkAssigned: null, NextSessionTopics: null, SessionDate: null,
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,

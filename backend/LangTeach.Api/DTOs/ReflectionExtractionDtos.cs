@@ -45,7 +45,7 @@ public record ExtractedReflectionDto(
     ExtractedTextFieldDto? AreasToImprove,
     string? EmotionalSignals,
     ExtractedTextFieldDto? HomeworkAssigned,
-    ExtractedTextFieldDto? NextLessonIdeas,
+    ExtractedTextFieldDto? NextSessionTopics,
     string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties,
     string? RawExtractionJson,
