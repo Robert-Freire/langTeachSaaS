@@ -217,24 +217,14 @@ export async function ensureStudentHasSessionLog(
   if (sessions.length > 0) return
 
   // No sessions — create a minimal confirmed one via the log-session UI.
-  // Attach the autosave POST listener BEFORE goto so it captures the
-  // response even if autosave fires during initial page load.
-  const autosavePromise = page.waitForResponse(
-    resp =>
-      resp.url().includes(`/api/students/${studentId}/sessions`) &&
-      !resp.url().includes('/extract') &&
-      resp.request().method() === 'POST' &&
-      resp.status() === 201,
-    { timeout: 30000 }
-  )
+  // Clicking Done triggers saveNow() which POSTs the session and redirects.
   await page.goto(`${baseURL}/students/${studentId}/log-session`)
   await page.locator('[data-testid="log-session-page"]').waitFor({ state: 'visible', timeout: 15000 })
-  await autosavePromise
 
   await page.click('[data-testid="done-btn"]')
 
   // Wait until redirected away from the log-session page
-  await page.waitForURL(`${baseURL}/students/${studentId}**`, { timeout: 15000 })
+  await page.waitForURL(`${baseURL}/students/${studentId}**`, { timeout: 30000 })
 }
 
 // ---------------------------------------------------------------------------
