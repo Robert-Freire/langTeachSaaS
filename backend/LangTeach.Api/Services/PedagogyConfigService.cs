@@ -472,7 +472,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     internal static readonly HashSet<string> ExpectedSessionProposalFieldKeys = new(StringComparer.Ordinal)
         { "title", "actualContent", "generalNotes", "homeworkAssigned", "nextSessionTopics" };
 
-    private static void ValidateProposalFields(ProposalFieldsConfig f)
+    internal static void ValidateProposalFields(ProposalFieldsConfig f)
     {
         if (f.StudentFields is not { Length: > 0 })
             throw new InvalidOperationException("PedagogyConfigService: proposal-fields.json studentFields is missing or empty.");
@@ -515,7 +515,7 @@ public class PedagogyConfigService : IPedagogyConfigService
         }
     }
 
-    private static void ValidateIntentTriggers(IntentTriggersConfig c)
+    internal static void ValidateIntentTriggers(IntentTriggersConfig c)
     {
         if (c.TeachingTodos is not { Length: > 0 })
             throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teachingTodos is missing or empty.");

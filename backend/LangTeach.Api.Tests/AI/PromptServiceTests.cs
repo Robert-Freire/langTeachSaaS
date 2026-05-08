@@ -3414,6 +3414,20 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void BuildReflectionExtractionPrompt_TeacherFollowupTriggerPhrasesInjectedFromConfig()
+    {
+        // #1147 AC1: follow-up trigger phrases are loaded from intent-triggers.json
+        // and injected into the prompt; this asserts the JSON values reach the prompt text.
+        var today = new DateOnly(2026, 5, 8);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy hemos visto el subjuntivo.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("añade follow up [X]");
+        request.SystemPrompt.Should().Contain("apunta follow up [X]");
+        request.SystemPrompt.Should().Contain("añade como follow up [X]");
+    }
+
+    [Fact]
     public void BuildReflectionExtractionPrompt_HasOpenSession_True_ExplicitDateCueEmitsNewSessionNotNextLessonIdeas()
     {
         // regression guard for #1140: open-session + explicit date cue must route to proposedNewSession, not nextLessonIdeas
