@@ -40,7 +40,10 @@ public class CreateCorrectionRequest
     [MaxLength(2000)]
     public string? AssignmentPrompt { get; set; }
 
+    [MaxLength(StudentTextMaxLength)]
     public string? StudentText { get; set; }
+
+    public const int StudentTextMaxLength = 10_000;
 }
 
 public class UpdateCorrectionRequest
@@ -52,5 +55,6 @@ public class UpdateCorrectionRequest
     [MaxLength(2000)]
     public string? AssignmentPrompt { get; set; }
 
+    [MaxLength(CreateCorrectionRequest.StudentTextMaxLength)]
     public string? StudentText { get; set; }
 }

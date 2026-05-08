@@ -65,3 +65,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 - **GenerateController.Generate returns 503 for ClaudeRateLimitException** (architecture-reviewer): The non-streaming `Generate` helper in `GenerateController.cs` returns 503 with a bare string for `ClaudeRateLimitException`. The new `ExtractProfile` endpoint correctly returns 429 with a structured body. Inconsistency across AI-backed endpoints. Pre-existing gap; `GenerateController` fix is out of scope for this hardening batch. Align in a future pass.
 - **TeachingTodosCard.test.tsx timer pattern** (architecture-reviewer): The flake fix uses inline `try/finally` for fake-timer scope, while other test files use `afterEach(() => vi.useRealTimers())`. The `try/finally` is safe; inconsistency is cosmetic. Normalise if a global timer convention is ever established.
+
+## #1152 (architecture-reviewer notes, PASS WITH NOTES)
+- DeletedAt nullable timestamp on Corrections vs the repo-wide IsDeleted bool convention. Documented in the task plan and PR description; not converted because the timestamp is more informative and the Data Layer invariant in the architecture model is implicit (no global query filter exists). Worth a sprint-level conversation if we want to standardize.
+- Status casing comment now in CorrectionStatus.cs.
+
+## #1152 (Sophy review notes, APPROVE with follow-ups)
+- Pre-prompt-service: add a CHECK constraint or service-level guard so Status/Category writes are restricted to the string-constant sets. Today only CorrectionService writes; risk surfaces when the AI service starts pushing values directly. Land before #PROMPT_SERVICE issue.
+- Sprint-level decision: pick a soft-delete convention (DeletedAt timestamp vs IsDeleted bool) and either fold Corrections back or migrate the rest. Should not leave both patterns drifting.

@@ -1,5 +1,9 @@
 namespace LangTeach.Api.Data.Models;
 
+// C / G / L / O are the teacher-facing single-letter chips that render in the marked-up
+// text. MuyBien is the asymmetric fifth: it has no chip (bold-only, per sprint story
+// design-system §11.13), so a single letter is gratuitous. Kept as a word for clarity
+// in queries and JSON payloads.
 public static class CorrectionTagCategory
 {
     public const string Cohesion = "C";
