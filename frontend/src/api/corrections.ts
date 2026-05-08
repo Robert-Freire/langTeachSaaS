@@ -1,6 +1,8 @@
 import { apiClient } from '../lib/apiClient'
+import { triggerBlobDownload } from '../lib/downloadBlob'
 
 export type CorrectionStatus = 'Pendiente' | 'Entregada' | 'Corregida'
+export type CorrectionTagCategory = 'C' | 'G' | 'L' | 'O' | 'MuyBien'
 
 export interface CorrectionSummary {
   id: string
@@ -11,7 +13,7 @@ export interface CorrectionSummary {
 }
 
 export interface CorrectionTag {
-  category: string
+  category: CorrectionTagCategory
   spannedText: string
   startIndex: number
   endIndex: number
@@ -78,5 +80,24 @@ export async function deleteCorrection(studentId: string, id: string): Promise<v
 }
 
 export async function corregirCorrection(studentId: string, id: string): Promise<void> {
-  await apiClient.post(`/api/students/${studentId}/corrections/${id}/corregir`)
+  await apiClient.post(`/api/students/${studentId}/corrections/${id}/corregir`, null, {
+    timeout: 60_000,
+  })
+}
+
+export async function downloadCorrectionDocx(
+  studentId: string,
+  id: string,
+  filenameHint: string,
+): Promise<void> {
+  const response = await apiClient.get<Blob>(
+    `/api/students/${studentId}/corrections/${id}/docx`,
+    { responseType: 'blob' },
+  )
+  const fallback = `${sanitizeFilename(filenameHint)}.docx`
+  triggerBlobDownload(response, fallback)
+}
+
+function sanitizeFilename(value: string): string {
+  return value.replace(/[^a-zA-Z0-9-_.\s]/g, '').trim() || 'correccion'
 }

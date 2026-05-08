@@ -3,7 +3,19 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #smoke-hardening | 2026-05-04 | medium | `/dashboard` route renders blank white page; correct route is `/` - sidebar link uses `/` but direct navigation to `/dashboard` silently fails |
+| #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate lacks [RegularExpression] format attribute; invalid dates accepted at model-binding boundary and silently become null (Sophy) |
+| #1065 | 2026-05-04 | low | Todo trigger phrases ("añade un teaching todo", etc.) duplicated in two PromptService.cs blocks; should be extracted to data/atelier/intent-triggers.json in a future cleanup (Sophy) |
+| #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate is string? while sibling CreateTeacherFollowupRequest.DueDate is DateOnly?; inconsistent binding strategy for same entity field (arch review) |
+| #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
 | #1153 | 2026-05-08 | low | `frontend/src/pages/StudentForm.test.tsx > "includes identity fields in form submission"` is flaky under parallel vitest load (1 fail in full run, 72/72 pass when isolated). Pre-existing, unrelated to redacciones. |
+| #1155 | 2026-05-08 | low | Correction status pill (CORREGIDA/Entregada/Pendiente) is a new pattern, not covered by design-system.md; needs Vera spec before reuse (review-ui) |
+| #1155 | 2026-05-08 | low | Superscript C/G/L/O annotation chip + colored-underline span pattern is new; needs Vera spec entry in docs/design-system.md (review-ui) |
+| #1155 | 2026-05-08 | low | MuyBien bold-inline annotation variant is undocumented in design-system.md (review-ui) |
+| #1155 | 2026-05-08 | low | CorrectionDetailDto has no studentTextUpdatedAt field; stale-markup banner (issue #1155 edge case) deferred until DTO grows that field (plan revision) |
+| #1155 | 2026-05-08 | low | DemoSeeder Ana Visual correction duplicates marked-up JSON literal and tagSpecs array; could be serialized once from tagSpecs (Sophy) |
+| #1155 | 2026-05-08 | low | Visual stack DB_PORT=1435 is not in correction-detail.visual.spec.ts .env; pre-existing infra pattern across visual specs (review-ui) |
+| #1154 | 2026-05-08 | low | StudentRoster.test.tsx fails 3 tests on sprint/text-correction head (Review pending / HMWK NOT DONE / HMWK PARTIAL); pre-existing on sprint, unrelated to redacciones; landed via #1154 merge |
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into: #833 (bug batch), #834 (seeder gaps), #835 (e2e session-log rewrite), #836 (ScenarioSeeder Hans B1), #837 (deduplication), #838 (session title from web UI), #839 (debug log privacy), #840 (Edit Student UX), #841 (stale closure + LogSession pre-populate). Already-tracked entries removed (referenced #737/#707/#644/#714/#715/#716/#683/#741/#742/#756/#809/#657). Dismissed entries removed (defensive-only, intentional, or resolved).*
 
