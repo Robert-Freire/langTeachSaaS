@@ -70,10 +70,7 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             .OrderBy(t => t.StartIndex)
             .ToList();
 
-        var errorTags = tags.Where(t => t.Category != CorrectionTagCategory.MuyBien).ToList();
-        var refNumbers = errorTags
-            .Select((tag, i) => (tag, refNum: i + 1))
-            .ToDictionary(x => x.tag, x => x.refNum);
+        var renderedErrorTags = new List<CorrectionTagDto>();
 
         var currentParagraph = new Paragraph();
         body.AppendChild(currentParagraph);
@@ -89,7 +86,12 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             {
                 AppendTextWithLineBreaks(body, ref currentParagraph, text.Substring(cursor, tag.StartIndex - cursor), runFactory: PlainRun);
             }
-            var refNum = refNumbers.TryGetValue(tag, out var n) ? n : (int?)null;
+            int? refNum = null;
+            if (tag.Category != CorrectionTagCategory.MuyBien)
+            {
+                renderedErrorTags.Add(tag);
+                refNum = renderedErrorTags.Count;
+            }
             AppendTaggedSpan(currentParagraph, tag, refNum);
             cursor = tag.EndIndex;
         }
@@ -101,9 +103,12 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
 
         AppendSeparator(body);
 
-        if (errorTags.Count > 0)
+        if (renderedErrorTags.Count > 0)
         {
-            AppendCorrectionsSection(body, errorTags, refNumbers);
+            var refNumbers = renderedErrorTags
+                .Select((tag, i) => (tag, refNum: i + 1))
+                .ToDictionary(x => x.tag, x => x.refNum);
+            AppendCorrectionsSection(body, renderedErrorTags, refNumbers);
         }
     }
 
