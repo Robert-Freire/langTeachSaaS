@@ -65,29 +65,11 @@ test('@visual atelier-1029 new-session-proposal-no-student', async ({ browser })
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
-  // Open assistant panel
+  // Assert FAB is disabled — product invariant: no student context means the assistant cannot be opened
   const assistantBtn = page.locator('[data-testid="open-assistant-btn"]').first()
-  await assistantBtn.click()
-  await expect(page.locator('[data-testid="assistant-panel"]')).toBeVisible({ timeout: UI_TIMEOUT })
-
-  // Submit scheduling text
-  const input = page.locator('[data-testid="assistant-input"]')
-  await input.fill('La semana que viene hagamos el subjuntivo. [schedule-new-session]')
-  await page.locator('[data-testid="assistant-send-btn"]').click()
-
-  // Wait for proposals; scroll to newSession card
-  await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
-  await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
-
-  // Assert newSession card disabled state before screenshotting
-  const dateInput2 = page.locator('[data-testid^="session-date-input-"]').first()
-  await expect(dateInput2).toBeVisible({ timeout: UI_TIMEOUT })
-  await dateInput2.scrollIntoViewIfNeeded()
-
-  // Verify Apply is disabled and helper text is present
-  const applyBtnLocator = page.locator('[data-testid^="apply-btn-"]').filter({ hasText: /apply/i }).first()
-  await expect(applyBtnLocator).toBeDisabled({ timeout: UI_TIMEOUT })
-  await expect(page.getByText("Open from a student's screen to schedule a session")).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(assistantBtn).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(assistantBtn).toBeDisabled({ timeout: UI_TIMEOUT })
+  await expect(assistantBtn).toHaveAttribute('aria-disabled', 'true')
 
   await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-no-student.png', fullPage: true })
 
