@@ -74,6 +74,34 @@ public class RedaccionCorrectionDualLevelTests
         b2Ablar!.Category.Should().Be("O", "misspelling must be tagged O, not another category");
     }
 
+    /// <summary>
+    /// Issue #1175 guard: B1 text with 5+ accented characters in the first 100 characters must
+    /// produce at least 5 tags. Before the fix, Unicode offset drift caused tags to be silently
+    /// dropped, producing far fewer than the expected count.
+    /// </summary>
+    [SkipIfNoClaudeApiKey]
+    public async Task B1_AccentedText_TagCountNotTruncated()
+    {
+        // 5+ accented chars in the first 100 chars: é(él), ó(estudió), é(después), é(También), é(café)
+        // Deliberate B1 errors: "hago" (G-tense), "Y luego...Y luego" (C-connector), "dependen en" (G-prep)
+        const string accentedB1Text =
+            "Ayer él estudió mucho, pero después tuvo muchos problemas con las preposiciones. " +
+            "También hago una foto de mis amigos en el café. " +
+            "Y luego fuimos a casa. Y luego volvimos al centro. " +
+            "Todos dependen en sus familias para organizar estas actividades juntos.";
+
+        // Verify the constraint: at least 4 accented chars in the first 100 chars.
+        var first100 = accentedB1Text.Length >= 100 ? accentedB1Text[..100] : accentedB1Text;
+        var accentCount = first100.Count(c => "áéíóúàèìòùäëïöüâêîôûñÁÉÍÓÚÀÈÌÒÙÄËÏÖÜÂÊÎÔÛÑ".Contains(c));
+        accentCount.Should().BeGreaterThanOrEqualTo(4, "test text must have 4+ accented chars in first 100 chars");
+
+        await using var run = await RunCorregirAsync(accentedB1Text, "B1", "English");
+
+        run.Result.Tags.Should().HaveCountGreaterThanOrEqualTo(5,
+            "a B1 text with multiple clear errors and accented chars must not have tags silently truncated. "
+            + $"Tags found: {string.Join(", ", run.Result.Tags.Select(t => $"[{t.Category}] \"{t.SpannedText}\""))}");
+    }
+
     private static IEnumerable<string> CategoryDistribution(IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> tags) =>
         tags.GroupBy(t => t.Category).Select(g => $"{g.Key}:{g.Count()}").OrderBy(s => s);
 

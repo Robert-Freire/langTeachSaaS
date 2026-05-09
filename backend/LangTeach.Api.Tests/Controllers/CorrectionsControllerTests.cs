@@ -395,6 +395,53 @@ public class CorrectionsControllerTests
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Corregir_WithAccentedTextAndOffsetDrift_RescuesTagsNotDropped()
+    {
+        // Simulates the Unicode boundary drift bug (issue #1175): model reports correct
+        // spannedText but wrong startIndex/endIndex due to miscounting near é/ó/á chars.
+        // The backend rescue in ValidateAndOrderTags must fix the offsets and keep the tag.
+        var text = "Ayer él fue al café y después tuvo problemas con las preposiciones también. Él está muy cansado.";
+        var (client, studentId) = await SetupAsync("auth0|corr-unicode-rescue");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Unicode rescue test",
+            StudentText = text,
+        });
+
+        var realIdx = text.IndexOf("café", StringComparison.Ordinal);
+        var driftedIdx = realIdx + 2; // simulate +2 byte-offset drift from the accented 'é' in "él"
+
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse(System.Text.Json.JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            originalText = text,
+            tags = new[]
+            {
+                new
+                {
+                    category = "O",
+                    startIndex = driftedIdx,
+                    endIndex = driftedIdx + "café".Length,
+                    spannedText = "café",
+                    explanation = "Ejemplo de tilde correcta; sirve para probar el rescate de offsets.",
+                    correctedForm = "café",
+                }
+            }
+        }));
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Tags.Should().HaveCount(1, "tag with correct spannedText must be rescued despite offset drift");
+        detail.Tags[0].SpannedText.Should().Be("café");
+        detail.Tags[0].StartIndex.Should().Be(realIdx, "rescue must fix startIndex to the true position");
+    }
+
     // --- helpers ---
 
     private async Task<(HttpClient client, Guid studentId)> SetupAsync(string auth0Id, string? email = null)
