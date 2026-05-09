@@ -23,6 +23,27 @@ public class CorrectionService : ICorrectionService
         if (!await StudentBelongsToTeacherAsync(teacherId, studentId, cancellationToken))
             return null;
 
+        // Staleness recovery: a background AI task that failed silently leaves the
+        // correction stuck in Corrigiendo. After 60 seconds we revert to Entregada
+        // so the teacher can retry via the Corregir button.
+        var staleThreshold = DateTime.UtcNow.AddSeconds(-60);
+        var stale = await _db.Corrections
+            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId
+                     && c.DeletedAt == null
+                     && c.Status == CorrectionStatus.Corrigiendo
+                     && c.UpdatedAt < staleThreshold)
+            .ToListAsync(cancellationToken);
+        if (stale.Count > 0)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var s in stale)
+            {
+                s.Status = CorrectionStatus.Entregada;
+                s.UpdatedAt = now;
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
         var rows = await _db.Corrections
             .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && c.DeletedAt == null)
             .OrderByDescending(c => c.CreatedAt)
@@ -106,7 +127,7 @@ public class CorrectionService : ICorrectionService
         {
             // StudentText is locked once the correction is Corregida; the markup tags reference
             // character offsets that would no longer match.
-            if (correction.Status == CorrectionStatus.Corregida)
+            if (correction.Status == CorrectionStatus.Corregida || correction.Status == CorrectionStatus.Corrigiendo)
                 throw new CorrectionStudentTextLockedException();
 
             var trimmed = string.IsNullOrWhiteSpace(request.StudentText) ? null : request.StudentText;

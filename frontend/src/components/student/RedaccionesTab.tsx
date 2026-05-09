@@ -26,6 +26,7 @@ interface RedaccionesTabProps {
 const STATUS_BADGE: Record<CorrectionStatus, string> = {
   Pendiente: 'bg-zinc-100 text-zinc-700',
   Entregada: 'bg-indigo-50 text-indigo-700',
+  Corrigiendo: 'bg-amber-50 text-amber-800',
   Corregida: 'bg-emerald-50 text-emerald-800',
 }
 
@@ -40,13 +41,20 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
     | { mode: 'create' }
     | { mode: 'edit'; id: string }
   >({ mode: 'closed' })
-  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set())
-  const [generationError, setGenerationError] = useState<string | null>(null)
+  const [corregirError, setCorregirError] = useState<string | null>(null)
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['corrections', studentId],
     queryFn: () => listCorrections(studentId),
   })
+
+  // Poll every 3 seconds while any correction is in Corrigiendo state.
+  useEffect(() => {
+    const hasCorrigiendo = data?.some((c) => c.status === 'Corrigiendo') ?? false
+    if (!hasCorrigiendo) return
+    const id = setInterval(() => { void refetch() }, 3000)
+    return () => clearInterval(id)
+  }, [data, refetch])
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['corrections', studentId] })
@@ -54,27 +62,19 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
 
   const corregirMutation = useMutation({
     mutationFn: (id: string) => corregirCorrection(studentId, id),
-    onMutate: (id: string) => {
-      setGenerationError(null)
-      setGeneratingIds((prev) => new Set(prev).add(id))
-    },
-    onError: (err: unknown, id: string) => {
-      setGeneratingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+    onMutate: () => { setCorregirError(null) },
+    onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'No se pudo iniciar la corrección.'
-      setGenerationError(msg)
+      setCorregirError(msg)
     },
-    onSuccess: (_, id) => {
-      setGeneratingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+    onSuccess: (detail) => {
+      queryClient.setQueryData(
+        ['corrections', studentId],
+        (old: CorrectionSummary[] | undefined) =>
+          old?.map((c) => (c.id === detail.id ? { ...c, status: detail.status } : c)) ?? old,
+      )
       invalidate()
     },
   })
@@ -105,15 +105,15 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
         )}
       </div>
 
-      {generationError && (
+      {corregirError && (
         <div
           className="flex items-start justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"
           data-testid="redacciones-generation-error"
           role="alert"
         >
-          <span>{generationError}</span>
+          <span>{corregirError}</span>
           <button
-            onClick={() => setGenerationError(null)}
+            onClick={() => setCorregirError(null)}
             aria-label="Descartar"
             className="shrink-0 rounded p-0.5 text-red-500 hover:bg-red-100"
             data-testid="redacciones-generation-error-dismiss"
@@ -174,7 +174,6 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
               key={c.id}
               correction={c}
               studentId={studentId}
-              isGenerating={generatingIds.has(c.id)}
               onCorregir={() => corregirMutation.mutate(c.id)}
               onEdit={() => openEdit(c.id)}
               onDelete={() => deleteMutation.mutate(c.id)}
@@ -201,7 +200,6 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
 interface CorrectionCardProps {
   correction: CorrectionSummary
   studentId: string
-  isGenerating: boolean
   onCorregir: () => void
   onEdit: () => void
   onDelete: () => void
@@ -210,7 +208,6 @@ interface CorrectionCardProps {
 function CorrectionCard({
   correction,
   studentId,
-  isGenerating,
   onCorregir,
   onEdit,
   onDelete,
@@ -218,6 +215,7 @@ function CorrectionCard({
   const navigate = useNavigate()
   const { id, assignmentTitle, status, createdAt } = correction
   const isCorregida = status === 'Corregida'
+  const isCorrigiendo = status === 'Corrigiendo'
   const showCorregir = status === 'Entregada'
 
   function openDetail() {
@@ -243,12 +241,11 @@ function CorrectionCard({
           </p>
           <div className="mt-1 flex items-center gap-2">
             <span
-              className={`text-[0.6875rem] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full ${
-                isGenerating ? 'bg-amber-50 text-amber-800 animate-pulse' : STATUS_BADGE[status]
-              }`}
+              className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full ${STATUS_BADGE[status]}`}
               data-testid={`redaccion-status-${id}`}
             >
-              {isGenerating ? 'Generando…' : status}
+              {isCorrigiendo && <Loader2 className="h-3 w-3 animate-spin" />}
+              {status}
             </span>
             <span className="text-xs text-zinc-400" data-testid={`redaccion-date-${id}`}>
               {relativeTime(createdAt)}
@@ -263,13 +260,12 @@ function CorrectionCard({
             <Button
               size="sm"
               onClick={onCorregir}
-              disabled={isGenerating}
               data-testid={`redaccion-corregir-${id}`}
             >
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Corregir'}
+              Corregir
             </Button>
           )}
-          {!isCorregida && (
+          {!isCorregida && !isCorrigiendo && (
             <Button
               variant={showCorregir ? 'secondary' : 'ghost'}
               size="sm"
@@ -279,7 +275,7 @@ function CorrectionCard({
               Editar
             </Button>
           )}
-          {!isCorregida && (
+          {!isCorregida && !isCorrigiendo && (
             <Button
               variant={showCorregir ? 'secondary' : 'ghost'}
               size="sm"
@@ -304,6 +300,7 @@ interface CorrectionDrawerProps {
 }
 
 function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDrawerProps) {
+  const queryClient = useQueryClient()
   const isEdit = editId != null
   const [title, setTitle] = useState('')
   const [prompt, setPrompt] = useState('')
@@ -377,7 +374,12 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
         })
         if (text.trim().length > 0) {
           try {
-            await corregirCorrection(studentId, newCorrection.id)
+            const detail = await corregirCorrection(studentId, newCorrection.id)
+            queryClient.setQueryData(
+              ['corrections', studentId],
+              (old: CorrectionSummary[] | undefined) =>
+                old?.map((c) => (c.id === detail.id ? { ...c, status: detail.status } : c)) ?? old,
+            )
           } catch {
             // correction was saved as Entregada; corregir can be retried from the card
           }

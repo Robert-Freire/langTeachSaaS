@@ -115,12 +115,6 @@ public class CorrectionsController : ControllerBase
         {
             return Conflict(new { code = ex.Code, message = ex.Message });
         }
-        catch (CorrectionGenerationException ex)
-        {
-            _logger.LogWarning(ex, "Redaccion generation failed. StudentId={StudentId} CorrectionId={CorrectionId} Code={Code}",
-                studentId, id, ex.Code);
-            return StatusCode(StatusCodes.Status502BadGateway, new { code = ex.Code, message = ex.Message });
-        }
     }
 
     [HttpGet("{id:guid}/export.docx")]

@@ -6,6 +6,7 @@ using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LangTeach.Api.Tests.Services;
@@ -31,7 +32,19 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
 
-        _sut = new RedaccionCorrectionService(_db, _claude, promptBuilder,
+        // Build a FakeServiceScopeFactory so Task.Run inside CorregirAsync can resolve
+        // AppDbContext (backed by the same in-memory store) and the stub Claude client.
+        // Transient AppDbContext ensures the background task gets a fresh context per use,
+        // avoiding change-tracker conflicts with the test's primary _db instance.
+        var scopeServices = new ServiceCollection();
+        scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
+        scopeServices.AddSingleton<IClaudeClient>(_claude);
+        scopeServices.AddSingleton(promptBuilder);
+        scopeServices.AddLogging();
+        var scopeProvider = scopeServices.BuildServiceProvider();
+        var scopeFactory = new FakeServiceScopeFactory(scopeProvider);
+
+        _sut = new RedaccionCorrectionService(_db, scopeFactory, promptBuilder,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent();
@@ -67,7 +80,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CorregirAsync_HappyPath_FlipsToCorregidaWithTags()
+    public async Task CorregirAsync_HappyPath_ReturnsCorrigiendoThenFlipsToCorregidaWithTags()
     {
         var text = "Hoy ablar con mi amigo.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
@@ -79,53 +92,55 @@ public class RedaccionCorrectionServiceTests : IDisposable
         }));
 
         var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
 
-        result.Status.Should().Be(CorrectionStatus.Corregida);
-        result.Tags.Should().HaveCount(1);
-        result.Tags[0].Category.Should().Be("O");
-        result.Tags[0].SpannedText.Should().Be("ablar");
-        result.Tags[0].Explanation.Should().Be("Falta la 'h'.");
-        result.Tags[0].CorrectedForm.Should().Be("hablar");
-        result.MarkedUpOutput.Should().Contain("\"category\":\"O\"");
+        // Background task (stub: synchronous) completes quickly.
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
 
-        var row = _db.Corrections.Include(c => c.Tags).First(c => c.Id == id);
         row.CorrectedAt.Should().NotBeNull();
         row.Tags.Should().HaveCount(1);
+        row.Tags.First().Category.Should().Be("O");
+        row.Tags.First().SpannedText.Should().Be("ablar");
     }
 
     [Fact]
-    public async Task CorregirAsync_NonJsonResponse_502InvalidJson_StatusReverts()
+    public async Task CorregirAsync_NonJsonResponse_ReturnsCorrigiendoAndBackgroundFailsSilently()
     {
         var id = SeedCorrection(text: "Texto.", status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse("definitely not JSON");
 
-        var ex = await Assert.ThrowsAsync<CorrectionGenerationException>(() =>
-            _sut.CorregirAsync(_teacherId, _studentId, id));
-        ex.Code.Should().Be("invalid_json");
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
 
-        var row = _db.Corrections.First(c => c.Id == id);
-        row.Status.Should().Be(CorrectionStatus.Entregada);
+        // Give the background task time to run and fail; it logs the error and leaves
+        // status as Corrigiendo (staleness recovery resets after 60 seconds on next GET).
+        await Task.Delay(300);
+
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.First(c => c.Id == id);
+        row.Status.Should().Be(CorrectionStatus.Corrigiendo, "background task failed silently; staleness recovery resets after 60s");
         row.CorrectedAt.Should().BeNull();
-        _db.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
+        check.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task CorregirAsync_ParaphrasedOriginalText_BothAttempts_502OriginalTextMismatch()
+    public async Task CorregirAsync_ParaphrasedOriginalText_BothAttempts_BackgroundTaskFailsSilently()
     {
-        // Issue #1166: when BOTH attempts paraphrase, the service surfaces the mismatch.
+        // Issue #1166: when BOTH attempts paraphrase, background task logs and leaves Corrigiendo.
         var id = SeedCorrection(text: "Texto original.", status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse(BuildAiJson("Different text.", Array.Empty<(string, int, int, string, string, string)>()));
         _claude.EnqueueResponse(BuildAiJson("Yet another paraphrase.", Array.Empty<(string, int, int, string, string, string)>()));
 
-        var ex = await Assert.ThrowsAsync<CorrectionGenerationException>(() =>
-            _sut.CorregirAsync(_teacherId, _studentId, id));
-        ex.Code.Should().Be("original_text_mismatch");
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
+
+        await Task.Delay(300);
 
         _claude.CompleteCallCount.Should().Be(2, "the service must retry exactly once before giving up");
-
-        var row = _db.Corrections.First(c => c.Id == id);
-        row.Status.Should().Be(CorrectionStatus.Entregada);
-        _db.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
+        using var check2 = new AppDbContext(_dbOptions);
+        var row2 = check2.Corrections.First(c => c.Id == id);
+        row2.Status.Should().Be(CorrectionStatus.Corrigiendo, "background task failed silently; staleness recovery resets after 60s");
+        check2.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
     }
 
     [Fact]
@@ -146,12 +161,14 @@ public class RedaccionCorrectionServiceTests : IDisposable
                 "Falta la 'h'.", "hablar"),
         }));
 
-        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var immediate = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        immediate.Status.Should().Be(CorrectionStatus.Corrigiendo);
 
-        result.Status.Should().Be(CorrectionStatus.Corregida);
-        result.Tags.Should().HaveCount(1);
-        result.Tags[0].SpannedText.Should().Be("ablar");
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
         _claude.CompleteCallCount.Should().Be(2, "the service must call Claude twice when the first attempt paraphrased");
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().SpannedText.Should().Be("ablar");
     }
 
     [Fact]
@@ -168,9 +185,11 @@ public class RedaccionCorrectionServiceTests : IDisposable
                 "Falta la 'h'.", "hablar"),
         }));
 
-        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        result.Tags.Should().HaveCount(1);
-        result.Tags[0].StartIndex.Should().Be(text.IndexOf("ablar"));
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().StartIndex.Should().Be(text.IndexOf("ablar"));
     }
 
     [Fact]
@@ -184,9 +203,11 @@ public class RedaccionCorrectionServiceTests : IDisposable
             ("G", 6, 12, "lar co", "Bad overlap.", "lar co"),
         }));
 
-        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        result.Tags.Should().HaveCount(1);
-        result.Tags[0].Category.Should().Be("O");
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().Category.Should().Be("O");
     }
 
     [Fact]
@@ -199,10 +220,12 @@ public class RedaccionCorrectionServiceTests : IDisposable
             ("MuyBien", 3, 13, "subjuntivo", "Should be null.", "should also be null"),
         }));
 
-        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        result.Tags.Should().HaveCount(1);
-        result.Tags[0].Explanation.Should().BeNull();
-        result.Tags[0].CorrectedForm.Should().BeNull();
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().Explanation.Should().BeNull();
+        row.Tags.First().CorrectedForm.Should().BeNull();
     }
 
     [Fact]
@@ -215,9 +238,11 @@ public class RedaccionCorrectionServiceTests : IDisposable
             ("G", 0, 5, "Texto", "", "Texto"),
         }));
 
-        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        result.Tags.Should().BeEmpty();
-        result.Status.Should().Be(CorrectionStatus.Corregida);
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().BeEmpty();
+        row.Status.Should().Be(CorrectionStatus.Corregida);
     }
 
     [Fact]
@@ -250,12 +275,17 @@ public class RedaccionCorrectionServiceTests : IDisposable
             ("O", 4, 9, "ablar", "Stub call.", "hablar"),
         }));
 
-        var ex = await Assert.ThrowsAsync<CorrectionInvalidStateException>(() =>
-            _sut.CorregirAsync(_teacherId, _studentId, id));
-        ex.Code.Should().Be("already_corrected");
+        // CorregirAsync sets to Corrigiendo and fires background task. The DuringCompleteAsync
+        // hook runs inside the background task, sets status to Corregida, then the TOCTOU
+        // guard in RunCorrectionInScopeAsync sees Corregida (not Corrigiendo) and discards.
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
+
+        // Wait for background task to run and discard.
+        await Task.Delay(300);
 
         // The concurrent call's single tag is the only one in the DB; this call's tag
-        // was never persisted thanks to the recheck.
+        // was never persisted thanks to the TOCTOU guard.
         var tagCount = _db.CorrectionTags.Count(t => t.CorrectionId == id);
         tagCount.Should().Be(1);
     }
@@ -281,11 +311,39 @@ public class RedaccionCorrectionServiceTests : IDisposable
             ("C", cStart, cEnd, "entonces", "Conector.", "luego"),
         }));
 
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.OrderBy(t => t.OrderIndex).Select(t => t.Category).Should().Equal("O", "G", "L", "C");
+    }
+
+    [Fact]
+    public async Task CorregirAsync_OnCorrigiendo_ReturnsExistingRecordIdempotent()
+    {
+        var id = SeedCorrection(text: "Texto.", status: CorrectionStatus.Corrigiendo);
+
         var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        result.Tags.Select(t => t.Category).Should().Equal("O", "G", "L", "C");
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
+        _claude.CompleteCallCount.Should().Be(0, "no AI call should be made for idempotent Corrigiendo");
     }
 
     // ----- helpers -----
+
+    private async Task<Correction> WaitForDbStatusAsync(Guid correctionId, string expectedStatus,
+        int maxWaitMs = 3000, int pollIntervalMs = 30)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(maxWaitMs);
+        while (DateTime.UtcNow < deadline)
+        {
+            using var check = new AppDbContext(_dbOptions);
+            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == correctionId);
+            if (row?.Status == expectedStatus)
+                return row;
+            await Task.Delay(pollIntervalMs);
+        }
+        throw new TimeoutException(
+            $"Correction {correctionId} did not reach status '{expectedStatus}' within {maxWaitMs}ms.");
+    }
 
     private void SeedStudent()
     {

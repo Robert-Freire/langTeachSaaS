@@ -6,13 +6,14 @@ using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LangTeach.Api.Services;
 
 public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
-    private readonly IClaudeClient _claude;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly RedaccionCorrectionPromptBuilder _promptBuilder;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
@@ -24,12 +25,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
     public RedaccionCorrectionService(
         AppDbContext db,
-        IClaudeClient claude,
+        IServiceScopeFactory scopeFactory,
         RedaccionCorrectionPromptBuilder promptBuilder,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
-        _claude = claude;
+        _scopeFactory = scopeFactory;
         _promptBuilder = promptBuilder;
         _logger = logger;
     }
@@ -52,6 +53,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (correction.Status == CorrectionStatus.Pendiente)
             throw new CorrectionInvalidStateException("no_student_text",
                 "Cannot correct a redacción before student text is provided.");
+        if (correction.Status == CorrectionStatus.Corrigiendo)
+            return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         if (correction.Status == CorrectionStatus.Corregida)
             throw new CorrectionInvalidStateException("already_corrected",
                 "This redacción has already been corrected.");
@@ -59,64 +62,86 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             throw new CorrectionInvalidStateException("invalid_status",
                 $"Unexpected status: {correction.Status}.");
 
-        // Correction has no Student navigation (AppDbContext configures HasOne<Student>() with no nav).
-        // Load the student separately to access CefrLevel / NativeLanguages / Difficulties.
-        var student = await _db.Students.FirstOrDefaultAsync(
-            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken)
-            ?? throw new CorrectionNotFoundException();
+        correction.Status = CorrectionStatus.Corrigiendo;
+        correction.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var claude = scope.ServiceProvider.GetRequiredService<IClaudeClient>();
+            var promptBuilder = scope.ServiceProvider.GetRequiredService<RedaccionCorrectionPromptBuilder>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<RedaccionCorrectionService>>();
+            try
+            {
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, logger);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Background correction failed silently. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
+                    correctionId, teacherId, studentId);
+            }
+        });
+
+        return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
+    }
+
+    private static async Task RunCorrectionInScopeAsync(
+        Guid correctionId, Guid studentId, Guid teacherId,
+        AppDbContext db, IClaudeClient claude,
+        RedaccionCorrectionPromptBuilder promptBuilder,
+        ILogger logger)
+    {
+        var correction = await db.Corrections
+            .Include(c => c.Tags)
+            .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+
+        if (correction is null)
+        {
+            logger.LogWarning(
+                "Background correction: record not found. CorrectionId={CorrectionId}", correctionId);
+            return;
+        }
+
+        if (correction.Status != CorrectionStatus.Corrigiendo)
+        {
+            logger.LogWarning(
+                "Background correction: unexpected status {Status} (expected Corrigiendo). CorrectionId={CorrectionId}",
+                correction.Status, correctionId);
+            return;
+        }
+
+        var student = await db.Students.FirstOrDefaultAsync(
+            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+
+        if (student is null)
+        {
+            logger.LogWarning(
+                "Background correction: student not found. CorrectionId={CorrectionId} StudentId={StudentId}",
+                correctionId, studentId);
+            return;
+        }
 
         var ctx = BuildPromptContext(correction, student);
-        var request = _promptBuilder.Build(ctx);
-        // The model treats the text inside the STUDENT_TEXT_VERBATIM markers as ending at the
-        // last non-whitespace character and does NOT echo the trailing newline (the marker on
-        // the next line is its own token boundary). The strict ordinal check therefore compares
-        // against the trim-end-ed version, NOT against ctx.StudentText raw - otherwise a
-        // student submission ending with whitespace produces a false mismatch every time.
-        // ctx.StudentText itself stays raw, and the persisted Correction.StudentText (what the
-        // student wrote) is never modified.
+        var request = promptBuilder.Build(ctx);
         var sentText = ctx.StudentText.TrimEnd();
 
-        // One-shot retry on originalText mismatch only. Sonnet 4.6 occasionally paraphrases
-        // longer inputs even with temperature=0 + delimited markers; a second attempt almost
-        // always succeeds. Other failure codes (invalid_json, upstream_error) propagate
-        // immediately - they are not transient and retrying wastes a round-trip.
         const int MaxAttempts = 2;
         ClaudeResponse response = null!;
         string? stripped = null;
         RedaccionCorrectionDto dto = null!;
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            try
-            {
-                response = await _claude.CompleteAsync(request, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                // Caller-driven cancellation flows up unchanged.
-                throw;
-            }
-            catch (ClaudeRateLimitException ex)
-            {
-                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-            }
-            catch (ClaudeApiException ex)
-            {
-                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-            }
-            catch (Exception ex)
-            {
-                // Any other transport / parsing / serialization failure from the Claude
-                // client maps to upstream_error so the controller returns 502 (consistent
-                // with the existing two specific catches), not an unhandled 500.
-                throw new CorrectionGenerationException("upstream_error", ex.Message, ex);
-            }
+            response = await claude.CompleteAsync(request, CancellationToken.None);
 
             var raw = response.Content;
             stripped = ContentJsonHelper.StripFences(raw);
             if (string.IsNullOrWhiteSpace(stripped))
             {
-                _logger.LogWarning("Redaccion correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
-                throw new CorrectionGenerationException("invalid_json", "Claude returned empty content.");
+                logger.LogWarning("Background correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
+                throw new InvalidOperationException("Claude returned empty content.");
             }
 
             RedaccionCorrectionDto? parsed;
@@ -127,13 +152,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             catch (JsonException ex)
             {
                 var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
-                _logger.LogWarning(ex, "Redaccion correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
+                logger.LogWarning(ex, "Background correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
                     correctionId, excerpt);
-                throw new CorrectionGenerationException("invalid_json", "Claude response did not parse as the expected JSON shape.", ex);
+                throw new InvalidOperationException("Claude response did not parse as the expected JSON shape.", ex);
             }
 
             if (parsed is null || parsed.SchemaVersion != 1)
-                throw new CorrectionGenerationException("invalid_json", "Claude response is missing or has an unsupported schemaVersion.");
+                throw new InvalidOperationException("Claude response is missing or has an unsupported schemaVersion.");
 
             if (string.Equals(parsed.OriginalText, sentText, StringComparison.Ordinal))
             {
@@ -143,39 +168,32 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
             if (attempt < MaxAttempts)
             {
-                _logger.LogWarning(
-                    "Redaccion correction: originalText mismatch on attempt {Attempt}/{MaxAttempts}; retrying once. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+                logger.LogWarning(
+                    "Background correction: originalText mismatch on attempt {Attempt}/{MaxAttempts}; retrying once. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
                     attempt, MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
                 continue;
             }
 
-            _logger.LogWarning(
-                "Redaccion correction: originalText mismatch after {MaxAttempts} attempts (model paraphrased input). CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
+            logger.LogWarning(
+                "Background correction: originalText mismatch after {MaxAttempts} attempts. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
                 MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
-            throw new CorrectionGenerationException(
-                "original_text_mismatch",
-                "Claude returned a paraphrased originalText; tag offsets cannot be trusted.");
+            throw new InvalidOperationException("Claude returned a paraphrased originalText; tag offsets cannot be trusted.");
         }
 
-        var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId);
+        var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId, logger);
 
-        // TOCTOU guard: a concurrent /corregir call could have completed during our Claude
-        // round-trip. Re-check the persisted status before writing tags to avoid duplicate
-        // tag rows (last-write-wins on the parent row is acceptable; duplicate child rows
-        // are not). True atomicity requires a Corrigiendo state + DB-level claim, which
-        // needs a migration; deferred to a follow-up. See plan/code-review-backlog.md.
-        var freshStatus = await _db.Corrections
+        // Confirm still Corrigiendo before writing (concurrent /corregir guard).
+        var freshStatus = await db.Corrections
             .AsNoTracking()
             .Where(c => c.Id == correctionId)
             .Select(c => c.Status)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (freshStatus != CorrectionStatus.Entregada)
+            .FirstOrDefaultAsync();
+        if (freshStatus != CorrectionStatus.Corrigiendo)
         {
-            _logger.LogWarning(
-                "Redaccion correction: another request completed first (status now {Status}). Discarding this run. CorrectionId={CorrectionId}",
+            logger.LogWarning(
+                "Background correction: status changed to {Status} during generation; discarding. CorrectionId={CorrectionId}",
                 freshStatus, correctionId);
-            throw new CorrectionInvalidStateException("already_corrected",
-                "Another request completed this correction concurrently.");
+            return;
         }
 
         var now = DateTime.UtcNow;
@@ -188,7 +206,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         for (var i = 0; i < validatedTags.Count; i++)
         {
             var t = validatedTags[i];
-            _db.CorrectionTags.Add(new CorrectionTag
+            db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
                 CorrectionId = correction.Id,
@@ -202,16 +220,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             });
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(CancellationToken.None);
 
-        _logger.LogInformation(
-            "Redaccion correction generated. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} ModelTokens={InputTokens}/{OutputTokens}",
-            correction.Id, teacherId, studentId, ctx.StudentCefr, ctx.StudentL1 ?? "(none)",
+        logger.LogInformation(
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} ModelTokens={InputTokens}/{OutputTokens}",
+            correctionId, teacherId, studentId, ctx.StudentCefr, ctx.StudentL1 ?? "(none)",
             validatedTags.Count, response.InputTokens, response.OutputTokens);
-
-        // Reload tags through the tracked context so DTO ordering is stable.
-        var persistedTags = correction.Tags.OrderBy(t => t.OrderIndex).ToList();
-        return CorrectionDtoMapper.ToDetail(correction, persistedTags);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -222,8 +236,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         //
         // The trim-trailing-whitespace concern (the model treats the text as ending at the
         // last non-whitespace character when wrapped in markers and does NOT echo the
-        // trailing newline back) is handled at the equality-check site in CorregirAsync, not
-        // here, so the persisted Correction.StudentText stays exactly what the student wrote.
+        // trailing newline back) is handled at the equality-check site in RunCorrectionInScopeAsync,
+        // not here, so the persisted Correction.StudentText stays exactly what the student wrote.
         var studentText = correction.StudentText ?? string.Empty;
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
 
@@ -287,8 +301,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return result;
     }
 
-    private List<RedaccionCorrectionTagDto> ValidateAndOrderTags(
-        IReadOnlyList<RedaccionCorrectionTagDto> rawTags, string originalText, Guid correctionId)
+    private static List<RedaccionCorrectionTagDto> ValidateAndOrderTags(
+        IReadOnlyList<RedaccionCorrectionTagDto> rawTags, string originalText, Guid correctionId, ILogger logger)
     {
         var kept = new List<RedaccionCorrectionTagDto>(rawTags.Count);
         var len = originalText.Length;
@@ -298,12 +312,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             var tag = rawTag;
             if (string.IsNullOrEmpty(tag.Category) || !CorrectionTagCategory.IsValid(tag.Category))
             {
-                _logger.LogWarning("Drop tag: invalid category '{Category}'. CorrectionId={CorrectionId}", tag.Category, correctionId);
+                logger.LogWarning("Drop tag: invalid category '{Category}'. CorrectionId={CorrectionId}", tag.Category, correctionId);
                 continue;
             }
             if (tag.StartIndex < 0 || tag.EndIndex <= tag.StartIndex || tag.EndIndex > len)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Drop tag: bad offsets [{Start},{End}) against text length {Len}. CorrectionId={CorrectionId}",
                     tag.StartIndex, tag.EndIndex, len, correctionId);
                 continue;
@@ -313,17 +327,14 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             {
                 if (string.IsNullOrEmpty(tag.SpannedText))
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
                     continue;
                 }
-                // Rescue: the model reported valid-range offsets but the substring doesn't match.
-                // This is the Unicode boundary drift pattern (model miscounts chars near é/ó/á/ñ).
-                // Locate spannedText by string search; fix offsets if the match is unambiguous.
                 var foundAt = originalText.IndexOf(tag.SpannedText, StringComparison.Ordinal);
                 if (foundAt < 0)
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
                         tag.SpannedText, correctionId);
                     continue;
@@ -331,12 +342,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 var secondAt = originalText.IndexOf(tag.SpannedText, foundAt + 1, StringComparison.Ordinal);
                 if (secondAt >= 0)
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Drop tag: spannedText '{Spanned}' is ambiguous (found at {First} and {Second}); cannot rescue. CorrectionId={CorrectionId}",
                         tag.SpannedText, foundAt, secondAt, correctionId);
                     continue;
                 }
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
                     tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
                 tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
@@ -349,7 +360,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             {
                 if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(correctedForm))
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "MuyBien tag had non-null explanation/correctedForm; coercing to null. CorrectionId={CorrectionId}",
                         correctionId);
                 }
@@ -360,7 +371,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             {
                 if (string.IsNullOrWhiteSpace(explanation) || string.IsNullOrWhiteSpace(correctedForm))
                 {
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Drop tag: category {Category} requires non-empty explanation and correctedForm. CorrectionId={CorrectionId}",
                         tag.Category, correctionId);
                     continue;
@@ -378,7 +389,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             if (tag.StartIndex < lastEnd)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Drop tag: overlaps prior tag (start {Start} < lastEnd {LastEnd}). CorrectionId={CorrectionId}",
                     tag.StartIndex, lastEnd, correctionId);
                 continue;
