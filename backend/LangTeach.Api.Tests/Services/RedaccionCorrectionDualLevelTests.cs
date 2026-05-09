@@ -14,56 +14,76 @@ using Microsoft.Extensions.Options;
 namespace LangTeach.Api.Tests.Services;
 
 /// <summary>
-/// The moat (issue #1153 acceptance criterion #1): the same redacción submitted at
-/// different CEFR levels MUST produce substantively different markup. These tests use
-/// the real Claude API and are opt-in via [SkipIfNoClaudeApiKey].
+/// The moat (issue #1157): the same redacción submitted at different CEFR levels MUST
+/// produce substantively different markup. Uses the real Claude API; opt-in via
+/// [SkipIfNoClaudeApiKey] / AI_INTEGRATION_TESTS=1.
 ///
-/// Seed text contains a deliberate mix of errors:
-///   - "ablar" (h missing) → expected category O (ortografía).
-///   - "voy en mi casa" (wrong preposition) → expected G.
-///   - "hago una foto" (calque from French "faire une photo") → expected L.
-///   - missing connector between two sentences → expected C at B2+.
+/// Seed text (RedaccionMoatSeed.es.txt) contains a deliberate mix of errors:
+///   C: repeated "Y luego … Y luego" connector breaks cohesion at B2+.
+///   G: "hago una foto" (wrong tense, should be "hice"); "depende en su familia"
+///      (wrong preposition, should be "depende de").
+///   L: "amistades viejas" (calque/false-friend; should be "amistades antiguas").
+///   O: "ablamos" (missing h; should be "hablamos").
+///
+/// The test asserts that at least two of the following axes differ across CEFR levels:
+///   - Category distribution (tag counts per category).
+///   - Explanations (concatenated explanation strings are not identical).
+/// On failure the full tag arrays for both levels are printed side-by-side.
 /// </summary>
 public class RedaccionCorrectionDualLevelTests
 {
-    private const string SeedText =
-        "Ayer ablar con mi amigo. Voy en mi casa después de el trabajo. Hago una foto bonita.";
+    private static string SeedText =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "RedaccionMoatSeed.es.txt")).Trim();
 
     [SkipIfNoClaudeApiKey]
-    public async Task DualLevel_A2_vs_B2_FrenchL1_ProducesSubstantivelyDifferentOutput()
+    public async Task DualLevel_A2_vs_B2_ProducesSubstantivelyDifferentOutput()
     {
-        await using var a2 = await RunCorregirAsync("A2", "French");
-        await using var b2 = await RunCorregirAsync("B2", "French");
+        var seed = SeedText;
 
-        var a2Tags = a2.Result.Tags;
-        var b2Tags = b2.Result.Tags;
+        await using var a2Run = await RunCorregirAsync(seed, "A2", "French");
+        await using var b2Run = await RunCorregirAsync(seed, "B2", "German");
 
-        // The moat: at least one of (category distribution, explanation content, ordering)
-        // must differ substantively across levels.
-        var distributionDiffers = !CategoryDistribution(a2Tags).SequenceEqual(CategoryDistribution(b2Tags));
-        var explanationsDiffer = !string.Equals(
-            string.Join("|", a2Tags.Select(t => t.Explanation ?? "")),
-            string.Join("|", b2Tags.Select(t => t.Explanation ?? "")),
-            StringComparison.Ordinal);
+        var a2Tags = a2Run.Result.Tags;
+        var b2Tags = b2Run.Result.Tags;
+
+        var a2Dist = CategoryDistribution(a2Tags);
+        var b2Dist = CategoryDistribution(b2Tags);
+        var distributionDiffers = !a2Dist.SequenceEqual(b2Dist);
+
+        var a2Explanations = string.Join("|", a2Tags.Select(t => t.Explanation ?? ""));
+        var b2Explanations = string.Join("|", b2Tags.Select(t => t.Explanation ?? ""));
+        var explanationsDiffer = !string.Equals(a2Explanations, b2Explanations, StringComparison.Ordinal);
 
         (distributionDiffers || explanationsDiffer).Should().BeTrue(
-            "same redacción at A2 vs B2 must yield substantively different output (the moat). "
-            + $"A2 tags = [{TagSummary(a2Tags)}], B2 tags = [{TagSummary(b2Tags)}]");
+            "same redacción at A2 vs B2 must yield substantively different output (the CEFR moat). "
+            + SideBySide(a2Tags, b2Tags));
 
-        // Category fidelity: the misspelling "ablar" should be tagged O at both levels.
-        var a2Ablar = a2Tags.FirstOrDefault(t => t.SpannedText.Contains("ablar", StringComparison.OrdinalIgnoreCase));
-        var b2Ablar = b2Tags.FirstOrDefault(t => t.SpannedText.Contains("ablar", StringComparison.OrdinalIgnoreCase));
-        if (a2Ablar is not null) a2Ablar.Category.Should().Be("O", "misspelling 'ablar' must be tagged O, not G");
-        if (b2Ablar is not null) b2Ablar.Category.Should().Be("O", "misspelling 'ablar' must be tagged O, not G");
+        // The Ortografía error "ablamos" must be tagged O at both levels.
+        var a2Ablar = a2Tags.FirstOrDefault(t =>
+            t.SpannedText.Contains("ablamos", StringComparison.OrdinalIgnoreCase));
+        var b2Ablar = b2Tags.FirstOrDefault(t =>
+            t.SpannedText.Contains("ablamos", StringComparison.OrdinalIgnoreCase));
+
+        a2Ablar.Should().NotBeNull("misspelling 'ablamos' (missing h) should be tagged at A2");
+        b2Ablar.Should().NotBeNull("misspelling 'ablamos' (missing h) should be tagged at B2");
+        a2Ablar!.Category.Should().Be("O", "misspelling must be tagged O, not another category");
+        b2Ablar!.Category.Should().Be("O", "misspelling must be tagged O, not another category");
     }
 
     private static IEnumerable<string> CategoryDistribution(IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> tags) =>
         tags.GroupBy(t => t.Category).Select(g => $"{g.Key}:{g.Count()}").OrderBy(s => s);
 
-    private static string TagSummary(IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> tags) =>
-        string.Join(", ", tags.Select(t => $"{t.Category}({t.SpannedText})"));
+    private static string SideBySide(
+        IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> a2Tags,
+        IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> b2Tags)
+    {
+        var a2Lines = a2Tags.Select(t => $"  [{t.Category}] \"{t.SpannedText}\" — {t.Explanation}").ToList();
+        var b2Lines = b2Tags.Select(t => $"  [{t.Category}] \"{t.SpannedText}\" — {t.Explanation}").ToList();
+        return $"\n--- A2 tags ({a2Lines.Count}) ---\n{string.Join("\n", a2Lines)}"
+             + $"\n--- B2 tags ({b2Lines.Count}) ---\n{string.Join("\n", b2Lines)}";
+    }
 
-    private static async Task<DualLevelRun> RunCorregirAsync(string cefr, string l1)
+    private static async Task<DualLevelRun> RunCorregirAsync(string seedText, string cefr, string l1)
     {
         var config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true)
@@ -95,8 +115,8 @@ public class RedaccionCorrectionDualLevelTests
         db.Teachers.Add(new Teacher
         {
             Id = teacherId,
-            Auth0UserId = $"auth0|dual-{cefr}",
-            Email = $"dual-{cefr}@test.com",
+            Auth0UserId = $"auth0|dual-{cefr}-{l1}",
+            Email = $"dual-{cefr}-{l1}@test.com",
             DisplayName = "Dual Level",
             IsApproved = true,
             CreatedAt = now, UpdatedAt = now,
@@ -105,7 +125,7 @@ public class RedaccionCorrectionDualLevelTests
         {
             Id = studentId,
             TeacherId = teacherId,
-            Name = "Dual",
+            Name = $"Dual-{cefr}",
             LearningLanguage = "Spanish",
             CefrLevel = cefr,
             NativeLanguages = JsonSerializer.Serialize(new[] { l1 }),
@@ -119,9 +139,9 @@ public class RedaccionCorrectionDualLevelTests
             StudentId = studentId,
             SchemaVersion = 1,
             Status = CorrectionStatus.Entregada,
-            AssignmentTitle = "Dual-level smoke",
-            AssignmentPrompt = "Cuenta tu día.",
-            StudentText = SeedText,
+            AssignmentTitle = "Dual-level moat",
+            AssignmentPrompt = "Cuenta tu fin de semana.",
+            StudentText = seedText,
             CreatedAt = now, UpdatedAt = now,
         });
         await db.SaveChangesAsync();

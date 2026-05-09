@@ -155,13 +155,46 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  ai-integration:
+    name: Backend AI Integration Tests
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: backend
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+        working-directory: backend
+
+      - name: Run AI integration tests
+        run: dotnet test --no-build -c Release
+        working-directory: backend
+        env:
+          AI_INTEGRATION_TESTS: "1"
+          Claude__ApiKey: ${{ secrets.CLAUDE_API_KEY }}
+
   # Filing policy: on failure, if an open issue titled "Nightly E2E failure tracker" exists,
   # a comment is appended to it. If no such issue exists, a new tracker issue is created.
   # This means there is at most one open tracker issue at any time, not one per day.
   notify_failure:
     name: Notify on failure
-    needs: [check-changes, e2e]
-    if: always() && needs.e2e.result != 'success' && needs.e2e.result != 'skipped' && needs.check-changes.outputs.should_run == 'true'
+    needs: [check-changes, e2e, ai-integration]
+    if: >-
+      always() &&
+      needs.check-changes.outputs.should_run == 'true' &&
+      (needs.e2e.result == 'failure' || needs.ai-integration.result == 'failure')
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -170,6 +203,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           E2E_RESULT: ${{ needs.e2e.result }}
+          AI_RESULT: ${{ needs.ai-integration.result }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -189,7 +223,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: tracker.number,
-                body: `Failure on ${today} (result: ${process.env.E2E_RESULT}). Run: ${runUrl}`,
+                body: `Failure on ${today} (e2e: ${process.env.E2E_RESULT}, ai-integration: ${process.env.AI_RESULT}). Run: ${runUrl}`,
               })
               console.log(`Added comment to existing tracker issue #${tracker.number}`)
             } else {
@@ -197,7 +231,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: trackerTitle,
-                body: `Tracking nightly E2E failures. Each run that fails appends a comment here.\n\nFirst failure: ${today} (result: ${process.env.E2E_RESULT}). Run: ${runUrl}`,
+                body: `Tracking nightly failures. Each run that fails appends a comment here.\n\nFirst failure: ${today} (e2e: ${process.env.E2E_RESULT}, ai-integration: ${process.env.AI_RESULT}). Run: ${runUrl}`,
                 labels: ['bug', 'area:e2e'],
                 assignees: ['Robert-Freire'],
               })
