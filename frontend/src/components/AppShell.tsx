@@ -1,4 +1,4 @@
-import { useState, useEffect, type ElementType } from 'react'
+import { useState, useEffect, useCallback, type ElementType } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
@@ -141,6 +141,10 @@ export default function AppShell() {
   const atelierEnabled = isAtelierEnabled(location.pathname)
   const assistantOpen = userWantsOpen && atelierEnabled
 
+  const navigate = useNavigate()
+  const [pickerSessionId, setPickerSessionId] = useState<string | null>(null)
+  const effectiveSessionId = pickerSessionId ?? sessionId
+
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],
     queryFn: () => getStudent(studentId!),
@@ -148,13 +152,21 @@ export default function AppShell() {
     select: (s) => s.name,
   })
 
-  const assistant = useAtelierAssistant(studentId, sessionId)
+  const handleAfterSessionApply = useCallback((appliedSessionId: string) => {
+    setPickerSessionId(null)
+    if (studentId) {
+      navigate(`/students/${studentId}/sessions/${appliedSessionId}/edit`)
+    }
+  }, [studentId, navigate])
+
+  const assistant = useAtelierAssistant(studentId, effectiveSessionId, handleAfterSessionApply)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setDrawerOpen(false)
     if (!isAtelierEnabled(location.pathname)) {
       setUserWantsOpen(false)
+      setPickerSessionId(null)
       assistant.reset()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,14 +188,7 @@ export default function AppShell() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
-  const navigate = useNavigate()
   const toggleAssistant = () => { if (atelierEnabled) setUserWantsOpen(open => !open) }
-
-  function handleNavigateToSession() {
-    if (studentId && assistant.suggestedSessionId) {
-      navigate(`/students/${studentId}/sessions/${assistant.suggestedSessionId}/edit`)
-    }
-  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
@@ -306,8 +311,8 @@ export default function AppShell() {
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
         open={assistantOpen}
-        onClose={() => { setUserWantsOpen(false); assistant.reset() }}
-        onCloseDiscarding={() => { setUserWantsOpen(false); assistant.reset() }}
+        onClose={() => { setUserWantsOpen(false); setPickerSessionId(null); assistant.reset() }}
+        onCloseDiscarding={() => { setUserWantsOpen(false); setPickerSessionId(null); assistant.reset() }}
         studentName={studentData}
         transcription={assistant.transcription}
         processing={assistant.processing}
@@ -322,9 +327,8 @@ export default function AppShell() {
         onDismissAll={assistant.dismissAll}
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
-        sessionId={sessionId}
-        suggestedSessionId={assistant.suggestedSessionId}
-        onNavigateToSession={handleNavigateToSession}
+        sessionId={effectiveSessionId}
+        onSelectSession={setPickerSessionId}
       />
     </div>
   )

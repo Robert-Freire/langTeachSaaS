@@ -541,32 +541,6 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('error')
   })
 
-  it('submit: captures suggestedSessionId from propose response when sessionId is null', async () => {
-    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
-    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
-    act(() => { result.current.submit('text') })
-    await act(async () => { await vi.runAllTimersAsync() })
-    expect(result.current.suggestedSessionId).toBe('session-xyz')
-  })
-
-  it('submit: does not capture suggestedSessionId when sessionId is already in scope', async () => {
-    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
-    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
-    act(() => { result.current.submit('text') })
-    await act(async () => { await vi.runAllTimersAsync() })
-    expect(result.current.suggestedSessionId).toBeNull()
-  })
-
-  it('reset: clears suggestedSessionId', async () => {
-    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
-    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
-    act(() => { result.current.submit('text') })
-    await act(async () => { await vi.runAllTimersAsync() })
-    expect(result.current.suggestedSessionId).toBe('session-xyz')
-    act(() => { result.current.reset() })
-    expect(result.current.suggestedSessionId).toBeNull()
-  })
-
   it('applyAll: skips session proposals when sessionId is null', async () => {
     mockPropose.mockResolvedValueOnce({ proposals: sampleProposals })
     mockApplyStudent.mockResolvedValueOnce(undefined)

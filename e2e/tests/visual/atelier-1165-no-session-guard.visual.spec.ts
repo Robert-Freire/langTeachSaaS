@@ -46,16 +46,19 @@ test('@visual atelier-1165 no-session-banner visible on student profile', async 
   await expect(page.locator('[data-testid="proposals-list"]')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.waitForLoadState('networkidle', { timeout: UI_TIMEOUT })
 
-  // The no-session banner must be present
-  const banner = page.locator('[data-testid="no-session-banner"]')
+  // The session picker banner must be present
+  const banner = page.locator('[data-testid="session-picker-banner"]')
   await expect(banner).toBeVisible({ timeout: UI_TIMEOUT })
+
+  // "+ New session" row must be present
+  await expect(page.locator('[data-testid="session-picker-new"]')).toBeVisible({ timeout: UI_TIMEOUT })
 
   // At least one Apply button must be disabled (session-type proposals)
   const disabledApplyBtns = page.locator('[data-testid^="apply-btn-"]:disabled')
   expect(await disabledApplyBtns.count()).toBeGreaterThan(0)
 
   await banner.scrollIntoViewIfNeeded()
-  await page.screenshot({ path: 'screenshots/atelier-1165-no-session-banner.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/atelier-1165-session-picker-banner.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
