@@ -287,6 +287,8 @@ test('@visual student detail redacciones tab - correction list', async ({ browse
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.getByTestId('tab-redacciones').click()
   await expect(page.getByTestId('redacciones-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Wait for the list to resolve (not the skeleton loading state).
+  await expect(page.getByTestId('redacciones-list').or(page.getByTestId('redacciones-empty'))).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/student-detail-redacciones-tab.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
