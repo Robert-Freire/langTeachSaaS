@@ -267,3 +267,28 @@ test('@visual student detail overview tab - with sessions', async ({ browser }) 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
   await context.close()
 })
+
+test('@visual student detail redacciones tab - correction list', async ({ browser }) => {
+  fs.mkdirSync('screenshots', { recursive: true })
+  const context = await createMockAuthContext(browser)
+  const page = await context.newPage()
+  const consoleErrors: string[] = []
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()) })
+
+  // Ana Visual has a seeded Corregida correction visible in this tab.
+  const res = await page.request.get(`${API_BASE}/api/students`, { headers: { Authorization: 'Bearer test-token' } })
+  expect(res.ok()).toBeTruthy()
+  const body = await res.json()
+  const students: Array<{ name?: string; id: string }> = Array.isArray(body) ? body : (body.items ?? body.data ?? [])
+  const ana = students.find((s: { name?: string }) => s.name === 'Ana Visual')
+  if (!ana) throw new Error('No "Ana Visual" student found. Run start-visual-stack.sh first.')
+
+  await page.goto(`/students/${ana.id}`)
+  await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
+  await page.getByTestId('tab-redacciones').click()
+  await expect(page.getByTestId('redacciones-tab')).toBeVisible({ timeout: UI_TIMEOUT })
+  await page.screenshot({ path: 'screenshots/student-detail-redacciones-tab.png', fullPage: true })
+
+  expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
+  await context.close()
+})
