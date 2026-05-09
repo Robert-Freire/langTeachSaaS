@@ -24,9 +24,10 @@ public class CorrectionService : ICorrectionService
             return null;
 
         // Staleness recovery: a background AI task that failed silently leaves the
-        // correction stuck in Corrigiendo. After 60 seconds we revert to Entregada
-        // so the teacher can retry via the Corregir button.
-        var staleThreshold = DateTime.UtcNow.AddSeconds(-60);
+        // correction stuck in Corrigiendo. After StaleCorrigiendoSeconds we revert to
+        // Entregada so the teacher can retry. Must exceed p99 Claude latency (~30s).
+        const int StaleCorrigiendoSeconds = 60;
+        var staleThreshold = DateTime.UtcNow.AddSeconds(-StaleCorrigiendoSeconds);
         var stale = await _db.Corrections
             .Where(c => c.TeacherId == teacherId && c.StudentId == studentId
                      && c.DeletedAt == null

@@ -80,7 +80,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             catch (Exception ex)
             {
                 logger.LogError(ex,
-                    "Background correction failed silently. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
+                    "Background correction failed silently; row stays Corrigiendo until CorrectionService.ListAsync staleness sweep resets it to Entregada. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
                     correctionId, teacherId, studentId);
             }
         });
