@@ -243,7 +243,7 @@ function CorrectionCard({
           </p>
           <div className="mt-1 flex items-center gap-2">
             <span
-              className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md ${
+              className={`text-[0.6875rem] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full ${
                 isGenerating ? 'bg-amber-50 text-amber-800 animate-pulse' : STATUS_BADGE[status]
               }`}
               data-testid={`redaccion-status-${id}`}
