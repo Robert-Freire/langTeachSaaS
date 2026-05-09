@@ -1708,6 +1708,8 @@ public class PromptService : IPromptService
 
     // --- Replan suggestion ---
 
+    // ReplanSuggestionContext operates at course level (not per student interaction), so it does
+    // not carry student L1. The opener cannot reference native language; callers do not inject it.
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx)
     {
         var system = $$"""

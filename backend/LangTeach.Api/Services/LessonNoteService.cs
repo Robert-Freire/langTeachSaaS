@@ -30,7 +30,7 @@ public class LessonNoteService : ILessonNoteService
             note.WhatWasCovered,
             note.HomeworkAssigned,
             note.AreasToImprove,
-            note.NextLessonIdeas,
+            note.NextSessionTopics,
             note.EmotionalSignals
         );
     }
@@ -62,7 +62,7 @@ public class LessonNoteService : ILessonNoteService
                 WhatWasCovered = request.WhatWasCovered,
                 HomeworkAssigned = request.HomeworkAssigned,
                 AreasToImprove = request.AreasToImprove,
-                NextLessonIdeas = request.NextLessonIdeas,
+                NextSessionTopics = request.NextSessionTopics,
                 EmotionalSignals = request.EmotionalSignals,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -75,7 +75,7 @@ public class LessonNoteService : ILessonNoteService
             note.WhatWasCovered = request.WhatWasCovered;
             note.HomeworkAssigned = request.HomeworkAssigned;
             note.AreasToImprove = request.AreasToImprove;
-            note.NextLessonIdeas = request.NextLessonIdeas;
+            note.NextSessionTopics = request.NextSessionTopics;
             note.EmotionalSignals = request.EmotionalSignals;
             note.UpdatedAt = now;
             _logger.LogInformation("Updated LessonNote {NoteId} for Lesson {LessonId}", note.Id, lessonId);
@@ -89,7 +89,7 @@ public class LessonNoteService : ILessonNoteService
             note.WhatWasCovered,
             note.HomeworkAssigned,
             note.AreasToImprove,
-            note.NextLessonIdeas,
+            note.NextSessionTopics,
             note.EmotionalSignals
         );
     }
@@ -110,7 +110,7 @@ public class LessonNoteService : ILessonNoteService
                 !string.IsNullOrWhiteSpace(x.Note.WhatWasCovered) ||
                 !string.IsNullOrWhiteSpace(x.Note.HomeworkAssigned) ||
                 !string.IsNullOrWhiteSpace(x.Note.AreasToImprove) ||
-                !string.IsNullOrWhiteSpace(x.Note.NextLessonIdeas) ||
+                !string.IsNullOrWhiteSpace(x.Note.NextSessionTopics) ||
                 !string.IsNullOrWhiteSpace(x.Note.EmotionalSignals)
             )
             .OrderByDescending(x => x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt)
@@ -123,7 +123,7 @@ public class LessonNoteService : ILessonNoteService
                 x.Note.WhatWasCovered,
                 x.Note.HomeworkAssigned,
                 x.Note.AreasToImprove,
-                x.Note.NextLessonIdeas,
+                x.Note.NextSessionTopics,
                 x.Note.EmotionalSignals,
                 FollowingSessionHomeworkStatus = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted
@@ -142,7 +142,7 @@ public class LessonNoteService : ILessonNoteService
             x.WhatWasCovered,
             x.HomeworkAssigned,
             x.AreasToImprove,
-            x.NextLessonIdeas,
+            x.NextSessionTopics,
             x.EmotionalSignals,
             x.FollowingSessionHomeworkStatus,
             x.FollowingSessionHomeworkStatus?.ToString()

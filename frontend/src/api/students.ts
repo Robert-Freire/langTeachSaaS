@@ -163,7 +163,7 @@ export interface LessonHistoryEntry {
   whatWasCovered: string | null
   homeworkAssigned: string | null
   areasToImprove: string | null
-  nextLessonIdeas: string | null
+  nextSessionTopics: string | null
   emotionalSignals: string | null
   followingSessionHomeworkStatus: number | null
   followingSessionHomeworkStatusName: string | null

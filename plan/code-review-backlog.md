@@ -104,3 +104,18 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 "Tags MUST NOT overlap. Sort tags by startIndex." -- redundant with service-layer enforcement
 (`ValidateAndOrderTags` sorts by StartIndex and drops overlapping tags). The instruction is
 net-positive model guidance but wastes tokens. Consider trimming in a future prompt-health pass.
+
+## #1177 arch note (2026-05-09)
+
+`LessonNote.NextSessionTopics` uses `[Column("NextLessonIdeas")]` to map the renamed C# property to
+the existing DB column without a migration. This is the sole use of `DataAnnotations.Schema` in
+`Data/Models/`. All other column-name conventions use EF Fluent API in `AppDbContext.cs`. Acceptable
+as a temporary measure (dotnet-ef unavailable in this env); should be migrated to a proper column
+rename (`RenameColumn`) in a future maintenance window to align with the zero-annotation model
+convention.
+
+## #1177 prompt-health notes (2026-05-09)
+
+Pre-existing (unrelated to PR):
+- `BuildSectionConversationPrompt` (L844-847): `forbiddenReasons` injected as negative list alongside positive guidance. Consider surfacing via guidance string instead.
+- `BuildSystemPrompt` (L606-608): second sentence duplicates first ("self-contained" stated twice). Merge to one sentence.

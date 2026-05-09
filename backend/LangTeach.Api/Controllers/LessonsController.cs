@@ -1,5 +1,6 @@
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using LangTeach.Api.Services;
 using LangTeach.Api.Services.PdfExport;
 using Microsoft.AspNetCore.Authorization;
@@ -218,8 +219,7 @@ public class LessonsController : ControllerBase
 
         var pdfBytes = _pdfExportService.GeneratePdf(pdfData, exportMode);
         var modeLabel = exportMode == PdfExportMode.Teacher ? "Teacher" : "Student";
-        var safeTitle = string.Concat(pdfData.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        var filename = $"{safeTitle.Replace(" ", "_")}_{modeLabel}.pdf";
+        var filename = $"{FileNameHelper.SanitizeTitle(pdfData.Title)}_{modeLabel}.pdf";
 
         _logger.LogInformation(
             "GET /api/lessons/{LessonId}/export/pdf?mode={Mode}. TeacherId={TeacherId}",

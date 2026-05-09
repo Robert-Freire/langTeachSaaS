@@ -160,7 +160,7 @@ export interface LessonNotesDto {
   whatWasCovered: string | null
   homeworkAssigned: string | null
   areasToImprove: string | null
-  nextLessonIdeas: string | null
+  nextSessionTopics: string | null
   emotionalSignals: string | null
 }
 
@@ -168,7 +168,7 @@ export interface SaveLessonNotesRequest {
   whatWasCovered?: string | null
   homeworkAssigned?: string | null
   areasToImprove?: string | null
-  nextLessonIdeas?: string | null
+  nextSessionTopics?: string | null
   emotionalSignals?: string | null
 }
 
@@ -177,7 +177,7 @@ export interface ExtractedReflection {
   areasToImprove: string | null
   emotionalSignals: string | null
   homeworkAssigned: string | null
-  nextLessonIdeas: string | null
+  nextSessionTopics: string | null
 }
 
 export async function getLessonNotes(lessonId: string): Promise<LessonNotesDto | null> {

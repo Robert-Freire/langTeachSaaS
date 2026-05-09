@@ -10,7 +10,7 @@ public record LessonHistoryEntryDto(
     string? WhatWasCovered,
     string? HomeworkAssigned,
     string? AreasToImprove,
-    string? NextLessonIdeas,
+    string? NextSessionTopics,
     string? EmotionalSignals,
     HomeworkStatus? FollowingSessionHomeworkStatus,
     string? FollowingSessionHomeworkStatusName

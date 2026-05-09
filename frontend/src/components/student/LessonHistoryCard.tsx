@@ -12,11 +12,11 @@ interface LessonHistoryCardProps {
   studentId: string
 }
 
-const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextLessonIdeas' | 'emotionalSignals'; label: string; testId: string }[] = [
+const NOTE_LABELS: { key: 'whatWasCovered' | 'homeworkAssigned' | 'areasToImprove' | 'nextSessionTopics' | 'emotionalSignals'; label: string; testId: string }[] = [
   { key: 'whatWasCovered', label: 'Covered', testId: 'lesson-history-whatWasCovered' },
   { key: 'homeworkAssigned', label: 'Homework', testId: 'lesson-history-homeworkAssigned' },
   { key: 'areasToImprove', label: 'Improve', testId: 'lesson-history-areasToImprove' },
-  { key: 'nextLessonIdeas', label: 'Next ideas', testId: 'lesson-history-nextLessonIdeas' },
+  { key: 'nextSessionTopics', label: 'Next topics', testId: 'lesson-history-nextSessionTopics' },
   { key: 'emotionalSignals', label: 'Emotional', testId: 'lesson-history-emotional-signals' },
 ]
 

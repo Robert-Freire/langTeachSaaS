@@ -327,12 +327,12 @@ public class AssistantControllerTests
     }
 
     [Fact]
-    public async Task Propose_WithLongTermAimAndNextLessonIdeas_EmitsBothProposalsSeparately()
+    public async Task Propose_WithLongTermAimAndNextSessionTopics_EmitsBothProposalsSeparately()
     {
         // AC2 (#1135): a transcript containing BOTH a long-term student aim AND a next-class
         // planning aside must produce exactly two separate proposal cards with no overlap.
         // Stub: [has-learning-goals] returns ShortTermObjectives = "Presentaciones en español"
-        //       reflection stub always returns NextLessonIdeas = "[Extracted] Next lesson ideas"
+        //       reflection stub always returns NextSessionTopics = "[Extracted] Next session topics"
         var (client, studentId) = await SeedTeacherWithStudent(
             "auth0|assistant-dual-content", "assistant-dual-content@example.com");
 
