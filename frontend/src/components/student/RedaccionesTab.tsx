@@ -235,10 +235,10 @@ function CorrectionCard({
           </p>
           <div className="mt-1 flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full ${STATUS_BADGE[status]}`}
+              className={`inline-flex items-center gap-1.5 text-[0.6875rem] font-semibold tracking-wide uppercase px-2.5 py-1 rounded-full ${STATUS_BADGE[status]}`}
               data-testid={`redaccion-status-${id}`}
             >
-              {isCorrigiendo && <Loader2 className="h-3 w-3 animate-spin" />}
+              {isCorrigiendo && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />}
               {status}
             </span>
             <span className="text-xs text-zinc-400" data-testid={`redaccion-date-${id}`}>
