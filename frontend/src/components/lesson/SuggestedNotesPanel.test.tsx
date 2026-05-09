@@ -8,7 +8,7 @@ const fullSuggestions: ExtractedReflection = {
   areasToImprove: 'Irregular verbs',
   emotionalSignals: 'Student was engaged',
   homeworkAssigned: 'Exercises 1-5',
-  nextLessonIdeas: 'Present perfect',
+  nextSessionTopics: 'Present perfect',
 }
 
 describe('SuggestedNotesPanel', () => {
@@ -33,7 +33,7 @@ describe('SuggestedNotesPanel', () => {
       areasToImprove: 'Irregular verbs',
       emotionalSignals: 'Student was engaged',
       homeworkAssigned: 'Exercises 1-5',
-      nextLessonIdeas: 'Present perfect',
+      nextSessionTopics: 'Present perfect',
     }))
   })
 
@@ -61,7 +61,7 @@ describe('SuggestedNotesPanel', () => {
       areasToImprove: null,
       emotionalSignals: null,
       homeworkAssigned: null,
-      nextLessonIdeas: null,
+      nextSessionTopics: null,
     }
     render(<SuggestedNotesPanel suggestions={emptySuggestions} onApplyAll={vi.fn()} onDismiss={vi.fn()} />)
 

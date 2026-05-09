@@ -91,7 +91,7 @@ public class LessonNotesControllerTests
             WhatWasCovered = "Past tense verbs",
             HomeworkAssigned = "Exercises 1-5",
             AreasToImprove = "Irregular verbs",
-            NextLessonIdeas = "Present perfect",
+            NextSessionTopics = "Present perfect",
         };
 
         var putResponse = await client.PutAsJsonAsync($"/api/lessons/{lessonId}/notes", request);
@@ -105,7 +105,7 @@ public class LessonNotesControllerTests
         var getDto = await getResponse.Content.ReadFromJsonAsync<LessonNotesDto>();
         getDto!.WhatWasCovered.Should().Be("Past tense verbs");
         getDto.AreasToImprove.Should().Be("Irregular verbs");
-        getDto.NextLessonIdeas.Should().Be("Present perfect");
+        getDto.NextSessionTopics.Should().Be("Present perfect");
     }
 
     [Fact]

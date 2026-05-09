@@ -20,7 +20,7 @@ const FIELDS: { key: keyof SaveLessonNotesRequest; label: string }[] = [
   { key: 'areasToImprove', label: 'Areas to improve' },
   { key: 'emotionalSignals', label: 'Emotional observations' },
   { key: 'homeworkAssigned', label: 'Homework assigned' },
-  { key: 'nextLessonIdeas', label: 'Next lesson ideas' },
+  { key: 'nextSessionTopics', label: 'Next session topics' },
 ]
 
 export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
@@ -29,7 +29,7 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
     areasToImprove: '',
     emotionalSignals: '',
     homeworkAssigned: '',
-    nextLessonIdeas: '',
+    nextSessionTopics: '',
   })
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -55,7 +55,7 @@ export function LessonNotesCard({ lessonId, studentId }: LessonNotesCardProps) {
         areasToImprove: notes.areasToImprove ?? '',
         emotionalSignals: notes.emotionalSignals ?? '',
         homeworkAssigned: notes.homeworkAssigned ?? '',
-        nextLessonIdeas: notes.nextLessonIdeas ?? '',
+        nextSessionTopics: notes.nextSessionTopics ?? '',
       }
       setForm(loaded)
       lastSavedRef.current = JSON.stringify(loaded)

@@ -17,7 +17,7 @@ const SUGGESTION_FIELDS: {
   { key: 'areasToImprove', formKey: 'areasToImprove', label: 'Areas to improve' },
   { key: 'emotionalSignals', formKey: 'emotionalSignals', label: 'Emotional observations' },
   { key: 'homeworkAssigned', formKey: 'homeworkAssigned', label: 'Homework assigned' },
-  { key: 'nextLessonIdeas', formKey: 'nextLessonIdeas', label: 'Next lesson ideas' },
+  { key: 'nextSessionTopics', formKey: 'nextSessionTopics', label: 'Next session topics' },
 ]
 
 export function SuggestedNotesPanel({ suggestions, onApplyAll, onDismiss }: SuggestedNotesPanelProps) {

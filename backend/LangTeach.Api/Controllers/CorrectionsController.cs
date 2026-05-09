@@ -1,9 +1,8 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Text;
-using System.Text.RegularExpressions;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using LangTeach.Api.Services;
 using LangTeach.Api.Services.CorrectionDocxExport;
 using Microsoft.AspNetCore.Authorization;
@@ -144,7 +143,7 @@ public class CorrectionsController : ControllerBase
 
         var bytes = _docxExport.Generate(data.Detail, data.StudentName);
         var dateStr = (data.Detail.CorrectedAt ?? data.Detail.UpdatedAt).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        var slug = SlugifyName(data.StudentName);
+        var slug = FileNameHelper.SlugifyName(data.StudentName);
         var asciiName = $"redaccion-{slug}-{dateStr}.docx";
         var utf8Name = $"redaccion-{data.StudentName}-{dateStr}.docx";
 
@@ -159,20 +158,6 @@ public class CorrectionsController : ControllerBase
         Response.Headers.ContentDisposition = disposition.ToString();
 
         return File(bytes, DocxContentType);
-    }
-
-    private static string SlugifyName(string name)
-    {
-        var folded = name.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder();
-        foreach (var ch in folded)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark) continue;
-            sb.Append(ch);
-        }
-        var ascii = sb.ToString().ToLowerInvariant();
-        var slug = Regex.Replace(ascii, "[^a-z0-9]+", "-").Trim('-');
-        return string.IsNullOrEmpty(slug) ? "student" : slug;
     }
 
     [HttpDelete("{id:guid}")]

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace LangTeach.Api.Data.Models;
 
 public class LessonNote
@@ -9,7 +11,8 @@ public class LessonNote
     public string? WhatWasCovered { get; set; }
     public string? HomeworkAssigned { get; set; }
     public string? AreasToImprove { get; set; }
-    public string? NextLessonIdeas { get; set; }
+    [Column("NextLessonIdeas")]
+    public string? NextSessionTopics { get; set; }
     public string? EmotionalSignals { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
