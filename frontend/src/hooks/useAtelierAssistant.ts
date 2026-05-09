@@ -199,7 +199,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-        onAfterSessionApply?.(sessionId)
+        Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
