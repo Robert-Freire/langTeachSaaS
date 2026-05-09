@@ -69,6 +69,7 @@ test('@visual atelier-1029 new-session-proposal-no-student', async ({ browser })
   const assistantBtn = page.locator('[data-testid="open-assistant-btn"]').first()
   await expect(assistantBtn).toBeVisible({ timeout: UI_TIMEOUT })
   await expect(assistantBtn).toBeDisabled({ timeout: UI_TIMEOUT })
+  await expect(assistantBtn).toHaveAttribute('aria-disabled', 'true')
 
   await page.screenshot({ path: 'screenshots/atelier-1029-new-session-proposal-no-student.png', fullPage: true })
 
