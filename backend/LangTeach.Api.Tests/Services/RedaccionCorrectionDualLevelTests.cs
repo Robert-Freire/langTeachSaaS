@@ -50,8 +50,12 @@ public class RedaccionCorrectionDualLevelTests
         var b2Dist = CategoryDistribution(b2Tags);
         var distributionDiffers = !a2Dist.SequenceEqual(b2Dist);
 
-        var a2Explanations = string.Join("|", a2Tags.Select(t => t.Explanation ?? ""));
-        var b2Explanations = string.Join("|", b2Tags.Select(t => t.Explanation ?? ""));
+        var a2Explanations = string.Join("|", a2Tags
+            .Select(t => $"{t.Category}|{t.SpannedText}|{t.Explanation ?? ""}")
+            .OrderBy(x => x, StringComparer.Ordinal));
+        var b2Explanations = string.Join("|", b2Tags
+            .Select(t => $"{t.Category}|{t.SpannedText}|{t.Explanation ?? ""}")
+            .OrderBy(x => x, StringComparer.Ordinal));
         var explanationsDiffer = !string.Equals(a2Explanations, b2Explanations, StringComparison.Ordinal);
 
         (distributionDiffers || explanationsDiffer).Should().BeTrue(
@@ -60,9 +64,9 @@ public class RedaccionCorrectionDualLevelTests
 
         // The Ortografía error "ablamos" must be tagged O at both levels.
         var a2Ablar = a2Tags.FirstOrDefault(t =>
-            t.SpannedText.Contains("ablamos", StringComparison.OrdinalIgnoreCase));
+            t.SpannedText?.Contains("ablamos", StringComparison.OrdinalIgnoreCase) == true);
         var b2Ablar = b2Tags.FirstOrDefault(t =>
-            t.SpannedText.Contains("ablamos", StringComparison.OrdinalIgnoreCase));
+            t.SpannedText?.Contains("ablamos", StringComparison.OrdinalIgnoreCase) == true);
 
         a2Ablar.Should().NotBeNull("misspelling 'ablamos' (missing h) should be tagged at A2");
         b2Ablar.Should().NotBeNull("misspelling 'ablamos' (missing h) should be tagged at B2");
