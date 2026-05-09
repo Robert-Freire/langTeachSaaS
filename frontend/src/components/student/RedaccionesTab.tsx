@@ -336,6 +336,14 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
   const studentTextLocked = isEdit && statusFromLoad === 'Corregida'
   const canSave = titleValid && !isSaving && (!isEdit || hydrated)
 
+  const isPendienteEdit = isEdit && statusFromLoad === 'Pendiente'
+  const hasText = text.trim().length > 0
+  const saveLabel = !isEdit && hasText
+    ? 'Corregir'
+    : isPendienteEdit && hasText
+      ? 'Guardar y marcar como entregada'
+      : 'Guardar'
+
   async function handleSave() {
     if (!canSave) return
     setSubmitError(null)
@@ -346,14 +354,11 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
         const body: CreateCorrectionRequest = {}
         if (trimmedTitle !== detail.assignmentTitle) body.assignmentTitle = trimmedTitle
         const promptVal = prompt.trim() ? prompt : null
-        if (promptVal !== (detail.assignmentPrompt ?? null) && prompt !== (detail.assignmentPrompt ?? '')) {
+        if (promptVal !== (detail.assignmentPrompt ?? null)) {
           body.assignmentPrompt = prompt.length > 0 ? prompt : null
         }
         if (!studentTextLocked) {
-          const textVal = text.length > 0 ? text : null
-          if (textVal !== (detail.studentText ?? null)) {
-            body.studentText = textVal
-          }
+          body.studentText = text.length > 0 ? text : null
         }
         if (Object.keys(body).length === 0) {
           onSaved()
@@ -361,11 +366,18 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
         }
         await updateCorrection(studentId, editId as string, body)
       } else {
-        await createCorrection(studentId, {
+        const newCorrection = await createCorrection(studentId, {
           assignmentTitle: trimmedTitle,
           assignmentPrompt: prompt.length > 0 ? prompt : null,
           studentText: text.length > 0 ? text : null,
         })
+        if (text.trim().length > 0) {
+          try {
+            await corregirCorrection(studentId, newCorrection.id)
+          } catch {
+            // correction was saved as Entregada; corregir can be retried from the card
+          }
+        }
       }
       onSaved()
     } catch (err: unknown) {
@@ -521,7 +533,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
               className="min-w-[120px]"
               data-testid="correction-drawer-save"
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveLabel}
             </Button>
           </div>
         </div>

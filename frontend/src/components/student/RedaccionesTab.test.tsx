@@ -226,6 +226,80 @@ describe('RedaccionesTab', () => {
     expect(screen.queryByTestId(`redaccion-corregir-${corregida.id}`)).not.toBeInTheDocument()
   })
 
+  it('PENDIENTE edit: pasting text and saving calls updateCorrection with studentText', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([pendiente])
+    vi.mocked(correctionsApi.getCorrection).mockResolvedValue(detail)
+    vi.mocked(correctionsApi.updateCorrection).mockResolvedValue({ ...detail, status: 'Entregada', studentText: 'Gavin text' })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redaccion-edit-c-pend'))
+    fireEvent.change(await screen.findByTestId('correction-drawer-text'), {
+      target: { value: 'Gavin text' },
+    })
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      expect(correctionsApi.updateCorrection).toHaveBeenCalledWith(
+        STUDENT_ID,
+        'c-pend',
+        expect.objectContaining({ studentText: 'Gavin text' }),
+      )
+    })
+  })
+
+  it('PENDIENTE edit: save button shows "Guardar y marcar como entregada" when text is present', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([pendiente])
+    vi.mocked(correctionsApi.getCorrection).mockResolvedValue(detail)
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redaccion-edit-c-pend'))
+    await screen.findByTestId('correction-drawer-text')
+    expect(screen.getByTestId('correction-drawer-save')).toHaveTextContent('Guardar')
+
+    fireEvent.change(screen.getByTestId('correction-drawer-text'), {
+      target: { value: 'Gavin text' },
+    })
+    expect(screen.getByTestId('correction-drawer-save')).toHaveTextContent('Guardar y marcar como entregada')
+  })
+
+  it('create with text: clicking Corregir calls createCorrection then corregirCorrection', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new-id', status: 'Entregada' })
+    vi.mocked(correctionsApi.corregirCorrection).mockResolvedValue()
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    fireEvent.change(screen.getByTestId('correction-drawer-title'), { target: { value: 'Carta' } })
+    fireEvent.change(screen.getByTestId('correction-drawer-text'), { target: { value: 'Gavin text' } })
+
+    expect(screen.getByTestId('correction-drawer-save')).toHaveTextContent('Corregir')
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      expect(correctionsApi.createCorrection).toHaveBeenCalledWith(STUDENT_ID, expect.objectContaining({ studentText: 'Gavin text' }))
+    })
+    await waitFor(() => {
+      expect(correctionsApi.corregirCorrection).toHaveBeenCalledWith(STUDENT_ID, 'new-id')
+    })
+  })
+
+  it('create without text: clicking Guardar does NOT call corregirCorrection', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new-id' })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    fireEvent.change(screen.getByTestId('correction-drawer-title'), { target: { value: 'Carta' } })
+
+    expect(screen.getByTestId('correction-drawer-save')).toHaveTextContent('Guardar')
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      expect(correctionsApi.createCorrection).toHaveBeenCalled()
+    })
+    expect(correctionsApi.corregirCorrection).not.toHaveBeenCalled()
+  })
+
   it('Delete removes the card via mutation and refetch', async () => {
     vi.mocked(correctionsApi.listCorrections)
       .mockResolvedValueOnce([pendiente])
