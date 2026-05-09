@@ -435,20 +435,20 @@ export default function AtelierAssistantPanel({
                       </div>
                     )}
                     <div className="space-y-2">
-                    {proposals.map(proposal => (
-                      <ProposalCard
-                        key={proposal.id}
-                        proposal={proposal}
-                        onApply={onApply}
-                        onDismiss={onDismiss}
-                        onUndo={onUndo}
-                        onRetry={onRetry}
-                        onModify={onModify}
-                        onEditPayload={onEditPayload}
-                        studentId={studentId}
-                        sessionContextMissing={sessionContextMissing}
-                      />
-                    ))}
+                      {proposals.map(proposal => (
+                        <ProposalCard
+                          key={proposal.id}
+                          proposal={proposal}
+                          onApply={onApply}
+                          onDismiss={onDismiss}
+                          onUndo={onUndo}
+                          onRetry={onRetry}
+                          onModify={onModify}
+                          onEditPayload={onEditPayload}
+                          studentId={studentId}
+                          sessionContextMissing={sessionContextMissing}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}

@@ -8,6 +8,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate lacks [RegularExpression] format attribute; invalid dates accepted at model-binding boundary and silently become null (Sophy) |
 | #1065 | 2026-05-04 | low | Todo trigger phrases ("añade un teaching todo", etc.) duplicated in two PromptService.cs blocks; should be extracted to data/atelier/intent-triggers.json in a future cleanup (Sophy) |
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate is string? while sibling CreateTeacherFollowupRequest.DueDate is DateOnly?; inconsistent binding strategy for same entity field (arch review) |
+| #1165 | 2026-05-09 | low | AssistantProposeRequest uses `SessionId` but AssistantProposeResponse uses `SessionLogId` for the same entity; naming asymmetry in the API contract (Sophy) |
 | #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
 | #1153 | 2026-05-08 | low | `frontend/src/pages/StudentForm.test.tsx > "includes identity fields in form submission"` is flaky under parallel vitest load (1 fail in full run, 72/72 pass when isolated). Pre-existing, unrelated to redacciones. |
 | #1155 | 2026-05-08 | low | Correction status pill (CORREGIDA/Entregada/Pendiente) is a new pattern, not covered by design-system.md; needs Vera spec before reuse (review-ui) |
