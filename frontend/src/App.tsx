@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { apiClient, setupAuthInterceptor } from './lib/apiClient'
@@ -63,6 +63,7 @@ export default function App() {
               <Route element={<ProtectedRoute><OnboardingGuard /></ProtectedRoute>}>
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Navigate to="/" replace />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/students" element={<Students />} />
                   <Route path="/students/new" element={<StudentForm />} />
