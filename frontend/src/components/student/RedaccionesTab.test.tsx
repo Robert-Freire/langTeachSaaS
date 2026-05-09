@@ -138,6 +138,22 @@ describe('RedaccionesTab', () => {
     expect(save).not.toBeDisabled()
   })
 
+  it('submitting create form with blank title auto-generates Redacción YYYY-MM-DD', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new' })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    // leave title blank, just click save
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      const call = vi.mocked(correctionsApi.createCorrection).mock.calls[0]
+      const body = call[1] as { assignmentTitle?: string }
+      expect(body.assignmentTitle).toMatch(/^Redacción \d{4}-\d{2}-\d{2}$/)
+    })
+  })
+
   it('submitting create form calls createCorrection with trimmed title and optional fields', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
     vi.mocked(correctionsApi.createCorrection).mockResolvedValue({
