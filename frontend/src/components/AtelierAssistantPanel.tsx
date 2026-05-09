@@ -438,7 +438,7 @@ export default function AtelierAssistantPanel({
                   <div className="space-y-3" data-testid="proposals-list">
                     {hasSessionProposalsWithoutContext && (
                       <div
-                        className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50 border border-violet-100"
+                        className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50"
                         data-testid="session-picker-banner"
                       >
                         <p className="text-xs font-inter text-violet-700 leading-snug mb-1">
