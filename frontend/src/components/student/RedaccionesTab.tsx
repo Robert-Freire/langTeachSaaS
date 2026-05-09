@@ -46,15 +46,9 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['corrections', studentId],
     queryFn: () => listCorrections(studentId),
+    refetchInterval: (query) =>
+      query.state.data?.some((c) => c.status === 'Corrigiendo') ? 3000 : false,
   })
-
-  // Poll every 3 seconds while any correction is in Corrigiendo state.
-  useEffect(() => {
-    const hasCorrigiendo = data?.some((c) => c.status === 'Corrigiendo') ?? false
-    if (!hasCorrigiendo) return
-    const id = setInterval(() => { void refetch() }, 3000)
-    return () => clearInterval(id)
-  }, [data, refetch])
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['corrections', studentId] })
