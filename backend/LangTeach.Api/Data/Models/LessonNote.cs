@@ -11,6 +11,8 @@ public class LessonNote
     public string? WhatWasCovered { get; set; }
     public string? HomeworkAssigned { get; set; }
     public string? AreasToImprove { get; set; }
+    // DB column name preserved from the original "NextLessonIdeas" to avoid a migration.
+    // C# property renamed to NextSessionTopics to align with SessionLog.NextSessionTopics.
     [Column("NextLessonIdeas")]
     public string? NextSessionTopics { get; set; }
     public string? EmotionalSignals { get; set; }

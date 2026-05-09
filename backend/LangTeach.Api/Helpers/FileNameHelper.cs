@@ -6,8 +6,9 @@ namespace LangTeach.Api.Helpers;
 
 public static class FileNameHelper
 {
-    public static string SlugifyName(string name)
+    public static string SlugifyName(string? name)
     {
+        if (string.IsNullOrWhiteSpace(name)) return "student";
         var folded = name.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder();
         foreach (var ch in folded)
@@ -20,8 +21,9 @@ public static class FileNameHelper
         return string.IsNullOrEmpty(slug) ? "student" : slug;
     }
 
-    public static string SanitizeTitle(string title)
+    public static string SanitizeTitle(string? title)
     {
+        if (string.IsNullOrWhiteSpace(title)) return "_";
         var safe = string.Concat(title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
         return safe.Replace(" ", "_");
     }
