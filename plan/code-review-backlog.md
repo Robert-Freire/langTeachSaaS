@@ -110,3 +110,9 @@ the existing DB column without a migration. This is the sole use of `DataAnnotat
 as a temporary measure (dotnet-ef unavailable in this env); should be migrated to a proper column
 rename (`RenameColumn`) in a future maintenance window to align with the zero-annotation model
 convention.
+
+## #1177 prompt-health notes (2026-05-09)
+
+Pre-existing (unrelated to PR):
+- `BuildSectionConversationPrompt` (L844-847): `forbiddenReasons` injected as negative list alongside positive guidance. Consider surfacing via guidance string instead.
+- `BuildSystemPrompt` (L606-608): second sentence duplicates first ("self-contained" stated twice). Merge to one sentence.
