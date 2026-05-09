@@ -801,5 +801,30 @@ describe('AtelierAssistantPanel', () => {
       expect(screen.getByTestId('session-picker-new')).toBeInTheDocument()
       expect(screen.queryByTestId(/^session-picker-row-/)).not.toBeInTheDocument()
     })
+
+    it('calls onSelectSession("new") when "+ New session" is clicked, does not navigate', async () => {
+      const onSelect = vi.fn()
+      const user = userEvent.setup()
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: null,
+        studentId: 'student-1',
+        onSelectSession: onSelect,
+      })
+      await user.click(screen.getByTestId('session-picker-new'))
+      expect(onSelect).toHaveBeenCalledWith('new')
+    })
+
+    it('keeps banner visible and shows check mark when sessionId is "new"', () => {
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: 'new',
+        studentId: 'student-1',
+      })
+      expect(screen.getByTestId('session-picker-banner')).toBeInTheDocument()
+      expect(screen.getByTestId('session-picker-new')).toBeInTheDocument()
+    })
   })
 })

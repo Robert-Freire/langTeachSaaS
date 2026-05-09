@@ -14,6 +14,7 @@ import {
 // Re-export so consumers don't need to import from api/assistant directly
 export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
+import { createSession } from '../api/sessionLogs'
 import { normalizeLanguage, normalizeLanguages } from '../lib/extractionNormalizer'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -57,6 +58,8 @@ export function useAtelierAssistant(
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
+  // Tracks the session created when sessionId === 'new', so applyAll reuses one session
+  const newlyCreatedSessionRef = useRef<string | null>(null)
 
   // Clear all undo timers on unmount to prevent memory leaks
   useEffect(() => {
@@ -139,6 +142,16 @@ export function useAtelierAssistant(
         } else {
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
+      } else if (proposal.type === 'session' && studentId && sessionId === 'new') {
+        if (!newlyCreatedSessionRef.current) {
+          const newSession = await createSession(studentId, {
+            title: 'Session',
+            sessionDate: new Date().toISOString().slice(0, 10),
+            previousHomeworkStatus: 'NotApplicable',
+          })
+          newlyCreatedSessionRef.current = newSession.id
+        }
+        await applySessionProposal(studentId, newlyCreatedSessionRef.current!, proposal.field, proposal.newValue)
       } else if (proposal.type === 'session' && studentId && !sessionId) {
         throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
@@ -196,6 +209,10 @@ export function useAtelierAssistant(
       // Invalidate relevant queries so the rest of the UI reflects the change
       if (proposal.type === 'student' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+      } else if (proposal.type === 'session' && studentId && sessionId === 'new' && newlyCreatedSessionRef.current) {
+        const createdId = newlyCreatedSessionRef.current
+        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        Promise.resolve(onAfterSessionApply?.(createdId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
@@ -267,6 +284,7 @@ export function useAtelierAssistant(
   const reset = useCallback(() => {
     generationRef.current++
     applyingIdsRef.current.clear()
+    newlyCreatedSessionRef.current = null
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
     setTranscription(null)
