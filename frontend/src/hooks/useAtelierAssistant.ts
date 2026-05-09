@@ -28,7 +28,6 @@ export interface AtelierAssistantState {
   transcription: string | null
   processing: boolean
   proposals: ProposalWithStatus[]
-  suggestedSessionId: string | null
 }
 
 export interface AtelierAssistantActions {
@@ -46,12 +45,12 @@ export interface AtelierAssistantActions {
 export function useAtelierAssistant(
   studentId: string | null,
   sessionId: string | null,
+  onAfterSessionApply?: (sessionId: string) => void,
 ): AtelierAssistantState & AtelierAssistantActions {
   const queryClient = useQueryClient()
   const [transcription, setTranscription] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [proposals, setProposals] = useState<ProposalWithStatus[]>([])
-  const [suggestedSessionId, setSuggestedSessionId] = useState<string | null>(null)
   const undoTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const applyingIdsRef = useRef<Set<string>>(new Set())
   const generationRef = useRef(0)
@@ -78,13 +77,12 @@ export function useAtelierAssistant(
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
     if (!hasPending) setProposals([])
     try {
-      const { proposals: raw, sessionLogId } = await proposeAssistant(
+      const { proposals: raw } = await proposeAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
       )
       if (generationRef.current !== gen) return
-      if (!sessionId && sessionLogId) setSuggestedSessionId(sessionLogId)
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -201,6 +199,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
@@ -216,7 +215,7 @@ export function useAtelierAssistant(
     } finally {
       applyingIdsRef.current.delete(id)
     }
-  }, [studentId, sessionId, updateProposal, queryClient])
+  }, [studentId, sessionId, updateProposal, queryClient, onAfterSessionApply])
 
   const dismiss = useCallback((id: string) => {
     updateProposal(id, { status: 'dismissed', undoVisible: true })
@@ -273,14 +272,12 @@ export function useAtelierAssistant(
     setTranscription(null)
     setProcessing(false)
     setProposals([])
-    setSuggestedSessionId(null)
   }, [])
 
   return {
     transcription,
     processing,
     proposals,
-    suggestedSessionId,
     submit,
     apply,
     dismiss,

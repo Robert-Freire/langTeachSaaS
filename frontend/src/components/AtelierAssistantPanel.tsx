@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, ExternalLink } from 'lucide-react'
+import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, Plus, CalendarDays } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { uploadVoiceNote } from '@/api/voiceNotes'
@@ -10,6 +10,10 @@ import { submitVoiceFeedback } from '@/api/assistant'
 import { MAX_RECORDING_SECONDS, WARN_REMAINING_SECONDS } from '@/lib/recordingLimits'
 import { formatDuration } from '@/lib/formatDuration'
 import { BRAND_NAME } from '@/lib/brand'
+import { useQuery } from '@tanstack/react-query'
+import { listSessions } from '@/api/sessionLogs'
+import { useNavigate } from 'react-router-dom'
+import { formatMonthDay } from '@/utils/formatDate'
 
 const MIN_DURATION_S = 1
 
@@ -49,8 +53,7 @@ interface Props {
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
   sessionId?: string | null
-  suggestedSessionId?: string | null
-  onNavigateToSession?: () => void
+  onSelectSession?: (sessionId: string) => void
 }
 
 export default function AtelierAssistantPanel({
@@ -72,9 +75,27 @@ export default function AtelierAssistantPanel({
   onEditPayload,
   studentId,
   sessionId,
-  suggestedSessionId,
-  onNavigateToSession,
+  onSelectSession,
 }: Props) {
+  const navigate = useNavigate()
+  const sessionContextMissing = !sessionId
+  const hasSessionProposalsWithoutContext = sessionContextMissing && proposals.some(p => p.type === 'session' && (p.status === 'proposed' || p.status === 'error'))
+
+  const { data: recentSessions } = useQuery({
+    queryKey: ['sessions', studentId],
+    queryFn: () => listSessions(studentId!),
+    enabled: !!studentId && hasSessionProposalsWithoutContext,
+    select: (sessions) =>
+      [...sessions]
+        .filter(s => !s.isCancelled)
+        .sort((a, b) => {
+          const da = new Date(a.sessionDate ?? a.createdAt).getTime()
+          const db = new Date(b.sessionDate ?? b.createdAt).getTime()
+          return db - da
+        })
+        .slice(0, 3),
+  })
+
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
   const [currentVoiceNoteId, setCurrentVoiceNoteId] = useState<string | null>(null)
@@ -271,9 +292,10 @@ export default function AtelierAssistantPanel({
   const noHardware = hookError === 'no-hardware'
   const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
-  const sessionContextMissing = !sessionId
-  const hasSessionProposalsWithoutContext = sessionContextMissing && pendingProposals.some(p => p.type === 'session')
-  const applyAllBlocked = !studentId && pendingProposals.some(p => p.type === 'newSession')
+  const applyAllBlocked = (
+    (!studentId && pendingProposals.some(p => p.type === 'newSession')) ||
+    (hasSessionProposalsWithoutContext && pendingProposals.every(p => p.type === 'session'))
+  )
 
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -416,22 +438,39 @@ export default function AtelierAssistantPanel({
                   <div className="space-y-3" data-testid="proposals-list">
                     {hasSessionProposalsWithoutContext && (
                       <div
-                        className="flex flex-col gap-2 px-3 py-2.5 rounded-xl bg-violet-50 border border-violet-100"
-                        data-testid="no-session-banner"
+                        className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50"
+                        data-testid="session-picker-banner"
                       >
-                        <p className="text-xs font-inter text-violet-700 leading-snug">
-                          These session notes need an open session. Open a session to apply them.
+                        <p className="text-xs font-inter text-violet-700 leading-snug mb-1">
+                          Choose a session to apply these notes to:
                         </p>
-                        {suggestedSessionId && onNavigateToSession && (
-                          <button
-                            onClick={onNavigateToSession}
-                            className="flex items-center gap-1.5 self-start text-xs font-inter font-semibold text-violet-700 hover:text-violet-900 hover:underline transition-colors"
-                            data-testid="open-matched-session-btn"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                            Open matched session
-                          </button>
-                        )}
+                        <button
+                          onClick={() => studentId && navigate(`/students/${studentId}/sessions/new`)}
+                          className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors text-left"
+                          data-testid="session-picker-new"
+                        >
+                          <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          New session
+                        </button>
+                        {(recentSessions ?? []).map(session => {
+                          const dateLabel = session.sessionDate
+                            ? formatMonthDay(session.sessionDate)
+                            : session.createdAt
+                              ? formatMonthDay(session.createdAt)
+                              : null
+                          const title = session.title ?? 'Session'
+                          return (
+                            <button
+                              key={session.id}
+                              onClick={() => onSelectSession?.(session.id)}
+                              className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter text-zinc-600 hover:bg-violet-100 transition-colors text-left"
+                              data-testid={`session-picker-row-${session.id}`}
+                            >
+                              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden="true" />
+                              <span className="truncate">{dateLabel ? `${dateLabel} — ` : ''}{title}</span>
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                     <div className="space-y-2">

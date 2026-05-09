@@ -1,6 +1,8 @@
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AtelierAssistantPanel from './AtelierAssistantPanel'
 import type { VoiceNote } from '@/api/voiceNotes'
 import type { ProposalWithStatus } from '@/hooks/useAtelierAssistant'
@@ -59,6 +61,11 @@ vi.mock('@/api/assistant', async () => {
   return { ...actual, submitVoiceFeedback: vi.fn().mockResolvedValue(undefined) }
 })
 
+// sessionLogs API mock
+vi.mock('@/api/sessionLogs', () => ({
+  listSessions: vi.fn().mockResolvedValue([]),
+}))
+
 const SAMPLE_NOTE: VoiceNote = {
   id: 'note-1',
   originalFileName: 'recording.webm',
@@ -96,9 +103,18 @@ const defaultProps = {
   onEditPayload: vi.fn(),
 }
 
-function renderPanel(overrides: Partial<typeof defaultProps> & { studentId?: string | null; sessionId?: string | null; suggestedSessionId?: string | null; onNavigateToSession?: () => void } = {}) {
+function wrapWithProviders(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return (
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
+function renderPanel(overrides: Partial<typeof defaultProps> & { studentId?: string | null; sessionId?: string | null; onSelectSession?: (id: string) => void } = {}) {
   const props = { ...defaultProps, ...overrides }
-  return { ...render(<AtelierAssistantPanel {...props} />), props }
+  return { ...render(wrapWithProviders(<AtelierAssistantPanel {...props} />)), props }
 }
 
 function makeProposal(overrides: Partial<ProposalWithStatus> = {}): ProposalWithStatus {
@@ -358,16 +374,16 @@ describe('AtelierAssistantPanel', () => {
   it('input value is cleared when panel closes and reopens', async () => {
     const user = userEvent.setup()
     const props = { ...defaultProps }
-    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+    const { rerender } = render(wrapWithProviders(<AtelierAssistantPanel {...props} />))
 
     const input = screen.getByTestId('assistant-input')
     await user.type(input, 'some text')
     expect((input as HTMLInputElement).value).toBe('some text')
 
     // Close panel
-    rerender(<AtelierAssistantPanel {...props} open={false} />)
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={false} />))
     // Reopen panel
-    rerender(<AtelierAssistantPanel {...props} open={true} />)
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={true} />))
 
     expect((screen.getByTestId('assistant-input') as HTMLInputElement).value).toBe('')
   })
@@ -376,15 +392,15 @@ describe('AtelierAssistantPanel', () => {
     const user = userEvent.setup()
     mockGetUserMedia.mockRejectedValueOnce(Object.assign(new Error('denied'), { name: 'NotAllowedError' }))
     const props = { ...defaultProps }
-    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+    const { rerender } = render(wrapWithProviders(<AtelierAssistantPanel {...props} />))
 
     // Trigger permission denied
     await user.click(screen.getByTestId('mic-btn'))
     await waitFor(() => expect(screen.getByTestId('mic-permission-error')).toBeInTheDocument())
 
     // Close and reopen
-    rerender(<AtelierAssistantPanel {...props} open={false} />)
-    rerender(<AtelierAssistantPanel {...props} open={true} />)
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={false} />))
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={true} />))
 
     // Must show idle empty state, not permission error
     expect(screen.queryByTestId('mic-permission-error')).not.toBeInTheDocument()
@@ -395,7 +411,7 @@ describe('AtelierAssistantPanel', () => {
     vi.useFakeTimers()
     mockUpload.mockRejectedValue(new Error('network'))
     const props = { ...defaultProps }
-    const { rerender } = render(<AtelierAssistantPanel {...props} />)
+    const { rerender } = render(wrapWithProviders(<AtelierAssistantPanel {...props} />))
 
     await act(async () => { fireEvent.click(screen.getByTestId('mic-btn')) })
     act(() => { vi.advanceTimersByTime(2000) })
@@ -405,8 +421,8 @@ describe('AtelierAssistantPanel', () => {
     expect(await screen.findByTestId('upload-error')).toBeInTheDocument()
 
     // Close and reopen
-    rerender(<AtelierAssistantPanel {...props} open={false} />)
-    rerender(<AtelierAssistantPanel {...props} open={true} />)
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={false} />))
+    rerender(wrapWithProviders(<AtelierAssistantPanel {...props} open={true} />))
 
     // Must show idle input row, not error state
     expect(screen.queryByTestId('upload-error')).not.toBeInTheDocument()
@@ -709,75 +725,81 @@ describe('AtelierAssistantPanel', () => {
     })
   })
 
-  // ---- no-session context banner ----------------------------------------------
+  // ---- session picker banner -------------------------------------------------
 
-  describe('no-session context banner', () => {
+  describe('session picker banner', () => {
     const sessionProposal = makeProposal({ id: 'sp1', type: 'session', field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' })
 
-    it('shows banner when session proposals exist and sessionId is null', () => {
+    it('shows picker when session proposals exist and sessionId is null', () => {
       renderPanel({
         transcription: 'Past perfect class',
         proposals: [sessionProposal],
         sessionId: null,
       })
-      expect(screen.getByTestId('no-session-banner')).toBeInTheDocument()
+      expect(screen.getByTestId('session-picker-banner')).toBeInTheDocument()
+      expect(screen.getByTestId('session-picker-new')).toBeInTheDocument()
     })
 
-    it('does not show banner when sessionId is present', () => {
+    it('does not show picker when sessionId is present', () => {
       renderPanel({
         transcription: 'Past perfect class',
         proposals: [sessionProposal],
         sessionId: 'session-1',
       })
-      expect(screen.queryByTestId('no-session-banner')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('session-picker-banner')).not.toBeInTheDocument()
     })
 
-    it('does not show banner when no session-type proposals exist', () => {
+    it('does not show picker when no session-type proposals exist', () => {
       const studentProposal = makeProposal({ type: 'student' })
       renderPanel({
         transcription: 'Past perfect class',
         proposals: [studentProposal],
         sessionId: null,
       })
-      expect(screen.queryByTestId('no-session-banner')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('session-picker-banner')).not.toBeInTheDocument()
     })
 
-    it('shows "Open matched session" button when suggestedSessionId is provided', () => {
-      const onNavigate = vi.fn()
-      renderPanel({
-        transcription: 'Past perfect class',
-        proposals: [sessionProposal],
-        sessionId: null,
-        suggestedSessionId: 'session-xyz',
-        onNavigateToSession: onNavigate,
-      })
-      const btn = screen.getByTestId('open-matched-session-btn')
-      expect(btn).toBeInTheDocument()
-    })
-
-    it('calls onNavigateToSession when "Open matched session" is clicked', async () => {
+    it('calls onSelectSession when a session row is clicked', async () => {
+      const { listSessions } = await import('@/api/sessionLogs')
+      const mockedList = vi.mocked(listSessions)
+      mockedList.mockResolvedValueOnce([{
+        id: 'session-abc',
+        studentId: 'student-1',
+        sessionDate: '2026-04-28',
+        title: 'Pretérito indefinido',
+        isCancelled: false,
+        createdAt: '2026-04-28T10:00:00Z',
+        updatedAt: '2026-04-28T10:00:00Z',
+        plannedContent: null, actualContent: null, homeworkAssigned: null,
+        previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable',
+        nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null,
+        levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]',
+        status: 1, statusName: 'Confirmed', mentionedDifficultyPairs: '[]',
+        suggestedDifficulties: '[]', duration: null, hasVoiceNote: false,
+      }])
+      const onSelect = vi.fn()
       const user = userEvent.setup()
-      const onNavigate = vi.fn()
       renderPanel({
         transcription: 'Past perfect class',
         proposals: [sessionProposal],
         sessionId: null,
-        suggestedSessionId: 'session-xyz',
-        onNavigateToSession: onNavigate,
+        studentId: 'student-1',
+        onSelectSession: onSelect,
       })
-      await user.click(screen.getByTestId('open-matched-session-btn'))
-      expect(onNavigate).toHaveBeenCalledOnce()
+      await waitFor(() => expect(screen.getByTestId('session-picker-row-session-abc')).toBeInTheDocument())
+      await user.click(screen.getByTestId('session-picker-row-session-abc'))
+      expect(onSelect).toHaveBeenCalledWith('session-abc')
     })
 
-    it('does not show "Open matched session" button when suggestedSessionId is absent', () => {
+    it('shows only "+ New session" when student has no sessions', () => {
       renderPanel({
         transcription: 'Past perfect class',
         proposals: [sessionProposal],
         sessionId: null,
-        suggestedSessionId: null,
+        studentId: 'student-1',
       })
-      expect(screen.getByTestId('no-session-banner')).toBeInTheDocument()
-      expect(screen.queryByTestId('open-matched-session-btn')).not.toBeInTheDocument()
+      expect(screen.getByTestId('session-picker-new')).toBeInTheDocument()
+      expect(screen.queryByTestId(/^session-picker-row-/)).not.toBeInTheDocument()
     })
   })
 })
