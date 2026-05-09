@@ -181,7 +181,7 @@ export default function AppShell() {
 
   function handleNavigateToSession() {
     if (studentId && assistant.suggestedSessionId) {
-      navigate(`/students/${studentId}/sessions/${assistant.suggestedSessionId}`)
+      navigate(`/students/${studentId}/sessions/${assistant.suggestedSessionId}/edit`)
     }
   }
 
