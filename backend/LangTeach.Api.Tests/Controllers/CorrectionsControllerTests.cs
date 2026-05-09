@@ -242,6 +242,25 @@ public class CorrectionsControllerTests
             tags = Array.Empty<object>(),
         });
 
+    private static string BuildDriftedOffsetAiJson(string originalText, string spannedText, int driftedStartIndex) =>
+        System.Text.Json.JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            originalText,
+            tags = new[]
+            {
+                new
+                {
+                    category = "O",
+                    startIndex = driftedStartIndex,
+                    endIndex = driftedStartIndex + spannedText.Length,
+                    spannedText,
+                    explanation = "Ejemplo de tilde correcta; sirve para probar el rescate de offsets.",
+                    correctedForm = spannedText,
+                }
+            }
+        });
+
     [Fact]
     public async Task List_ExcludesSoftDeleted()
     {
@@ -393,6 +412,37 @@ public class CorrectionsControllerTests
             $"/api/students/{studentId}/corrections/{created.Id}",
             new UpdateCorrectionRequest { StudentText = "Edited after correction." });
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Corregir_WithAccentedTextAndOffsetDrift_RescuesTagsNotDropped()
+    {
+        // Simulates the Unicode boundary drift bug (issue #1175): model reports correct
+        // spannedText but wrong startIndex/endIndex due to miscounting near é/ó/á chars.
+        // The backend rescue in ValidateAndOrderTags must fix the offsets and keep the tag.
+        var text = "Ayer él fue al café y después tuvo problemas con las preposiciones también. Él está muy cansado.";
+        var (client, studentId) = await SetupAsync("auth0|corr-unicode-rescue");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Unicode rescue test",
+            StudentText = text,
+        });
+
+        var realIdx = text.IndexOf("café", StringComparison.Ordinal);
+        var driftedIdx = realIdx + 2; // simulate +2 byte-offset drift from the accented 'é' in "él"
+
+        _factory.ClaudeStub.Reset();
+        _factory.ClaudeStub.EnqueueResponse(BuildDriftedOffsetAiJson(text, "café", driftedIdx));
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Tags.Should().HaveCount(1, "tag with correct spannedText must be rescued despite offset drift");
+        detail.Tags[0].SpannedText.Should().Be("café");
+        detail.Tags[0].StartIndex.Should().Be(realIdx, "rescue must fix startIndex to the true position");
     }
 
     // --- helpers ---

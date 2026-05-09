@@ -82,9 +82,16 @@ Emit raw JSON only. No prose before or after. No markdown fences. The JSON must 
   ]
 }
 
-OFFSETS:
-- startIndex and endIndex are character offsets into originalText (0-based, end-exclusive).
+OFFSETS (read carefully — accented characters cause silent errors if you count positions):
+- startIndex and endIndex are Unicode character offsets into originalText (0-based, end-exclusive).
+- DO NOT derive offsets by counting characters forward from the start of the text. Counting is unreliable near accented characters (é, ó, á, ñ, ü, etc.) because your internal position tracking may not match the host's character indices.
+- CORRECT procedure for every tag:
+  1. Decide which substring of originalText to mark; that substring is spannedText.
+  2. Write the explanation.
+  3. Locate spannedText inside originalText using a forward string search (like indexOf / find), starting from position 0.
+  4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal originalText.Substring(startIndex, endIndex - startIndex).
+- If spannedText would appear more than once in originalText, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
 
 "explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.

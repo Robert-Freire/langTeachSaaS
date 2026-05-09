@@ -293,8 +293,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         var kept = new List<RedaccionCorrectionTagDto>(rawTags.Count);
         var len = originalText.Length;
 
-        foreach (var tag in rawTags)
+        foreach (var rawTag in rawTags)
         {
+            var tag = rawTag;
             if (string.IsNullOrEmpty(tag.Category) || !CorrectionTagCategory.IsValid(tag.Category))
             {
                 _logger.LogWarning("Drop tag: invalid category '{Category}'. CorrectionId={CorrectionId}", tag.Category, correctionId);
@@ -310,10 +311,35 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             var actualSpan = originalText.Substring(tag.StartIndex, tag.EndIndex - tag.StartIndex);
             if (!string.Equals(actualSpan, tag.SpannedText, StringComparison.Ordinal))
             {
+                if (string.IsNullOrEmpty(tag.SpannedText))
+                {
+                    _logger.LogWarning(
+                        "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
+                    continue;
+                }
+                // Rescue: the model reported valid-range offsets but the substring doesn't match.
+                // This is the Unicode boundary drift pattern (model miscounts chars near é/ó/á/ñ).
+                // Locate spannedText by string search; fix offsets if the match is unambiguous.
+                var foundAt = originalText.IndexOf(tag.SpannedText, StringComparison.Ordinal);
+                if (foundAt < 0)
+                {
+                    _logger.LogWarning(
+                        "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
+                        tag.SpannedText, correctionId);
+                    continue;
+                }
+                var secondAt = originalText.IndexOf(tag.SpannedText, foundAt + 1, StringComparison.Ordinal);
+                if (secondAt >= 0)
+                {
+                    _logger.LogWarning(
+                        "Drop tag: spannedText '{Spanned}' is ambiguous (found at {First} and {Second}); cannot rescue. CorrectionId={CorrectionId}",
+                        tag.SpannedText, foundAt, secondAt, correctionId);
+                    continue;
+                }
                 _logger.LogWarning(
-                    "Drop tag: spannedText '{Sent}' does not match originalText[{Start},{End}) = '{Actual}'. CorrectionId={CorrectionId}",
-                    tag.SpannedText, tag.StartIndex, tag.EndIndex, actualSpan, correctionId);
-                continue;
+                    "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
+                    tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
+                tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
             }
 
             string? explanation = tag.Explanation;
