@@ -311,6 +311,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             var actualSpan = originalText.Substring(tag.StartIndex, tag.EndIndex - tag.StartIndex);
             if (!string.Equals(actualSpan, tag.SpannedText, StringComparison.Ordinal))
             {
+                if (string.IsNullOrEmpty(tag.SpannedText))
+                {
+                    _logger.LogWarning(
+                        "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
+                    continue;
+                }
                 // Rescue: the model reported valid-range offsets but the substring doesn't match.
                 // This is the Unicode boundary drift pattern (model miscounts chars near é/ó/á/ñ).
                 // Locate spannedText by string search; fix offsets if the match is unambiguous.
