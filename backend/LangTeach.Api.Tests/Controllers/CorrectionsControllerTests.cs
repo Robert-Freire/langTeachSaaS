@@ -242,6 +242,25 @@ public class CorrectionsControllerTests
             tags = Array.Empty<object>(),
         });
 
+    private static string BuildDriftedOffsetAiJson(string originalText, string spannedText, int driftedStartIndex) =>
+        System.Text.Json.JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            originalText,
+            tags = new[]
+            {
+                new
+                {
+                    category = "O",
+                    startIndex = driftedStartIndex,
+                    endIndex = driftedStartIndex + spannedText.Length,
+                    spannedText,
+                    explanation = "Ejemplo de tilde correcta; sirve para probar el rescate de offsets.",
+                    correctedForm = spannedText,
+                }
+            }
+        });
+
     [Fact]
     public async Task List_ExcludesSoftDeleted()
     {
@@ -413,23 +432,7 @@ public class CorrectionsControllerTests
         var driftedIdx = realIdx + 2; // simulate +2 byte-offset drift from the accented 'é' in "él"
 
         _factory.ClaudeStub.Reset();
-        _factory.ClaudeStub.EnqueueResponse(System.Text.Json.JsonSerializer.Serialize(new
-        {
-            schemaVersion = 1,
-            originalText = text,
-            tags = new[]
-            {
-                new
-                {
-                    category = "O",
-                    startIndex = driftedIdx,
-                    endIndex = driftedIdx + "café".Length,
-                    spannedText = "café",
-                    explanation = "Ejemplo de tilde correcta; sirve para probar el rescate de offsets.",
-                    correctedForm = "café",
-                }
-            }
-        }));
+        _factory.ClaudeStub.EnqueueResponse(BuildDriftedOffsetAiJson(text, "café", driftedIdx));
 
         var resp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
