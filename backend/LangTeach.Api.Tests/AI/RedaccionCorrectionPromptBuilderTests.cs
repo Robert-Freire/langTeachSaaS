@@ -129,6 +129,18 @@ public class RedaccionCorrectionPromptBuilderTests
         marker1.Should().NotBe(marker2);
     }
 
+    [Fact]
+    public void Build_SystemPromptInstructsIndexOfOffsetDerivation()
+    {
+        // Issue #1175: the OFFSETS section must instruct the model to use string search
+        // (indexOf) to derive startIndex, NOT counting forward from position 0. Counting
+        // is unreliable near accented chars (é, ó, á, ñ). Removing this instruction
+        // re-opens the silent tag-drop bug.
+        var req = _builder.Build(MakeCtx("B1"));
+        req.SystemPrompt.Should().Contain("indexOf", "OFFSETS must reference indexOf/string-search derivation");
+        req.SystemPrompt.Should().Contain("accented", "OFFSETS must warn about accented characters");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx(string cefr) =>
         new("Texto.", cefr, null, Array.Empty<string>(), null);
 }
