@@ -91,7 +91,7 @@ export async function downloadCorrectionDocx(
   filenameHint: string,
 ): Promise<void> {
   const response = await apiClient.get<Blob>(
-    `/api/students/${studentId}/corrections/${id}/docx`,
+    `/api/students/${studentId}/corrections/${id}/export.docx`,
     { responseType: 'blob' },
   )
   const fallback = `${sanitizeFilename(filenameHint)}.docx`
