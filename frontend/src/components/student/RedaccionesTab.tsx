@@ -24,9 +24,9 @@ interface RedaccionesTabProps {
 }
 
 const STATUS_BADGE: Record<CorrectionStatus, string> = {
-  Pendiente: 'bg-amber-100 text-amber-700',
-  Entregada: 'bg-indigo-100 text-indigo-700',
-  Corregida: 'bg-emerald-100 text-emerald-700',
+  Pendiente: 'bg-zinc-100 text-zinc-700',
+  Entregada: 'bg-indigo-50 text-indigo-700',
+  Corregida: 'bg-emerald-50 text-emerald-800',
 }
 
 const TITLE_MAX = 200
@@ -244,7 +244,7 @@ function CorrectionCard({
           <div className="mt-1 flex items-center gap-2">
             <span
               className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md ${
-                isGenerating ? 'bg-amber-100 text-amber-700 animate-pulse' : STATUS_BADGE[status]
+                isGenerating ? 'bg-amber-50 text-amber-800 animate-pulse' : STATUS_BADGE[status]
               }`}
               data-testid={`redaccion-status-${id}`}
             >

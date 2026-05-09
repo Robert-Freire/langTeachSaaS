@@ -138,9 +138,9 @@ public class CorrectionsControllerExportTests
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
         var runs = doc.MainDocumentPart!.Document.Body!.Descendants<Run>().ToList();
 
-        // The seeded correction has one O-category tag on "ablar" -> emerald 059669
+        // The seeded correction has one O-category tag on "ablar" -> emerald-500 10B981 (DS §11.16)
         var coloredRun = runs.FirstOrDefault(r =>
-            r.RunProperties?.Color?.Val?.Value == "059669"
+            r.RunProperties?.Color?.Val?.Value == "10B981"
             && r.RunProperties?.Bold is not null);
         coloredRun.Should().NotBeNull("the docx must include the colored bold run for the O tag");
 

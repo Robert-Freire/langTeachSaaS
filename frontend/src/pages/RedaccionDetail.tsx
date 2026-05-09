@@ -202,7 +202,7 @@ function StatusPill({ status, viewState }: StatusPillProps) {
   }
   const palette: Record<typeof status, string> = {
     Pendiente: 'bg-zinc-100 text-zinc-700',
-    Entregada: 'bg-blue-50 text-blue-800',
+    Entregada: 'bg-indigo-50 text-indigo-700',
     Corregida: 'bg-emerald-50 text-emerald-800',
   }
   return (
