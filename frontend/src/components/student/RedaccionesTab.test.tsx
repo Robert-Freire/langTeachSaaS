@@ -128,16 +128,13 @@ describe('RedaccionesTab', () => {
     )
   })
 
-  it('create form requires title (Save disabled until typed)', async () => {
+  it('create form Save is enabled even with blank title', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
 
     fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
 
     const save = screen.getByTestId('correction-drawer-save')
-    expect(save).toBeDisabled()
-
-    fireEvent.change(screen.getByTestId('correction-drawer-title'), { target: { value: 'Carta' } })
     expect(save).not.toBeDisabled()
   })
 

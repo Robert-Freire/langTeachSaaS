@@ -138,14 +138,16 @@ public class CorrectionsControllerExportTests
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
         var runs = doc.MainDocumentPart!.Document.Body!.Descendants<Run>().ToList();
 
-        // The seeded correction has one O-category tag on "ablar" -> emerald-500 10B981 (DS §11.16)
+        // Section 1: O-category tag "ablar" -> emerald-500 10B981, underlined (not bold)
         var coloredRun = runs.FirstOrDefault(r =>
             r.RunProperties?.Color?.Val?.Value == "10B981"
-            && r.RunProperties?.Bold is not null);
-        coloredRun.Should().NotBeNull("the docx must include the colored bold run for the O tag");
+            && r.RunProperties?.Underline is not null);
+        coloredRun.Should().NotBeNull("the docx must include the underlined colored run for the O tag");
 
         var allText = string.Concat(runs.SelectMany(r => r.Descendants<Text>()).Select(t => t.Text));
-        allText.Should().Contain("(O) corrección:");
+        allText.Should().NotContain("(O) corrección:", "old inline parenthetical format must not appear");
+        // Section 2: numbered corrections list
+        allText.Should().Contain("[O]");
         allText.Should().Contain("hablar");
     }
 

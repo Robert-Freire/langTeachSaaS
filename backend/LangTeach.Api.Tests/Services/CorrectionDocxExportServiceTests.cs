@@ -23,7 +23,7 @@ public class CorrectionDocxExportServiceTests
     }
 
     [Fact]
-    public void Generate_WithErrorTag_RendersBoldColoredRunPlusItalicParenthetical()
+    public void Generate_WithErrorTag_RendersUnderlinedColoredRunWithSuperscriptAndCorrectionSection()
     {
         // "ablar" missing 'h' at index 4 -> O (Ortografía, emerald-500 10B981, DS §11.16)
         const string text = "Hoy ablar con mi amigo.";
@@ -33,21 +33,29 @@ public class CorrectionDocxExportServiceTests
         var bytes = _svc.Generate(detail, "Gavin");
         var (texts, runs) = ReadAllRuns(bytes);
 
+        // Section 1: spanned text is underlined + colored, no bold
         var spannedRunIdx = texts.FindIndex(t => t == "ablar");
         spannedRunIdx.Should().BeGreaterThanOrEqualTo(0, "spanned text should appear as its own run");
 
         var spannedRun = runs[spannedRunIdx];
-        spannedRun.RunProperties!.Bold.Should().NotBeNull();
+        spannedRun.RunProperties!.Bold.Should().BeNull("error spans are underlined, not bold");
         spannedRun.RunProperties.Color!.Val!.Value.Should().Be("10B981");
+        spannedRun.RunProperties.Underline.Should().NotBeNull();
 
-        (spannedRunIdx + 1).Should().BeLessThan(runs.Count,
-            "error-tagged span must be followed by its parenthetical run");
-        var parenRun = runs[spannedRunIdx + 1];
-        parenRun.RunProperties!.Italic.Should().NotBeNull();
-        var parenText = parenRun.Descendants<Text>().Single().Text;
-        parenText.Should().StartWith(" (O) corrección:");
-        parenText.Should().Contain("hablar");
-        parenText.Should().Contain("Falta la 'h'.");
+        // Immediately followed by a superscript run "1"
+        (spannedRunIdx + 1).Should().BeLessThan(runs.Count, "span must be followed by superscript");
+        var supRun = runs[spannedRunIdx + 1];
+        supRun.RunProperties!.VerticalTextAlignment!.Val!.Value.Should().Be(VerticalPositionValues.Superscript);
+        string.Concat(supRun.Descendants<Text>().Select(t => t.Text)).Should().Be("1");
+
+        // No inline parenthetical text
+        var combined = string.Concat(texts);
+        combined.Should().NotContain("(O) corrección:");
+
+        // Section 2: numbered correction entry appears somewhere in document
+        combined.Should().Contain("[O]");
+        combined.Should().Contain("hablar");
+        combined.Should().Contain("Falta la 'h'.");
     }
 
     [Fact]
@@ -71,7 +79,8 @@ public class CorrectionDocxExportServiceTests
         var nextRun = spannedIdx + 1 < runs.Count ? runs[spannedIdx + 1] : null;
         if (nextRun is not null)
         {
-            nextRun.RunProperties?.Italic.Should().BeNull("MuyBien must NOT be followed by an italic parenthetical");
+            nextRun.RunProperties?.VerticalTextAlignment.Should().BeNull("MuyBien must NOT be followed by a superscript ref");
+            nextRun.RunProperties?.Italic.Should().BeNull("MuyBien must NOT be followed by a parenthetical");
         }
     }
 
@@ -173,7 +182,7 @@ public class CorrectionDocxExportServiceTests
         var bytes = _svc.Generate(detail, "Test");
         bytes.Should().NotBeEmpty();
         var (texts, _) = ReadAllRuns(bytes);
-        string.Concat(texts).Should().NotContain("(G) corrección:");
+        string.Concat(texts).Should().NotContain("[G]", "out-of-bounds tag should be skipped entirely");
     }
 
     // --- helpers ---
