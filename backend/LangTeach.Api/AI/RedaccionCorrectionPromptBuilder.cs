@@ -91,7 +91,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   3. Locate spannedText inside originalText using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal originalText.Substring(startIndex, endIndex - startIndex).
-- If spannedText appears more than once in originalText, use the first occurrence.
+- If spannedText would appear more than once in originalText, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
 
 "explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.

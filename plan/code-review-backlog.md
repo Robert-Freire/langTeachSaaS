@@ -93,3 +93,11 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1153 (CodeRabbit findings, partially addressed)
 - **Schema (Minor):** Added `endIndex > startIndex` cross-field constraint to `redaccion-correction.schema.json`. Schema is reference-only; C# `ValidateAndOrderTags` is the runtime enforcement layer.
 - **TOCTOU race on /corregir (Major) — partially addressed:** Added a fresh-status recheck in `RedaccionCorrectionService.CorregirAsync` between Claude's response and the SaveChanges. Closes the duplicate-tag-rows half of the race. Does NOT prevent both concurrent calls from invoking Claude (double cost). True atomic claim requires either (a) a `Corrigiendo` enum value + DB CHECK constraint update + flip-and-save before the LLM call, or (b) a `RowVersion`/`[Timestamp]` concurrency token on `Correction`. Both options need a migration. Defer until the frontend exposes the corregir button to a multi-tab/double-click vector — for v1, the UI debounces and the blast radius is bounded.
+
+## #1175 prompt-health finding (minor, deferred)
+
+`RedaccionCorrectionPromptBuilder.cs` SystemPrompt:
+
+"Tags MUST NOT overlap. Sort tags by startIndex." -- redundant with service-layer enforcement
+(`ValidateAndOrderTags` sorts by StartIndex and drops overlapping tags). The instruction is
+net-positive model guidance but wastes tokens. Consider trimming in a future prompt-health pass.
