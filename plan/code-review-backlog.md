@@ -101,3 +101,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 "Tags MUST NOT overlap. Sort tags by startIndex." -- redundant with service-layer enforcement
 (`ValidateAndOrderTags` sorts by StartIndex and drops overlapping tags). The instruction is
 net-positive model guidance but wastes tokens. Consider trimming in a future prompt-health pass.
+
+## #1177 arch note (2026-05-09)
+
+`LessonNote.NextSessionTopics` uses `[Column("NextLessonIdeas")]` to map the renamed C# property to
+the existing DB column without a migration. This is the sole use of `DataAnnotations.Schema` in
+`Data/Models/`. All other column-name conventions use EF Fluent API in `AppDbContext.cs`. Acceptable
+as a temporary measure (dotnet-ef unavailable in this env); should be migrated to a proper column
+rename (`RenameColumn`) in a future maintenance window to align with the zero-annotation model
+convention.

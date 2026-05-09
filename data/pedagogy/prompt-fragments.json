@@ -12,6 +12,6 @@
   "replanSuggestionOpener": "You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.",
   "reflectionExtractionOpener": "You are an assistant that helps language teachers structure their post-class notes.",
   "whatWasCoveredFallbackOpener": "You are an assistant that summarises a language class in one sentence.",
-  "studentProfileExtractionOpener": "You are a tool that helps language teachers capture student information from free-form voice notes.",
+  "studentProfileExtractionOpener": "You are an assistant that helps language teachers capture student information from free-form voice notes.",
   "grammarLevelExpertOpener": "You are a CEFR-level grammar expert calibrated to the CEFR Companion Volume (2020). Evaluate whether grammar structures in a generated Spanish curriculum match the target CEFR level; use the PCIC (Plan Curricular del Instituto Cervantes) as the reference inventory for Spanish grammar scope at each level."
 }
