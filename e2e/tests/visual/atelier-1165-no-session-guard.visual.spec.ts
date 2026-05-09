@@ -50,12 +50,9 @@ test('@visual atelier-1165 no-session-banner visible on student profile', async 
   const banner = page.locator('[data-testid="no-session-banner"]')
   await expect(banner).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // At least one session-type Apply button must be disabled
-  const sessionApplyBtns = page.locator('[data-testid^="apply-btn-"]')
-  const count = await sessionApplyBtns.count()
-  expect(count).toBeGreaterThan(0)
-  const firstApplyBtn = sessionApplyBtns.first()
-  await expect(firstApplyBtn).toBeDisabled()
+  // At least one Apply button must be disabled (session-type proposals)
+  const disabledApplyBtns = page.locator('[data-testid^="apply-btn-"]:disabled')
+  expect(await disabledApplyBtns.count()).toBeGreaterThan(0)
 
   await banner.scrollIntoViewIfNeeded()
   await page.screenshot({ path: 'screenshots/atelier-1165-no-session-banner.png', fullPage: true })
