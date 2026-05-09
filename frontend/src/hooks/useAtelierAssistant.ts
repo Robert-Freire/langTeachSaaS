@@ -143,10 +143,13 @@ export function useAtelierAssistant(
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
       } else if (proposal.type === 'session' && studentId && sessionId === 'new') {
+        // Create one session for this "new" selection; applyAll reuses it via ref
         if (!newlyCreatedSessionRef.current) {
+          const now = new Date()
+          const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
           const newSession = await createSession(studentId, {
             title: 'Session',
-            sessionDate: new Date().toISOString().slice(0, 10),
+            sessionDate: localDate,
             previousHomeworkStatus: 'NotApplicable',
           })
           newlyCreatedSessionRef.current = newSession.id
