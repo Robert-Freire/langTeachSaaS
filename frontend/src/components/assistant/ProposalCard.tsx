@@ -16,6 +16,7 @@ interface Props {
   onModify: (id: string, newValue: string) => void
   onEditPayload?: (id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
+  sessionContextMissing?: boolean
 }
 
 const MULTILINE_FIELDS = new Set(
@@ -55,7 +56,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onEditPayload, studentId }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onEditPayload, studentId, sessionContextMissing }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -107,6 +108,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isTodo = proposal.type === 'todo'
   const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
   const newSessionApplyDisabled = isNewSession && !studentId
+  const sessionApplyDisabled = proposal.type === 'session' && !!sessionContextMissing
   const newSessionDateEditable = isNewSession && (proposal.status === 'proposed' || proposal.status === 'error')
   const todoPayload = isTodo ? (proposal.payload as { dueDate?: string | null } | null | undefined) : null
   const todoDateEditable = isTodo && (proposal.status === 'proposed' || proposal.status === 'error')
@@ -261,12 +263,13 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           {proposal.status === 'proposed' && !editing && (
             <>
               <button
-                onClick={() => !newSessionApplyDisabled && onApply(proposal.id)}
-                disabled={newSessionApplyDisabled}
+                onClick={() => !newSessionApplyDisabled && !sessionApplyDisabled && onApply(proposal.id)}
+                disabled={newSessionApplyDisabled || sessionApplyDisabled}
                 data-testid={`apply-btn-${proposal.id}`}
+                aria-disabled={newSessionApplyDisabled || sessionApplyDisabled}
                 className={cn(
                   'text-xs font-semibold font-inter px-3 py-1 rounded-lg transition-colors',
-                  newSessionApplyDisabled
+                  (newSessionApplyDisabled || sessionApplyDisabled)
                     ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed'
                     : 'text-white bg-indigo-600 hover:bg-indigo-700'
                 )}

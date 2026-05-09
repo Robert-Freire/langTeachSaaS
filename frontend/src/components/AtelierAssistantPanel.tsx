@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, ExternalLink } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { uploadVoiceNote } from '@/api/voiceNotes'
@@ -49,6 +49,8 @@ interface Props {
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
   sessionId?: string | null
+  suggestedSessionId?: string | null
+  onNavigateToSession?: () => void
 }
 
 export default function AtelierAssistantPanel({
@@ -70,6 +72,8 @@ export default function AtelierAssistantPanel({
   onEditPayload,
   studentId,
   sessionId,
+  suggestedSessionId,
+  onNavigateToSession,
 }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
@@ -267,6 +271,8 @@ export default function AtelierAssistantPanel({
   const noHardware = hookError === 'no-hardware'
   const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
+  const sessionContextMissing = !sessionId
+  const hasSessionProposalsWithoutContext = sessionContextMissing && pendingProposals.some(p => p.type === 'session')
   const applyAllBlocked = !studentId && pendingProposals.some(p => p.type === 'newSession')
 
   return (
@@ -407,20 +413,43 @@ export default function AtelierAssistantPanel({
                     No updates suggested.
                   </p>
                 ) : (
-                  <div className="space-y-2" data-testid="proposals-list">
-                    {proposals.map(proposal => (
-                      <ProposalCard
-                        key={proposal.id}
-                        proposal={proposal}
-                        onApply={onApply}
-                        onDismiss={onDismiss}
-                        onUndo={onUndo}
-                        onRetry={onRetry}
-                        onModify={onModify}
-                        onEditPayload={onEditPayload}
-                        studentId={studentId}
-                      />
-                    ))}
+                  <div className="space-y-3" data-testid="proposals-list">
+                    {hasSessionProposalsWithoutContext && (
+                      <div
+                        className="flex flex-col gap-2 px-3 py-2.5 rounded-xl bg-violet-50 border border-violet-100"
+                        data-testid="no-session-banner"
+                      >
+                        <p className="text-xs font-inter text-violet-700 leading-snug">
+                          These session notes need an open session. Open a session to apply them.
+                        </p>
+                        {suggestedSessionId && onNavigateToSession && (
+                          <button
+                            onClick={onNavigateToSession}
+                            className="flex items-center gap-1.5 self-start text-xs font-inter font-semibold text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+                            data-testid="open-matched-session-btn"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                            Open matched session
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {proposals.map(proposal => (
+                        <ProposalCard
+                          key={proposal.id}
+                          proposal={proposal}
+                          onApply={onApply}
+                          onDismiss={onDismiss}
+                          onUndo={onUndo}
+                          onRetry={onRetry}
+                          onModify={onModify}
+                          onEditPayload={onEditPayload}
+                          studentId={studentId}
+                          sessionContextMissing={sessionContextMissing}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

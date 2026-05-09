@@ -339,4 +339,26 @@ describe('ProposalCard', () => {
     expect(lastCall[1].sessionDate).toBe('2026-05-19')
     expect(lastCall[1].title).toBe('Subjunctive')
   })
+
+  it('session type: Apply button is disabled when sessionContextMissing is true', () => {
+    const onApply = vi.fn()
+    renderCard(
+      makeProposal({ type: 'session', field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' }),
+      { onApply, sessionContextMissing: true },
+    )
+    const applyBtn = screen.getByTestId('apply-btn-p1')
+    expect(applyBtn).toBeDisabled()
+    fireEvent.click(applyBtn)
+    expect(onApply).not.toHaveBeenCalled()
+  })
+
+  it('session type: Apply button is enabled when sessionContextMissing is false', () => {
+    const onApply = vi.fn()
+    renderCard(
+      makeProposal({ type: 'session', field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' }),
+      { onApply, sessionContextMissing: false },
+    )
+    const applyBtn = screen.getByTestId('apply-btn-p1')
+    expect(applyBtn).not.toBeDisabled()
+  })
 })
