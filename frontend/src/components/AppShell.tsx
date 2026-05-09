@@ -1,5 +1,5 @@
 import { useState, useEffect, type ElementType } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
 import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, X } from 'lucide-react'
@@ -176,7 +176,14 @@ export default function AppShell() {
     ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
 
+  const navigate = useNavigate()
   const toggleAssistant = () => { if (atelierEnabled) setUserWantsOpen(open => !open) }
+
+  function handleNavigateToSession() {
+    if (studentId && assistant.suggestedSessionId) {
+      navigate(`/students/${studentId}/sessions/${assistant.suggestedSessionId}`)
+    }
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FBF8FF]">
@@ -316,6 +323,8 @@ export default function AppShell() {
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
         sessionId={sessionId}
+        suggestedSessionId={assistant.suggestedSessionId}
+        onNavigateToSession={handleNavigateToSession}
       />
     </div>
   )

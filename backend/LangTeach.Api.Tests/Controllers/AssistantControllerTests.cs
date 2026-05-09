@@ -638,6 +638,82 @@ public class AssistantControllerTests
             p.Type == "student" && p.Field == "cefrLevel");
     }
 
+    [Fact]
+    public async Task Propose_WithStudentAndNoSessionId_ReturnsSessionLogId()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|assistant-session-log-id",
+            Email = "assistant-session-log-id@example.com",
+            DisplayName = "Session LogId Test Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "Ana",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A2",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+
+        var session = new SessionLog
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            StudentId = student.Id,
+            SessionDate = DateTime.UtcNow.AddDays(-1),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.SessionLogs.Add(session);
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|assistant-session-log-id", "assistant-session-log-id@example.com");
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on past perfect.",
+            StudentId = student.Id,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.SessionLogId.Should().Be(session.Id);
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndNoSessions_ReturnsNullSessionLogId()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-sessions", "assistant-no-sessions@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on past perfect.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.SessionLogId.Should().BeNull();
+    }
+
     // TC-19: "sube el nivel de conversación a B1" → student proposal skillLevel.speaking = "B1"
     [Fact]
     public async Task Propose_TC19_SpeakingLevelRaised_EmitsSkillLevelSpeakingProposal()

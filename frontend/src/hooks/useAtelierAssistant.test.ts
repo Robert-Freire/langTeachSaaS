@@ -541,6 +541,48 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('error')
   })
 
+  it('submit: captures suggestedSessionId from propose response when sessionId is null', async () => {
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.suggestedSessionId).toBe('session-xyz')
+  })
+
+  it('submit: does not capture suggestedSessionId when sessionId is already in scope', async () => {
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.suggestedSessionId).toBeNull()
+  })
+
+  it('reset: clears suggestedSessionId', async () => {
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], sessionLogId: 'session-xyz' })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+    expect(result.current.suggestedSessionId).toBe('session-xyz')
+    act(() => { result.current.reset() })
+    expect(result.current.suggestedSessionId).toBeNull()
+  })
+
+  it('applyAll: skips session proposals when sessionId is null', async () => {
+    mockPropose.mockResolvedValueOnce({ proposals: sampleProposals })
+    mockApplyStudent.mockResolvedValueOnce(undefined)
+    mockApplyTodo.mockResolvedValueOnce(undefined)
+    const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.applyAll() })
+    expect(mockApplyStudent).toHaveBeenCalledOnce()
+    expect(mockApplyTodo).toHaveBeenCalledOnce()
+    expect(mockApplySession).not.toHaveBeenCalled()
+    const sessionCard = result.current.proposals.find(p => p.type === 'session')
+    expect(sessionCard?.status).toBe('proposed')
+  })
+
   it('apply: routes skillLevel.writing student proposal to applyStudentProposal with dotted field', async () => {
     const skillProposal = { id: 'psk1', type: 'student' as const, field: 'skillLevel.writing', label: 'Writing Level', oldValue: null, newValue: 'B1' }
     mockPropose.mockResolvedValueOnce({ proposals: [skillProposal] })

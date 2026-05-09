@@ -96,7 +96,7 @@ const defaultProps = {
   onEditPayload: vi.fn(),
 }
 
-function renderPanel(overrides: Partial<typeof defaultProps> = {}) {
+function renderPanel(overrides: Partial<typeof defaultProps> & { studentId?: string | null; sessionId?: string | null; suggestedSessionId?: string | null; onNavigateToSession?: () => void } = {}) {
   const props = { ...defaultProps, ...overrides }
   return { ...render(<AtelierAssistantPanel {...props} />), props }
 }
@@ -706,6 +706,78 @@ describe('AtelierAssistantPanel', () => {
       vi.useRealTimers()
       await waitFor(() => expect(screen.getByTestId('thumbs-pair')).toBeInTheDocument())
       expect(screen.queryByTestId('feedback-thanks')).not.toBeInTheDocument()
+    })
+  })
+
+  // ---- no-session context banner ----------------------------------------------
+
+  describe('no-session context banner', () => {
+    const sessionProposal = makeProposal({ id: 'sp1', type: 'session', field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' })
+
+    it('shows banner when session proposals exist and sessionId is null', () => {
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: null,
+      })
+      expect(screen.getByTestId('no-session-banner')).toBeInTheDocument()
+    })
+
+    it('does not show banner when sessionId is present', () => {
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: 'session-1',
+      })
+      expect(screen.queryByTestId('no-session-banner')).not.toBeInTheDocument()
+    })
+
+    it('does not show banner when no session-type proposals exist', () => {
+      const studentProposal = makeProposal({ type: 'student' })
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [studentProposal],
+        sessionId: null,
+      })
+      expect(screen.queryByTestId('no-session-banner')).not.toBeInTheDocument()
+    })
+
+    it('shows "Open matched session" button when suggestedSessionId is provided', () => {
+      const onNavigate = vi.fn()
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: null,
+        suggestedSessionId: 'session-xyz',
+        onNavigateToSession: onNavigate,
+      })
+      const btn = screen.getByTestId('open-matched-session-btn')
+      expect(btn).toBeInTheDocument()
+    })
+
+    it('calls onNavigateToSession when "Open matched session" is clicked', async () => {
+      const user = userEvent.setup()
+      const onNavigate = vi.fn()
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: null,
+        suggestedSessionId: 'session-xyz',
+        onNavigateToSession: onNavigate,
+      })
+      await user.click(screen.getByTestId('open-matched-session-btn'))
+      expect(onNavigate).toHaveBeenCalledOnce()
+    })
+
+    it('does not show "Open matched session" button when suggestedSessionId is absent', () => {
+      renderPanel({
+        transcription: 'Past perfect class',
+        proposals: [sessionProposal],
+        sessionId: null,
+        suggestedSessionId: null,
+      })
+      expect(screen.getByTestId('no-session-banner')).toBeInTheDocument()
+      expect(screen.queryByTestId('open-matched-session-btn')).not.toBeInTheDocument()
     })
   })
 })

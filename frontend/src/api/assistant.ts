@@ -33,6 +33,7 @@ export interface ProposalDto {
 export interface ProposeResponse {
   proposals: ProposalDto[]
   voiceNoteId?: string
+  sessionLogId?: string
 }
 
 export async function proposeAssistant(

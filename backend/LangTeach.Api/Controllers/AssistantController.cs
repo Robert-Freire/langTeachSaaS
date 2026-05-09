@@ -206,7 +206,18 @@ public class AssistantController : ControllerBase
                 payloadElement));
         }
 
-        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId));
+        Guid? suggestedSessionLogId = null;
+        if (student != null && !request.SessionId.HasValue)
+        {
+            var sessions = await _sessionLogService.ListAsync(teacherId, student.Id, ct);
+            suggestedSessionLogId = sessions
+                .Where(s => !s.IsCancelled)
+                .OrderByDescending(s => s.SessionDate ?? s.CreatedAt)
+                .Select(s => (Guid?)s.Id)
+                .FirstOrDefault();
+        }
+
+        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId, suggestedSessionLogId));
     }
 
     [HttpPost("voice-notes/{voiceNoteId:guid}/feedback")]
