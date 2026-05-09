@@ -334,7 +334,8 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
   const trimmedTitle = title.trim()
   const titleValid = trimmedTitle.length > 0 && trimmedTitle.length <= TITLE_MAX
   const studentTextLocked = isEdit && statusFromLoad === 'Corregida'
-  const canSave = titleValid && !isSaving && (!isEdit || hydrated)
+  const titleOk = isEdit ? titleValid : trimmedTitle.length <= TITLE_MAX
+  const canSave = titleOk && !isSaving && (!isEdit || hydrated)
 
   const isPendienteEdit = isEdit && statusFromLoad === 'Pendiente'
   const hasText = text.trim().length > 0
@@ -366,8 +367,11 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
         }
         await updateCorrection(studentId, editId as string, body)
       } else {
+        const now = new Date()
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+        const effectiveTitle = trimmedTitle || `Redacción ${today}`
         const newCorrection = await createCorrection(studentId, {
-          assignmentTitle: trimmedTitle,
+          assignmentTitle: effectiveTitle,
           assignmentPrompt: prompt.length > 0 ? prompt : null,
           studentText: text.length > 0 ? text : null,
         })

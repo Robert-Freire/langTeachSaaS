@@ -70,6 +70,8 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             .OrderBy(t => t.StartIndex)
             .ToList();
 
+        var renderedErrorTags = new List<CorrectionTagDto>();
+
         var currentParagraph = new Paragraph();
         body.AppendChild(currentParagraph);
 
@@ -84,7 +86,13 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             {
                 AppendTextWithLineBreaks(body, ref currentParagraph, text.Substring(cursor, tag.StartIndex - cursor), runFactory: PlainRun);
             }
-            AppendTaggedSpan(currentParagraph, tag);
+            int? refNum = null;
+            if (tag.Category != CorrectionTagCategory.MuyBien)
+            {
+                renderedErrorTags.Add(tag);
+                refNum = renderedErrorTags.Count;
+            }
+            AppendTaggedSpan(currentParagraph, tag, refNum);
             cursor = tag.EndIndex;
         }
 
@@ -92,9 +100,19 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         {
             AppendTextWithLineBreaks(body, ref currentParagraph, text.Substring(cursor), runFactory: PlainRun);
         }
+
+        AppendSeparator(body);
+
+        if (renderedErrorTags.Count > 0)
+        {
+            var refNumbers = renderedErrorTags
+                .Select((tag, i) => (tag, refNum: i + 1))
+                .ToDictionary(x => x.tag, x => x.refNum);
+            AppendCorrectionsSection(body, renderedErrorTags, refNumbers);
+        }
     }
 
-    private static void AppendTaggedSpan(Paragraph paragraph, CorrectionTagDto tag)
+    private static void AppendTaggedSpan(Paragraph paragraph, CorrectionTagDto tag, int? refNum)
     {
         if (tag.Category == CorrectionTagCategory.MuyBien)
         {
@@ -103,12 +121,40 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         }
 
         var color = CategoryColors.TryGetValue(tag.Category, out var hex) ? hex : "000000";
-        paragraph.AppendChild(BoldColoredRun(tag.SpannedText, color));
-        paragraph.AppendChild(ItalicGrayRun(BuildParenthetical(tag)));
+        paragraph.AppendChild(UnderlinedColoredRun(tag.SpannedText, color));
+        if (refNum.HasValue)
+        {
+            paragraph.AppendChild(SuperscriptRun(refNum.Value.ToString()));
+        }
     }
 
-    internal static string BuildParenthetical(CorrectionTagDto tag) =>
-        $" ({tag.Category}) corrección: \"{tag.CorrectedForm}\" — {tag.Explanation}.";
+    private static void AppendSeparator(Body body)
+    {
+        body.AppendChild(new Paragraph());
+        var hrPara = new Paragraph();
+        var hrProps = new ParagraphProperties();
+        var pBorders = new ParagraphBorders();
+        pBorders.AppendChild(new BottomBorder { Val = BorderValues.Single, Size = 6, Space = 1, Color = "E5E7EB" });
+        hrProps.AppendChild(pBorders);
+        hrPara.AppendChild(hrProps);
+        body.AppendChild(hrPara);
+        body.AppendChild(new Paragraph());
+    }
+
+    private static void AppendCorrectionsSection(Body body, List<CorrectionTagDto> errorTags, Dictionary<CorrectionTagDto, int> refNumbers)
+    {
+        body.AppendChild(BuildParagraph(runs: new[] { BoldRun("Correcciones", sizeHalfPoints: 26) }));
+        body.AppendChild(new Paragraph());
+
+        foreach (var tag in errorTags)
+        {
+            var num = refNumbers[tag];
+            var correctedForm = tag.CorrectedForm ?? string.Empty;
+            var explanation = tag.Explanation ?? string.Empty;
+            var entry = $"{num}. [{tag.Category}] \"{tag.SpannedText}\" → \"{correctedForm}\" — {explanation}";
+            body.AppendChild(BuildParagraph(runs: new[] { PlainRun(entry) }));
+        }
+    }
 
     private static void AppendTextWithLineBreaks(Body body, ref Paragraph current, string text, Func<string, Run> runFactory)
     {
@@ -147,9 +193,15 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         return BuildRun(text, props);
     }
 
-    private static Run BoldColoredRun(string text, string colorHex)
+    private static Run UnderlinedColoredRun(string text, string colorHex)
     {
-        var props = new RunProperties(new Bold(), new Color { Val = colorHex });
+        var props = new RunProperties(new Color { Val = colorHex }, new Underline { Val = UnderlineValues.Single });
+        return BuildRun(text, props);
+    }
+
+    private static Run SuperscriptRun(string text)
+    {
+        var props = new RunProperties(new VerticalTextAlignment { Val = VerticalPositionValues.Superscript });
         return BuildRun(text, props);
     }
 
@@ -157,12 +209,6 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
     {
         var props = new RunProperties(new Italic());
         if (sizeHalfPoints is int sz) props.AppendChild(new FontSize { Val = sz.ToString() });
-        return BuildRun(text, props);
-    }
-
-    private static Run ItalicGrayRun(string text)
-    {
-        var props = new RunProperties(new Italic(), new Color { Val = MetadataGray });
         return BuildRun(text, props);
     }
 
