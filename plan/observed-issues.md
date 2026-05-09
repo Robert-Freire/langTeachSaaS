@@ -3,6 +3,7 @@
 Out-of-scope observations logged by agents during implementation. Each row is something an agent noticed but did not fix because it was outside the current task's scope. These get batched into future GitHub issues by the PM.
 
 | Source issue | Date | Severity | Observation |
+| #1181 | 2026-05-09 | low | CorrectionDrawer footer pairs "Cancelar" ghost button with primary "Guardar" on the same row; violates design-system §5 (destructive/secondary actions should be separated from primary). Pre-existing, not introduced by this PR. |
 | #1151 | 2026-05-09 | P3:nice | Apply-disabled + "Open from a student's screen" helper text invariant has no e2e coverage; was in the no-student spec but can only be tested from a student context (panel open) -- needs a new spec |
 | #smoke-hardening | 2026-05-04 | medium | `/dashboard` route renders blank white page; correct route is `/` - sidebar link uses `/` but direct navigation to `/dashboard` silently fails |
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate lacks [RegularExpression] format attribute; invalid dates accepted at model-binding boundary and silently become null (Sophy) |
