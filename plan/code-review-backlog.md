@@ -90,6 +90,9 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 ## #1157 (Architecture review notes, PASS WITH NOTES)
 - `RunCorregirAsync` in `RedaccionCorrectionDualLevelTests.cs` is a near-copy of the same method in `RedaccionCorrectionVerbatimTests.cs`. Pre-existing duplication (the skeleton copied the pattern). Extract to a shared `Helpers/CorrectionTestHarness` static helper when a third AI integration test adds the same setup.
 
+## #1176 (Architecture review notes, PASS WITH NOTES)
+- **RedaccionesTab `isGenerating` pill anatomy**: list-view transient state uses full-pill `animate-pulse` rather than the discrete `h-1.5 w-1.5` dot defined in DS §11.15. Restructuring the `<span>` to `<span className="inline-flex items-center gap-1.5">` with a sibling dot element would match the spec exactly. Low risk; the animated pill is a reasonable compact-list equivalent. Revisit if the list view gains the full pill component from the detail view.
+
 ## #1153 (CodeRabbit findings, partially addressed)
 - **Schema (Minor):** Added `endIndex > startIndex` cross-field constraint to `redaccion-correction.schema.json`. Schema is reference-only; C# `ValidateAndOrderTags` is the runtime enforcement layer.
 - **TOCTOU race on /corregir (Major) — partially addressed:** Added a fresh-status recheck in `RedaccionCorrectionService.CorregirAsync` between Claude's response and the SaveChanges. Closes the duplicate-tag-rows half of the race. Does NOT prevent both concurrent calls from invoking Claude (double cost). True atomic claim requires either (a) a `Corrigiendo` enum value + DB CHECK constraint update + flip-and-save before the LLM call, or (b) a `RowVersion`/`[Timestamp]` concurrency token on `Correction`. Both options need a migration. Defer until the frontend exposes the corregir button to a multi-tab/double-click vector — for v1, the UI debounces and the blast radius is bounded.

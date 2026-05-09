@@ -8,15 +8,15 @@ namespace LangTeach.Api.Services.CorrectionDocxExport;
 
 public class CorrectionDocxExportService : ICorrectionDocxExportService
 {
-    // Provisional category color hex values (no '#'), matching the design-system
-    // §11.13 color family for on-screen rendering. Frontend issue #1155 will pin
-    // the canonical map; if it picks different tones, update both sides together.
+    // Category underline colors (no '#'), matching the canonical palette in
+    // design-system.md §11.16 and frontend/src/lib/correction-colors.ts.
+    // Keep both in sync: update correction-colors.ts and this map together.
     private static readonly IReadOnlyDictionary<string, string> CategoryColors = new Dictionary<string, string>
     {
-        [CorrectionTagCategory.Cohesion]   = "4F46E5", // indigo-600
-        [CorrectionTagCategory.Gramatica]  = "B45309", // amber-700 (warm)
-        [CorrectionTagCategory.Lexico]     = "D97706", // amber-600
-        [CorrectionTagCategory.Ortografia] = "059669", // emerald-600
+        [CorrectionTagCategory.Cohesion]   = "6366F1", // indigo-500
+        [CorrectionTagCategory.Gramatica]  = "F97316", // orange-500
+        [CorrectionTagCategory.Lexico]     = "F59E0B", // amber-500
+        [CorrectionTagCategory.Ortografia] = "10B981", // emerald-500
     };
 
     private const string MetadataGray = "6B7280"; // gray-500

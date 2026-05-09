@@ -25,7 +25,7 @@ public class CorrectionDocxExportServiceTests
     [Fact]
     public void Generate_WithErrorTag_RendersBoldColoredRunPlusItalicParenthetical()
     {
-        // "ablar" missing 'h' at index 4 -> O (Ortografía, emerald 059669)
+        // "ablar" missing 'h' at index 4 -> O (Ortografía, emerald-500 10B981, DS §11.16)
         const string text = "Hoy ablar con mi amigo.";
         var tag = new CorrectionTagDto("O", "ablar", 4, 9, "Falta la 'h'.", "hablar", 0);
         var detail = MakeDetail(text, [tag]);
@@ -38,7 +38,7 @@ public class CorrectionDocxExportServiceTests
 
         var spannedRun = runs[spannedRunIdx];
         spannedRun.RunProperties!.Bold.Should().NotBeNull();
-        spannedRun.RunProperties.Color!.Val!.Value.Should().Be("059669");
+        spannedRun.RunProperties.Color!.Val!.Value.Should().Be("10B981");
 
         (spannedRunIdx + 1).Should().BeLessThan(runs.Count,
             "error-tagged span must be followed by its parenthetical run");
