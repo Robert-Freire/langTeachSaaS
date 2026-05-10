@@ -55,7 +55,8 @@ Reviews are invoked as **agents** (Agent tool with `subagent_type`), never as sk
 
 1. Stage and commit all changes (incl. `.claude/memory/`, `plan/`) referencing the task.
 2. `python3 .claude/scripts/task-build-verify.py <worktree-path>`. Fix all failures/warnings.
-3. `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run.
+3. **Bug fix live test (mandatory for `bug` label issues).** If the issue has the `bug` label, run the exact browser/API verification described in the issue's Verify section against the live e2e stack (`localhost:5174`) before continuing. Passing unit tests or build checks is NOT sufficient -- the fix must be confirmed in the running app. If the Verify section shows the bug is still present, do not proceed: diagnose and fix again. Never mark a bug task complete based on code inspection alone.
+4. `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run.
 4. Code reviews **sequentially** (no parallel background agents). Before launching: check issue labels (`gh issue view <N> --json labels`) + diff to determine required reviewers per `.claude/procedures/review-routing.md`. Run all of them, including conditional ones.
 5. **UI Review (before pushing):** required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. Agent manages its own Docker stack. NEEDS WORK: fix, re-run, re-review. Log unfixed findings to `plan/ui-review-backlog.md`. For screens with student data, consult `.claude/procedures/review-ui-scenarios.md` and pass scenario student name(s).
 
