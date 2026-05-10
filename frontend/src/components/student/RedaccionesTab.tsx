@@ -185,6 +185,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
             invalidate()
             closeDrawer()
           }}
+          onCorregirError={(msg) => setCorregirError(msg)}
         />
       )}
     </div>
@@ -291,9 +292,10 @@ interface CorrectionDrawerProps {
   editId: string | null
   onClose: () => void
   onSaved: () => void
+  onCorregirError: (msg: string) => void
 }
 
-function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDrawerProps) {
+function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError }: CorrectionDrawerProps) {
   const queryClient = useQueryClient()
   const isEdit = editId != null
   const [title, setTitle] = useState('')
@@ -374,8 +376,13 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved }: CorrectionDra
               (old: CorrectionSummary[] | undefined) =>
                 old?.map((c) => (c.id === detail.id ? { ...c, status: detail.status } : c)) ?? old,
             )
-          } catch {
-            // correction was saved as Entregada; corregir can be retried from the card
+          } catch (corregirErr: unknown) {
+            // Correction was saved as Entregada; close the drawer and surface the error
+            // so the teacher knows AI generation didn't start and can retry from the card.
+            const msg =
+              (corregirErr as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+              'No se pudo iniciar la corrección.'
+            onCorregirError(msg)
           }
         }
       }

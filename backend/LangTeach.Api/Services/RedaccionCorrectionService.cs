@@ -66,20 +66,23 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
 
+        var outerLogger = _logger;
         _ = Task.Run(async () =>
         {
-            using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var claude = scope.ServiceProvider.GetRequiredService<IClaudeClient>();
-            var promptBuilder = scope.ServiceProvider.GetRequiredService<RedaccionCorrectionPromptBuilder>();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<RedaccionCorrectionService>>();
+            ILogger<RedaccionCorrectionService>? scopeLogger = null;
             try
             {
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, logger);
+                using var scope = _scopeFactory.CreateScope();
+                var sp = scope.ServiceProvider;
+                var db = sp.GetRequiredService<AppDbContext>();
+                var claude = sp.GetRequiredService<IClaudeClient>();
+                var promptBuilder = sp.GetRequiredService<RedaccionCorrectionPromptBuilder>();
+                scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, scopeLogger);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex,
+                (scopeLogger ?? outerLogger).LogError(ex,
                     "Background correction failed silently; row stays Corrigiendo until CorrectionService.ListAsync staleness sweep resets it to Entregada. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
                     correctionId, teacherId, studentId);
             }

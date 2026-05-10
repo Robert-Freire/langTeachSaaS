@@ -183,6 +183,8 @@ public class CorrectionsControllerTests
             db.SaveChanges();
         }
 
+        _factory.ClaudeStub.Reset();
+
         var resp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
@@ -208,12 +210,19 @@ public class CorrectionsControllerTests
         _factory.ClaudeStub.Reset();
         _factory.ClaudeStub.EnqueueResponse("This is not JSON at all.");
 
+        var preCallTime = created.UpdatedAt;
+
         var resp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
         detail!.Status.Should().Be("Corrigiendo");
+
+        // Wait for the background task to consume the stub response (bad JSON).
+        // This prevents the stub queue from racing with the next test in the collection.
+        await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corrigiendo",
+            maxWaitMs: 2000, stopWhenUpdatedAtAdvances: preCallTime);
     }
 
     [Fact]
@@ -539,19 +548,23 @@ public class CorrectionsControllerTests
 
     private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(
         HttpClient client, Guid studentId, Guid correctionId, string expectedStatus,
-        int maxWaitMs = 5000, int pollIntervalMs = 50)
+        int maxWaitMs = 5000, int pollIntervalMs = 50, DateTime? stopWhenUpdatedAtAdvances = null)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(maxWaitMs);
+        string? lastStatus = null;
         while (DateTime.UtcNow < deadline)
         {
             var r = await client.GetAsync($"/api/students/{studentId}/corrections/{correctionId}");
             r.EnsureSuccessStatusCode();
             var d = await r.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-            if (d!.Status == expectedStatus) return d;
+            lastStatus = d!.Status;
+            if (d.Status == expectedStatus) return d;
+            if (stopWhenUpdatedAtAdvances.HasValue && d.UpdatedAt > stopWhenUpdatedAtAdvances.Value)
+                return d;
             await Task.Delay(pollIntervalMs);
         }
         throw new TimeoutException(
-            $"Correction {correctionId} did not reach status '{expectedStatus}' within {maxWaitMs}ms.");
+            $"Correction {correctionId} did not reach status '{expectedStatus}' within {maxWaitMs}ms (last seen: '{lastStatus}').");
     }
 
     private async Task<(HttpClient client, Guid studentId)> SetupAsync(string auth0Id, string? email = null)

@@ -119,3 +119,7 @@ convention.
 Pre-existing (unrelated to PR):
 - `BuildSectionConversationPrompt` (L844-847): `forbiddenReasons` injected as negative list alongside positive guidance. Consider surfacing via guidance string instead.
 - `BuildSystemPrompt` (L606-608): second sentence duplicates first ("self-contained" stated twice). Merge to one sentence.
+
+## #1192 -- Corregir race condition (CodeRabbit, 2026-05-10)
+
+The read-then-write in CorregirAsync (check Status == Entregada, then set Corrigiendo) lacks atomic compare-and-swap. Two concurrent requests on the same correction can both observe Entregada and spawn duplicate background AI tasks. The TOCTOU guard in RunCorrectionInScopeAsync prevents duplicate tag rows, but two Claude calls can still fire. Fix: add [Timestamp] RowVersion to Correction entity + catch DbUpdateConcurrencyException in CorregirAsync.
