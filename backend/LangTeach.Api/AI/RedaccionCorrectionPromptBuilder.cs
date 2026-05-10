@@ -36,7 +36,9 @@ public class RedaccionCorrectionPromptBuilder
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
         // spannedText, breaking the rescue logic in ValidateAndOrderTags.
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096, Temperature: 0);
+        // MaxTokens 8192: ser/estar tree + minimum-span rule + L1 interference blocks pushed
+        // long-text responses past 4096, truncating mid-JSON (#1217).
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 8192, Temperature: 0);
     }
 
     private const string SystemPrompt = """
