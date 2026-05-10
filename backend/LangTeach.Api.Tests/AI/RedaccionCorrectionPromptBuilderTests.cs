@@ -92,15 +92,15 @@ public class RedaccionCorrectionPromptBuilderTests
     }
 
     [Fact]
-    public void Build_SystemPromptContainsSerEstarDisambiguationRule()
+    public void Build_SystemPromptContainsSerEstarDecisionTree()
     {
-        // Issue #1210: disambiguation rule prevents the model from tagging "esta" as O when
-        // the correct form is "es" (not "está").
+        // Issue #1215: the three accumulated ser/estar rules are replaced with one decision tree.
+        // The decision tree has an explicit G path ("esta" → "es") and O path (accent-only).
         var req = _builder.Build(MakeCtx());
 
-        req.SystemPrompt.Should().Contain("ser/estar disambiguation", "disambiguation rule must appear in CRITICAL RULES");
-        req.SystemPrompt.Should().Contain("es común", "disambiguation rule must reference ser for cultural norms");
-        req.SystemPrompt.Should().Contain("correctedForm: \"es\"", "disambiguation example must show correctedForm es, not está");
+        req.SystemPrompt.Should().Contain("never omit", "ser/estar rule must mandate tagging every occurrence");
+        req.SystemPrompt.Should().Contain("es común", "ser/estar rule must reference ser for cultural norms");
+        req.SystemPrompt.Should().Contain("\"esta\" corrected to \"es\"", "G path must show esta→es as the example");
     }
 
     [Fact]

@@ -19,4 +19,16 @@ public static class ContentJsonHelper
         }
         return trimmed;
     }
+
+    /// <summary>
+    /// Like StripFences, but also strips any prose preamble by advancing to the first '{'.
+    /// Use for JSON-object responses where the model may emit reasoning text before the object.
+    /// </summary>
+    public static string? StripFencesAndPreamble(string? content)
+    {
+        var stripped = StripFences(content);
+        if (string.IsNullOrEmpty(stripped)) return stripped;
+        var objectStart = stripped.IndexOf('{');
+        return objectStart > 0 ? stripped[objectStart..] : stripped;
+    }
 }
