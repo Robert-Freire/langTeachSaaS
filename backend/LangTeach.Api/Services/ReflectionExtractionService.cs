@@ -252,14 +252,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
         var raw = GetStringOrNull(root, key);
         if (raw is null) return null;
 
-        return DateOnly.TryParseExact(
-            raw,
-            "yyyy-MM-dd",
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
-            out var parsed)
-            ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-            : null;
+        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return raw;
+
+        if (DateTime.TryParseExact(raw, "yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return raw;
+
+        return null;
     }
 
     private static int? GetIntOrNull(JsonElement root, string key)

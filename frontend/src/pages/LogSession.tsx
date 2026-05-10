@@ -1172,10 +1172,14 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
-                    const nextDate = extracted.sessionDate || sessionDateRef.current
-                    const nextTime = extracted.sessionStartTime || sessionTimeRef.current
-                    if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
+                    const [datePart, embeddedTime] = extracted.sessionDate
+                      ? (extracted.sessionDate.split('T') as [string, string | undefined])
+                      : [null, null]
+                    const nextDate = datePart || sessionDateRef.current
+                    const nextTime = extracted.sessionStartTime || embeddedTime || sessionTimeRef.current
+                    if (datePart) setSessionDate(datePart)
                     if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
+                    else if (embeddedTime) setSessionTime(embeddedTime)
                     if (extracted.sessionDate || extracted.sessionStartTime) {
                       saveOverride.sessionDate = `${nextDate}T${nextTime || '00:00'}:00`
                     }
@@ -1193,8 +1197,9 @@ export default function LogSession() {
                     // Detect changed fields for highlight + undo bar
                     const changed = new Set<string>()
                     if (extracted.sessionTitle && extracted.sessionTitle !== snapshot.sessionTitle) changed.add('sessionTitle')
-                    if (extracted.sessionDate && extracted.sessionDate !== snapshot.sessionDate) changed.add('sessionDate')
+                    if (datePart && datePart !== snapshot.sessionDate) changed.add('sessionDate')
                     if (extracted.sessionStartTime && extracted.sessionStartTime !== snapshot.sessionTime) changed.add('sessionTime')
+                    else if (!extracted.sessionStartTime && embeddedTime && embeddedTime !== snapshot.sessionTime) changed.add('sessionTime')
                     if (extracted.durationMinutes && durationChoiceRef.current === '50') {
                       const presets = ['25', '30', '45', '50', '60', '90']
                       const newDurChoice = presets.includes(String(extracted.durationMinutes)) ? String(extracted.durationMinutes) : 'other'
