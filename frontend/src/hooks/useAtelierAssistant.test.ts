@@ -23,8 +23,13 @@ vi.mock('../api/students', () => ({
   createStudent: vi.fn(),
 }))
 
+vi.mock('../api/sessionLogs', () => ({
+  createSession: vi.fn(),
+}))
+
 import * as assistantApi from '../api/assistant'
 import * as studentsApi from '../api/students'
+import * as sessionLogsApi from '../api/sessionLogs'
 
 const mockPropose = vi.mocked(assistantApi.proposeAssistant)
 const mockApplyStudent = vi.mocked(assistantApi.applyStudentProposal)
@@ -33,6 +38,7 @@ const mockApplySession = vi.mocked(assistantApi.applySessionProposal)
 const mockApplyTodo = vi.mocked(assistantApi.applyTodoProposal)
 const mockApplyNewSession = vi.mocked(assistantApi.applyNewSessionProposal)
 const mockCreateStudent = vi.mocked(studentsApi.createStudent)
+const mockCreateSession = vi.mocked(sessionLogsApi.createSession)
 
 const sampleProposals = [
   { id: 'p1', type: 'student' as const, field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' },
@@ -539,6 +545,42 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await result.current.apply('p2') })
     expect(mockApplySession).not.toHaveBeenCalled()
     expect(result.current.proposals[0].status).toBe('error')
+  })
+
+  it('apply: session proposal with sessionId "new" creates a session then applies', async () => {
+    const fakeSession = { id: 'created-123', studentId: 'student-1', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    mockCreateSession.mockResolvedValueOnce(fakeSession)
+    mockApplySession.mockResolvedValueOnce(undefined)
+    const onAfterSessionApply = vi.fn()
+
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]] })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'new', onAfterSessionApply), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p2') })
+    expect(mockCreateSession).toHaveBeenCalledWith('student-1', expect.objectContaining({ title: 'Session', previousHomeworkStatus: 'NotApplicable' }))
+    expect(mockApplySession).toHaveBeenCalledWith('student-1', 'created-123', 'title', 'Past Perfect')
+    expect(result.current.proposals[0].status).toBe('applied')
+    expect(onAfterSessionApply).toHaveBeenCalledWith('created-123')
+  })
+
+  it('applyAll with sessionId "new" reuses the same created session for all session proposals', async () => {
+    const sessionProp2 = { id: 'p4', type: 'session' as const, field: 'generalNotes', label: 'Notes', oldValue: null, newValue: 'Reviewed past perfect' }
+    const fakeSession = { id: 'created-456', studentId: 'student-1', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    mockCreateSession.mockResolvedValueOnce(fakeSession)
+    mockApplySession.mockResolvedValue(undefined)
+
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1], sessionProp2] })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'new'), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.applyAll() })
+    expect(mockCreateSession).toHaveBeenCalledTimes(1)
+    expect(mockApplySession).toHaveBeenCalledTimes(2)
+    expect(mockApplySession).toHaveBeenCalledWith('student-1', 'created-456', 'title', 'Past Perfect')
+    expect(mockApplySession).toHaveBeenCalledWith('student-1', 'created-456', 'generalNotes', 'Reviewed past perfect')
   })
 
   it('applyAll: skips session proposals when sessionId is null', async () => {

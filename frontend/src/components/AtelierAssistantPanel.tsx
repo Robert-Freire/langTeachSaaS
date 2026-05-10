@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, Plus, CalendarDays } from 'lucide-react'
+import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, Plus, CalendarDays, Check } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { uploadVoiceNote } from '@/api/voiceNotes'
@@ -12,7 +12,6 @@ import { formatDuration } from '@/lib/formatDuration'
 import { BRAND_NAME } from '@/lib/brand'
 import { useQuery } from '@tanstack/react-query'
 import { listSessions } from '@/api/sessionLogs'
-import { useNavigate } from 'react-router-dom'
 import { formatMonthDay } from '@/utils/formatDate'
 
 const MIN_DURATION_S = 1
@@ -77,14 +76,18 @@ export default function AtelierAssistantPanel({
   sessionId,
   onSelectSession,
 }: Props) {
-  const navigate = useNavigate()
   const sessionContextMissing = !sessionId
-  const hasSessionProposalsWithoutContext = sessionContextMissing && proposals.some(p => p.type === 'session' && (p.status === 'proposed' || p.status === 'error'))
+  const newSessionSelected = sessionId === 'new'
+  const hasSessionProposals = proposals.some(p => p.type === 'session' && (p.status === 'proposed' || p.status === 'error'))
+  const hasSessionProposalsWithoutContext = sessionContextMissing && hasSessionProposals
+  // Show the session picker whenever there are session proposals and no real session is selected yet
+  // (includes the 'new' selection state so the teacher can see / change their choice)
+  const showSessionPicker = (sessionContextMissing || newSessionSelected) && hasSessionProposals
 
   const { data: recentSessions } = useQuery({
     queryKey: ['sessions', studentId],
     queryFn: () => listSessions(studentId!),
-    enabled: !!studentId && hasSessionProposalsWithoutContext,
+    enabled: !!studentId && showSessionPicker,
     select: (sessions) =>
       [...sessions]
         .filter(s => !s.isCancelled)
@@ -436,7 +439,7 @@ export default function AtelierAssistantPanel({
                   </p>
                 ) : (
                   <div className="space-y-3" data-testid="proposals-list">
-                    {hasSessionProposalsWithoutContext && (
+                    {showSessionPicker && (
                       <div
                         className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50"
                         data-testid="session-picker-banner"
@@ -445,11 +448,14 @@ export default function AtelierAssistantPanel({
                           Choose a session to apply these notes to:
                         </p>
                         <button
-                          onClick={() => studentId && navigate(`/students/${studentId}/sessions/new`)}
-                          className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors text-left"
+                          onClick={() => onSelectSession?.('new')}
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter font-semibold transition-colors text-left ${newSessionSelected ? 'text-indigo-700 bg-indigo-100' : 'text-indigo-600 hover:bg-indigo-50'}`}
                           data-testid="session-picker-new"
                         >
-                          <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          {newSessionSelected
+                            ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            : <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          }
                           New session
                         </button>
                         {(recentSessions ?? []).map(session => {
