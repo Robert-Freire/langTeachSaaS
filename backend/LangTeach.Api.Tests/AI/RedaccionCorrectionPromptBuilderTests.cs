@@ -92,15 +92,15 @@ public class RedaccionCorrectionPromptBuilderTests
     }
 
     [Fact]
-    public void Build_SystemPromptContainsSerEstarDisambiguationRule()
+    public void Build_SystemPromptContainsSerEstarDecisionTree()
     {
-        // Issue #1210: disambiguation rule prevents the model from tagging "esta" as O when
-        // the correct form is "es" (not "está").
+        // Issue #1215: the three accumulated ser/estar rules are replaced with one decision tree.
+        // The decision tree has an explicit G path ("esta" → "es") and O path (accent-only).
         var req = _builder.Build(MakeCtx());
 
-        req.SystemPrompt.Should().Contain("ser/estar disambiguation", "disambiguation rule must appear in CRITICAL RULES");
-        req.SystemPrompt.Should().Contain("es común", "disambiguation rule must reference ser for cultural norms");
-        req.SystemPrompt.Should().Contain("correctedForm: \"es\"", "disambiguation example must show correctedForm es, not está");
+        req.SystemPrompt.Should().Contain("never omit", "ser/estar rule must mandate tagging every occurrence");
+        req.SystemPrompt.Should().Contain("es común", "ser/estar rule must reference ser for cultural norms");
+        req.SystemPrompt.Should().Contain("\"esta\" corrected to \"es\"", "G path must show esta→es as the example");
     }
 
     [Fact]
@@ -188,6 +188,18 @@ public class RedaccionCorrectionPromptBuilderTests
         var req = _builder.Build(MakeCtx());
         req.SystemPrompt.Should().Contain("indexOf", "OFFSETS must reference indexOf/string-search derivation");
         req.SystemPrompt.Should().Contain("accented", "OFFSETS must warn about accented characters");
+    }
+
+    [Fact]
+    public void Build_SystemPromptContainsMinimumSpanRule()
+    {
+        // Issue #1215: the OFFSETS block must contain a general minimum-span rule so the model
+        // spans only the erroneous morpheme, not surrounding context.
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("minimum substring", "OFFSETS must mandate minimum-span tagging");
+        req.SystemPrompt.Should().Contain("interesante", "minimum-span rule must include the gender-agreement example");
+        req.SystemPrompt.Should().Contain("interesantes", "minimum-span example must show the corrected plural form");
     }
 
     private static RedaccionCorrectionPromptContext MakeCtx() =>

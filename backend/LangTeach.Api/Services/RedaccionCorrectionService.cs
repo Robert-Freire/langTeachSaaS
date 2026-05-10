@@ -156,7 +156,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         var response = await claude.CompleteAsync(request, CancellationToken.None);
 
         var raw = response.Content;
-        var stripped = ContentJsonHelper.StripFences(raw);
+        var stripped = ContentJsonHelper.StripFencesAndPreamble(raw);
         if (string.IsNullOrWhiteSpace(stripped))
         {
             logger.LogWarning("Background correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);

@@ -49,20 +49,19 @@ CATEGORIES (use the exact code letter):
 - G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
   Example: "*el problema es muy grande*" → if "el" is wrong gender for the noun, G.
 - L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).
-  Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register). Flag only CLEAR mismatches where the formality difference is significant; do not tag minor elevation.
+  Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register).
+  register mismatch: flag when the structure would be penalised in a written EOI task for that register (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures.
 - O (Ortografía): accents (tildes), misspelled words, punctuation.
   Example: "*musica*" instead of "música" → O. "*ablar*" instead of "hablar" → O.
 
 CRITICAL RULES:
 
-- ser/estar: a verb form that violates the ser/estar distinction is always G, at every level.
-  Use ser for general characteristics, classifications, and cultural norms (es común, es importante,
-  es normal); use estar for temporary states and ongoing conditions.
-- ser/estar disambiguation: before classifying a missing tilde as O, verify that the accented
-  form is actually the correct corrected form. If the correct verb is a different word entirely
-  (e.g. "es" instead of "está"), the error is G, not O.
-  Example: "Aquí *esta* bastante común" → correct form is "es" (ser for general characteristics
-  and cultural norms), not "está" → G, correctedForm: "es".
+- ser/estar (never omit): a verb that violates the ser/estar distinction is always G at every level.
+  Use ser for general characteristics, classifications, and cultural norms
+  (es común, es importante, es normal, es difícil).
+  Use estar for temporary states and ongoing conditions.
+  If the correct form is a different word (e.g. "esta" corrected to "es"): tag G; spannedText is the verb only; correctedForm is the correct verb.
+  If only a tilde is missing (e.g. "esta" corrected to "está"): tag O; spannedText is the word only; correctedForm is the accented form.
 - A misspelling or missing accent is O, NEVER G.
 - A wrong preposition is G, NEVER L.
 - A literal translation from the student's L1 is L, NEVER G.
@@ -70,7 +69,7 @@ CRITICAL RULES:
 
 OUTPUT CONTRACT:
 
-Emit raw JSON only. No prose before or after. No markdown fences. The JSON must match exactly:
+Emit raw JSON only. Start directly with {. No prose before or after. No markdown fences. The JSON must match exactly:
 
 {
   "schemaVersion": 1,
@@ -98,7 +97,6 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal the student text at [startIndex, endIndex).
 - If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
-- Tags MUST NOT overlap. Sort tags by startIndex.
 - spannedText MUST be the minimum substring that is itself erroneous: the specific word or
   morpheme to replace, not its surrounding context. For a verb error, span the verb only.
   For a missing accent, span the word only. Never span a surrounding phrase (unless a wider
@@ -106,6 +104,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   Example: in "Los libros son interesante", spannedText must be "interesante" (the wrong
   adjective) and correctedForm must be "interesantes", not "Los libros son interesante"
   or any larger span.
+- Tags MUST NOT overlap. Sort tags by startIndex.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
