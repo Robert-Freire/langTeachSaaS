@@ -24,4 +24,4 @@ public record ClaudeResponse(
     int OutputTokens
 );
 
-public enum ClaudeModel { Haiku, Sonnet }
+public enum ClaudeModel { Haiku, Sonnet, Opus }
