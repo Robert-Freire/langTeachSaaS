@@ -60,6 +60,8 @@ export function useAtelierAssistant(
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
   // Tracks the session created when sessionId === 'new', so applyAll reuses one session
   const newlyCreatedSessionRef = useRef<string | null>(null)
+  // In-flight guard: concurrent apply() calls share this promise instead of each calling createSession
+  const creatingSessionPromiseRef = useRef<Promise<string> | null>(null)
 
   // Clear all undo timers on unmount to prevent memory leaks
   useEffect(() => {
@@ -143,16 +145,22 @@ export function useAtelierAssistant(
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
       } else if (proposal.type === 'session' && studentId && sessionId === 'new') {
-        // Create one session for this "new" selection; applyAll reuses it via ref
+        // Create one session for this "new" selection; concurrent calls share the same promise
         if (!newlyCreatedSessionRef.current) {
-          const now = new Date()
-          const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-          const newSession = await createSession(studentId, {
-            title: 'Session',
-            sessionDate: localDate,
-            previousHomeworkStatus: 'NotApplicable',
-          })
-          newlyCreatedSessionRef.current = newSession.id
+          if (!creatingSessionPromiseRef.current) {
+            const now = new Date()
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+            creatingSessionPromiseRef.current = createSession(studentId, {
+              title: 'Session',
+              sessionDate: localDate,
+              previousHomeworkStatus: 'NotApplicable',
+            }).then(s => {
+              newlyCreatedSessionRef.current = s.id
+              creatingSessionPromiseRef.current = null
+              return s.id
+            })
+          }
+          await creatingSessionPromiseRef.current
         }
         await applySessionProposal(studentId, newlyCreatedSessionRef.current!, proposal.field, proposal.newValue)
       } else if (proposal.type === 'session' && studentId && !sessionId) {
@@ -288,6 +296,7 @@ export function useAtelierAssistant(
     generationRef.current++
     applyingIdsRef.current.clear()
     newlyCreatedSessionRef.current = null
+    creatingSessionPromiseRef.current = null
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
     setTranscription(null)
