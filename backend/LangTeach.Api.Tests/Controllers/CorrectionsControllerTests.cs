@@ -616,6 +616,20 @@ public class CorrectionsControllerTests
         second.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact]
+    public async Task SubmitFeedback_OtherTeachersCorrection_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-feedback-rls-a", "feedback-rls-a@example.com");
+        var correction = await CreateCorrectionAsync(clientA, studentA, new CreateCorrectionRequest { AssignmentTitle = "Owner A" });
+
+        var (clientB, _) = await SetupAsync("auth0|corr-feedback-rls-b", "feedback-rls-b@example.com");
+
+        var resp = await clientB.PostAsJsonAsync(
+            $"/api/students/{studentA}/corrections/{correction.Id}/feedback",
+            new { rating = "up" });
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(
         HttpClient client, Guid studentId, Guid correctionId, string expectedStatus,
         int maxWaitMs = 5000, int pollIntervalMs = 50, DateTime? stopWhenUpdatedAtAdvances = null)

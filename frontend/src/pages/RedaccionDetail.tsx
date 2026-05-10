@@ -10,6 +10,7 @@ import {
   type CorrectionDetail,
 } from '../api/corrections'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
 import { logger } from '../lib/logger'
@@ -177,7 +178,7 @@ export default function RedaccionDetail() {
   )
 }
 
-type FeedbackState = 'idle' | 'down-open' | 'submitting' | 'done'
+type FeedbackInputState = 'idle' | 'down-open'
 
 interface CorrectionFeedbackProps {
   studentId: string
@@ -185,21 +186,21 @@ interface CorrectionFeedbackProps {
 }
 
 function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps) {
-  const [state, setState] = useState<FeedbackState>('idle')
+  const [inputState, setInputState] = useState<FeedbackInputState>('idle')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function submit(rating: 'up' | 'down', reason?: string) {
-    setState('submitting')
-    try {
-      await submitCorrectionFeedback(studentId, correctionId, { rating, reason: reason || null })
-      setState('done')
-    } catch (err) {
-      logger.error('CorrectionFeedback', 'submit failed', err)
-      setState('idle')
-    }
+  const mutation = useMutation({
+    mutationFn: (body: { rating: 'up' | 'down'; reason?: string | null }) =>
+      submitCorrectionFeedback(studentId, correctionId, body),
+    onError: (err) => logger.error('CorrectionFeedback', 'submit failed', err),
+  })
+
+  function handleDown() {
+    const reason = inputRef.current?.value?.trim() || undefined
+    mutation.mutate({ rating: 'down', reason: reason ?? null })
   }
 
-  if (state === 'done') {
+  if (mutation.isSuccess) {
     return (
       <p className="text-sm text-zinc-500" role="status">
         Gracias por tu feedback.
@@ -209,47 +210,50 @@ function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps
 
   return (
     <div className="space-y-2">
-      {state !== 'down-open' && (
+      {inputState !== 'down-open' && (
         <div className="flex items-center gap-3">
           <button
             aria-label="Positivo"
-            disabled={state === 'submitting'}
-            onClick={() => submit('up')}
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ rating: 'up' })}
             className="text-zinc-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
           >
-            <ThumbsUp className="h-5 w-5" />
+            <ThumbsUp className="h-4 w-4" />
           </button>
           <button
             aria-label="Mejorable"
-            disabled={state === 'submitting'}
-            onClick={() => setState('down-open')}
+            disabled={mutation.isPending}
+            onClick={() => setInputState('down-open')}
             className="text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-50"
           >
-            <ThumbsDown className="h-5 w-5" />
+            <ThumbsDown className="h-4 w-4" />
           </button>
-          {state === 'submitting' && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
+          {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
         </div>
       )}
-      {state === 'down-open' && (
+      {inputState === 'down-open' && (
         <div className="flex items-center gap-2">
-          <input
+          <Input
             ref={inputRef}
-            type="text"
             autoFocus
             maxLength={500}
             placeholder="¿Qué mejorarías?"
-            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            disabled={mutation.isPending}
+            onKeyDown={(e) => e.key === 'Enter' && handleDown()}
+            className="flex-1 h-8 text-sm"
           />
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => submit('down', inputRef.current?.value?.trim())}
+            variant="ghost"
+            disabled={mutation.isPending}
+            onClick={handleDown}
           >
             Enviar
           </Button>
           <button
             aria-label="Cancelar"
-            onClick={() => setState('idle')}
+            disabled={mutation.isPending}
+            onClick={() => setInputState('idle')}
             className="text-xs text-zinc-400 hover:text-zinc-600"
           >
             Cancelar
