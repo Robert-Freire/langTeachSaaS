@@ -110,6 +110,36 @@ These do not block the redacción feature; they get fixed opportunistically as p
 - A writing-prompts library. Jordi assigns the prompt outside Atelier or types it into the assignment field.
 - Cross-student or cross-correction analytics dashboards (data model supports them, UI ships in Phase 3).
 
+## Smoke Test Appendix
+
+*Added during sprint close 2026-05-10. Issue coverage audit against all 40 closed issues. The main story walkthrough covers the core flow (Pendiente card, paste text, Corregir, view markup, popover, .docx download, dual-CEFR A2 vs B1 comparison). The following scenarios fill gaps not naturally exercised by that walkthrough.*
+
+**A1. Cold paste flow**
+Jordi clicks Nueva redacción, fills in title + prompt + pastes the letter text all in one go, hits Corregir without saving as Pendiente first. Expected: card saves directly as Corregida, correction appears. (Covers #1181 cold paste path.)
+
+**A2. Pendiente card save without text**
+Jordi clicks Nueva redacción, enters a title and prompt but leaves the text area empty, clicks Save/Guardar. Expected: card saves as Pendiente with no error; no Corregir button or it is disabled. (Covers #1181 Pendiente save path.)
+
+**A3. Title auto-generation when blank**
+Jordi clicks Nueva redacción, leaves the title empty, pastes text, hits Corregir. Expected: title auto-fills to "Redacción YYYY-MM-DD" (today's date). (Covers #1189.)
+
+**A4. Thumbs feedback on a Corregida correction**
+On an existing Corregida correction, verify thumbs up and thumbs down buttons are visible. Click thumbs down and confirm a free-text reason field appears and submits without error. (Covers #1196.)
+
+**A5. Atelier inline session picker**
+Navigate to Atelier when no session is currently open (or open Atelier fresh). Expected: no blocking banner; instead an inline session picker appears. Click "+ New session" and confirm it navigates to the correct session creation destination (not a 404 or non-existent page). (Covers #1185, #1187.)
+
+**A6. Apply All Remaining button in Atelier**
+Open Atelier before selecting a session. Expected: "Apply All Remaining" button is disabled or hidden. Select a session, confirm button becomes active. (Covers #1201.)
+
+**A7. Teaching Ideas label**
+Navigate to any screen that previously showed "Teaching Todo". Expected: label now reads "Teaching Ideas" everywhere. (Covers #1206.)
+
+**A8. Accented character in markup**
+In a Corregida correction where the student text contains accented words (también, está, están, etc.), confirm that markup spans adjacent to accented characters are present and clickable, not silently dropped. (Covers #1175.)
+
+---
+
 ## How to use this document
 
 Every task plan, review, and reviewer should be checked against one question: **does the same redacción, submitted by a real A2 student vs a real B2 student, return substantively different markup and explanations?** If the answer is "kind of" or "the words change but the substance doesn't", the feature is not done. CEFR-relative grading is the moat; everything else is plumbing for it.
