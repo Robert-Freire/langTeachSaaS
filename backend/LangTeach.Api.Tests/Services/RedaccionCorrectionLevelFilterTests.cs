@@ -225,6 +225,31 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     }
 
     [Fact]
+    public async Task LevelFilter_OverformalStructureInInformalTask_NotMuyBien()
+    {
+        // When the filter returns "remove" for a formal structure in an informal task,
+        // the tag must be dropped -- not promoted to MuyBien.
+        // Scenario: casual letter, imperfect subjunctive -- over-formal for the register.
+        var text = "Si te invitaran, supongo que vendrías.";
+        var id = SeedCorrection(text, CorrectionStatus.Entregada, assignmentPrompt: "Escribe una carta informal a un amigo.");
+
+        var lStart = text.IndexOf("Si te invitaran", StringComparison.Ordinal);
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("L", lStart, lStart + "Si te invitaran".Length, "Si te invitaran",
+                "Registro demasiado formal para una carta informal.", "Si te invitaras"),
+        }));
+        // Filter decides: over-formal for the informal task register; must not be muybien.
+        _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().BeEmpty("over-formal structure in informal task must be removed, not promoted to MuyBien");
+    }
+
+    [Fact]
     public async Task LevelFilter_MuyBienTagPassesThrough_FilterDecisionIgnored()
     {
         // MuyBien tags from Pass 1 (if any reach the filter) always survive regardless of filter decision.
