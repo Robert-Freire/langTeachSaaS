@@ -58,7 +58,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (correction.Status == CorrectionStatus.Corregida)
             throw new CorrectionInvalidStateException("already_corrected",
                 "This redacción has already been corrected.");
-        if (correction.Status != CorrectionStatus.Entregada)
+        if (correction.Status is not CorrectionStatus.Entregada and not CorrectionStatus.CorreccionFallida)
             throw new CorrectionInvalidStateException("invalid_status",
                 $"Unexpected status: {correction.Status}.");
 
@@ -83,9 +83,28 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             }
             catch (Exception ex)
             {
-                (scopeLogger ?? outerLogger).LogError(ex,
-                    "Background correction failed silently; row stays Corrigiendo until CorrectionService.ListAsync staleness sweep resets it to Entregada. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
+                var errLogger = scopeLogger ?? outerLogger;
+                errLogger.LogError(ex,
+                    "Background correction failed; setting CorreccionFallida. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
                     correctionId, teacherId, studentId);
+                try
+                {
+                    using var failScope = _scopeFactory.CreateScope();
+                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var failRow = await failDb.Corrections
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
+                    {
+                        failRow.Status = CorrectionStatus.CorreccionFallida;
+                        failRow.UpdatedAt = DateTime.UtcNow;
+                        await failDb.SaveChangesAsync();
+                    }
+                }
+                catch (Exception saveEx)
+                {
+                    errLogger.LogError(saveEx,
+                        "Failed to persist CorreccionFallida status. CorrectionId={CorrectionId}", correctionId);
+                }
             }
         });
 
@@ -134,56 +153,30 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         var request = promptBuilder.Build(ctx);
         var sentText = ctx.StudentText.TrimEnd();
 
-        const int MaxAttempts = 2;
-        ClaudeResponse response = null!;
-        string? stripped = null;
-        RedaccionCorrectionDto dto = null!;
-        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
+        var response = await claude.CompleteAsync(request, CancellationToken.None);
+
+        var raw = response.Content;
+        var stripped = ContentJsonHelper.StripFences(raw);
+        if (string.IsNullOrWhiteSpace(stripped))
         {
-            response = await claude.CompleteAsync(request, CancellationToken.None);
+            logger.LogWarning("Background correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
+            throw new InvalidOperationException("Claude returned empty content.");
+        }
 
-            var raw = response.Content;
-            stripped = ContentJsonHelper.StripFences(raw);
-            if (string.IsNullOrWhiteSpace(stripped))
-            {
-                logger.LogWarning("Background correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
-                throw new InvalidOperationException("Claude returned empty content.");
-            }
-
-            RedaccionCorrectionDto? parsed;
-            try
-            {
-                parsed = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
-            }
-            catch (JsonException ex)
-            {
-                var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
-                logger.LogWarning(ex, "Background correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
-                    correctionId, excerpt);
-                throw new InvalidOperationException("Claude response did not parse as the expected JSON shape.", ex);
-            }
-
+        RedaccionCorrectionDto dto;
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
             if (parsed is null || parsed.SchemaVersion != 1)
                 throw new InvalidOperationException("Claude response is missing or has an unsupported schemaVersion.");
-
-            if (string.Equals(parsed.OriginalText, sentText, StringComparison.Ordinal))
-            {
-                dto = parsed;
-                break;
-            }
-
-            if (attempt < MaxAttempts)
-            {
-                logger.LogWarning(
-                    "Background correction: originalText mismatch on attempt {Attempt}/{MaxAttempts}; retrying once. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
-                    attempt, MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
-                continue;
-            }
-
-            logger.LogWarning(
-                "Background correction: originalText mismatch after {MaxAttempts} attempts. CorrectionId={CorrectionId} SentLen={SentLen} ReturnedLen={ReturnedLen}",
-                MaxAttempts, correctionId, sentText.Length, parsed.OriginalText?.Length ?? 0);
-            throw new InvalidOperationException("Claude returned a paraphrased originalText; tag offsets cannot be trusted.");
+            dto = parsed;
+        }
+        catch (JsonException ex)
+        {
+            var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
+            logger.LogWarning(ex, "Background correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
+                correctionId, excerpt);
+            throw new InvalidOperationException("Claude response did not parse as the expected JSON shape.", ex);
         }
 
         var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId, logger);
@@ -519,7 +512,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     // can construct fixture payloads against the same shape the production code parses.
     public record RedaccionCorrectionDto(
         [property: JsonPropertyName("schemaVersion")] int SchemaVersion,
-        [property: JsonPropertyName("originalText")] string OriginalText,
         [property: JsonPropertyName("tags")] IReadOnlyList<RedaccionCorrectionTagDto>? Tags);
 
     public record RedaccionCorrectionTagDto(

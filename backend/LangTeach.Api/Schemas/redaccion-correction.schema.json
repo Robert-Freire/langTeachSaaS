@@ -2,18 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://langteach.local/schemas/redaccion-correction.schema.json",
   "title": "RedaccionCorrectionOutput",
-  "description": "Structured output of the redaccion correction prompt (#1153). Tag indices are character offsets into originalText. Tags MUST NOT overlap.",
+  "description": "Structured output of the redaccion correction prompt (#1153). Tag indices are character offsets into the stored StudentText. Tags MUST NOT overlap.",
   "type": "object",
-  "required": ["schemaVersion", "originalText", "tags"],
+  "required": ["schemaVersion", "tags"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
       "type": "integer",
       "const": 1
-    },
-    "originalText": {
-      "type": "string",
-      "minLength": 1
     },
     "tags": {
       "type": "array",
