@@ -1435,7 +1435,7 @@ export default function StudentForm() {
               style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
               data-testid="sidebar-teaching-todos"
             >
-              <SectionHeader>Teaching Todos</SectionHeader>
+              <SectionHeader>Teaching Ideas</SectionHeader>
               <TeachingTodosCard
                 todos={sidebarTodos}
                 studentId={id}

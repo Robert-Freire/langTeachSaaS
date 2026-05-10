@@ -38,7 +38,7 @@ public record TopicTagDto(string Tag, string? Category);
 
 public record ProposedNewSession(string Title, string? Date);
 
-public record ExtractedTeachingTodoDto(string Text, string? DueDate);
+public record ExtractedTeachingTodoDto(string Text);
 
 public record ExtractedReflectionDto(
     ExtractedTextFieldDto? WhatWasCovered,

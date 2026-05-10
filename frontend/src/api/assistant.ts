@@ -34,6 +34,7 @@ export interface ProposeResponse {
   proposals: ProposalDto[]
   voiceNoteId?: string
   sessionLogId?: string
+  extractedSessionDate?: string
 }
 
 export async function proposeAssistant(
@@ -102,9 +103,8 @@ export async function applySessionProposal(
 export async function applyTodoProposal(
   studentId: string,
   text: string,
-  dueDate?: string | null,
 ): Promise<void> {
-  await apiClient.post(`/api/students/${studentId}/teaching-todos`, { text, dueDate: dueDate ?? null })
+  await apiClient.post(`/api/students/${studentId}/teaching-todos`, { text, dueDate: null })
 }
 
 export async function applyNewSessionProposal(

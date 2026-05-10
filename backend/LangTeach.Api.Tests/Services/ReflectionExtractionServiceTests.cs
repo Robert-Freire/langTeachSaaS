@@ -515,8 +515,6 @@ public class ReflectionExtractionServiceTests
 
         result.TeachingTodos.Select(t => t.Text).Should()
             .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
-        result.TeachingTodos[0].DueDate.Should().BeNull();
-        result.TeachingTodos[1].DueDate.Should().Be("2026-05-12");
     }
 
     [Fact]
@@ -534,7 +532,6 @@ public class ReflectionExtractionServiceTests
 
         result.TeachingTodos.Select(t => t.Text).Should()
             .BeEquivalentTo(["Trabajar conectores adversativos", "Practicar el subjuntivo en concesivas"]);
-        result.TeachingTodos.Should().AllSatisfy(t => t.DueDate.Should().BeNull());
     }
 
     // regression tests for #1126: planning asides must land in nextLessonIdeas, not teachingTodos;

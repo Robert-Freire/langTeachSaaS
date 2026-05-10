@@ -123,29 +123,10 @@ describe('ProposalCard', () => {
     expect(container.querySelector('.bg-emerald-500')).toBeInTheDocument()
   })
 
-  it('todo type: shows editable date chip when payload has dueDate', async () => {
-    const onEditPayload = vi.fn()
-    renderCard(
-      makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: '2026-05-12' } }),
-      { onEditPayload }
-    )
-    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
-    expect(dateInput).toBeInTheDocument()
-    expect(dateInput.value).toBe('2026-05-12')
-    fireEvent.change(dateInput, { target: { value: '2026-05-19' } })
-    expect(onEditPayload).toHaveBeenCalledWith('p1', { dueDate: '2026-05-19' })
-  })
-
-  it('todo type: shows empty date chip when payload has no dueDate', () => {
-    renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: null } }))
-    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
-    expect(dateInput.value).toBe('')
-  })
-
-  it('todo type: date chip is disabled when card is applied', () => {
-    renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', status: 'applied', payload: { dueDate: '2026-05-12' } }))
-    const dateInput = screen.getByTestId('todo-date-input-p1') as HTMLInputElement
-    expect(dateInput).toBeDisabled()
+  it('todo type: renders idea text without due date input', () => {
+    renderCard(makeProposal({ type: 'todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: null }))
+    expect(screen.getByText('Repasar la voz pasiva')).toBeInTheDocument()
+    expect(screen.queryByTestId('todo-date-input-p1')).not.toBeInTheDocument()
   })
 
   it('proposed: shows Modify button', () => {

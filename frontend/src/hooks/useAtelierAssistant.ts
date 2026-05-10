@@ -62,6 +62,8 @@ export function useAtelierAssistant(
   const newlyCreatedSessionRef = useRef<string | null>(null)
   // In-flight guard: concurrent apply() calls share this promise instead of each calling createSession
   const creatingSessionPromiseRef = useRef<Promise<string> | null>(null)
+  // Extracted session date+time from the most recent propose response (e.g. "2026-05-10T13:00")
+  const extractedSessionDateRef = useRef<string | null>(null)
 
   // Clear all undo timers on unmount to prevent memory leaks
   useEffect(() => {
@@ -82,12 +84,13 @@ export function useAtelierAssistant(
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
     if (!hasPending) setProposals([])
     try {
-      const { proposals: raw } = await proposeAssistant(
+      const { proposals: raw, extractedSessionDate } = await proposeAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
       )
       if (generationRef.current !== gen) return
+      extractedSessionDateRef.current = extractedSessionDate ?? null
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -150,9 +153,10 @@ export function useAtelierAssistant(
           if (!creatingSessionPromiseRef.current) {
             const now = new Date()
             const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+            const sessionDate = extractedSessionDateRef.current ?? localDate
             creatingSessionPromiseRef.current = createSession(studentId, {
               title: 'Session',
-              sessionDate: localDate,
+              sessionDate,
               previousHomeworkStatus: 'NotApplicable',
             }).then(s => {
               newlyCreatedSessionRef.current = s.id
@@ -168,8 +172,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        const dueDate = (proposal.payload as { dueDate?: string | null } | null | undefined)?.dueDate ?? null
-        await applyTodoProposal(studentId, proposal.newValue, dueDate)
+        await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
         const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
