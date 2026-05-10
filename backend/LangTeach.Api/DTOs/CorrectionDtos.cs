@@ -58,3 +58,12 @@ public class UpdateCorrectionRequest
     [MaxLength(CreateCorrectionRequest.StudentTextMaxLength)]
     public string? StudentText { get; set; }
 }
+
+public class CorrectionFeedbackRequest
+{
+    [Required, RegularExpression("^(up|down)$", ErrorMessage = "Rating must be 'up' or 'down'.")]
+    public string Rating { get; set; } = "";
+
+    [MaxLength(2000)]
+    public string? Reason { get; set; }
+}

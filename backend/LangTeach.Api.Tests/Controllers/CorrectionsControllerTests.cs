@@ -546,6 +546,90 @@ public class CorrectionsControllerTests
 
     // --- helpers ---
 
+    [Fact]
+    public async Task SubmitFeedback_UpRating_Returns204()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-feedback-up");
+        var correction = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Feedback Up" });
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{correction.Id}/feedback",
+            new { rating = "up" });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task SubmitFeedback_DownRatingWithReason_Returns204()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-feedback-down");
+        var correction = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Feedback Down" });
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{correction.Id}/feedback",
+            new { rating = "down", reason = "El tag 3 es léxico, no gramática." });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task SubmitFeedback_UnknownCorrectionId_Returns404()
+    {
+        var (client, _) = await SetupAsync("auth0|corr-feedback-404");
+        var fakeStudentId = Guid.NewGuid();
+        var fakeCorrectionId = Guid.NewGuid();
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{fakeStudentId}/corrections/{fakeCorrectionId}/feedback",
+            new { rating = "up" });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task SubmitFeedback_InvalidRating_Returns400()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-feedback-bad-rating");
+        var correction = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Bad Rating" });
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{correction.Id}/feedback",
+            new { rating = "maybe" });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SubmitFeedback_DoubleSubmit_IsIdempotent()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-feedback-upsert");
+        var correction = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest { AssignmentTitle = "Upsert Test" });
+
+        var first = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{correction.Id}/feedback",
+            new { rating = "up" });
+        first.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var second = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{correction.Id}/feedback",
+            new { rating = "down", reason = "Revised opinion." });
+        second.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task SubmitFeedback_OtherTeachersCorrection_Returns404()
+    {
+        var (clientA, studentA) = await SetupAsync("auth0|corr-feedback-rls-a", "feedback-rls-a@example.com");
+        var correction = await CreateCorrectionAsync(clientA, studentA, new CreateCorrectionRequest { AssignmentTitle = "Owner A" });
+
+        var (clientB, _) = await SetupAsync("auth0|corr-feedback-rls-b", "feedback-rls-b@example.com");
+
+        var resp = await clientB.PostAsJsonAsync(
+            $"/api/students/{studentA}/corrections/{correction.Id}/feedback",
+            new { rating = "up" });
+        resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(
         HttpClient client, Guid studentId, Guid correctionId, string expectedStatus,
         int maxWaitMs = 5000, int pollIntervalMs = 50, DateTime? stopWhenUpdatedAtAdvances = null)

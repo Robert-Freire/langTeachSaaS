@@ -19,6 +19,7 @@ public class CorrectionsController : ControllerBase
     private readonly IRedaccionCorrectionService _redaccionCorrections;
     private readonly ICorrectionDocxExportService _docxExport;
     private readonly IProfileService _profileService;
+    private readonly IAssistantFeedbackService _feedbackService;
     private readonly ILogger<CorrectionsController> _logger;
 
     private const string DocxContentType =
@@ -29,12 +30,14 @@ public class CorrectionsController : ControllerBase
         IRedaccionCorrectionService redaccionCorrections,
         ICorrectionDocxExportService docxExport,
         IProfileService profileService,
+        IAssistantFeedbackService feedbackService,
         ILogger<CorrectionsController> logger)
     {
         _corrections = corrections;
         _redaccionCorrections = redaccionCorrections;
         _docxExport = docxExport;
         _profileService = profileService;
+        _feedbackService = feedbackService;
         _logger = logger;
     }
 
@@ -152,6 +155,22 @@ public class CorrectionsController : ControllerBase
         Response.Headers.ContentDisposition = disposition.ToString();
 
         return File(bytes, DocxContentType);
+    }
+
+    [HttpPost("{id:guid}/feedback")]
+    public async Task<IActionResult> SubmitFeedback(Guid studentId, Guid id, [FromBody] CorrectionFeedbackRequest request, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var result = await _feedbackService.SubmitForCorrectionAsync(teacherId, studentId, id, request.Rating, request.Reason, cancellationToken);
+
+        return result switch
+        {
+            CorrectionFeedbackResult.CorrectionNotFound => NotFound(),
+            _ => NoContent(),
+        };
     }
 
     [HttpDelete("{id:guid}")]

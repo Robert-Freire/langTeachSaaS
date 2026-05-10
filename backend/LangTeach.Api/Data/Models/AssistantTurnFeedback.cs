@@ -5,6 +5,7 @@ public class AssistantTurnFeedback
     public Guid Id { get; set; }
     public Guid TeacherId { get; set; }
     public Guid? VoiceNoteId { get; set; }
+    public Guid? CorrectionId { get; set; }
     /// <summary>Snapshot of the student context at submit time. Intentionally no FK — reconstruction after deletion is impossible.</summary>
     public Guid? StudentId { get; set; }
     /// <summary>Snapshot of the session context at submit time. Intentionally no FK — reconstruction after deletion is impossible.</summary>

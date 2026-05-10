@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Loader2, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
 import {
   corregirCorrection,
   downloadCorrectionDocx,
   getCorrection,
+  submitCorrectionFeedback,
   type CorrectionDetail,
 } from '../api/corrections'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
 import { logger } from '../lib/logger'
@@ -169,7 +171,94 @@ export default function RedaccionDetail() {
           ) : (
             <MarkedUpText studentText={data.studentText} tags={data.tags} />
           )}
+          <CorrectionFeedback studentId={studentId!} correctionId={correctionId!} />
         </>
+      )}
+    </div>
+  )
+}
+
+type FeedbackInputState = 'idle' | 'down-open'
+
+interface CorrectionFeedbackProps {
+  studentId: string
+  correctionId: string
+}
+
+function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps) {
+  const [inputState, setInputState] = useState<FeedbackInputState>('idle')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const mutation = useMutation({
+    mutationFn: (body: { rating: 'up' | 'down'; reason?: string | null }) =>
+      submitCorrectionFeedback(studentId, correctionId, body),
+    onError: (err) => logger.error('CorrectionFeedback', 'submit failed', err),
+  })
+
+  function handleDown() {
+    const reason = inputRef.current?.value?.trim() || undefined
+    mutation.mutate({ rating: 'down', reason: reason ?? null })
+  }
+
+  if (mutation.isSuccess) {
+    return (
+      <p className="text-sm text-zinc-500" role="status">
+        Gracias por tu feedback.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {inputState !== 'down-open' && (
+        <div className="flex items-center gap-3">
+          <button
+            aria-label="Positivo"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ rating: 'up' })}
+            className="text-zinc-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
+          >
+            <ThumbsUp className="h-4 w-4" />
+          </button>
+          <button
+            aria-label="Mejorable"
+            disabled={mutation.isPending}
+            onClick={() => setInputState('down-open')}
+            className="text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-50"
+          >
+            <ThumbsDown className="h-4 w-4" />
+          </button>
+          {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
+        </div>
+      )}
+      {inputState === 'down-open' && (
+        <div className="flex items-center gap-2">
+          <Input
+            ref={inputRef}
+            autoFocus
+            maxLength={500}
+            placeholder="¿Qué mejorarías?"
+            disabled={mutation.isPending}
+            onKeyDown={(e) => e.key === 'Enter' && handleDown()}
+            className="flex-1 h-8 text-sm"
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={mutation.isPending}
+            onClick={handleDown}
+          >
+            Enviar
+          </Button>
+          <button
+            aria-label="Cancelar"
+            disabled={mutation.isPending}
+            onClick={() => setInputState('idle')}
+            className="text-xs text-zinc-400 hover:text-zinc-600"
+          >
+            Cancelar
+          </button>
+        </div>
       )}
     </div>
   )

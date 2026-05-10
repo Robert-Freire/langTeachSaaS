@@ -314,6 +314,17 @@ public class AppDbContext : DbContext
              .HasForeignKey(f => f.VoiceNoteId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            // Same cascade-path constraint as VoiceNote: Teacher→Correction→AssistantTurnFeedback
+            // would conflict with Teacher→AssistantTurnFeedback cascade. NoAction used; application
+            // code is responsible for cleanup if a Correction is hard-deleted.
+            e.HasOne<Correction>()
+             .WithMany()
+             .HasForeignKey(f => f.CorrectionId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(f => new { f.CorrectionId, f.TeacherId })
+             .IsUnique()
+             .HasFilter("[CorrectionId] IS NOT NULL");
             e.Property(f => f.Rating).HasMaxLength(4).IsRequired();
             e.Property(f => f.Reason).HasMaxLength(2000);
         });

@@ -100,6 +100,19 @@ export async function downloadCorrectionDocx(
   triggerBlobDownload(response, fallback)
 }
 
+export interface CorrectionFeedbackRequest {
+  rating: 'up' | 'down'
+  reason?: string | null
+}
+
+export async function submitCorrectionFeedback(
+  studentId: string,
+  correctionId: string,
+  body: CorrectionFeedbackRequest,
+): Promise<void> {
+  await apiClient.post(`/api/students/${studentId}/corrections/${correctionId}/feedback`, body)
+}
+
 function sanitizeFilename(value: string): string {
   return value.replace(/[^a-zA-Z0-9-_.\s]/g, '').trim() || 'correccion'
 }
