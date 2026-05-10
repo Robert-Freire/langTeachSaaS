@@ -81,6 +81,40 @@ public class RedaccionCorrectionPromptBuilderTests
     }
 
     [Fact]
+    public void Build_OExampleUsesMusica_NotEsta()
+    {
+        // Issue #1210: the old O example used "esta"/"está" which directly conflicts with the
+        // ser/estar G rule. The model pattern-matched the example and misclassified the error.
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("musica", "O example must use musica/música so it cannot be confused with a ser/estar grammar error");
+        req.SystemPrompt.Should().NotContain("\"*esta*\" instead of \"está\" → O", "the ambiguous esta/está O example must be removed");
+    }
+
+    [Fact]
+    public void Build_SystemPromptContainsSerEstarDisambiguationRule()
+    {
+        // Issue #1210: disambiguation rule prevents the model from tagging "esta" as O when
+        // the correct form is "es" (not "está").
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("ser/estar disambiguation", "disambiguation rule must appear in CRITICAL RULES");
+        req.SystemPrompt.Should().Contain("es común", "disambiguation rule must reference ser for cultural norms");
+        req.SystemPrompt.Should().Contain("correctedForm: \"es\"", "disambiguation example must show correctedForm es, not está");
+    }
+
+    [Fact]
+    public void Build_SerEstarRuleReferencesGeneralCharacteristics()
+    {
+        // Issue #1210: "permanent/transient" framing is imprecise and leads to wrong
+        // classifications. The strengthened rule anchors on general characteristics/norms.
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("general characteristics", "ser/estar rule must use general-characteristics framing");
+        req.SystemPrompt.Should().Contain("cultural norms", "ser/estar rule must reference cultural norms as a ser anchor");
+    }
+
+    [Fact]
     public void Build_SystemPromptContainsRegisterMismatchInL()
     {
         var req = _builder.Build(MakeCtx());
