@@ -1362,7 +1362,13 @@ export default function LogSession() {
                     {isEditMode ? 'Edit Session' : 'What Happened?'}
                   </h1>
                   <span className="text-xs text-zinc-400 shrink-0 ml-4">
-                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDateMaybeTime(isEditMode ? editSession?.sessionDate : sessionDate)}
+                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDateMaybeTime(
+                      isEditMode
+                        ? editSession?.sessionDate
+                        : sessionDate
+                          ? `${sessionDate}T${sessionTime || '00:00'}:00`
+                          : null,
+                    )}
                   </span>
                 </div>
                 {!isEditMode && <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>}
