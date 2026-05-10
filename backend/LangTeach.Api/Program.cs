@@ -135,6 +135,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.BaseAddress = new Uri(opts.BaseUrl);
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    client.Timeout = TimeSpan.FromSeconds(RedaccionCorrectionTimeouts.HttpClientSeconds);
 });
 builder.Services.AddHttpClient("AzureSpeech", client =>
 {

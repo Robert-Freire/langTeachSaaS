@@ -36,9 +36,9 @@ public class RedaccionCorrectionPromptBuilder
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
         // spannedText, breaking the rescue logic in ValidateAndOrderTags.
-        // MaxTokens 8192: ser/estar tree + minimum-span rule + L1 interference blocks pushed
-        // long-text responses past 4096, truncating mid-JSON (#1217).
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 8192, Temperature: 0);
+        // MaxTokens 16384: accumulated prompt rules (#1210-#1215) make Sonnet more verbose;
+        // 150-word texts with many errors can exceed 8192 output tokens (#1219).
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 16384, Temperature: 0);
     }
 
     private const string SystemPrompt = """
@@ -64,7 +64,12 @@ CRITICAL RULES:
   Use estar for temporary states and ongoing conditions.
   If the correct form is a different word (e.g. "esta" corrected to "es"): tag G; spannedText is the verb only; correctedForm is the correct verb.
   If only a tilde is missing (e.g. "esta" corrected to "está"): tag O; spannedText is the word only; correctedForm is the accented form.
-- A misspelling or missing accent is O, NEVER G.
+  Example: "Aquí esta bastante común" → this is a wrong-word error, not a tilde case.
+  spannedText = "esta", category G, correctedForm = "es". Never span the surrounding phrase.
+- When the surface form could be either a missing tilde OR a wrong verb (e.g. "esta"):
+  apply the ser/estar rule first. If the correct form is a different word → G.
+  Only apply "A misspelling or missing accent is O, NEVER G" when the correct form
+  is the same word with its accent restored.
 - A wrong preposition is G, NEVER L.
 - A literal translation from the student's L1 is L, NEVER G.
 - A missing or wrong connector is C, NEVER G.
