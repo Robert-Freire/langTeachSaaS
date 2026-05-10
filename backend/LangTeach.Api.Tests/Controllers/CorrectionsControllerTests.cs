@@ -199,7 +199,7 @@ public class CorrectionsControllerTests
     public async Task Corregir_OnEntregada_ReturnsCorrigiendoEvenWhenAiFails()
     {
         // Endpoint fires background task and returns immediately. AI failure is silent;
-        // staleness recovery (60s) eventually resets to Entregada on the next GET.
+        // staleness recovery eventually resets to Entregada on the next GET.
         var (client, studentId) = await SetupAsync("auth0|corr-corregir-badjson");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
         {
@@ -228,7 +228,7 @@ public class CorrectionsControllerTests
     [Fact]
     public async Task List_StaleCorrigiendo_RevetsToEntregada()
     {
-        // When a Corrigiendo record is older than 60 seconds (background task failed silently),
+        // When a Corrigiendo record is older than StaleCorrigiendoSeconds (background task failed silently),
         // the next GET /corrections resets it to Entregada so the teacher can retry.
         var (client, studentId) = await SetupAsync("auth0|corr-staleness");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
@@ -243,7 +243,7 @@ public class CorrectionsControllerTests
             var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
             var row = db.Corrections.First(c => c.Id == created.Id);
             row.Status = LangTeach.Api.Data.Models.CorrectionStatus.Corrigiendo;
-            row.UpdatedAt = DateTime.UtcNow.AddMinutes(-2);
+            row.UpdatedAt = DateTime.UtcNow.AddMinutes(-10); // > StaleCorrigiendoSeconds (360s)
             db.SaveChanges();
         }
 

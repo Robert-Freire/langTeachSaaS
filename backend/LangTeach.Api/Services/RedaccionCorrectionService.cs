@@ -331,21 +331,35 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                         "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
                     continue;
                 }
-                var foundAt = originalText.IndexOf(tag.SpannedText, StringComparison.Ordinal);
-                if (foundAt < 0)
+                // Collect all occurrences of spannedText in the original text.
+                var occurrences = new List<int>();
+                var searchFrom = 0;
+                while (true)
+                {
+                    var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
+                    if (hit < 0) break;
+                    occurrences.Add(hit);
+                    searchFrom = hit + 1;
+                }
+                if (occurrences.Count == 0)
                 {
                     logger.LogWarning(
                         "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
                         tag.SpannedText, correctionId);
                     continue;
                 }
-                var secondAt = originalText.IndexOf(tag.SpannedText, foundAt + 1, StringComparison.Ordinal);
-                if (secondAt >= 0)
+                // When there are multiple occurrences, use the model's startIndex as a proximity hint:
+                // the model knows approximately where the error is even if the exact offset drifted due
+                // to accented characters. Pick the occurrence closest to the reported startIndex.
+                // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
+                var foundAt = occurrences.Count == 1
+                    ? occurrences[0]
+                    : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
+                if (occurrences.Count > 1)
                 {
                     logger.LogWarning(
-                        "Drop tag: spannedText '{Spanned}' is ambiguous (found at {First} and {Second}); cannot rescue. CorrectionId={CorrectionId}",
-                        tag.SpannedText, foundAt, secondAt, correctionId);
-                    continue;
+                        "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
+                        tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
                 }
                 logger.LogWarning(
                     "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",

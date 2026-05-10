@@ -1,3 +1,4 @@
+using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -25,9 +26,9 @@ public class CorrectionService : ICorrectionService
 
         // Staleness recovery: a background AI task that failed silently leaves the
         // correction stuck in Corrigiendo. After StaleCorrigiendoSeconds we revert to
-        // Entregada so the teacher can retry. Must exceed p99 Claude latency (~30s).
-        const int StaleCorrigiendoSeconds = 60;
-        var staleThreshold = DateTime.UtcNow.AddSeconds(-StaleCorrigiendoSeconds);
+        // Entregada so the teacher can retry. Derived from RedaccionCorrectionTimeouts so
+        // the two values stay in sync -- see ClaudeClientOptions.cs.
+        var staleThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleCorrigiendoSeconds);
         var stale = await _db.Corrections
             .Where(c => c.TeacherId == teacherId && c.StudentId == studentId
                      && c.DeletedAt == null
