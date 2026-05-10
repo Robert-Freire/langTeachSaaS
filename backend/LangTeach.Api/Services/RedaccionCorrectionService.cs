@@ -351,6 +351,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 // When there are multiple occurrences, use the model's startIndex as a proximity hint:
                 // the model knows approximately where the error is even if the exact offset drifted due
                 // to accented characters. Pick the occurrence closest to the reported startIndex.
+                // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
                 var foundAt = occurrences.Count == 1
                     ? occurrences[0]
                     : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
