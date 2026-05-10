@@ -91,25 +91,19 @@ describe('RedaccionesTab', () => {
     expect(screen.queryByTestId('redaccion-corregir-c-pend')).not.toBeInTheDocument()
   })
 
-  it('renders Corregir on Entregada cards and shows Generando state when clicked', async () => {
+  it('renders Corregir on Entregada cards; clicking it fires corregirCorrection', async () => {
+    const corrigiendoDetail: CorrectionDetail = {
+      ...detail,
+      id: 'c-ent',
+      status: 'Corrigiendo',
+    }
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([entregada])
-    let resolveCorregir: () => void = () => {}
-    vi.mocked(correctionsApi.corregirCorrection).mockReturnValue(
-      new Promise<void>((resolve) => {
-        resolveCorregir = resolve
-      }),
-    )
+    vi.mocked(correctionsApi.corregirCorrection).mockResolvedValue(corrigiendoDetail)
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
 
     const button = await screen.findByTestId('redaccion-corregir-c-ent')
     fireEvent.click(button)
 
-    await waitFor(() => {
-      expect(screen.getByTestId('redaccion-status-c-ent')).toHaveTextContent('Generando…')
-    })
-    expect(button).toBeDisabled()
-
-    resolveCorregir()
     await waitFor(() => {
       expect(correctionsApi.corregirCorrection).toHaveBeenCalledWith(STUDENT_ID, 'c-ent')
     })
@@ -278,7 +272,7 @@ describe('RedaccionesTab', () => {
   it('create with text: clicking Corregir calls createCorrection then corregirCorrection', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
     vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new-id', status: 'Entregada' })
-    vi.mocked(correctionsApi.corregirCorrection).mockResolvedValue()
+    vi.mocked(correctionsApi.corregirCorrection).mockResolvedValue({ ...detail, id: 'new-id', status: 'Corrigiendo' })
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
 
     fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))

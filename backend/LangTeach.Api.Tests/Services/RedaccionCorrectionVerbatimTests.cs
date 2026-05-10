@@ -3,6 +3,7 @@ using FluentAssertions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
+using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -147,10 +148,34 @@ public class RedaccionCorrectionVerbatimTests
         var claude = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(),
             NullLogger<ClaudeApiClient>.Instance);
 
-        var service = new RedaccionCorrectionService(db, claude, promptBuilder,
+        // Build a scope factory so the background Task.Run can resolve fresh dependencies.
+        var scopeServices = new ServiceCollection();
+        scopeServices.AddSingleton<AppDbContext>(_ => new AppDbContext(dbOptions));
+        scopeServices.AddSingleton<IClaudeClient>(claude);
+        scopeServices.AddSingleton(promptBuilder);
+        scopeServices.AddLogging();
+        var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
+
+        var service = new RedaccionCorrectionService(db, scopeFactory, promptBuilder,
             NullLogger<RedaccionCorrectionService>.Instance);
 
-        var detail = await service.CorregirAsync(teacherId, studentId, correctionId);
+        await service.CorregirAsync(teacherId, studentId, correctionId);
+
+        // Background task calls the real Claude API; poll until completed (up to 120s).
+        var deadline = DateTime.UtcNow.AddSeconds(120);
+        CorrectionDetailDto? detail = null;
+        while (DateTime.UtcNow < deadline)
+        {
+            using var check = new AppDbContext(dbOptions);
+            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == correctionId);
+            if (row?.Status == "Corregida")
+            {
+                detail = CorrectionDtoMapper.ToDetail(row, row.Tags);
+                break;
+            }
+            await Task.Delay(500);
+        }
+        if (detail is null) throw new TimeoutException($"Correction {correctionId} never reached Corregida in 120s.");
         return new CorrectionRun(detail, db, sp);
     }
 

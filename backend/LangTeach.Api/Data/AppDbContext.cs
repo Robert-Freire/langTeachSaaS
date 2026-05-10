@@ -366,7 +366,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_Corrections_Status",
-                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corregida')"));
+                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corrigiendo', 'Corregida')"));
             e.HasKey(c => c.Id);
             e.HasIndex(c => new { c.TeacherId, c.DeletedAt });
             e.HasIndex(c => new { c.StudentId, c.DeletedAt });

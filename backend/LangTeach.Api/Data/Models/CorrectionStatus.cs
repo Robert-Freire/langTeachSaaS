@@ -8,8 +8,9 @@ public static class CorrectionStatus
 {
     public const string Pendiente = "Pendiente";
     public const string Entregada = "Entregada";
+    public const string Corrigiendo = "Corrigiendo";
     public const string Corregida = "Corregida";
 
     public static bool IsValid(string value) =>
-        value == Pendiente || value == Entregada || value == Corregida;
+        value == Pendiente || value == Entregada || value == Corrigiendo || value == Corregida;
 }

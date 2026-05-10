@@ -88,7 +88,7 @@ public class CorrectionsControllerTests
     }
 
     [Fact]
-    public async Task Corregir_OnEntregada_FlipsToCorregidaWithTags()
+    public async Task Corregir_OnEntregada_ReturnsCorrigiendoImmediately_ThenFlipsToCorregida()
     {
         var (client, studentId) = await SetupAsync("auth0|corr-corregir-ok");
         var text = "Hoy ablar con mi amigo.";
@@ -105,9 +105,13 @@ public class CorrectionsControllerTests
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
 
+        // Endpoint returns immediately with Corrigiendo; background task fires asynchronously.
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        detail!.Status.Should().Be("Corregida");
+        var immediate = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        immediate!.Status.Should().Be("Corrigiendo");
+
+        // Background task (stub: synchronous, no network) should complete within a few hundred ms.
+        var detail = await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corregida");
         detail.CorrectedAt.Should().NotBeNull();
         detail.Tags.Should().HaveCount(1);
         detail.Tags[0].Category.Should().Be("O");
@@ -150,6 +154,9 @@ public class CorrectionsControllerTests
             content: null);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        // Wait for the background task to flip status to Corregida before the second call.
+        await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corregida");
+
         var second = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
@@ -157,8 +164,42 @@ public class CorrectionsControllerTests
     }
 
     [Fact]
-    public async Task Corregir_OnInvalidJson_Returns502()
+    public async Task Corregir_OnCorrigiendo_Returns200Idempotent()
     {
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-idempotent");
+        var text = "El niño juega en el parque.";
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Idempotent test",
+            StudentText = text,
+        });
+
+        // Force Corrigiendo status directly via DB.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            var row = db.Corrections.First(c => c.Id == created.Id);
+            row.Status = LangTeach.Api.Data.Models.CorrectionStatus.Corrigiendo;
+            db.SaveChanges();
+        }
+
+        _factory.ClaudeStub.Reset();
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Corrigiendo");
+        _factory.ClaudeStub.CompleteCallCount.Should().Be(0, "idempotent path must not trigger a second AI call");
+    }
+
+    [Fact]
+    public async Task Corregir_OnEntregada_ReturnsCorrigiendoEvenWhenAiFails()
+    {
+        // Endpoint fires background task and returns immediately. AI failure is silent;
+        // staleness recovery (60s) eventually resets to Entregada on the next GET.
         var (client, studentId) = await SetupAsync("auth0|corr-corregir-badjson");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
         {
@@ -169,16 +210,47 @@ public class CorrectionsControllerTests
         _factory.ClaudeStub.Reset();
         _factory.ClaudeStub.EnqueueResponse("This is not JSON at all.");
 
+        var preCallTime = created.UpdatedAt;
+
         var resp = await client.PostAsync(
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
-        resp.StatusCode.Should().Be(HttpStatusCode.BadGateway);
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.Status.Should().Be("Corrigiendo");
 
-        // Status reverts (was never committed): row remains Entregada, retryable.
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
-        var row = db.Corrections.First(c => c.Id == created.Id);
-        row.Status.Should().Be(LangTeach.Api.Data.Models.CorrectionStatus.Entregada);
+        // Wait for the background task to consume the stub response (bad JSON).
+        // This prevents the stub queue from racing with the next test in the collection.
+        await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corrigiendo",
+            maxWaitMs: 2000, stopWhenUpdatedAtAdvances: preCallTime);
+    }
+
+    [Fact]
+    public async Task List_StaleCorrigiendo_RevetsToEntregada()
+    {
+        // When a Corrigiendo record is older than 60 seconds (background task failed silently),
+        // the next GET /corrections resets it to Entregada so the teacher can retry.
+        var (client, studentId) = await SetupAsync("auth0|corr-staleness");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Staleness test",
+            StudentText = "Texto para comprobar el mecanismo de staleness.",
+        });
+
+        // Force Corrigiendo with an old UpdatedAt to simulate a stuck background task.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            var row = db.Corrections.First(c => c.Id == created.Id);
+            row.Status = LangTeach.Api.Data.Models.CorrectionStatus.Corrigiendo;
+            row.UpdatedAt = DateTime.UtcNow.AddMinutes(-2);
+            db.SaveChanges();
+        }
+
+        var listResp = await client.GetAsync($"/api/students/{studentId}/corrections");
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await listResp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>();
+        list!.Should().ContainSingle(c => c.Id == created.Id && c.Status == "Entregada");
     }
 
     [Fact]
@@ -207,8 +279,11 @@ public class CorrectionsControllerTests
             $"/api/students/{studentId}/corrections/{detail.Id}/corregir",
             content: null);
         corregirResp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var corrected = await corregirResp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        corrected!.Status.Should().Be("Corregida");
+        var immediate = await corregirResp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        immediate!.Status.Should().Be("Corrigiendo");
+
+        var corrected = await WaitForCorrectionStatusAsync(client, studentId, detail.Id, "Corregida");
+        corrected.Status.Should().Be("Corregida");
     }
 
     private static string BuildSampleAiJson(string originalText)
@@ -439,13 +514,58 @@ public class CorrectionsControllerTests
             content: null);
 
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        detail!.Tags.Should().HaveCount(1, "tag with correct spannedText must be rescued despite offset drift");
+        var detail = await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corregida");
+        detail.Tags.Should().HaveCount(1, "tag with correct spannedText must be rescued despite offset drift");
         detail.Tags[0].SpannedText.Should().Be("café");
         detail.Tags[0].StartIndex.Should().Be(realIdx, "rescue must fix startIndex to the true position");
     }
 
+    [Fact]
+    public async Task Patch_StudentTextOnCorrigiendo_Returns400()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-locked-corrigiendo");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Corrigiendo lock test",
+            StudentText = "Original text.",
+        });
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            var row = db.Corrections.First(c => c.Id == created.Id);
+            row.Status = LangTeach.Api.Data.Models.CorrectionStatus.Corrigiendo;
+            db.SaveChanges();
+        }
+
+        var resp = await client.PatchAsJsonAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}",
+            new UpdateCorrectionRequest { StudentText = "Edited while corrigiendo." });
+        resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     // --- helpers ---
+
+    private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(
+        HttpClient client, Guid studentId, Guid correctionId, string expectedStatus,
+        int maxWaitMs = 5000, int pollIntervalMs = 50, DateTime? stopWhenUpdatedAtAdvances = null)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(maxWaitMs);
+        string? lastStatus = null;
+        while (DateTime.UtcNow < deadline)
+        {
+            var r = await client.GetAsync($"/api/students/{studentId}/corrections/{correctionId}");
+            r.EnsureSuccessStatusCode();
+            var d = await r.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+            lastStatus = d!.Status;
+            if (d.Status == expectedStatus) return d;
+            if (stopWhenUpdatedAtAdvances.HasValue && d.UpdatedAt > stopWhenUpdatedAtAdvances.Value)
+                return d;
+            await Task.Delay(pollIntervalMs);
+        }
+        throw new TimeoutException(
+            $"Correction {correctionId} did not reach status '{expectedStatus}' within {maxWaitMs}ms (last seen: '{lastStatus}').");
+    }
 
     private async Task<(HttpClient client, Guid studentId)> SetupAsync(string auth0Id, string? email = null)
     {

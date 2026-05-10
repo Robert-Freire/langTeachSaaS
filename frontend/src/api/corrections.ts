@@ -1,7 +1,7 @@
 import { apiClient } from '../lib/apiClient'
 import { triggerBlobDownload } from '../lib/downloadBlob'
 
-export type CorrectionStatus = 'Pendiente' | 'Entregada' | 'Corregida'
+export type CorrectionStatus = 'Pendiente' | 'Entregada' | 'Corrigiendo' | 'Corregida'
 export type CorrectionTagCategory = 'C' | 'G' | 'L' | 'O' | 'MuyBien'
 
 export interface CorrectionSummary {
@@ -79,10 +79,12 @@ export async function deleteCorrection(studentId: string, id: string): Promise<v
   await apiClient.delete(`/api/students/${studentId}/corrections/${id}`)
 }
 
-export async function corregirCorrection(studentId: string, id: string): Promise<void> {
-  await apiClient.post(`/api/students/${studentId}/corrections/${id}/corregir`, null, {
-    timeout: 60_000,
-  })
+export async function corregirCorrection(studentId: string, id: string): Promise<CorrectionDetail> {
+  const res = await apiClient.post<CorrectionDetail>(
+    `/api/students/${studentId}/corrections/${id}/corregir`,
+    null,
+  )
+  return res.data
 }
 
 export async function downloadCorrectionDocx(
