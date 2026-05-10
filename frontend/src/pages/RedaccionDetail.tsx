@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Loader2, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
 import {
   corregirCorrection,
   downloadCorrectionDocx,
   getCorrection,
+  submitCorrectionFeedback,
   type CorrectionDetail,
 } from '../api/corrections'
 import { Button } from '@/components/ui/button'
@@ -169,7 +170,91 @@ export default function RedaccionDetail() {
           ) : (
             <MarkedUpText studentText={data.studentText} tags={data.tags} />
           )}
+          <CorrectionFeedback studentId={studentId!} correctionId={correctionId!} />
         </>
+      )}
+    </div>
+  )
+}
+
+type FeedbackState = 'idle' | 'down-open' | 'submitting' | 'done'
+
+interface CorrectionFeedbackProps {
+  studentId: string
+  correctionId: string
+}
+
+function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps) {
+  const [state, setState] = useState<FeedbackState>('idle')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function submit(rating: 'up' | 'down', reason?: string) {
+    setState('submitting')
+    try {
+      await submitCorrectionFeedback(studentId, correctionId, { rating, reason: reason || null })
+      setState('done')
+    } catch (err) {
+      logger.error('CorrectionFeedback', 'submit failed', err)
+      setState('idle')
+    }
+  }
+
+  if (state === 'done') {
+    return (
+      <p className="text-sm text-zinc-500" role="status">
+        Gracias por tu feedback.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {state !== 'down-open' && (
+        <div className="flex items-center gap-3">
+          <button
+            aria-label="Positivo"
+            disabled={state === 'submitting'}
+            onClick={() => submit('up')}
+            className="text-zinc-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
+          >
+            <ThumbsUp className="h-5 w-5" />
+          </button>
+          <button
+            aria-label="Mejorable"
+            disabled={state === 'submitting'}
+            onClick={() => setState('down-open')}
+            className="text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-50"
+          >
+            <ThumbsDown className="h-5 w-5" />
+          </button>
+          {state === 'submitting' && <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />}
+        </div>
+      )}
+      {state === 'down-open' && (
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            autoFocus
+            maxLength={500}
+            placeholder="¿Qué mejorarías?"
+            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => submit('down', inputRef.current?.value?.trim())}
+          >
+            Enviar
+          </Button>
+          <button
+            aria-label="Cancelar"
+            onClick={() => setState('idle')}
+            className="text-xs text-zinc-400 hover:text-zinc-600"
+          >
+            Cancelar
+          </button>
+        </div>
       )}
     </div>
   )
