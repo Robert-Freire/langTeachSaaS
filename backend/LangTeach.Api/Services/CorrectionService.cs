@@ -133,9 +133,9 @@ public class CorrectionService : ICorrectionService
 
             var trimmed = string.IsNullOrWhiteSpace(request.StudentText) ? null : request.StudentText;
             correction.StudentText = trimmed;
-            if (trimmed is not null && correction.Status == CorrectionStatus.Pendiente)
+            if (trimmed is not null && correction.Status is CorrectionStatus.Pendiente or CorrectionStatus.CorreccionFallida)
                 correction.Status = CorrectionStatus.Entregada;
-            else if (trimmed is null && correction.Status == CorrectionStatus.Entregada)
+            else if (trimmed is null && correction.Status is CorrectionStatus.Entregada or CorrectionStatus.CorreccionFallida)
                 correction.Status = CorrectionStatus.Pendiente;
         }
 

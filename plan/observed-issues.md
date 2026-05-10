@@ -8,6 +8,9 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1203 | 2026-05-10 | low | Sophy: ser/estar worked examples and register-mismatch examples are hardcoded in C# SystemPrompt literals. Long-term they belong in JSON config alongside grammar scope data. |
 | #1203 | 2026-05-10 | low | Prompt health: redundant verbatim-echo rationale appears twice in Pass 1 prompt (line 84 and line 98 paragraph). Minor cleanup opportunity. |
 | #1192 | 2026-05-09 | low | No dedicated test asserting `refetchInterval` is 3000ms when Corrigiendo cards exist -- only behavior-level coverage via component test |
+| #1207 | 2026-05-10 | low | Arch: STATUS_BADGE (CSS) and status label are split across two Record maps in RedaccionesTab.tsx; RedaccionDetail.tsx has its own parallel palette Record. Should unify into a shared constants file as statuses grow. |
+| #1207 | 2026-05-10 | low | Code: CorreccionFallida failure tests use Task.Delay(500) instead of the existing WaitForDbStatusAsync polling helper; could be flaky on slow CI. |
+| #1207 | 2026-05-10 | low | Code: RedaccionDetail.tsx Reintentar button missing data-testid (inconsistent with RedaccionesTab.tsx pattern). |
 | #1192 | 2026-05-09 | low | Corrigiendo badge with amber pulse dot not visually verified (no seeded Corrigiendo correction in Ana Visual's data; would need a dedicated seed) |
 | #1185 | 2026-05-09 | low | Atelier session picker (inline pick-list inside AI proposals area) has no design system spec; picker rows use ghost-button style with hover-bg but no selected/active state defined -- needs Vera discussion before pattern is reused |
 | #smoke-text-correction | 2026-05-09 | low | Atelier assistant extracted phantom profile data (profession "Engineer", country "Spain", interests "Travel, Cooking") from a session note that contained none of that information -- extraction model may be hallucinating updates from prior context rather than the current transcript |

@@ -28,6 +28,15 @@ const STATUS_BADGE: Record<CorrectionStatus, string> = {
   Entregada: 'bg-indigo-50 text-indigo-700',
   Corrigiendo: 'bg-amber-50 text-amber-800',
   Corregida: 'bg-emerald-50 text-emerald-800',
+  CorreccionFallida: 'bg-red-50 text-red-700',
+}
+
+const STATUS_LABEL: Record<CorrectionStatus, string> = {
+  Pendiente: 'Pendiente',
+  Entregada: 'Entregada',
+  Corrigiendo: 'Corrigiendo',
+  Corregida: 'Corregida',
+  CorreccionFallida: 'Error al corregir',
 }
 
 const TITLE_MAX = 200
@@ -211,7 +220,8 @@ function CorrectionCard({
   const { id, assignmentTitle, status, createdAt } = correction
   const isCorregida = status === 'Corregida'
   const isCorrigiendo = status === 'Corrigiendo'
-  const showCorregir = status === 'Entregada'
+  const isFallida = status === 'CorreccionFallida'
+  const showCorregir = status === 'Entregada' || isFallida
 
   function openDetail() {
     navigate(`/students/${studentId}/redacciones/${id}`)
@@ -240,7 +250,8 @@ function CorrectionCard({
               data-testid={`redaccion-status-${id}`}
             >
               {isCorrigiendo && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />}
-              {status}
+              {isFallida && <span className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+              {STATUS_LABEL[status]}
             </span>
             <span className="text-xs text-zinc-400" data-testid={`redaccion-date-${id}`}>
               {relativeTime(createdAt)}
@@ -257,7 +268,7 @@ function CorrectionCard({
               onClick={onCorregir}
               data-testid={`redaccion-corregir-${id}`}
             >
-              Corregir
+              {isFallida ? 'Reintentar' : 'Corregir'}
             </Button>
           )}
           {!isCorregida && !isCorrigiendo && (

@@ -116,17 +116,16 @@ public class RedaccionCorrectionPromptBuilderTests
     [Fact]
     public void Build_WrapsStudentTextInVerbatimMarkers()
     {
-        // Defense in depth alongside temperature=0: explicit delimiters + a "byte-for-byte"
-        // instruction make it harder for the model to silently smooth the echo. Markers use
-        // a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot collide with
-        // user-controlled student text.
+        // Markers use a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot
+        // collide with user-controlled student text. The label tells the model that tag
+        // offsets must reference this text exactly.
         var ctx = MakeCtx() with { StudentText = "Hoy ablar con mi amigo." };
         var prompt = _builder.Build(ctx).UserPrompt;
 
         prompt.Should().MatchRegex("<<<STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().MatchRegex("<<</STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().Contain("Hoy ablar con mi amigo.");
-        prompt.Should().Contain("byte-for-byte");
+        prompt.Should().Contain("offsets must reference this text exactly");
     }
 
     [Fact]

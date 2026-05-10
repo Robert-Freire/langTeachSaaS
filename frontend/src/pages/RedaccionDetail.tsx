@@ -82,6 +82,7 @@ export default function RedaccionDetail() {
   const isCorregida = data.status === 'Corregida'
   const isEntregada = data.status === 'Entregada'
   const isPendiente = data.status === 'Pendiente'
+  const isFallida = data.status === 'CorreccionFallida'
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
@@ -121,6 +122,18 @@ export default function RedaccionDetail() {
         <p className="text-sm text-zinc-600">
           Esta redacción aún está pendiente. El estudiante todavía no ha entregado el texto.
         </p>
+      )}
+
+      {isFallida && data.studentText && (
+        <div className="space-y-4">
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            La corrección automática no se pudo completar. Puedes volver a intentarlo.
+          </div>
+          <ReadingColumn text={data.studentText} />
+          <Button onClick={() => corregir.mutate()} disabled={corregir.isPending}>
+            Reintentar corrección
+          </Button>
+        </div>
       )}
 
       {isEntregada && data.studentText && viewState === 'idle' && (
@@ -294,12 +307,14 @@ function StatusPill({ status, viewState }: StatusPillProps) {
     Entregada: 'bg-indigo-50 text-indigo-700',
     Corrigiendo: 'bg-amber-50 text-amber-800',
     Corregida: 'bg-emerald-50 text-emerald-800',
+    CorreccionFallida: 'bg-red-50 text-red-700',
   }
+  const label = status === 'CorreccionFallida' ? 'Error al corregir' : status
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wide ${palette[status]}`}
     >
-      {status}
+      {label}
     </span>
   )
 }

@@ -88,7 +88,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var text = "Hoy ablar con mi amigo.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
 
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("O", text.IndexOf("ablar"), text.IndexOf("ablar") + "ablar".Length, "ablar",
                 "Falta la 'h'.", "hablar"),
@@ -107,7 +107,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CorregirAsync_NonJsonResponse_ReturnsCorrigiendoAndBackgroundFailsSilently()
+    public async Task CorregirAsync_NonJsonResponse_SetsCorreccionFallida()
     {
         var id = SeedCorrection(text: "Texto.", status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse("definitely not JSON");
@@ -115,63 +115,33 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
         result.Status.Should().Be(CorrectionStatus.Corrigiendo);
 
-        // Give the background task time to run and fail; it logs the error and leaves
-        // status as Corrigiendo (staleness recovery resets after 60 seconds on next GET).
-        await Task.Delay(300);
+        await Task.Delay(500);
 
         using var check = new AppDbContext(_dbOptions);
         var row = check.Corrections.First(c => c.Id == id);
-        row.Status.Should().Be(CorrectionStatus.Corrigiendo, "background task failed silently; staleness recovery resets after 60s");
+        row.Status.Should().Be(CorrectionStatus.CorreccionFallida, "background task must surface the failure explicitly");
         row.CorrectedAt.Should().BeNull();
         check.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task CorregirAsync_ParaphrasedOriginalText_BothAttempts_BackgroundTaskFailsSilently()
+    public async Task CorregirAsync_BadSchemaVersion_SetsCorreccionFallida()
     {
-        // Issue #1166: when BOTH attempts paraphrase, background task logs and leaves Corrigiendo.
+        // When the model returns a response with an unsupported schemaVersion,
+        // the background task must surface CorreccionFallida rather than failing silently.
         var id = SeedCorrection(text: "Texto original.", status: CorrectionStatus.Entregada);
-        _claude.EnqueueResponse(BuildAiJson("Different text.", Array.Empty<(string, int, int, string, string, string)>()));
-        _claude.EnqueueResponse(BuildAiJson("Yet another paraphrase.", Array.Empty<(string, int, int, string, string, string)>()));
+        _claude.EnqueueResponse("""{"schemaVersion":99,"tags":[]}""");
 
         var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
         result.Status.Should().Be(CorrectionStatus.Corrigiendo);
 
-        await Task.Delay(300);
+        await Task.Delay(500);
 
-        _claude.CompleteCallCount.Should().Be(2, "the service must retry exactly once before giving up");
-        using var check2 = new AppDbContext(_dbOptions);
-        var row2 = check2.Corrections.First(c => c.Id == id);
-        row2.Status.Should().Be(CorrectionStatus.Corrigiendo, "background task failed silently; staleness recovery resets after 60s");
-        check2.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task CorregirAsync_ParaphrasedThenVerbatim_RetrySucceeds()
-    {
-        // Issue #1166: a single paraphrased response triggers exactly one retry; if the
-        // second attempt echoes verbatim, the correction succeeds without surfacing an
-        // error to the teacher.
-        var text = "Hoy ablar con mi amigo.";
-        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
-
-        // First call: paraphrased originalText (model "fixed" the typo while echoing)
-        _claude.EnqueueResponse(BuildAiJson("Hoy hablar con mi amigo.", Array.Empty<(string, int, int, string, string, string)>()));
-        // Second call: verbatim originalText with the expected O tag on "ablar"
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
-        {
-            ("O", text.IndexOf("ablar"), text.IndexOf("ablar") + "ablar".Length, "ablar",
-                "Falta la 'h'.", "hablar"),
-        }));
-
-        var immediate = await _sut.CorregirAsync(_teacherId, _studentId, id);
-        immediate.Status.Should().Be(CorrectionStatus.Corrigiendo);
-
-        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
-
-        _claude.CompleteCallCount.Should().Be(3, "two Pass 1 calls (first paraphrased, second verbatim) plus one Pass 2 level-filter call");
-        row.Tags.Should().HaveCount(1);
-        row.Tags.First().SpannedText.Should().Be("ablar");
+        _claude.CompleteCallCount.Should().Be(1, "no retry loop -- single call");
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.First(c => c.Id == id);
+        row.Status.Should().Be(CorrectionStatus.CorreccionFallida, "background task must surface the failure explicitly");
+        check.CorrectionTags.Where(t => t.CorrectionId == id).Should().BeEmpty();
     }
 
     [Fact]
@@ -181,7 +151,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
 
         // First tag has a bogus offset (out of range); second tag is valid.
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("O", 100, 110, "ablar", "Bad offset.", "hablar"),
             ("O", text.IndexOf("ablar"), text.IndexOf("ablar") + "ablar".Length, "ablar",
@@ -200,7 +170,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     {
         var text = "Hoy ablar con amigos.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("O", 4, 9, "ablar", "Falta h.", "hablar"),
             ("G", 6, 12, "lar co", "Bad overlap.", "lar co"),
@@ -218,7 +188,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     {
         var text = "El subjuntivo está bien usado.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("MuyBien", 3, 13, "subjuntivo", "Should be null.", "should also be null"),
         }));
@@ -236,7 +206,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     {
         var text = "Texto con error.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("G", 0, 5, "Texto", "", "Texto"),
         }));
@@ -273,7 +243,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
             });
             await concurrentDb.SaveChangesAsync();
         };
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("O", 4, 9, "ablar", "Stub call.", "hablar"),
         }));
@@ -306,7 +276,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var cStart = text.IndexOf("entonces");             var cEnd = cStart + "entonces".Length;
 
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
-        _claude.EnqueueResponse(BuildAiJson(text, new[]
+        _claude.EnqueueResponse(BuildAiJson(new[]
         {
             ("O", oStart, oEnd, "Misspelll", "tilde/letras.", "Mispell"),
             ("G", gStart, gEnd, "voy en casa", "Preposición.", "voy a casa"),
@@ -398,12 +368,10 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     private static string BuildAiJson(
-        string originalText,
         IEnumerable<(string category, int start, int end, string spanned, string explanation, string correctedForm)> tags) =>
         JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            originalText,
             tags = tags.Select(t => new
             {
                 category = t.category,

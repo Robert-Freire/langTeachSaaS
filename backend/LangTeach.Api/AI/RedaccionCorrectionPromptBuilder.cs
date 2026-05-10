@@ -33,10 +33,9 @@ public class RedaccionCorrectionPromptBuilder
             "PromptUser | blockType=redaccion-correction l1={L1}\n{UserPrompt}",
             ctx.StudentL1 ?? "(none)", user);
 
-        // temperature=0: the verbatim originalText echo is non-negotiable; default sampling
-        // (1.0) leads the model to silently smooth typos and normalize punctuation while
-        // copying the student text into originalText, which then fails the strict ordinal
-        // guard in RedaccionCorrectionService. Sonnet 4.6 still supports temperature.
+        // temperature=0: deterministic offset generation -- spannedText must locate uniquely
+        // via indexOf in the student text; sampling variation leads the model to rephrase
+        // spannedText, breaking the rescue logic in ValidateAndOrderTags.
         return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096, Temperature: 0);
     }
 
@@ -68,13 +67,12 @@ Emit raw JSON only. No prose before or after. No markdown fences. The JSON must 
 
 {
   "schemaVersion": 1,
-  "originalText": "...the student text...",
   "tags": [
     {
       "category": "G" | "C" | "L" | "O",
       "startIndex": <int>,
       "endIndex": <int>,
-      "spannedText": "<exact substring of originalText[startIndex..endIndex]>",
+      "spannedText": "<exact substring of the student text at [startIndex..endIndex]>",
       "explanation": "<short, in Spanish>",
       "correctedForm": "<the corrected form>"
     }
@@ -84,18 +82,16 @@ Emit raw JSON only. No prose before or after. No markdown fences. The JSON must 
 "explanation" and "correctedForm" are always non-empty for every tag.
 
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
-- startIndex and endIndex are Unicode character offsets into originalText (0-based, end-exclusive).
+- startIndex and endIndex are Unicode character offsets into the student text between the markers (0-based, end-exclusive).
 - DO NOT derive offsets by counting characters forward from the start of the text. Counting is unreliable near accented characters (é, ó, á, ñ, ü, etc.) because your internal position tracking may not match the host's character indices.
 - CORRECT procedure for every tag:
-  1. Decide which substring of originalText to mark; that substring is spannedText.
+  1. Decide which substring of the student text to mark; that substring is spannedText.
   2. Write the explanation.
-  3. Locate spannedText inside originalText using a forward string search (like indexOf / find), starting from position 0.
+  3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
-- spannedText MUST equal originalText.Substring(startIndex, endIndex - startIndex).
-- If spannedText would appear more than once in originalText, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
+- spannedText MUST equal the student text at [startIndex, endIndex).
+- If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
-
-Copy the student text byte-for-byte into the originalText field, preserving every typo, missing accent, and punctuation mark exactly as written between the STUDENT_TEXT_VERBATIM_... marker lines in the user prompt. Do not normalize or rewrite. The errors and irregularities are precisely the signal we are here to mark - if you silently "fix" them during the echo, the corresponding tags lose their anchor and the correction is unusable.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
@@ -136,7 +132,7 @@ Copy the student text byte-for-byte into the originalText field, preserving ever
         while (ctx.StudentText.Contains(marker, StringComparison.Ordinal))
             marker = "STUDENT_TEXT_VERBATIM_" + Guid.NewGuid().ToString("N");
 
-        sb.AppendLine($"STUDENT TEXT (copy byte-for-byte into originalText; see OUTPUT CONTRACT for why; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
+        sb.AppendLine($"STUDENT TEXT (your tag offsets must reference this text exactly; see OUTPUT CONTRACT; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
         sb.AppendLine($"<<<{marker}>>>");
         sb.AppendLine(ctx.StudentText);
         sb.AppendLine($"<<</{marker}>>>");
