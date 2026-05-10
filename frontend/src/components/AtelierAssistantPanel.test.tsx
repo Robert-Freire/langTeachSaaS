@@ -729,7 +729,7 @@ describe('AtelierAssistantPanel', () => {
 
   describe('applyAllBlocked when session picker active', () => {
     const sessionProposal = makeProposal({ id: 'sp1', type: 'session', field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' })
-    const todoProposal = makeProposal({ id: 'tp1', type: 'todo', field: 'todo', label: 'Teaching Todo', oldValue: null, newValue: 'Practice subjunctive' })
+    const todoProposal = makeProposal({ id: 'tp1', type: 'todo', field: 'todo', label: 'Teaching Idea', oldValue: null, newValue: 'Practice subjunctive' })
 
     it('disables Apply All when session proposals exist and no session selected, even with mixed proposals', () => {
       renderPanel({

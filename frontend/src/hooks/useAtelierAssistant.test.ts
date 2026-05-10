@@ -43,7 +43,7 @@ const mockCreateSession = vi.mocked(sessionLogsApi.createSession)
 const sampleProposals = [
   { id: 'p1', type: 'student' as const, field: 'cefrLevel', label: 'CEFR Level', oldValue: 'A2', newValue: 'B1' },
   { id: 'p2', type: 'session' as const, field: 'title', label: 'Session Title', oldValue: null, newValue: 'Past Perfect' },
-  { id: 'p3', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Review passive voice' },
+  { id: 'p3', type: 'todo' as const, field: 'text', label: 'Teaching Idea', oldValue: null, newValue: 'Review passive voice' },
 ]
 
 describe('useAtelierAssistant', () => {
@@ -144,7 +144,7 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals).toHaveLength(1)
 
     await act(async () => { await result.current.apply('p3') })
-    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Review passive voice', null)
+    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Review passive voice')
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
@@ -158,7 +158,7 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await vi.runAllTimersAsync() })
 
     await act(async () => { await result.current.apply('pt-date') })
-    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Repasar la voz pasiva', null)
+    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Repasar la voz pasiva')
   })
 
   it('apply: sets error status on failure without affecting other cards', async () => {
@@ -467,7 +467,7 @@ describe('useAtelierAssistant', () => {
   })
 
   it('submit follow-up: always appends todo cards (type+field not unique)', async () => {
-    const firstTodo = { id: 'pt1', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Review passive voice' }
+    const firstTodo = { id: 'pt1', type: 'todo' as const, field: 'text', label: 'Teaching Idea', oldValue: null, newValue: 'Review passive voice' }
     mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[0], firstTodo] })
     const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
 
@@ -475,7 +475,7 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await vi.runAllTimersAsync() })
     expect(result.current.proposals).toHaveLength(2)
 
-    const secondTodo = { id: 'pt2', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Practice subjunctive' }
+    const secondTodo = { id: 'pt2', type: 'todo' as const, field: 'text', label: 'Teaching Idea', oldValue: null, newValue: 'Practice subjunctive' }
     mockPropose.mockResolvedValueOnce({ proposals: [secondTodo] })
     act(() => { result.current.submit('also add another todo') })
     await act(async () => { await vi.runAllTimersAsync() })

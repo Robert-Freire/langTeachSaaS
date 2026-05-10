@@ -172,7 +172,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        await applyTodoProposal(studentId, proposal.newValue, null)
+        await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
         const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
