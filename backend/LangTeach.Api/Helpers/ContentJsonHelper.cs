@@ -29,6 +29,10 @@ public static class ContentJsonHelper
         var stripped = StripFences(content);
         if (string.IsNullOrEmpty(stripped)) return stripped;
         var objectStart = stripped.IndexOf('{');
-        return objectStart > 0 ? stripped[objectStart..] : stripped;
+        if (objectStart > 0)
+            stripped = stripped[objectStart..];
+        // Drop trailing fence/prose after the JSON object when present.
+        var objectEnd = stripped.LastIndexOf('}');
+        return objectEnd >= 0 ? stripped[..(objectEnd + 1)] : stripped;
     }
 }
