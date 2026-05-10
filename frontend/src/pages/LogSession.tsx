@@ -25,7 +25,7 @@ import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
-import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
+import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
@@ -70,6 +70,12 @@ function nowTimeHHMM(): string {
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
   return formatDateUtil(iso)
+}
+
+function formatDateMaybeTime(iso: string | null | undefined): string {
+  if (!iso) return '--'
+  const hasNonMidnightTime = iso.includes('T') && !/T00:00(:[0-9]{2})?(Z|[+-].*)?$/.test(iso)
+  return hasNonMidnightTime ? formatDateTimeUtil(iso) : formatDateUtil(iso)
 }
 
 function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
@@ -261,7 +267,10 @@ export default function LogSession() {
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
-  const activeDifficulties = student?.profile.difficulties.filter(d => d.status === 'Active') ?? []
+  const activeDifficulties = useMemo(
+    () => student?.profile.difficulties.filter(d => d.status === 'Active') ?? [],
+    [student]
+  )
   const pendingTodos = student?.profile.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
@@ -334,7 +343,8 @@ export default function LogSession() {
     if (generalNotes === prev.generalNotes && nextGeneralNotes !== prev.generalNotes) setGeneralNotes(nextGeneralNotes)
     if (homeworkAssigned === prev.homeworkAssigned && nextHomeworkAssigned !== prev.homeworkAssigned) setHomeworkAssigned(nextHomeworkAssigned)
     lastServerValuesRef.current = { title: nextTitle, actualContent: nextActualContent, generalNotes: nextGeneralNotes, homeworkAssigned: nextHomeworkAssigned }
-  }, [editSession]) // intentionally reads local state without declaring as deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editSession]) // intentionally reads local state without declaring as deps; re-running on field changes would clobber user edits
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
@@ -826,7 +836,7 @@ export default function LogSession() {
           <PanelSection label={`Last Session (#${sessions.filter(s => !s.isCancelled).length})`}>
             <div className="rounded-lg bg-white px-3 py-2.5 space-y-1" style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-zinc-400">{formatDate(prevSession.sessionDate)}</p>
+                <p className="text-xs text-zinc-400">{formatDateMaybeTime(prevSession.sessionDate)}</p>
                 {prevSession.duration && (
                   <p className="text-xs text-zinc-400">{prevSession.duration} min</p>
                 )}
@@ -1172,10 +1182,14 @@ export default function LogSession() {
                       saveOverride.suggestedDifficulties = extracted.suggestedDifficulties
                       setSuggestedDifficulties(extracted.suggestedDifficulties)
                     }
-                    const nextDate = extracted.sessionDate || sessionDateRef.current
-                    const nextTime = extracted.sessionStartTime || sessionTimeRef.current
-                    if (extracted.sessionDate) setSessionDate(extracted.sessionDate)
+                    const [datePart, embeddedTime] = extracted.sessionDate
+                      ? (extracted.sessionDate.split('T') as [string, string | undefined])
+                      : [null, null]
+                    const nextDate = datePart || sessionDateRef.current
+                    const nextTime = extracted.sessionStartTime || embeddedTime || sessionTimeRef.current
+                    if (datePart) setSessionDate(datePart)
                     if (extracted.sessionStartTime) setSessionTime(extracted.sessionStartTime)
+                    else if (embeddedTime) setSessionTime(embeddedTime)
                     if (extracted.sessionDate || extracted.sessionStartTime) {
                       saveOverride.sessionDate = `${nextDate}T${nextTime || '00:00'}:00`
                     }
@@ -1193,8 +1207,9 @@ export default function LogSession() {
                     // Detect changed fields for highlight + undo bar
                     const changed = new Set<string>()
                     if (extracted.sessionTitle && extracted.sessionTitle !== snapshot.sessionTitle) changed.add('sessionTitle')
-                    if (extracted.sessionDate && extracted.sessionDate !== snapshot.sessionDate) changed.add('sessionDate')
+                    if (datePart && datePart !== snapshot.sessionDate) changed.add('sessionDate')
                     if (extracted.sessionStartTime && extracted.sessionStartTime !== snapshot.sessionTime) changed.add('sessionTime')
+                    else if (!extracted.sessionStartTime && embeddedTime && embeddedTime !== snapshot.sessionTime) changed.add('sessionTime')
                     if (extracted.durationMinutes && durationChoiceRef.current === '50') {
                       const presets = ['25', '30', '45', '50', '60', '90']
                       const newDurChoice = presets.includes(String(extracted.durationMinutes)) ? String(extracted.durationMinutes) : 'other'
@@ -1347,7 +1362,13 @@ export default function LogSession() {
                     {isEditMode ? 'Edit Session' : 'What Happened?'}
                   </h1>
                   <span className="text-xs text-zinc-400 shrink-0 ml-4">
-                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDate(isEditMode ? editSession?.sessionDate : sessionDate)}
+                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDateMaybeTime(
+                      isEditMode
+                        ? editSession?.sessionDate
+                        : sessionDate
+                          ? `${sessionDate}T${sessionTime || '00:00'}:00`
+                          : null,
+                    )}
                   </span>
                 </div>
                 {!isEditMode && <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>}

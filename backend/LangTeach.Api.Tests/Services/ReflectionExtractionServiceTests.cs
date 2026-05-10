@@ -273,6 +273,42 @@ public class ReflectionExtractionServiceTests
     }
 
     [Fact]
+    public void ParseResponse_ExtractsSessionDateWithTime()
+    {
+        var sut = CreateSut("{}");
+        var json = """
+            {
+              "whatWasCovered": "el pretérito indefinido",
+              "areasToImprove": null,
+              "emotionalSignals": null,
+              "homeworkAssigned": null,
+              "nextLessonIdeas": null,
+              "sessionDate": "2026-05-10T13:00",
+              "suggestedDifficulties": []
+            }
+            """;
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().Be("2026-05-10T13:00");
+    }
+
+    [Theory]
+    [InlineData("2026-05-10T13:00:00")]
+    [InlineData("2026-05-10T13:00:00Z")]
+    [InlineData("not-a-date")]
+    [InlineData("martes pasado")]
+    public void ParseResponse_SessionDateIsNullForInvalidFormats(string invalid)
+    {
+        var sut = CreateSut("{}");
+        var json = $$"""{"suggestedDifficulties":[],"sessionDate":"{{invalid}}"}""";
+
+        var result = sut.ParseResponse(json);
+
+        result.SessionDate.Should().BeNull();
+    }
+
+    [Fact]
     public void ParseResponse_SessionDateIsNullWhenAbsent()
     {
         var sut = CreateSut("{}");
