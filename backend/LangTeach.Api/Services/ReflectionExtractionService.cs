@@ -232,7 +232,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         var title = GetStringOrNull(root, "newSessionTitle");
         if (string.IsNullOrWhiteSpace(title)) return null;
-        var date = GetIsoDateOrNull(root, "newSessionDate");
+        var date = GetIsoDateOnlyOrNull(root, "newSessionDate");
         return new ProposedNewSession(title, date);
     }
 
@@ -259,6 +259,16 @@ public class ReflectionExtractionService : IReflectionExtractionService
             return raw;
 
         return null;
+    }
+
+    private static string? GetIsoDateOnlyOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+
+        return DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
+            : null;
     }
 
     private static int? GetIntOrNull(JsonElement root, string key)
@@ -298,7 +308,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             {
                 var text = GetStringOrNull(item, "text");
                 if (string.IsNullOrWhiteSpace(text)) continue;
-                var dueDate = GetIsoDateOrNull(item, "dueDate");
+                var dueDate = GetIsoDateOnlyOrNull(item, "dueDate");
                 result.Add(new ExtractedTeachingTodoDto(text, dueDate));
             }
         }
