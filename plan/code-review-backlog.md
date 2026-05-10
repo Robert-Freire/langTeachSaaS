@@ -123,3 +123,5 @@ Pre-existing (unrelated to PR):
 ## #1192 -- Corregir race condition (CodeRabbit, 2026-05-10)
 
 The read-then-write in CorregirAsync (check Status == Entregada, then set Corrigiendo) lacks atomic compare-and-swap. Two concurrent requests on the same correction can both observe Entregada and spawn duplicate background AI tasks. The TOCTOU guard in RunCorrectionInScopeAsync prevents duplicate tag rows, but two Claude calls can still fire. Fix: add [Timestamp] RowVersion to Correction entity + catch DbUpdateConcurrencyException in CorregirAsync.
+
+| #1200/#1201 | 2026-05-10 | arch | Low | `AssistantController` lines 196-200: date+time combination logic belongs in `ReflectionExtractionService` (pre-existing violation, diff extends it; not blocking) |

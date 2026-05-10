@@ -547,6 +547,32 @@ public class AssistantControllerTests
     }
 
     [Fact]
+    public async Task Propose_WithSchedulingIntentAndTime_CombinesDateAndTimeInPayload()
+    {
+        // When SessionStartTime is non-null, the controller must combine date + time into an ISO datetime.
+        // StubReflectionExtractionService returns date "2026-05-19" and time "09:00" for [schedule-new-session].
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-new-session-with-time", "assistant-new-session-with-time@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "La clase de hoy de las 9:00 fue bien. [schedule-new-session]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        var newSessionProposal = body!.Proposals.FirstOrDefault(p => p.Type == "newSession");
+        newSessionProposal.Should().NotBeNull();
+
+        var payloadDoc = System.Text.Json.JsonDocument.Parse(newSessionProposal!.Payload!.Value.GetRawText());
+        var sessionDate = payloadDoc.RootElement.GetProperty("sessionDate").GetString();
+        sessionDate.Should().Be("2026-05-19T09:00");
+    }
+
+    [Fact]
     public async Task Propose_WithoutSchedulingIntent_DoesNotEmitNewSessionProposal()
     {
         // Normal reflection text without "[schedule-new-session]" trigger → no newSession proposal.

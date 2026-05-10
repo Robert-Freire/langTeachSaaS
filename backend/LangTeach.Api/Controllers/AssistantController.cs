@@ -193,7 +193,10 @@ public class AssistantController : ControllerBase
 
         if (reflectionExtraction.ProposedNewSession is { } proposed)
         {
-            var sessionDate = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var sessionDate = reflectionExtraction.SessionStartTime is { } t
+                ? $"{dateOnly}T{t}"
+                : dateOnly;
             var newSessionPayload = new { title = proposed.Title, sessionDate };
             var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(

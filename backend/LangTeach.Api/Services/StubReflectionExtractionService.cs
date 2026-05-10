@@ -20,7 +20,9 @@ public class StubReflectionExtractionService : IReflectionExtractionService
         var isNewSession = !hasOpenSession &&
             (text.Contains("[schedule-new-session]") || text.Contains("[schedule-new-session-no-date]"));
         var newSessionTitle = isNewSession ? "[Extracted] New Session Title" : null;
-        var newSessionDate = isNewSession && text.Contains("[schedule-new-session]") ? "2026-05-19" : null;
+        var isNoDateTrigger = text.Contains("[schedule-new-session-no-date]");
+        var newSessionDate = isNewSession && !isNoDateTrigger ? "2026-05-19" : null;
+        var newSessionStartTime = isNewSession && !isNoDateTrigger ? "09:00" : null;
 
         return Task.FromResult(new ExtractedReflectionDto(
             WhatWasCovered: isNewSession ? null : new ExtractedTextFieldDto("[Extracted] What was covered", ExtractionMode.Replace),
@@ -40,7 +42,7 @@ public class StubReflectionExtractionService : IReflectionExtractionService
             DurationMinutes: null,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
-            SessionStartTime: "09:00",
+            SessionStartTime: newSessionStartTime ?? (isNewSession ? null : "09:00"),
             ProposedNewSession: newSessionTitle is not null ? new ProposedNewSession(newSessionTitle, newSessionDate) : null
         ));
     }

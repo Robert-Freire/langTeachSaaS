@@ -297,7 +297,7 @@ export default function AtelierAssistantPanel({
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
   const applyAllBlocked = (
     (!studentId && pendingProposals.some(p => p.type === 'newSession')) ||
-    (hasSessionProposalsWithoutContext && pendingProposals.every(p => p.type === 'session'))
+    hasSessionProposalsWithoutContext
   )
 
   return (
