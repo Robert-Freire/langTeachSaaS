@@ -125,3 +125,10 @@ Pre-existing (unrelated to PR):
 The read-then-write in CorregirAsync (check Status == Entregada, then set Corrigiendo) lacks atomic compare-and-swap. Two concurrent requests on the same correction can both observe Entregada and spawn duplicate background AI tasks. The TOCTOU guard in RunCorrectionInScopeAsync prevents duplicate tag rows, but two Claude calls can still fire. Fix: add [Timestamp] RowVersion to Correction entity + catch DbUpdateConcurrencyException in CorregirAsync.
 
 | #1200/#1201 | 2026-05-10 | arch | Low | `AssistantController` lines 196-200: date+time combination logic belongs in `ReflectionExtractionService` (pre-existing violation, diff extends it; not blocking) |
+
+## #1210 prompt-health notes (2026-05-10)
+
+Pre-existing (not introduced by this PR):
+- `RedaccionCorrectionPromptBuilder.cs` SystemPrompt: `"explanation" and "correctedForm" are always non-empty for every tag"` is technically inaccurate against the schema (which allows MuyBien with null fields), but Pass 1 never emits MuyBien and the existing test `Build_NoMuyBienInSystemPrompt` enforces this. Non-blocking; would become a real issue if MuyBien were ever added to Pass 1 output. Document schema as Pass-2-only for MuyBien.
+- Minor duplication: "Use ser for general characteristics and cultural norms" appears both in the strengthened G rule and in the disambiguation example explanation. Intentional for model clarity; consider consolidating in a future prompt-health pass.
+- Externalize correction taxonomy (C/G/L/O codes, rules, examples) from `RedaccionCorrectionPromptBuilder.SystemPrompt` to `data/` JSON (already in backlog from #1153).
