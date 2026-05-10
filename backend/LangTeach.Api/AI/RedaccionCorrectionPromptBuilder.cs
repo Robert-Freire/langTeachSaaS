@@ -99,9 +99,11 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 - If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - spannedText MUST be the minimum substring that is itself erroneous: the specific word or
   morpheme to replace, not its surrounding context. For a verb error, span the verb only.
-  For a missing accent, span the word only. Never span a surrounding phrase.
-  Example: in "Los libros son interesante", spannedText is "interesante" and correctedForm
-  is "interesantes" -- not the full phrase.
+  For a missing accent, span the word only. Never span a surrounding phrase (unless a wider
+  span is required for uniqueness per the rule above).
+  Example: in "Los libros son interesante", spannedText must be "interesante" (the wrong
+  adjective) and correctedForm must be "interesantes", not "Los libros son interesante"
+  or any larger span.
 - Tags MUST NOT overlap. Sort tags by startIndex.
 """;
 

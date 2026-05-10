@@ -199,7 +199,7 @@ public class RedaccionCorrectionPromptBuilderTests
 
         req.SystemPrompt.Should().Contain("minimum substring", "OFFSETS must mandate minimum-span tagging");
         req.SystemPrompt.Should().Contain("interesante", "minimum-span rule must include the gender-agreement example");
-        req.SystemPrompt.Should().Contain("interesantes", "minimum-span example must show the corrected form");
+        req.SystemPrompt.Should().Contain("interesantes", "minimum-span example must show the corrected plural form");
     }
 
     private static RedaccionCorrectionPromptContext MakeCtx() =>
