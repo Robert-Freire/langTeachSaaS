@@ -168,6 +168,7 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>();
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
+builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();

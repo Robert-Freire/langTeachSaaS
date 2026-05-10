@@ -77,8 +77,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 var db = sp.GetRequiredService<AppDbContext>();
                 var claude = sp.GetRequiredService<IClaudeClient>();
                 var promptBuilder = sp.GetRequiredService<RedaccionCorrectionPromptBuilder>();
+                var filterPromptBuilder = sp.GetRequiredService<RedaccionLevelFilterPromptBuilder>();
                 scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, scopeLogger);
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, filterPromptBuilder, scopeLogger);
             }
             catch (Exception ex)
             {
@@ -95,6 +96,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
         RedaccionCorrectionPromptBuilder promptBuilder,
+        RedaccionLevelFilterPromptBuilder filterPromptBuilder,
         ILogger logger)
     {
         var correction = await db.Corrections
@@ -185,7 +187,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId, logger);
 
-        // Confirm still Corrigiendo before writing (concurrent /corregir guard).
+        // TOCTOU guard: check before the filter call so a concurrent completion aborts early
+        // without firing an unnecessary Haiku round-trip.
         var freshStatus = await db.Corrections
             .AsNoTracking()
             .Where(c => c.Id == correctionId)
@@ -194,10 +197,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (freshStatus != CorrectionStatus.Corrigiendo)
         {
             logger.LogWarning(
-                "Background correction: status changed to {Status} during generation; discarding. CorrectionId={CorrectionId}",
+                "Background correction: status changed to {Status} during Pass 1; discarding. CorrectionId={CorrectionId}",
                 freshStatus, correctionId);
             return;
         }
+
+        var filteredTags = await ApplyLevelFilterAsync(
+            validatedTags, ctx.StudentCefr, claude, filterPromptBuilder, correctionId, logger);
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
@@ -206,9 +212,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = now;
         correction.SchemaVersion = 1;
 
-        for (var i = 0; i < validatedTags.Count; i++)
+        for (var i = 0; i < filteredTags.Count; i++)
         {
-            var t = validatedTags[i];
+            var t = filteredTags[i];
             db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
@@ -226,9 +232,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         await db.SaveChangesAsync(CancellationToken.None);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} ModelTokens={InputTokens}/{OutputTokens}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} ModelTokens={InputTokens}/{OutputTokens}",
             correctionId, teacherId, studentId, ctx.StudentCefr, ctx.StudentL1 ?? "(none)",
-            validatedTags.Count, response.InputTokens, response.OutputTokens);
+            filteredTags.Count, validatedTags.Count - filteredTags.Count, response.InputTokens, response.OutputTokens);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -404,6 +410,109 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return nonOverlapping;
     }
 
+    private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> ApplyLevelFilterAsync(
+        IReadOnlyList<RedaccionCorrectionTagDto> tags,
+        string cefr,
+        IClaudeClient claude,
+        RedaccionLevelFilterPromptBuilder filterBuilder,
+        Guid correctionId,
+        ILogger logger)
+    {
+        if (tags.Count == 0)
+            return tags;
+
+        var inputs = tags
+            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation))
+            .ToList();
+
+        ClaudeResponse filterResponse;
+        try
+        {
+            var filterRequest = filterBuilder.Build(cefr, inputs);
+            filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Level filter call failed; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
+            return tags;
+        }
+
+        List<FilterDecision>? decisions;
+        try
+        {
+            var raw = ContentJsonHelper.StripFences(filterResponse.Content);
+            decisions = JsonSerializer.Deserialize<List<FilterDecision>>(raw ?? string.Empty, JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Level filter response did not parse; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
+            return tags;
+        }
+
+        if (decisions is null)
+        {
+            logger.LogWarning(
+                "Level filter returned null; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
+            return tags;
+        }
+
+        var decisionMap = new Dictionary<int, FilterDecision>(decisions.Count);
+        foreach (var d in decisions)
+        {
+            if (d.Index >= 0 && d.Index < tags.Count)
+                decisionMap[d.Index] = d;
+        }
+
+        var result = new List<RedaccionCorrectionTagDto>(tags.Count);
+        for (var i = 0; i < tags.Count; i++)
+        {
+            var tag = tags[i];
+
+            // O and MuyBien tags always pass through regardless of filter decision.
+            if (tag.Category == CorrectionTagCategory.Ortografia || tag.Category == CorrectionTagCategory.MuyBien)
+            {
+                result.Add(tag);
+                continue;
+            }
+
+            if (!decisionMap.TryGetValue(i, out var decision))
+            {
+                // Filter omitted this tag; fall open (keep).
+                result.Add(tag);
+                continue;
+            }
+
+            switch (decision.Decision?.ToLowerInvariant())
+            {
+                case "keep":
+                    result.Add(tag);
+                    break;
+                case "soften":
+                    // Convert to MuyBien: highlights the attempt without penalising the student.
+                    result.Add(tag with
+                    {
+                        Category = CorrectionTagCategory.MuyBien,
+                        Explanation = null,
+                        CorrectedForm = null,
+                    });
+                    break;
+                case "remove":
+                    logger.LogDebug(
+                        "Level filter removed above-level tag [{Category}] \"{Span}\". CorrectionId={CorrectionId}",
+                        tag.Category, tag.SpannedText, correctionId);
+                    break;
+                default:
+                    // Unknown decision; keep.
+                    result.Add(tag);
+                    break;
+            }
+        }
+
+        return result;
+    }
+
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests
     // can construct fixture payloads against the same shape the production code parses.
     public record RedaccionCorrectionDto(
@@ -418,4 +527,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         [property: JsonPropertyName("spannedText")] string SpannedText,
         [property: JsonPropertyName("explanation")] string? Explanation,
         [property: JsonPropertyName("correctedForm")] string? CorrectedForm);
+
+    private record FilterDecision(
+        [property: JsonPropertyName("index")] int Index,
+        [property: JsonPropertyName("decision")] string Decision,
+        [property: JsonPropertyName("note")] string? Note);
 }

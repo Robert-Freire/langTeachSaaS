@@ -31,6 +31,8 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
+        var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
 
         // Build a FakeServiceScopeFactory so Task.Run inside CorregirAsync can resolve
         // AppDbContext (backed by the same in-memory store) and the stub Claude client.
@@ -40,6 +42,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
         scopeServices.AddSingleton(promptBuilder);
+        scopeServices.AddSingleton(filterPromptBuilder);
         scopeServices.AddLogging();
         var scopeProvider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(scopeProvider);
@@ -166,7 +169,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
 
         var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
 
-        _claude.CompleteCallCount.Should().Be(2, "the service must call Claude twice when the first attempt paraphrased");
+        _claude.CompleteCallCount.Should().Be(3, "two Pass 1 calls (first paraphrased, second verbatim) plus one Pass 2 level-filter call");
         row.Tags.Should().HaveCount(1);
         row.Tags.First().SpannedText.Should().Be("ablar");
     }
