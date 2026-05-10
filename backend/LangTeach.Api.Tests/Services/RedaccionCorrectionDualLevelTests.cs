@@ -183,6 +183,8 @@ public class RedaccionCorrectionDualLevelTests
         var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
+        var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
         var claude = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(),
             NullLogger<ClaudeApiClient>.Instance);
 
@@ -190,6 +192,7 @@ public class RedaccionCorrectionDualLevelTests
         scopeServices.AddSingleton<AppDbContext>(_ => new AppDbContext(dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(claude);
         scopeServices.AddSingleton(promptBuilder);
+        scopeServices.AddSingleton(filterPromptBuilder);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
