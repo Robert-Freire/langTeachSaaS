@@ -173,11 +173,11 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     }
 
     [Fact]
-    public async Task LevelFilter_FilterPrompt_IncludesCefrLevelAndGrammarScope()
+    public async Task LevelFilter_FilterPrompt_IncludesCefrLevelAndAssignmentContext()
     {
-        // Verify the filter prompt sent to Haiku contains the student's CEFR level.
+        // Pass 2 prompt must contain the student's CEFR level and the assignment context.
         var text = "Hoy ablamos mucho.";
-        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+        var id = SeedCorrection(text, CorrectionStatus.Entregada, assignmentPrompt: "Escribe sobre tu día.");
 
         var start = text.IndexOf("ablamos", StringComparison.Ordinal);
 
@@ -190,16 +190,44 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         await WaitForStatusAsync(id, CorrectionStatus.Corregida);
 
-        // The last request recorded by the stub is the filter (Pass 2).
         _claude.LastRequest.Should().NotBeNull();
         _claude.LastRequest!.Model.Should().Be(ClaudeModel.Haiku, "level filter uses Haiku");
         _claude.LastRequest.UserPrompt.Should().Contain("A2", "user prompt must include the student's CEFR level");
+        _claude.LastRequest.UserPrompt.Should().Contain("Escribe sobre tu día.", "user prompt must include assignment context for register-aware MuyBien decisions");
+    }
+
+    [Fact]
+    public async Task LevelFilter_MuyBienDecision_ConvertedToMuyBienTag()
+    {
+        // When Pass 2 emits "muybien" for a tag, it must be converted to a MuyBien highlight.
+        var text = "Sin embargo, me parece que la situación es complicada.";
+        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+
+        var gStart = text.IndexOf("Sin embargo", StringComparison.Ordinal);
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("C", gStart, gStart + "Sin embargo".Length, "Sin embargo",
+                "Conector bien empleado.", "Sin embargo"),
+        }));
+        _claude.EnqueueResponse(FilterJson(new[]
+        {
+            (0, "muybien", "¡Muy bien! El uso del conector es muy natural."),
+        }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1, "muybien decision produces a MuyBien tag");
+        row.Tags.First().Category.Should().Be("MuyBien");
+        row.Tags.First().Explanation.Should().BeNull("MuyBien tags have no explanation");
+        row.Tags.First().CorrectedForm.Should().BeNull("MuyBien tags have no correctedForm");
     }
 
     [Fact]
     public async Task LevelFilter_MuyBienTagPassesThrough_FilterDecisionIgnored()
     {
-        // MuyBien tags from Pass 1 must always survive regardless of filter decision.
+        // MuyBien tags from Pass 1 (if any reach the filter) always survive regardless of filter decision.
         var text = "Hoy, sin embargo, me quedé en casa tranquilamente.";
         var id = SeedCorrection(text, CorrectionStatus.Entregada);
 
@@ -266,7 +294,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _db.SaveChanges();
     }
 
-    private Guid SeedCorrection(string text, string status)
+    private Guid SeedCorrection(string text, string status, string assignmentPrompt = "Escribe.")
     {
         var id = Guid.NewGuid();
         var now = DateTime.UtcNow;
@@ -274,7 +302,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         {
             Id = id, TeacherId = _teacherId, StudentId = _studentId,
             SchemaVersion = 1, Status = status,
-            AssignmentTitle = "Test", AssignmentPrompt = "Escribe.",
+            AssignmentTitle = "Test", AssignmentPrompt = assignmentPrompt,
             StudentText = text, CreatedAt = now, UpdatedAt = now,
         });
         _db.SaveChanges();
