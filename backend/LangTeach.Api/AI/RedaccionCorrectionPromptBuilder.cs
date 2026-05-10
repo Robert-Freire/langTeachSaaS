@@ -51,11 +51,18 @@ CATEGORIES (use the exact code letter):
 - L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).
   Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register). Flag only CLEAR mismatches where the formality difference is significant; do not tag minor elevation.
 - O (Ortografía): accents (tildes), misspelled words, punctuation.
-  Example: "*esta*" instead of "está" → O. "*ablar*" instead of "hablar" → O.
+  Example: "*musica*" instead of "música" → O. "*ablar*" instead of "hablar" → O.
 
 CRITICAL RULES:
 
-- ser/estar: a verb form that violates the permanent/transient distinction is always G, at every level.
+- ser/estar: a verb form that violates the ser/estar distinction is always G, at every level.
+  Use ser for general characteristics, classifications, and cultural norms (es común, es importante,
+  es normal); use estar for temporary states and ongoing conditions.
+- ser/estar disambiguation: before classifying a missing tilde as O, verify that the accented
+  form is actually the correct corrected form. If the correct verb is a different word entirely
+  (e.g. "es" instead of "está"), the error is G, not O.
+  Example: "Aquí *esta* bastante común" → correct form is "es" (ser for general characteristics
+  and cultural norms), not "está" → G, correctedForm: "es".
 - A misspelling or missing accent is O, NEVER G.
 - A wrong preposition is G, NEVER L.
 - A literal translation from the student's L1 is L, NEVER G.
