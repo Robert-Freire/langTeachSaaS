@@ -25,7 +25,7 @@ import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { getObjectiveUrgency, getDaysRemaining } from '@/lib/objectiveUrgency'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
-import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
+import { formatDate as formatDateUtil, formatDateTime as formatDateTimeUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 import { useSessionAutosave } from '@/hooks/useSessionAutosave'
 import { logger } from '@/lib/logger'
@@ -70,6 +70,12 @@ function nowTimeHHMM(): string {
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
   return formatDateUtil(iso)
+}
+
+function formatDateMaybeTime(iso: string | null | undefined): string {
+  if (!iso) return '--'
+  const hasNonMidnightTime = iso.includes('T') && !/T00:00(:[0-9]{2})?(Z|[+-].*)?$/.test(iso)
+  return hasNonMidnightTime ? formatDateTimeUtil(iso) : formatDateUtil(iso)
 }
 
 function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
@@ -826,7 +832,7 @@ export default function LogSession() {
           <PanelSection label={`Last Session (#${sessions.filter(s => !s.isCancelled).length})`}>
             <div className="rounded-lg bg-white px-3 py-2.5 space-y-1" style={{ boxShadow: '0 1px 4px rgba(26,27,34,0.06)' }}>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-zinc-400">{formatDate(prevSession.sessionDate)}</p>
+                <p className="text-xs text-zinc-400">{formatDateMaybeTime(prevSession.sessionDate)}</p>
                 {prevSession.duration && (
                   <p className="text-xs text-zinc-400">{prevSession.duration} min</p>
                 )}
@@ -1352,7 +1358,7 @@ export default function LogSession() {
                     {isEditMode ? 'Edit Session' : 'What Happened?'}
                   </h1>
                   <span className="text-xs text-zinc-400 shrink-0 ml-4">
-                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDate(isEditMode ? editSession?.sessionDate : sessionDate)}
+                    Session #{sessionNumber}&ensp;&middot;&ensp;{formatDateMaybeTime(isEditMode ? editSession?.sessionDate : sessionDate)}
                   </span>
                 </div>
                 {!isEditMode && <p className="text-sm text-zinc-400">Reflect on the session flow and student engagement.</p>}
