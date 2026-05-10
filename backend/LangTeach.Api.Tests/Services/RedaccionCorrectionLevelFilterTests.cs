@@ -363,6 +363,23 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         return $"{{\"schemaVersion\":1,\"originalText\":\"{escaped}\",\"tags\":[{tagsJson}]}}";
     }
 
+    [Fact]
+    public void LevelFilterPrompt_ContainsAffirmativeSoftenTrigger()
+    {
+        // Issue #1215: the level filter must include an affirmative soften trigger so the model
+        // acknowledges intentional above-scope attempts rather than silently removing them.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var tags = new[] { new LevelFilterTagInput("G", "hubiera ido", "Condicional compuesto") };
+
+        var req = builder.Build("A2", tags);
+
+        req.SystemPrompt.Should().Contain("soften", "level filter must have a soften decision");
+        req.SystemPrompt.Should().Contain("intentional effort", "soften trigger must reference intentional effort by the student");
+    }
+
     private static string FilterJson(IEnumerable<(int Index, string Decision, string Note)> decisions)
     {
         var items = string.Join(",", decisions.Select(d =>

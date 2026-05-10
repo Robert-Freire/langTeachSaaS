@@ -190,6 +190,18 @@ public class RedaccionCorrectionPromptBuilderTests
         req.SystemPrompt.Should().Contain("accented", "OFFSETS must warn about accented characters");
     }
 
+    [Fact]
+    public void Build_SystemPromptContainsMinimumSpanRule()
+    {
+        // Issue #1215: the OFFSETS block must contain a general minimum-span rule so the model
+        // spans only the erroneous morpheme, not surrounding context.
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("minimum substring", "OFFSETS must mandate minimum-span tagging");
+        req.SystemPrompt.Should().Contain("interesante", "minimum-span rule must include the gender-agreement example");
+        req.SystemPrompt.Should().Contain("interesantes", "minimum-span example must show the corrected form");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx() =>
         new("Texto.", null, Array.Empty<string>(), null);
 }
