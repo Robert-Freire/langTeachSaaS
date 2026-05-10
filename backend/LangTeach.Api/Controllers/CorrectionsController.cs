@@ -164,7 +164,7 @@ public class CorrectionsController : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
-        var result = await _feedbackService.SubmitForCorrectionAsync(teacherId, id, request.Rating, request.Reason, cancellationToken);
+        var result = await _feedbackService.SubmitForCorrectionAsync(teacherId, studentId, id, request.Rating, request.Reason, cancellationToken);
 
         return result switch
         {

@@ -74,13 +74,14 @@ public class AssistantFeedbackService : IAssistantFeedbackService
 
     public async Task<CorrectionFeedbackResult> SubmitForCorrectionAsync(
         Guid teacherId,
+        Guid studentId,
         Guid correctionId,
         string rating,
         string? reason,
         CancellationToken ct)
     {
         var correctionExists = await _db.Corrections
-            .AnyAsync(c => c.Id == correctionId && c.TeacherId == teacherId, ct);
+            .AnyAsync(c => c.Id == correctionId && c.TeacherId == teacherId && c.StudentId == studentId, ct);
         if (!correctionExists)
             return CorrectionFeedbackResult.CorrectionNotFound;
 

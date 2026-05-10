@@ -26,6 +26,7 @@ public interface IAssistantFeedbackService
 
     Task<CorrectionFeedbackResult> SubmitForCorrectionAsync(
         Guid teacherId,
+        Guid studentId,
         Guid correctionId,
         string rating,
         string? reason,
