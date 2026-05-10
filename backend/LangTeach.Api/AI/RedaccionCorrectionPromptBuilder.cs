@@ -33,10 +33,9 @@ public class RedaccionCorrectionPromptBuilder
             "PromptUser | blockType=redaccion-correction l1={L1}\n{UserPrompt}",
             ctx.StudentL1 ?? "(none)", user);
 
-        // temperature=0: the verbatim originalText echo is non-negotiable; default sampling
-        // (1.0) leads the model to silently smooth typos and normalize punctuation while
-        // copying the student text into originalText, which then fails the strict ordinal
-        // guard in RedaccionCorrectionService. Sonnet 4.6 still supports temperature.
+        // temperature=0: deterministic offset generation -- spannedText must locate uniquely
+        // via indexOf in the student text; sampling variation leads the model to rephrase
+        // spannedText, breaking the rescue logic in ValidateAndOrderTags.
         return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 4096, Temperature: 0);
     }
 
@@ -90,7 +89,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   2. Write the explanation.
   3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
-- spannedText MUST equal studentText.Substring(startIndex, endIndex - startIndex).
+- spannedText MUST equal the student text at [startIndex, endIndex).
 - If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
 """;
@@ -133,7 +132,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
         while (ctx.StudentText.Contains(marker, StringComparison.Ordinal))
             marker = "STUDENT_TEXT_VERBATIM_" + Guid.NewGuid().ToString("N");
 
-        sb.AppendLine($"STUDENT TEXT (copy byte-for-byte into originalText; see OUTPUT CONTRACT for why; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
+        sb.AppendLine($"STUDENT TEXT (your tag offsets must reference this text exactly; see OUTPUT CONTRACT; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
         sb.AppendLine($"<<<{marker}>>>");
         sb.AppendLine(ctx.StudentText);
         sb.AppendLine($"<<</{marker}>>>");
