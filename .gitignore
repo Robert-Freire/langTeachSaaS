@@ -74,3 +74,10 @@ graphify-out/**
 # notes, behavior docs, backlogs) are not matched and stay tracked.
 plan/**/task*-*.md
 plan/**/t[0-9]*-*.md
+
+# Voice note recordings (PII -- student audio files)
+voice_note_*.webm
+voice_note_*.mp3
+voice_note_*.ogg
+voice_note_*.wav
+*.webm

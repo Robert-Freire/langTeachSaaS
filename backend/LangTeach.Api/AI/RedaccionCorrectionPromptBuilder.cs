@@ -28,10 +28,10 @@ public class RedaccionCorrectionPromptBuilder
         var system = SystemPrompt;
         var user = BuildUserPrompt(ctx);
 
-        _logger.LogDebug("PromptSystem | blockType=redaccion-correction\n{SystemPrompt}", system);
+        _logger.LogDebug("PromptSystem | blockType=redaccion-correction chars={Chars}", system.Length);
         _logger.LogDebug(
-            "PromptUser | blockType=redaccion-correction l1={L1}\n{UserPrompt}",
-            ctx.StudentL1 ?? "(none)", user);
+            "PromptUser | blockType=redaccion-correction l1={L1} chars={Chars}",
+            ctx.StudentL1 ?? "(none)", user.Length);
 
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
