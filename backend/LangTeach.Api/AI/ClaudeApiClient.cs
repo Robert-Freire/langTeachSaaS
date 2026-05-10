@@ -14,6 +14,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
     {
         [ClaudeModel.Haiku]  = "claude-haiku-4-5-20251001",
         [ClaudeModel.Sonnet] = "claude-sonnet-4-6",
+        [ClaudeModel.Opus]   = "claude-opus-4-7",
     };
 
     public async Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
@@ -191,7 +192,8 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             ["stream"]     = stream,
             ["messages"]   = messages,
         };
-        if (request.Temperature is not null)
+        // temperature is deprecated for Opus 4 -- omit it entirely for that model family.
+        if (request.Temperature is not null && request.Model != ClaudeModel.Opus)
             body["temperature"] = request.Temperature;
         return body;
     }
