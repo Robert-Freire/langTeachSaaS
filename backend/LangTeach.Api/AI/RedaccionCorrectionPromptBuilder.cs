@@ -6,7 +6,6 @@ namespace LangTeach.Api.AI;
 
 public record RedaccionCorrectionPromptContext(
     string StudentText,
-    string StudentCefr,
     string? StudentL1,
     IReadOnlyList<string> StudentDifficulties,
     string? AssignmentPrompt);
@@ -31,8 +30,8 @@ public class RedaccionCorrectionPromptBuilder
 
         _logger.LogDebug("PromptSystem | blockType=redaccion-correction\n{SystemPrompt}", system);
         _logger.LogDebug(
-            "PromptUser | blockType=redaccion-correction level={Level} l1={L1}\n{UserPrompt}",
-            ctx.StudentCefr, ctx.StudentL1 ?? "(none)", user);
+            "PromptUser | blockType=redaccion-correction l1={L1}\n{UserPrompt}",
+            ctx.StudentL1 ?? "(none)", user);
 
         // temperature=0: the verbatim originalText echo is non-negotiable; default sampling
         // (1.0) leads the model to silently smooth typos and normalize punctuation while
@@ -42,7 +41,7 @@ public class RedaccionCorrectionPromptBuilder
     }
 
     private const string SystemPrompt = """
-You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories plus one "muy bien" category.
+You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories.
 
 CATEGORIES (use the exact code letter):
 
@@ -50,14 +49,14 @@ CATEGORIES (use the exact code letter):
   Example: "Fui al cine. Vi una película." → missing connector → C.
 - G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
   Example: "*el problema es muy grande*" → if "el" is wrong gender for the noun, G.
-- L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage.
-  Example: "*hago una foto*" (calque from English/French) → L.
+- L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).
+  Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register). Flag only CLEAR mismatches where the formality difference is significant; do not tag minor elevation.
 - O (Ortografía): accents (tildes), misspelled words, punctuation.
   Example: "*esta*" instead of "está" → O. "*ablar*" instead of "hablar" → O.
-- MuyBien: a phrase or word that demonstrates genuinely strong usage worth highlighting (idiomatic connector, well-handled subjunctive, precise vocabulary). Use sparingly. spannedText is the highlighted phrase (non-empty).
 
 CRITICAL RULES:
 
+- ser/estar: a verb form that violates the permanent/transient distinction is always G, at every level.
 - A misspelling or missing accent is O, NEVER G.
 - A wrong preposition is G, NEVER L.
 - A literal translation from the student's L1 is L, NEVER G.
@@ -72,15 +71,17 @@ Emit raw JSON only. No prose before or after. No markdown fences. The JSON must 
   "originalText": "...the student text...",
   "tags": [
     {
-      "category": "G" | "C" | "L" | "O" | "MuyBien",
+      "category": "G" | "C" | "L" | "O",
       "startIndex": <int>,
       "endIndex": <int>,
       "spannedText": "<exact substring of originalText[startIndex..endIndex]>",
-      "explanation": "<short, in Spanish, calibrated to the student's level>",
+      "explanation": "<short, in Spanish>",
       "correctedForm": "<the corrected form>"
     }
   ]
 }
+
+"explanation" and "correctedForm" are always non-empty for every tag.
 
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
 - startIndex and endIndex are Unicode character offsets into originalText (0-based, end-exclusive).
@@ -94,18 +95,12 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 - If spannedText would appear more than once in originalText, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
 
-"explanation" and "correctedForm" are non-empty for C/G/L/O tags and null for MuyBien.
-
 Copy the student text byte-for-byte into the originalText field, preserving every typo, missing accent, and punctuation mark exactly as written between the STUDENT_TEXT_VERBATIM_... marker lines in the user prompt. Do not normalize or rewrite. The errors and irregularities are precisely the signal we are here to mark - if you silently "fix" them during the echo, the corresponding tags lose their anchor and the correction is unusable.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
     {
         var sb = new StringBuilder();
-
-        sb.AppendLine($"STUDENT LEVEL: {ctx.StudentCefr}");
-        sb.AppendLine(LevelCalibrationCue(ctx.StudentCefr));
-        sb.AppendLine();
 
         var l1Block = BuildL1Block(ctx.StudentL1);
         if (!string.IsNullOrEmpty(l1Block))
@@ -148,14 +143,6 @@ Copy the student text byte-for-byte into the originalText field, preserving ever
 
         return sb.ToString().TrimEnd();
     }
-
-    private static string LevelCalibrationCue(string cefr) => cefr switch
-    {
-        "A1" or "A2" => "Calibration: at A1/A2, prioritize basic agreement (gender/number), core verb forms (ser/estar/haber, present, basic past), high-frequency vocabulary, and high-frequency tildes (está, qué, cómo, sé vs se). Keep explanations short and concrete. Do not correct stylistic subtleties beyond the student's level.",
-        "B1" or "B2" => "Calibration: at B1/B2, prioritize cohesion (connectors, temporal markers), register, prepositions, formulaic subjunctive triggers (quiero que, es importante que), and natural usage. Explanations may invoke the rule briefly.",
-        "C1" or "C2" => "Calibration: at C1/C2, flag genuine errors at any level, but treat as priority findings only what a native peer would notice: subtle nuance, register mismatch, idiomaticity, and non-formulaic subjunctive (volitional, doubt, concessive in extended contexts). Do not let lower-level features dominate the markup if the student handles them well.",
-        _ => "Calibration: treat the student as a generic intermediate learner; emphasize the core categories and avoid stylistic nitpicks.",
-    };
 
     private string BuildL1Block(string? l1)
     {

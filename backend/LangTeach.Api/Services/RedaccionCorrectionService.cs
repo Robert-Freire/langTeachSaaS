@@ -129,6 +129,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return;
         }
 
+        var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
         var request = promptBuilder.Build(ctx);
         var sentText = ctx.StudentText.TrimEnd();
@@ -203,7 +204,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, ctx.StudentCefr, claude, filterPromptBuilder, correctionId, logger);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, filterPromptBuilder, correctionId, logger);
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
@@ -233,7 +234,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         logger.LogInformation(
             "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} ModelTokens={InputTokens}/{OutputTokens}",
-            correctionId, teacherId, studentId, ctx.StudentCefr, ctx.StudentL1 ?? "(none)",
+            correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
             filteredTags.Count, validatedTags.Count - filteredTags.Count, response.InputTokens, response.OutputTokens);
     }
 
@@ -248,14 +249,11 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         // trailing newline back) is handled at the equality-check site in RunCorrectionInScopeAsync,
         // not here, so the persisted Correction.StudentText stays exactly what the student wrote.
         var studentText = correction.StudentText ?? string.Empty;
-        var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
-
         var l1 = ParseFirstString(student.NativeLanguages);
         var difficulties = ParseStringArray(student.Difficulties);
 
         return new RedaccionCorrectionPromptContext(
             StudentText: studentText,
-            StudentCefr: cefr,
             StudentL1: l1,
             StudentDifficulties: difficulties,
             AssignmentPrompt: correction.AssignmentPrompt);
@@ -413,6 +411,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> ApplyLevelFilterAsync(
         IReadOnlyList<RedaccionCorrectionTagDto> tags,
         string cefr,
+        string? assignmentPrompt,
         IClaudeClient claude,
         RedaccionLevelFilterPromptBuilder filterBuilder,
         Guid correctionId,
@@ -428,7 +427,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         ClaudeResponse filterResponse;
         try
         {
-            var filterRequest = filterBuilder.Build(cefr, inputs);
+            var filterRequest = filterBuilder.Build(cefr, inputs, assignmentPrompt);
             filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
         }
         catch (Exception ex)
@@ -490,9 +489,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     result.Add(tag);
                     break;
                 case "soften":
+                case "muybien":
                     // Convert to MuyBien: highlights the attempt without penalising the student.
-                    // decision.Note (the warm Spanish acknowledgement) is not persisted to DB in
-                    // this version; CorrectionTag has no note column. Pending schema enhancement.
+                    // decision.Note (the warm Spanish praise) is not persisted to DB in this
+                    // version; CorrectionTag has no note column. Pending schema enhancement.
                     result.Add(tag with
                     {
                         Category = CorrectionTagCategory.MuyBien,
