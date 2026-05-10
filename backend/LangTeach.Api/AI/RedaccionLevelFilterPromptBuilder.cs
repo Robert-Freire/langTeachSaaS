@@ -26,11 +26,15 @@ public class RedaccionLevelFilterPromptBuilder
         var scope = _pedagogy.GetGrammarScope(cefr);
         var user = BuildUserPrompt(cefr, scope, tags);
 
+        _logger.LogDebug("PromptSystem | blockType=redaccion-level-filter\n{SystemPrompt}", SystemPrompt);
         _logger.LogDebug(
             "PromptUser | blockType=redaccion-level-filter level={Level} tagCount={Count}\n{UserPrompt}",
             cefr, tags.Count, user);
 
-        return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 1024, Temperature: 0);
+        // Scale MaxTokens with tag count: each decision + optional soften note is ~60-80 tokens;
+        // 2048 is safe for up to ~25 tags with notes; hard cap avoids truncation on dense texts.
+        var maxTokens = Math.Max(1024, Math.Min(2048, 512 + tags.Count * 64));
+        return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: maxTokens, Temperature: 0);
     }
 
     private const string SystemPrompt = """
@@ -76,10 +80,16 @@ Every input tag must appear in the output exactly once, identified by its index.
         for (var i = 0; i < tags.Count; i++)
         {
             var t = tags[i];
-            var expl = string.IsNullOrWhiteSpace(t.Explanation) ? "(none)" : t.Explanation;
-            sb.AppendLine($"[{i}] Category: {t.Category} | Text: \"{t.SpannedText}\" | Explanation: {expl}");
+            // Sanitize student-controlled text: strip newlines/quotes so they cannot break the prompt
+            // structure and mislead the model into treating student content as instructions.
+            var span = SanitizeForPrompt(t.SpannedText);
+            var expl = string.IsNullOrWhiteSpace(t.Explanation) ? "(none)" : SanitizeForPrompt(t.Explanation);
+            sb.AppendLine($"[{i}] Category: {t.Category} | Text: <span>{span}</span> | Explanation: {expl}");
         }
 
         return sb.ToString().TrimEnd();
     }
+
+    private static string SanitizeForPrompt(string s) =>
+        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'');
 }

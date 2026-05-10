@@ -218,6 +218,34 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         row.Tags.First().Category.Should().Be("MuyBien");
     }
 
+    [Fact]
+    public async Task LevelFilter_PartialFilterResponse_OmittedIndicesFallOpen()
+    {
+        // When the filter omits some indices from the response (partial decision list),
+        // omitted tags fall open (kept), not silently dropped.
+        var text = "Hoy ablamos con mi amigo para que no pareces raro.";
+        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+
+        var oStart = text.IndexOf("ablamos", StringComparison.Ordinal);
+        var gStart = text.IndexOf("para que no pareces", StringComparison.Ordinal);
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("O", oStart, oStart + "ablamos".Length, "ablamos", "Falta la 'h'.", "hablamos"),
+            ("G", gStart, gStart + "para que no pareces".Length, "para que no pareces",
+                "Subjuntivo requerido.", "para que no parezcas"),
+        }));
+        // Filter only returns a decision for index 1 (G tag removed); index 0 (O) is omitted.
+        // The O tag is already hardcoded to keep, but index 0 omission still exercises fall-open.
+        _claude.EnqueueResponse(FilterJson(new[] { (1, "remove", "") }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1, "O tag falls open (always kept), G tag removed by filter");
+        row.Tags.First().Category.Should().Be("O");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")
