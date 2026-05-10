@@ -190,6 +190,7 @@ public class CorrectionsControllerTests
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
         detail!.Status.Should().Be("Corrigiendo");
+        _factory.ClaudeStub.CompleteCallCount.Should().Be(0, "idempotent path must not trigger a second AI call");
     }
 
     [Fact]
