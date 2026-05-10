@@ -148,6 +148,14 @@ public class RedaccionCorrectionPromptBuilderTests
     }
 
     [Fact]
+    public void Build_SetsMaxTokensTo8192_ToPreventTruncationOnLongTexts()
+    {
+        // Issue #1217: 4096 was too small for B1+ redacciones; responses were truncated mid-JSON.
+        var req = _builder.Build(MakeCtx());
+        req.MaxTokens.Should().Be(8192);
+    }
+
+    [Fact]
     public void Build_WrapsStudentTextInVerbatimMarkers()
     {
         // Markers use a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot
