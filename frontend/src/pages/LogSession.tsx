@@ -267,7 +267,10 @@ export default function LogSession() {
     : null
   const sessionNumber = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
   const pendingFollowups = allFollowups.filter(f => f.status === 'pending')
-  const activeDifficulties = student?.profile.difficulties.filter(d => d.status === 'Active') ?? []
+  const activeDifficulties = useMemo(
+    () => student?.profile.difficulties.filter(d => d.status === 'Active') ?? [],
+    [student]
+  )
   const pendingTodos = student?.profile.teachingTodos.filter(t => t.status.toLowerCase() === 'pending') ?? []
   const showPrevHomework = (isEditMode && prevHomeworkStatus !== null) || (prevSession !== null && prevSession.homeworkAssigned !== null)
   const plannedForToday = prevSession?.nextSessionTopics ?? null
@@ -340,7 +343,8 @@ export default function LogSession() {
     if (generalNotes === prev.generalNotes && nextGeneralNotes !== prev.generalNotes) setGeneralNotes(nextGeneralNotes)
     if (homeworkAssigned === prev.homeworkAssigned && nextHomeworkAssigned !== prev.homeworkAssigned) setHomeworkAssigned(nextHomeworkAssigned)
     lastServerValuesRef.current = { title: nextTitle, actualContent: nextActualContent, generalNotes: nextGeneralNotes, homeworkAssigned: nextHomeworkAssigned }
-  }, [editSession]) // intentionally reads local state without declaring as deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editSession]) // intentionally reads local state without declaring as deps; re-running on field changes would clobber user edits
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keep durationChoiceRef current so async extraction callbacks read the latest value, not a stale closure
