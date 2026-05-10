@@ -99,6 +99,12 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 - spannedText MUST equal the student text at [startIndex, endIndex).
 - If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
 - Tags MUST NOT overlap. Sort tags by startIndex.
+- spannedText MUST be the minimum substring that is itself erroneous: the specific word or
+  morpheme to replace, not its surrounding context. For a verb error, span the verb only.
+  For a missing accent, span the word only. Never span a surrounding phrase.
+  Example: in "Los libros son interesante", spannedText must be "interesante" (the wrong
+  adjective) and correctedForm must be "interesantes" -- not "Los libros son interesante"
+  or any larger span.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
