@@ -91,5 +91,5 @@ Every input tag must appear in the output exactly once, identified by its index.
     }
 
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'');
+        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
 }
