@@ -302,14 +302,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
             if (item.ValueKind == JsonValueKind.String)
             {
                 var s = item.GetString();
-                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s, null));
+                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s));
             }
             else if (item.ValueKind == JsonValueKind.Object)
             {
                 var text = GetStringOrNull(item, "text");
                 if (string.IsNullOrWhiteSpace(text)) continue;
-                var dueDate = GetIsoDateOnlyOrNull(item, "dueDate");
-                result.Add(new ExtractedTeachingTodoDto(text, dueDate));
+                result.Add(new ExtractedTeachingTodoDto(text));
             }
         }
         return result;

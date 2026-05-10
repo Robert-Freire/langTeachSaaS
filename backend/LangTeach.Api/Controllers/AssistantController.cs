@@ -133,8 +133,7 @@ public class AssistantController : ControllerBase
             {
                 if (!string.IsNullOrWhiteSpace(todo.Text))
                 {
-                    var todoPayload = JsonSerializer.SerializeToElement(new { dueDate = todo.DueDate }, camelCaseOpts);
-                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo.Text, Payload: todoPayload));
+                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Idea", null, todo.Text, Payload: null));
                 }
             }
 

@@ -148,11 +148,14 @@ export function useAtelierAssistant(
         // Create one session for this "new" selection; concurrent calls share the same promise
         if (!newlyCreatedSessionRef.current) {
           if (!creatingSessionPromiseRef.current) {
+            const newSessionProposal = proposalsRef.current.find(p => p.type === 'newSession')
+            const extractedSessionDate = (newSessionProposal?.payload as { sessionDate?: string } | null)?.sessionDate
             const now = new Date()
             const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+            const sessionDate = extractedSessionDate ?? localDate
             creatingSessionPromiseRef.current = createSession(studentId, {
               title: 'Session',
-              sessionDate: localDate,
+              sessionDate,
               previousHomeworkStatus: 'NotApplicable',
             }).then(s => {
               newlyCreatedSessionRef.current = s.id
@@ -168,8 +171,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        const dueDate = (proposal.payload as { dueDate?: string | null } | null | undefined)?.dueDate ?? null
-        await applyTodoProposal(studentId, proposal.newValue, dueDate)
+        await applyTodoProposal(studentId, proposal.newValue, null)
       } else if (proposal.type === 'newStudent') {
         const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')

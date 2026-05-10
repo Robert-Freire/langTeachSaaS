@@ -760,9 +760,9 @@ export default function LogSession() {
           </PanelSection>
         )}
 
-        {/* Teaching Todos */}
+        {/* Teaching Ideas */}
         {pendingTodos.length > 0 && (
-          <PanelSection label="Teaching Todos">
+          <PanelSection label="Teaching Ideas">
             <div className="space-y-1.5">
               {pendingTodos.map(todo => (
                 <div
@@ -1574,9 +1574,9 @@ export default function LogSession() {
 
               {/* Todos + Followups side-by-side */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Teaching Todos quick-add */}
+                {/* Teaching Ideas quick-add */}
                 <div className="space-y-2 rounded-xl p-4" style={{ background: '#F0EFFF' }}>
-                  <p className="text-xs font-medium uppercase tracking-wider text-indigo-600">New Teaching Todos</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-indigo-600">New Teaching Ideas</p>
                   {newTodos.map((text, idx) => (
                     <div key={idx} className="flex items-center gap-2" data-testid="new-todo-item">
                       <span className="flex-1 text-sm text-[#1A1B22]">{text}</span>

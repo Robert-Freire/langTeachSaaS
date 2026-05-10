@@ -148,9 +148,9 @@ describe('useAtelierAssistant', () => {
     expect(result.current.proposals[0].status).toBe('applied')
   })
 
-  it('apply: passes dueDate from todo payload to applyTodoProposal', async () => {
-    const todoWithDate = { id: 'pt-date', type: 'todo' as const, field: 'text', label: 'Teaching Todo', oldValue: null, newValue: 'Repasar la voz pasiva', payload: { dueDate: '2026-05-12' } }
-    mockPropose.mockResolvedValueOnce({ proposals: [todoWithDate] })
+  it('apply: calls applyTodoProposal with null dueDate', async () => {
+    const todoProposal = { id: 'pt-date', type: 'todo' as const, field: 'text', label: 'Teaching Idea', oldValue: null, newValue: 'Repasar la voz pasiva', payload: null }
+    mockPropose.mockResolvedValueOnce({ proposals: [todoProposal] })
     mockApplyTodo.mockResolvedValueOnce(undefined)
     const { result } = renderHook(() => useAtelierAssistant('student-1', null), { wrapper: makeWrapper() })
 
@@ -158,7 +158,7 @@ describe('useAtelierAssistant', () => {
     await act(async () => { await vi.runAllTimersAsync() })
 
     await act(async () => { await result.current.apply('pt-date') })
-    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Repasar la voz pasiva', '2026-05-12')
+    expect(mockApplyTodo).toHaveBeenCalledWith('student-1', 'Repasar la voz pasiva', null)
   })
 
   it('apply: sets error status on failure without affecting other cards', async () => {
