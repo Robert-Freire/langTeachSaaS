@@ -45,7 +45,7 @@ public record ProposalDto(
     JsonElement? NewStudentPayload = null
 );
 
-public record AssistantProposeResponse(List<ProposalDto> Proposals, Guid? VoiceNoteId = null, Guid? SessionLogId = null);
+public record AssistantProposeResponse(List<ProposalDto> Proposals, Guid? VoiceNoteId = null, Guid? SessionLogId = null, string? ExtractedSessionDate = null);
 
 public class PatchStudentRequest
 {

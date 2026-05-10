@@ -62,6 +62,8 @@ export function useAtelierAssistant(
   const newlyCreatedSessionRef = useRef<string | null>(null)
   // In-flight guard: concurrent apply() calls share this promise instead of each calling createSession
   const creatingSessionPromiseRef = useRef<Promise<string> | null>(null)
+  // Extracted session date+time from the most recent propose response (e.g. "2026-05-10T13:00")
+  const extractedSessionDateRef = useRef<string | null>(null)
 
   // Clear all undo timers on unmount to prevent memory leaks
   useEffect(() => {
@@ -82,12 +84,13 @@ export function useAtelierAssistant(
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
     if (!hasPending) setProposals([])
     try {
-      const { proposals: raw } = await proposeAssistant(
+      const { proposals: raw, extractedSessionDate } = await proposeAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
       )
       if (generationRef.current !== gen) return
+      extractedSessionDateRef.current = extractedSessionDate ?? null
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -148,11 +151,9 @@ export function useAtelierAssistant(
         // Create one session for this "new" selection; concurrent calls share the same promise
         if (!newlyCreatedSessionRef.current) {
           if (!creatingSessionPromiseRef.current) {
-            const newSessionProposal = proposalsRef.current.find(p => p.type === 'newSession')
-            const extractedSessionDate = (newSessionProposal?.payload as { sessionDate?: string } | null)?.sessionDate
             const now = new Date()
             const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-            const sessionDate = extractedSessionDate ?? localDate
+            const sessionDate = extractedSessionDateRef.current ?? localDate
             creatingSessionPromiseRef.current = createSession(studentId, {
               title: 'Session',
               sessionDate,

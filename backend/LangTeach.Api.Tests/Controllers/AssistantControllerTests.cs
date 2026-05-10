@@ -592,6 +592,28 @@ public class AssistantControllerTests
         body!.Proposals.Should().NotContain(p => p.Type == "newSession");
     }
 
+    [Fact]
+    public async Task Propose_ExtractedSessionDate_IncludesDateAndTime()
+    {
+        // The response always includes extractedSessionDate when SessionDate is extracted,
+        // so the frontend can use it when creating a new session via the picker.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-extracted-date", "assistant-extracted-date@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on subjunctive today.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        // Stub always returns SessionDate="2026-01-15" and SessionStartTime="09:00" for non-new-session
+        body!.ExtractedSessionDate.Should().Be("2026-01-15T09:00");
+    }
+
     // TC-01: "Súbele el nivel de escritura a B1" → student proposal skillLevel.writing = "B1"
     [Fact]
     public async Task Propose_TC01_WritingLevelRaised_EmitsSkillLevelWritingProposal()

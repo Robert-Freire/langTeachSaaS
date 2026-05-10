@@ -565,6 +565,20 @@ describe('useAtelierAssistant', () => {
     expect(onAfterSessionApply).toHaveBeenCalledWith('created-123')
   })
 
+  it('apply: uses extractedSessionDate from propose response when creating new session', async () => {
+    const fakeSession = { id: 'created-789', studentId: 'student-1', sessionDate: '2026-05-10T13:00', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    mockCreateSession.mockResolvedValueOnce(fakeSession)
+    mockApplySession.mockResolvedValueOnce(undefined)
+
+    mockPropose.mockResolvedValueOnce({ proposals: [sampleProposals[1]], extractedSessionDate: '2026-05-10T13:00' })
+    const { result } = renderHook(() => useAtelierAssistant('student-1', 'new'), { wrapper: makeWrapper() })
+    act(() => { result.current.submit('text') })
+    await act(async () => { await vi.runAllTimersAsync() })
+
+    await act(async () => { await result.current.apply('p2') })
+    expect(mockCreateSession).toHaveBeenCalledWith('student-1', expect.objectContaining({ sessionDate: '2026-05-10T13:00' }))
+  })
+
   it('applyAll with sessionId "new" reuses the same created session for all session proposals', async () => {
     const sessionProp2 = { id: 'p4', type: 'session' as const, field: 'generalNotes', label: 'Notes', oldValue: null, newValue: 'Reviewed past perfect' }
     const fakeSession = { id: 'created-456', studentId: 'student-1', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }

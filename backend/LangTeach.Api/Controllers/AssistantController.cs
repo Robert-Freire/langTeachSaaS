@@ -219,7 +219,17 @@ public class AssistantController : ControllerBase
                 .FirstOrDefault();
         }
 
-        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId, suggestedSessionLogId));
+        // Provide the extracted session date+time so the frontend can use it when creating a new session
+        // via the picker, regardless of whether a newSession proposal was generated.
+        string? extractedSessionDate = null;
+        if (reflectionExtraction.SessionDate is { } sd)
+        {
+            extractedSessionDate = reflectionExtraction.SessionStartTime is { } st
+                ? $"{sd}T{st}"
+                : sd;
+        }
+
+        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId, suggestedSessionLogId, extractedSessionDate));
     }
 
     [HttpPost("voice-notes/{voiceNoteId:guid}/feedback")]
