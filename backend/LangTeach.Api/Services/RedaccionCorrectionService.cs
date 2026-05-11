@@ -42,7 +42,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         if (correction is null)
@@ -62,7 +62,17 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         correction.Status = CorrectionStatus.Corrigiendo;
         correction.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another concurrent request won the race and already set Corrigiendo (or later).
+            // Re-read and return the current state so the caller gets a consistent DTO.
+            await _db.Entry(correction).ReloadAsync(cancellationToken);
+            return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
+        }
 
         var outerLogger = _logger;
         _ = Task.Run(async () =>
@@ -89,7 +99,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     using var failScope = _scopeFactory.CreateScope();
                     var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
                     if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
                     {
                         failRow.Status = CorrectionStatus.Entregada;
@@ -114,7 +124,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     using var failScope = _scopeFactory.CreateScope();
                     var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
                     if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
                     {
                         failRow.Status = CorrectionStatus.CorreccionFallida;
@@ -141,7 +151,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
 
         if (correction is null)
         {
@@ -270,7 +280,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             StudentText: studentText,
             StudentL1: l1,
             StudentDifficulties: difficulties,
-            AssignmentPrompt: correction.AssignmentPrompt);
+            AssignmentPrompt: InputSanitizer.Sanitize(correction.AssignmentPrompt));
     }
 
     private static string? ParseFirstString(string json)
