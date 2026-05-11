@@ -1,4 +1,3 @@
-using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -23,28 +22,6 @@ public class CorrectionService : ICorrectionService
     {
         if (!await StudentBelongsToTeacherAsync(teacherId, studentId, cancellationToken))
             return null;
-
-        // Staleness recovery: a background AI task that failed silently leaves the
-        // correction stuck in Corrigiendo. After StaleCorrigiendoSeconds we revert to
-        // Entregada so the teacher can retry. Derived from RedaccionCorrectionTimeouts so
-        // the two values stay in sync -- see ClaudeClientOptions.cs.
-        var staleThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleCorrigiendoSeconds);
-        var stale = await _db.Corrections
-            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId
-                     && c.DeletedAt == null
-                     && c.Status == CorrectionStatus.Corrigiendo
-                     && c.UpdatedAt < staleThreshold)
-            .ToListAsync(cancellationToken);
-        if (stale.Count > 0)
-        {
-            var now = DateTime.UtcNow;
-            foreach (var s in stale)
-            {
-                s.Status = CorrectionStatus.Entregada;
-                s.UpdatedAt = now;
-            }
-            await _db.SaveChangesAsync(cancellationToken);
-        }
 
         var rows = await _db.Corrections
             .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && c.DeletedAt == null)

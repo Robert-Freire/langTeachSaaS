@@ -33,6 +33,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
 
         // Build a FakeServiceScopeFactory so Task.Run inside CorregirAsync can resolve
         // AppDbContext (backed by the same in-memory store) and the stub Claude client.
@@ -41,13 +42,12 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton(promptBuilder);
-        scopeServices.AddSingleton(filterPromptBuilder);
+        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
         scopeServices.AddLogging();
         var scopeProvider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(scopeProvider);
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory, promptBuilder,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent();
