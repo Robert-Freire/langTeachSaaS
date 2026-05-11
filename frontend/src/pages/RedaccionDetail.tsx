@@ -14,33 +14,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
-import { getCategoryStyle } from '@/lib/correction-colors'
+import { ChipLegend } from '@/components/corrections/ChipLegend'
 import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
-
-const CHIP_CATEGORIES = ['C', 'G', 'L', 'O'] as const
-
-function ChipLegend() {
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      {CHIP_CATEGORIES.map((cat) => {
-        const s = getCategoryStyle(cat)
-        return (
-          <span key={cat} className="inline-flex items-center gap-1.5">
-            <span
-              className={`inline-flex h-5 w-5 items-center justify-center rounded text-[0.6rem] font-bold ${s.chipBg} ${s.chipText}`}
-            >
-              {s.letter}
-            </span>
-            <span className="text-xs text-zinc-500">{s.label}</span>
-          </span>
-        )
-      })}
-    </div>
-  )
-}
 
 export default function RedaccionDetail() {
   const { id, correctionId } = useParams<{ id: string; correctionId: string }>()
