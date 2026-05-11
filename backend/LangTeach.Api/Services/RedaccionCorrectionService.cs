@@ -81,6 +81,31 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
                 await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, filterPromptBuilder, scopeLogger);
             }
+            catch (ClaudeRateLimitException rle)
+            {
+                var errLogger = scopeLogger ?? outerLogger;
+                errLogger.LogWarning(
+                    "Background correction: Claude rate limit hit; reverting to Entregada for retry. CorrectionId={CorrectionId} TeacherId={TeacherId} RetryAfter={RetryAfter}",
+                    correctionId, teacherId, rle.RetryAfter);
+                try
+                {
+                    using var failScope = _scopeFactory.CreateScope();
+                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var failRow = await failDb.Corrections
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
+                    {
+                        failRow.Status = CorrectionStatus.Entregada;
+                        failRow.UpdatedAt = DateTime.UtcNow;
+                        await failDb.SaveChangesAsync();
+                    }
+                }
+                catch (Exception saveEx)
+                {
+                    (scopeLogger ?? outerLogger).LogError(saveEx,
+                        "Failed to revert status to Entregada after Claude rate limit. CorrectionId={CorrectionId}", correctionId);
+                }
+            }
             catch (Exception ex)
             {
                 var errLogger = scopeLogger ?? outerLogger;
