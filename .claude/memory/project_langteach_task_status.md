@@ -6,7 +6,7 @@ originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
 ## In-Flight Tasks (2026-05-11)
 
-No tasks currently in flight. Text Correction sprint close complete; pending user merge action. Hardening II sprint created (milestone #22) with 12 issues (#1222-#1233). Sprint branch sprint/hardening-ii to be created from main after merge.
+No tasks currently in flight. Hardening II sprint open, no tasks picked yet.
 
 ## Live Tracker: GitHub Issues
 
@@ -24,8 +24,8 @@ Key queries:
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Hardening II | ACTIVE | sprint/hardening-ii (create from main after merge), milestone #22. 12 issues (#1222-#1233). Correction prompt robustness, security (rate limit), arch cleanup, generation grammar scope, DB hardening, UI polish. Sprint story: plan/sprints/hardening-ii.md |
-| Text Correction | CLOSING | sprint/text-correction, milestone #21. Sprint close complete, pending user merge action. All 40 issues closed. Epic #1085 to close after milestone close. |
+| Hardening II | ACTIVE | sprint/hardening-ii, milestone #22. 12 issues (#1222-#1233). Correction prompt robustness (Pass 2 ser/estar #1222), security rate limit (#1223), arch cleanup (#1224), DB hardening (#1228), prompt externalization (#1229), generation grammar scope (#1227), pedagogy C-category (#1226), UI polish (#1225, #1231), Atelier hardening (#1230), test infra (#1232), prompt-health sweep (#1233). Sprint story: plan/sprints/hardening-ii.md |
+| Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |
 | Unified Voice & Chat | CLOSED 2026-05-03 | milestone #19, merged to main (commit 774961b8), branch deleted. Atelier Assistant shipped: FAB launcher, multi-entity proposals, voice + text input, modify-in-place. Sprint story: plan/sprints/unified-voice-chat.md |
 | Student Profile Voice Input | CLOSED 2026-04-27 | milestone #18, merged to main, branch deleted |
