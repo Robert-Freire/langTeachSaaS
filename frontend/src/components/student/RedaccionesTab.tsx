@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Loader2, X } from 'lucide-react'
+import { ChevronRight, ImageUp, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,6 +14,7 @@ import {
   updateCorrection,
   deleteCorrection,
   corregirCorrection,
+  uploadForOcr,
   type CorrectionStatus,
   type CorrectionSummary,
   type CreateCorrectionRequest,
@@ -306,6 +307,9 @@ interface CorrectionDrawerProps {
   onCorregirError: (msg: string) => void
 }
 
+const OCR_ACCEPTED = '.jpg,.jpeg,.png,.webp,.pdf'
+const HEIC_EXTENSIONS = ['.heic', '.heif']
+
 function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError }: CorrectionDrawerProps) {
   const queryClient = useQueryClient()
   const isEdit = editId != null
@@ -316,6 +320,10 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
   const [textLockedError, setTextLockedError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [statusFromLoad, setStatusFromLoad] = useState<CorrectionStatus | null>(null)
+  const [ocrState, setOcrState] = useState<'idle' | 'loading' | 'warn' | 'error'>('idle')
+  const [ocrError, setOcrError] = useState<string | null>(null)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const detailQuery = useQuery({
     queryKey: ['corrections', studentId, editId],
@@ -335,11 +343,32 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
     }
   }, [isEdit, detail, hydrated])
 
+  async function handleFileUpload(file: File) {
+    const lower = file.name.toLowerCase()
+    if (HEIC_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+      setOcrError('El formato HEIC no es compatible. Usa JPG, PNG, WEBP o PDF.')
+      setOcrState('error')
+      return
+    }
+    setOcrState('loading')
+    setOcrError(null)
+    setBlobUrl(null)
+    try {
+      const result = await uploadForOcr(file)
+      setText(result.text)
+      setBlobUrl(result.blobUrl)
+      setOcrState(result.text.length < 10 ? 'warn' : 'idle')
+    } catch {
+      setOcrState('error')
+      setOcrError('No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')
+    }
+  }
+
   const trimmedTitle = title.trim()
   const titleValid = trimmedTitle.length > 0 && trimmedTitle.length <= TITLE_MAX
   const studentTextLocked = isEdit && statusFromLoad === 'Corregida'
   const titleOk = isEdit ? titleValid : trimmedTitle.length <= TITLE_MAX
-  const canSave = titleOk && !isSaving && (!isEdit || hydrated)
+  const canSave = titleOk && !isSaving && (!isEdit || hydrated) && ocrState !== 'loading'
 
   const isPendienteEdit = isEdit && statusFromLoad === 'Pendiente'
   const hasText = text.trim().length > 0
@@ -378,6 +407,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
           assignmentTitle: effectiveTitle,
           assignmentPrompt: prompt.length > 0 ? prompt : null,
           studentText: text.length > 0 ? text : null,
+          sourceImageUrl: blobUrl ?? undefined,
         })
         if (text.trim().length > 0) {
           try {
@@ -497,26 +527,67 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
               </div>
 
               <div className="space-y-1.5">
-                <label
-                  htmlFor="redaccion-text"
-                  className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
-                >
-                  Texto del alumno (opcional)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="redaccion-text"
+                    className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
+                  >
+                    Texto del alumno (opcional)
+                  </label>
+                  {!studentTextLocked && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={OCR_ACCEPTED}
+                        className="sr-only"
+                        data-testid="correction-drawer-file-input"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) void handleFileUpload(file)
+                          e.target.value = ''
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={ocrState === 'loading'}
+                        className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-indigo-600 hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Subir foto o archivo para extraer texto"
+                        data-testid="correction-drawer-upload-btn"
+                      >
+                        {ocrState === 'loading'
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <ImageUp className="h-3.5 w-3.5" />}
+                        Subir imagen
+                      </button>
+                    </>
+                  )}
+                </div>
                 <Textarea
                   id="redaccion-text"
-                  value={text}
+                  value={ocrState === 'loading' ? '' : text}
                   onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
-                  placeholder="Pega el texto del alumno aquí"
+                  placeholder={ocrState === 'loading' ? 'Extrayendo texto...' : 'Pega el texto del alumno aquí'}
                   rows={10}
                   className="resize-y max-h-[50vh]"
-                  disabled={studentTextLocked}
+                  disabled={studentTextLocked || ocrState === 'loading'}
                   data-testid="correction-drawer-text"
                 />
+                {ocrState === 'warn' && (
+                  <p className="text-xs text-amber-600" data-testid="correction-drawer-ocr-warn">
+                    El texto extraído parece incompleto. Puedes editarlo antes de corregir.
+                  </p>
+                )}
+                {ocrState === 'error' && ocrError && (
+                  <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error">
+                    {ocrError}
+                  </p>
+                )}
                 <p className="text-xs text-zinc-500">
                   {studentTextLocked
                     ? 'El texto no se puede modificar una vez generada la corrección.'
-                    : 'Si ya tienes el texto del alumno, pégalo aquí. Lo puedes añadir más tarde.'}
+                    : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto. Lo puedes añadir más tarde.'}
                 </p>
                 {textLockedError && (
                   <p className="text-xs text-red-600" data-testid="correction-drawer-text-error">

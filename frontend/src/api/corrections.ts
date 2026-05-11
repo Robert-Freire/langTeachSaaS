@@ -35,12 +35,19 @@ export interface CorrectionDetail {
   createdAt: string
   updatedAt: string
   correctedAt: string | null
+  sourceImageUrl?: string | null
+}
+
+export interface OcrResult {
+  text: string
+  blobUrl: string
 }
 
 export interface CreateCorrectionRequest {
   assignmentTitle?: string | null
   assignmentPrompt?: string | null
   studentText?: string | null
+  sourceImageUrl?: string | null
 }
 
 export type UpdateCorrectionRequest = CreateCorrectionRequest
@@ -111,6 +118,13 @@ export async function submitCorrectionFeedback(
   body: CorrectionFeedbackRequest,
 ): Promise<void> {
   await apiClient.post(`/api/students/${studentId}/corrections/${correctionId}/feedback`, body)
+}
+
+export async function uploadForOcr(file: File): Promise<OcrResult> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await apiClient.post<OcrResult>('/api/corrections/ocr', form)
+  return res.data
 }
 
 function sanitizeFilename(value: string): string {

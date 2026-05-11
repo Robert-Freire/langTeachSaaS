@@ -73,6 +73,7 @@ public class CorrectionService : ICorrectionService
             AssignmentTitle = DefaultIfBlank(request.AssignmentTitle, now),
             AssignmentPrompt = NullIfBlank(request.AssignmentPrompt),
             StudentText = hasText ? request.StudentText : null,
+            SourceImageUrl = string.IsNullOrWhiteSpace(request.SourceImageUrl) ? null : request.SourceImageUrl,
             CreatedAt = now,
             UpdatedAt = now,
         };
