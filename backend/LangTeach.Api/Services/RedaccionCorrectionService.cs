@@ -104,6 +104,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     {
                         failRow.Status = CorrectionStatus.Entregada;
                         failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: if a race occurs the outer
+                        // catch (Exception saveEx) logs it, and CorrectionStaleRecoveryService
+                        // will reset the row on the next timer tick.
                         await failDb.SaveChangesAsync();
                     }
                 }
@@ -129,6 +132,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     {
                         failRow.Status = CorrectionStatus.CorreccionFallida;
                         failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: outer catch logs it,
+                        // and CorrectionStaleRecoveryService resets the row on the next tick.
                         await failDb.SaveChangesAsync();
                     }
                 }
