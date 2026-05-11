@@ -357,7 +357,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
       const result = await uploadForOcr(file)
       setText(result.text)
       setBlobUrl(result.blobUrl)
-      setOcrState(result.text.length < 10 ? 'warn' : 'idle')
+      setOcrState(result.incomplete ? 'warn' : 'idle')
     } catch {
       setOcrState('error')
       setOcrError('No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')

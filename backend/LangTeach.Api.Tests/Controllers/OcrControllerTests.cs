@@ -38,6 +38,7 @@ public class OcrControllerTests
         var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
         json.GetProperty("text").GetString().Should().NotBeNullOrEmpty();
         json.GetProperty("blobUrl").GetString().Should().NotBeNullOrEmpty();
+        json.GetProperty("incomplete").GetBoolean().Should().BeFalse();
     }
 
     [Fact]

@@ -95,6 +95,6 @@ public class OcrController : ControllerBase
             "OCR extraction complete. TeacherId={TeacherId} BlobPath={BlobPath} ExtractedChars={Chars}",
             teacherId, blobPath, text.Length);
 
-        return Ok(new OcrResultDto(text, blobUrl));
+        return Ok(new OcrResultDto(text, blobUrl, Incomplete: text.Length < _options.MinExtractedChars));
     }
 }

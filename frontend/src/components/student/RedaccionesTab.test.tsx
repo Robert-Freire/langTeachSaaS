@@ -358,6 +358,7 @@ describe('RedaccionesTab', () => {
     vi.mocked(correctionsApi.uploadForOcr).mockResolvedValue({
       text: 'Ayer fui al mercado con mi familia.',
       blobUrl: 'https://blob.example.com/corrections/123/source.jpg',
+      incomplete: false,
     })
     vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new-id', status: 'Pendiente' })
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
@@ -408,7 +409,7 @@ describe('RedaccionesTab', () => {
 
   it('save button is disabled while OCR is in progress', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
-    let resolveOcr!: (v: { text: string; blobUrl: string }) => void
+    let resolveOcr!: (v: { text: string; blobUrl: string; incomplete: boolean }) => void
     vi.mocked(correctionsApi.uploadForOcr).mockReturnValue(
       new Promise((res) => { resolveOcr = res }),
     )
@@ -425,7 +426,7 @@ describe('RedaccionesTab', () => {
       expect(screen.getByTestId('correction-drawer-save')).toBeDisabled()
     })
 
-    resolveOcr({ text: 'Texto extraído.', blobUrl: 'https://blob.example.com/source.jpg' })
+    resolveOcr({ text: 'Texto extraído.', blobUrl: 'https://blob.example.com/source.jpg', incomplete: false })
     await waitFor(() => {
       expect(screen.getByTestId('correction-drawer-save')).not.toBeDisabled()
     })

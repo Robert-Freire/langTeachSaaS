@@ -41,6 +41,7 @@ export interface CorrectionDetail {
 export interface OcrResult {
   text: string
   blobUrl: string
+  incomplete: boolean
 }
 
 export interface CreateCorrectionRequest {
