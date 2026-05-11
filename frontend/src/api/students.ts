@@ -151,6 +151,24 @@ export async function updateStudent(id: string, data: StudentFormData): Promise<
   return res.data
 }
 
+export async function patchStudentVoice(id: string, patch: {
+  cefrLevel?: string
+  officialCefrLevel?: string | null
+  profession?: string | null
+  reasonForStudying?: string | null
+  birthYear?: number | null
+  countryOfResidence?: string | null
+  cityOfResidence?: string | null
+  nativeLanguages?: string[]
+  spokenLanguages?: string[]
+  interests?: string[]
+  shortTermObjectives?: ShortTermObjective[]
+  difficulties?: Difficulty[]
+  teachingTodos?: TeachingTodo[]
+}): Promise<void> {
+  await apiClient.patch(`/api/students/${id}`, patch)
+}
+
 export async function deleteStudent(id: string): Promise<void> {
   await apiClient.delete(`/api/students/${id}`)
 }

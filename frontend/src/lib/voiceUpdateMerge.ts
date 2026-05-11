@@ -5,6 +5,25 @@ import type { ExtractedStudentProfile, ExtractedObjective, ExtractedDifficulty }
 
 const DEFAULT_LEARNING_LANGUAGE = 'Spanish'
 
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  cefrLevel: 'CEFR Level',
+  officialCefrLevel: 'Official CEFR',
+  profession: 'Profession',
+  reasonForStudying: 'Reason for Studying',
+  birthYear: 'Birth Year',
+  countryOfResidence: 'Country of Residence',
+  cityOfResidence: 'City of Residence',
+  nativeLanguages: 'Native Language',
+  spokenLanguages: 'Spoken Language',
+  interests: 'Interest',
+  shortTermObjectives: 'Short-term Objective',
+  difficulties: 'Difficulty',
+  teachingTodos: 'Idea for Next Class',
+}
+
+const DIFFICULTY_DEFAULTS = { severity: 'medium', trend: 'stable', status: 'Active' } as const
+
 function mergeUnique(existing: string[], incoming: string[]): string[] {
   const result = [...existing]
   for (const x of incoming) {
@@ -64,28 +83,28 @@ export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Stu
     })
   }
 
-  addScalar('cefrLevel', 'CEFR Level', extracted.cefrLevel, student.level.cefrLevel)
-  addScalar('officialCefrLevel', 'Official CEFR', extracted.officialCefrLevel, student.level.officialCefrLevel)
-  addScalar('profession', 'Profession', extracted.profession, student.identity.profession)
-  addScalar('reasonForStudying', 'Reason for Studying', extracted.reasonForStudying, student.profile.reasonForStudying)
-  addScalar('birthYear', 'Birth Year', extracted.birthYear, student.identity.birthYear)
-  addScalar('countryOfResidence', 'Country of Residence', extracted.countryOfResidence, student.identity.countryOfResidence)
-  addScalar('cityOfResidence', 'City of Residence', extracted.cityOfResidence, student.identity.cityOfResidence)
+  addScalar('cefrLevel', FIELD_LABELS.cefrLevel, extracted.cefrLevel, student.level.cefrLevel)
+  addScalar('officialCefrLevel', FIELD_LABELS.officialCefrLevel, extracted.officialCefrLevel, student.level.officialCefrLevel)
+  addScalar('profession', FIELD_LABELS.profession, extracted.profession, student.identity.profession)
+  addScalar('reasonForStudying', FIELD_LABELS.reasonForStudying, extracted.reasonForStudying, student.profile.reasonForStudying)
+  addScalar('birthYear', FIELD_LABELS.birthYear, extracted.birthYear, student.identity.birthYear)
+  addScalar('countryOfResidence', FIELD_LABELS.countryOfResidence, extracted.countryOfResidence, student.identity.countryOfResidence)
+  addScalar('cityOfResidence', FIELD_LABELS.cityOfResidence, extracted.cityOfResidence, student.identity.cityOfResidence)
 
   for (const lang of extracted.nativeLanguages) {
-    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: 'Native Language', badge: 'ADDED', currentValue: null, value: lang })
+    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: FIELD_LABELS.nativeLanguages, badge: 'ADDED', currentValue: null, value: lang })
   }
   for (const lang of extracted.spokenLanguages) {
-    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: 'Spoken Language', badge: 'ADDED', currentValue: null, value: lang })
+    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: FIELD_LABELS.spokenLanguages, badge: 'ADDED', currentValue: null, value: lang })
   }
   for (const interest of extracted.interests) {
-    rows.push({ id: newId(), fieldKey: 'interests', label: 'Interest', badge: 'ADDED', currentValue: null, value: interest })
+    rows.push({ id: newId(), fieldKey: 'interests', label: FIELD_LABELS.interests, badge: 'ADDED', currentValue: null, value: interest })
   }
   for (const obj of extracted.shortTermObjectives) {
     rows.push({
       id: newId(),
       fieldKey: 'shortTermObjectives',
-      label: 'Short-term Objective',
+      label: FIELD_LABELS.shortTermObjectives,
       badge: 'ADDED',
       currentValue: null,
       value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text,
@@ -96,7 +115,7 @@ export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Stu
     rows.push({
       id: newId(),
       fieldKey: 'difficulties',
-      label: 'Difficulty',
+      label: FIELD_LABELS.difficulties,
       badge: 'ADDED',
       currentValue: null,
       value: diff.description,
@@ -104,7 +123,7 @@ export function buildDrawerRows(extracted: ExtractedStudentProfile, student: Stu
     })
   }
   for (const todo of extracted.teachingTodoTexts) {
-    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: 'Idea for Next Class', badge: 'ADDED', currentValue: null, value: todo })
+    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: FIELD_LABELS.teachingTodos, badge: 'ADDED', currentValue: null, value: todo })
   }
 
   return rows
@@ -178,9 +197,7 @@ export function mergeExtractedIntoStudent(
           description: row.value,
           competency: normalizeCompetency(row.extractedDifficulty?.competency),
           subcategory: row.extractedDifficulty?.subcategory ?? 'general',
-          severity: 'medium',
-          trend: 'stable',
-          status: 'Active',
+          ...DIFFICULTY_DEFAULTS,
         })
       }
     }
@@ -212,28 +229,28 @@ export function buildCreateDrawerRows(extracted: ExtractedStudentProfile): Drawe
     rows.push({ id: newId(), fieldKey, label, badge: 'NEW', currentValue: null, value: String(value) })
   }
 
-  addNew('name', 'Name', extracted.name)
-  addNew('cefrLevel', 'CEFR Level', extracted.cefrLevel)
-  addNew('profession', 'Profession', extracted.profession)
-  addNew('reasonForStudying', 'Reason for Studying', extracted.reasonForStudying)
-  addNew('birthYear', 'Birth Year', extracted.birthYear)
-  addNew('countryOfResidence', 'Country of Residence', extracted.countryOfResidence)
-  addNew('cityOfResidence', 'City of Residence', extracted.cityOfResidence)
+  addNew('name', FIELD_LABELS.name, extracted.name)
+  addNew('cefrLevel', FIELD_LABELS.cefrLevel, extracted.cefrLevel)
+  addNew('profession', FIELD_LABELS.profession, extracted.profession)
+  addNew('reasonForStudying', FIELD_LABELS.reasonForStudying, extracted.reasonForStudying)
+  addNew('birthYear', FIELD_LABELS.birthYear, extracted.birthYear)
+  addNew('countryOfResidence', FIELD_LABELS.countryOfResidence, extracted.countryOfResidence)
+  addNew('cityOfResidence', FIELD_LABELS.cityOfResidence, extracted.cityOfResidence)
 
   for (const lang of extracted.nativeLanguages) {
-    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: 'Native Language', badge: 'NEW', currentValue: null, value: lang })
+    rows.push({ id: newId(), fieldKey: 'nativeLanguages', label: FIELD_LABELS.nativeLanguages, badge: 'NEW', currentValue: null, value: lang })
   }
   for (const lang of extracted.spokenLanguages) {
-    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: 'Spoken Language', badge: 'NEW', currentValue: null, value: lang })
+    rows.push({ id: newId(), fieldKey: 'spokenLanguages', label: FIELD_LABELS.spokenLanguages, badge: 'NEW', currentValue: null, value: lang })
   }
   for (const interest of extracted.interests) {
-    rows.push({ id: newId(), fieldKey: 'interests', label: 'Interest', badge: 'NEW', currentValue: null, value: interest })
+    rows.push({ id: newId(), fieldKey: 'interests', label: FIELD_LABELS.interests, badge: 'NEW', currentValue: null, value: interest })
   }
   for (const obj of extracted.shortTermObjectives) {
     rows.push({
       id: newId(),
       fieldKey: 'shortTermObjectives',
-      label: 'Short-term Objective',
+      label: FIELD_LABELS.shortTermObjectives,
       badge: 'NEW',
       currentValue: null,
       value: obj.targetDate ? `${obj.text} (by ${obj.targetDate})` : obj.text,
@@ -244,7 +261,7 @@ export function buildCreateDrawerRows(extracted: ExtractedStudentProfile): Drawe
     rows.push({
       id: newId(),
       fieldKey: 'difficulties',
-      label: 'Difficulty',
+      label: FIELD_LABELS.difficulties,
       badge: 'NEW',
       currentValue: null,
       value: diff.description,
@@ -252,7 +269,7 @@ export function buildCreateDrawerRows(extracted: ExtractedStudentProfile): Drawe
     })
   }
   for (const todo of extracted.teachingTodoTexts) {
-    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: 'Idea for Next Class', badge: 'NEW', currentValue: null, value: todo })
+    rows.push({ id: newId(), fieldKey: 'teachingTodos', label: FIELD_LABELS.teachingTodos, badge: 'NEW', currentValue: null, value: todo })
   }
 
   return rows
@@ -280,9 +297,7 @@ export function buildCreateRequestFromRows(rows: DrawerRow[]): StudentFormData {
       description: r.value,
       competency: normalizeCompetency(r.extractedDifficulty?.competency),
       subcategory: r.extractedDifficulty?.subcategory ?? 'general',
-      severity: 'medium',
-      trend: 'stable',
-      status: 'Active',
+      ...DIFFICULTY_DEFAULTS,
     })),
     birthYear,
     profession: get('profession'),

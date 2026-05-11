@@ -145,6 +145,16 @@ public class StudentsController : ControllerBase
         if (patch.SkillLevelWriting is not null) request.SkillLevelOverrides["Writing"] = patch.SkillLevelWriting;
         if (patch.SkillLevelSpeaking is not null) request.SkillLevelOverrides["Speaking"] = patch.SkillLevelSpeaking;
         if (patch.SkillLevelListening is not null) request.SkillLevelOverrides["Listening"] = patch.SkillLevelListening;
+        if (patch.OfficialCefrLevel is not null) request.OfficialCefrLevel = patch.OfficialCefrLevel;
+        if (patch.ReasonForStudying is not null) request.ReasonForStudying = patch.ReasonForStudying;
+        if (patch.BirthYear.HasValue) request.BirthYear = patch.BirthYear;
+        if (patch.CityOfResidence is not null) request.CityOfResidence = patch.CityOfResidence;
+        if (patch.NativeLanguages is not null) request.NativeLanguages = patch.NativeLanguages;
+        if (patch.SpokenLanguages is not null) request.SpokenLanguages = patch.SpokenLanguages;
+        if (patch.Interests is not null) request.Interests = patch.Interests;
+        if (patch.ShortTermObjectives is not null) request.ShortTermObjectives = patch.ShortTermObjectives;
+        if (patch.Difficulties is not null) request.Difficulties = patch.Difficulties;
+        if (patch.TeachingTodos is not null) request.TeachingTodos = patch.TeachingTodos;
 
         try
         {
