@@ -352,40 +352,67 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                         "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
                     continue;
                 }
-                // Collect all occurrences of spannedText in the original text.
-                var occurrences = new List<int>();
-                var searchFrom = 0;
-                while (true)
+
+                // Try contextBefore + spannedText for unambiguous rescue (avoids proximity
+                // heuristic failures when a common word like "es" appears many times).
+                int? contextFoundAt = null;
+                if (!string.IsNullOrEmpty(tag.ContextBefore))
                 {
-                    var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
-                    if (hit < 0) break;
-                    occurrences.Add(hit);
-                    searchFrom = hit + 1;
+                    var combined = tag.ContextBefore + tag.SpannedText;
+                    var combinedHits = new List<int>();
+                    var cf = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(combined, cf, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        combinedHits.Add(hit + tag.ContextBefore.Length);
+                        cf = hit + 1;
+                    }
+                    if (combinedHits.Count == 1)
+                        contextFoundAt = combinedHits[0];
                 }
-                if (occurrences.Count == 0)
+
+                if (contextFoundAt.HasValue)
                 {
+                    tag = tag with { StartIndex = contextFoundAt.Value, EndIndex = contextFoundAt.Value + tag.SpannedText.Length };
+                }
+                else
+                {
+                    // Fall back to proximity-based rescue.
+                    var occurrences = new List<int>();
+                    var searchFrom = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        occurrences.Add(hit);
+                        searchFrom = hit + 1;
+                    }
+                    if (occurrences.Count == 0)
+                    {
+                        logger.LogWarning(
+                            "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
+                            tag.SpannedText, correctionId);
+                        continue;
+                    }
+                    // When there are multiple occurrences, use the model's startIndex as a proximity hint:
+                    // the model knows approximately where the error is even if the exact offset drifted due
+                    // to accented characters. Pick the occurrence closest to the reported startIndex.
+                    // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
+                    var foundAt = occurrences.Count == 1
+                        ? occurrences[0]
+                        : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
+                    if (occurrences.Count > 1)
+                    {
+                        logger.LogWarning(
+                            "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
+                            tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
+                    }
                     logger.LogWarning(
-                        "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
-                        tag.SpannedText, correctionId);
-                    continue;
+                        "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
+                        tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
+                    tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
                 }
-                // When there are multiple occurrences, use the model's startIndex as a proximity hint:
-                // the model knows approximately where the error is even if the exact offset drifted due
-                // to accented characters. Pick the occurrence closest to the reported startIndex.
-                // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
-                var foundAt = occurrences.Count == 1
-                    ? occurrences[0]
-                    : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
-                if (occurrences.Count > 1)
-                {
-                    logger.LogWarning(
-                        "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
-                        tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
-                }
-                logger.LogWarning(
-                    "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
-                    tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
-                tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
             }
 
             string? explanation = tag.Explanation;
@@ -567,7 +594,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         [property: JsonPropertyName("endIndex")] int EndIndex,
         [property: JsonPropertyName("spannedText")] string SpannedText,
         [property: JsonPropertyName("explanation")] string? Explanation,
-        [property: JsonPropertyName("correctedForm")] string? CorrectedForm);
+        [property: JsonPropertyName("correctedForm")] string? CorrectedForm,
+        [property: JsonPropertyName("contextBefore")] string? ContextBefore = null);
 
     private record FilterDecision(
         [property: JsonPropertyName("index")] int Index,
