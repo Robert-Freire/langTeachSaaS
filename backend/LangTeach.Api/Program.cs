@@ -135,7 +135,8 @@ builder.Services.AddRateLimiter(options =>
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
             context.HttpContext.Response.Headers.RetryAfter =
                 ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
-        await context.HttpContext.Response.WriteAsync("Rate limit exceeded.", cancellationToken);
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync("{\"message\":\"Rate limit exceeded.\"}", cancellationToken);
     };
 });
 
