@@ -299,6 +299,63 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         row.Tags.First().Category.Should().Be("O");
     }
 
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("A2")]
+    [InlineData("B1")]
+    public async Task LevelFilter_SerEstarGTag_AlwaysKeptEvenWhenFilterSaysRemove(string cefr)
+    {
+        // Arrange: student at the given level, text has a ser/estar confusion error.
+        // Pass 2 says remove -- but the C# bypass must keep it regardless.
+        var text = "El café es cerrado los domingos.";
+
+        // Update the pre-seeded student's CEFR level for this theory run.
+        var student = _db.Students.First(s => s.Id == _studentId);
+        student.CefrLevel = cefr;
+        _db.SaveChanges();
+
+        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+        var eStart = text.IndexOf("es", StringComparison.Ordinal);
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("G", eStart, eStart + 2, "es",
+                "Confusión entre ser y estar: aquí se necesita 'está' (estar para estados temporales).",
+                "está"),
+        }));
+        _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1, $"ser/estar G tag must survive at {cefr} even when filter says remove");
+        row.Tags.First().Category.Should().Be("G");
+        row.Tags.First().SpannedText.Should().Be("es");
+    }
+
+    [Fact]
+    public void LevelFilterPrompt_SerEstarTag_EmitsMarkerInUserPrompt()
+    {
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+
+        var tags = new[]
+        {
+            new LevelFilterTagInput("G", "es", "Confusión entre ser y estar.", IsSerEstar: true),
+            new LevelFilterTagInput("G", "pareces", "Subjuntivo requerido.", IsSerEstar: false),
+        };
+
+        var req = builder.Build("A2", tags);
+        var userPrompt = req.UserPrompt;
+
+        userPrompt.Should().Contain("[SER/ESTAR]", "ser/estar tag must be marked in user prompt");
+        userPrompt.Should().ContainEquivalentOf("[0]", "first tag index must appear");
+        // Non-ser/estar tag must not be marked.
+        userPrompt.Should().NotMatchRegex(@"\[SER/ESTAR\].*\[1\]", "only the ser/estar tag gets the marker");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")
