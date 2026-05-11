@@ -146,6 +146,7 @@ public static class DemoSeeder
             await EnsureAnaVisualExtrasAsync(db, teacher.Id, logger);
             await SeedScenarioStudentsAsync(db, teacher.Id, logger);
             await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+            await EnsureAnaVisualCorrectionAsync(db, teacher.Id, logger);
             await SeedLargeRosterAsync(db, teacher.Id, logger);
             logger.LogInformation("Visual seed data already exists for teacher {Email}; scenario students refreshed.", teacher.Email);
             return true;
@@ -239,9 +240,77 @@ public static class DemoSeeder
 
         await SeedScenarioStudentsAsync(db, teacher.Id, logger);
         await SeedAnaVisualSessionLogAsync(db, teacher.Id, logger);
+        await EnsureAnaVisualCorrectionAsync(db, teacher.Id, logger);
         await SeedLargeRosterAsync(db, teacher.Id, logger);
 
         return true;
+    }
+
+    // Pinned GUID so the visual e2e spec can navigate by URL without lookup.
+    private static readonly Guid AnaVisualCorrectionId = Guid.Parse("c0117e57-1155-4ada-ada0-c0177e1c7ec1");
+
+    private const string AnaVisualCorrectionStudentText =
+        "Ayer voy a la casa de mi amiga Lucía. Hablamos sobre los planes para el verano y comemos pizza. Era muy divertido.\n\nDespués de cenar, fuimos a un parque cerca. Caminamos durante una hora y vimos las estrellas.";
+
+    private const string AnaVisualCorrectionMarkup =
+        """{"schemaVersion":1,"originalText":"Ayer voy a la casa de mi amiga Lucía. Hablamos sobre los planes para el verano y comemos pizza. Era muy divertido.\n\nDespués de cenar, fuimos a un parque cerca. Caminamos durante una hora y vimos las estrellas.","tags":[{"category":"G","startIndex":5,"endIndex":8,"spannedText":"voy","explanation":"El relato está en pasado, usa pretérito indefinido.","correctedForm":"fui"},{"category":"L","startIndex":11,"endIndex":18,"spannedText":"la casa","explanation":"Con posesivo o nombre propio en este contexto, omite el artículo.","correctedForm":"casa"},{"category":"G","startIndex":81,"endIndex":88,"spannedText":"comemos","explanation":"Mantén el pretérito indefinido para acciones puntuales pasadas.","correctedForm":"comimos"},{"category":"O","startIndex":96,"endIndex":99,"spannedText":"Era","explanation":"Para una valoración puntual del evento, usa el pretérito indefinido.","correctedForm":"Fue"},{"category":"MuyBien","startIndex":195,"endIndex":208,"spannedText":"las estrellas","explanation":null,"correctedForm":null}]}""";
+
+    private static async Task EnsureAnaVisualCorrectionAsync(AppDbContext db, Guid teacherId, ILogger logger)
+    {
+        var anaVisual = await db.Students.FirstOrDefaultAsync(
+            s => s.TeacherId == teacherId && s.Name == "Ana Visual" && !s.IsDeleted);
+        if (anaVisual is null) return;
+
+        var existing = await db.Corrections
+            .Include(c => c.Tags)
+            .FirstOrDefaultAsync(c => c.Id == AnaVisualCorrectionId);
+        if (existing is not null) return;
+
+        var now = DateTime.UtcNow;
+        var correction = new Correction
+        {
+            Id               = AnaVisualCorrectionId,
+            TeacherId        = teacherId,
+            StudentId        = anaVisual.Id,
+            SchemaVersion    = 1,
+            Status           = CorrectionStatus.Corregida,
+            AssignmentTitle  = "Una tarde con Lucía",
+            AssignmentPrompt = "Cuenta una tarde reciente con un amigo o amiga (~80 palabras).",
+            StudentText      = AnaVisualCorrectionStudentText,
+            MarkedUpOutput   = AnaVisualCorrectionMarkup,
+            CreatedAt        = now.AddDays(-2),
+            UpdatedAt        = now.AddDays(-2),
+            CorrectedAt      = now.AddDays(-2),
+        };
+        db.Corrections.Add(correction);
+
+        var tagSpecs = new (string Category, int Start, int End, string Span, string? Explanation, string? CorrectedForm)[]
+        {
+            ("G", 5,   8,   "voy",          "El relato está en pasado, usa pretérito indefinido.", "fui"),
+            ("L", 11,  18,  "la casa",      "Con posesivo o nombre propio en este contexto, omite el artículo.", "casa"),
+            ("G", 81,  88,  "comemos",      "Mantén el pretérito indefinido para acciones puntuales pasadas.", "comimos"),
+            ("O", 96,  99,  "Era",          "Para una valoración puntual del evento, usa el pretérito indefinido.", "Fue"),
+            ("MuyBien", 195, 208, "las estrellas", null, null),
+        };
+        var order = 0;
+        foreach (var spec in tagSpecs)
+        {
+            db.CorrectionTags.Add(new CorrectionTag
+            {
+                Id            = Guid.NewGuid(),
+                CorrectionId  = correction.Id,
+                Category      = spec.Category,
+                SpannedText   = spec.Span,
+                StartIndex    = spec.Start,
+                EndIndex      = spec.End,
+                Explanation   = spec.Explanation,
+                CorrectedForm = spec.CorrectedForm,
+                OrderIndex    = order++,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Ana Visual Corregida correction seeded ({Id}).", AnaVisualCorrectionId);
     }
 
     private static async Task SeedScenarioStudentsAsync(AppDbContext db, Guid teacherId, ILogger logger)

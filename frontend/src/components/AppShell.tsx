@@ -1,11 +1,12 @@
-import { useState, useEffect, type ElementType } from 'react'
-import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useState, useEffect, useCallback, type ElementType } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
 import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import LangTeachLogo from '@/components/LangTeachLogo'
+import AtelierLogo from '@/components/AtelierLogo'
+import { BRAND_NAME } from '@/lib/brand'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -65,8 +66,8 @@ function SidebarContent({ user, initials, logout, location }: {
       {/* Logo + subtitle */}
       <div className="px-6 pt-7 pb-8">
         <div className="flex items-center gap-2.5">
-          <LangTeachLogo size={28} />
-          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">Atelier</span>
+          <AtelierLogo size={28} />
+          <span className="text-primary font-extrabold text-xl tracking-tight font-manrope">{BRAND_NAME}</span>
         </div>
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 mt-1 ml-[38px] font-inter">
           Language Curator
@@ -140,6 +141,10 @@ export default function AppShell() {
   const atelierEnabled = isAtelierEnabled(location.pathname)
   const assistantOpen = userWantsOpen && atelierEnabled
 
+  const navigate = useNavigate()
+  const [pickerSessionId, setPickerSessionId] = useState<string | null>(null)
+  const effectiveSessionId = pickerSessionId ?? sessionId
+
   const { data: studentData } = useQuery({
     queryKey: ['student', studentId],
     queryFn: () => getStudent(studentId!),
@@ -147,13 +152,21 @@ export default function AppShell() {
     select: (s) => s.name,
   })
 
-  const assistant = useAtelierAssistant(studentId, sessionId)
+  const handleAfterSessionApply = useCallback((appliedSessionId: string) => {
+    setPickerSessionId(null)
+    if (studentId) {
+      navigate(`/students/${studentId}/sessions/${appliedSessionId}/edit`)
+    }
+  }, [studentId, navigate])
+
+  const assistant = useAtelierAssistant(studentId, effectiveSessionId, handleAfterSessionApply)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setDrawerOpen(false)
     if (!isAtelierEnabled(location.pathname)) {
       setUserWantsOpen(false)
+      setPickerSessionId(null)
       assistant.reset()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,8 +215,8 @@ export default function AppShell() {
           <Menu className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-2">
-          <LangTeachLogo size={24} />
-          <span className="text-primary font-bold text-base tracking-tight font-manrope">Atelier</span>
+          <AtelierLogo size={24} />
+          <span className="text-primary font-bold text-base tracking-tight font-manrope">{BRAND_NAME}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Tooltip>
@@ -298,8 +311,8 @@ export default function AppShell() {
       {/* Atelier Assistant panel */}
       <AtelierAssistantPanel
         open={assistantOpen}
-        onClose={() => { setUserWantsOpen(false); assistant.reset() }}
-        onCloseDiscarding={() => { setUserWantsOpen(false); assistant.reset() }}
+        onClose={() => { setUserWantsOpen(false); setPickerSessionId(null); assistant.reset() }}
+        onCloseDiscarding={() => { setUserWantsOpen(false); setPickerSessionId(null); assistant.reset() }}
         studentName={studentData}
         transcription={assistant.transcription}
         processing={assistant.processing}
@@ -314,7 +327,8 @@ export default function AppShell() {
         onDismissAll={assistant.dismissAll}
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
-        sessionId={sessionId}
+        sessionId={effectiveSessionId}
+        onSelectSession={setPickerSessionId}
       />
     </div>
   )

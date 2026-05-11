@@ -16,6 +16,7 @@ interface Props {
   onModify: (id: string, newValue: string) => void
   onEditPayload?: (id: string, payload: NewStudentData | NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
+  sessionContextMissing?: boolean
 }
 
 const MULTILINE_FIELDS = new Set(
@@ -55,7 +56,7 @@ const TYPE_CONFIG = {
   },
 } as const
 
-export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onEditPayload, studentId }: Props) {
+export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onRetry, onModify, onEditPayload, studentId, sessionContextMissing }: Props) {
   const config = TYPE_CONFIG[proposal.type]
   const { Icon } = config
 
@@ -104,13 +105,10 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isMultiline = MULTILINE_FIELDS.has(proposal.field)
   const isNewStudent = proposal.type === 'newStudent'
   const isNewSession = proposal.type === 'newSession'
-  const isTodo = proposal.type === 'todo'
   const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
   const newSessionApplyDisabled = isNewSession && !studentId
+  const sessionApplyDisabled = proposal.type === 'session' && !!sessionContextMissing
   const newSessionDateEditable = isNewSession && (proposal.status === 'proposed' || proposal.status === 'error')
-  const todoPayload = isTodo ? (proposal.payload as { dueDate?: string | null } | null | undefined) : null
-  const todoDateEditable = isTodo && (proposal.status === 'proposed' || proposal.status === 'error')
-
   return (
     <div
       data-testid={`proposal-card-${proposal.id}`}
@@ -226,27 +224,6 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
               ) : (
                 <span className="font-semibold text-zinc-800">{proposal.newValue}</span>
               )}
-              {isTodo && (
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-xs font-inter text-zinc-500">Due:</span>
-                  <input
-                    type="date"
-                    value={todoPayload?.dueDate ?? ''}
-                    disabled={!todoDateEditable}
-                    onChange={e => {
-                      const date = e.target.value || null
-                      if (onEditPayload && todoDateEditable) {
-                        onEditPayload(proposal.id, { dueDate: date })
-                      }
-                    }}
-                    data-testid={`todo-date-input-${proposal.id}`}
-                    className={cn(
-                      'text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300',
-                      !todoDateEditable && 'cursor-not-allowed opacity-60'
-                    )}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -261,12 +238,13 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           {proposal.status === 'proposed' && !editing && (
             <>
               <button
-                onClick={() => !newSessionApplyDisabled && onApply(proposal.id)}
-                disabled={newSessionApplyDisabled}
+                onClick={() => !newSessionApplyDisabled && !sessionApplyDisabled && onApply(proposal.id)}
+                disabled={newSessionApplyDisabled || sessionApplyDisabled}
                 data-testid={`apply-btn-${proposal.id}`}
+                aria-disabled={newSessionApplyDisabled || sessionApplyDisabled}
                 className={cn(
                   'text-xs font-semibold font-inter px-3 py-1 rounded-lg transition-colors',
-                  newSessionApplyDisabled
+                  (newSessionApplyDisabled || sessionApplyDisabled)
                     ? 'text-zinc-400 bg-zinc-100 cursor-not-allowed'
                     : 'text-white bg-indigo-600 hover:bg-indigo-700'
                 )}

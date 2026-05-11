@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Sparkles, X, Send, Mic, Square, Loader2, AlertCircle, ThumbsUp, ThumbsDown, Plus, CalendarDays, Check } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { uploadVoiceNote } from '@/api/voiceNotes'
@@ -8,17 +8,16 @@ import ProposalCard from '@/components/assistant/ProposalCard'
 import { useMicRecorder } from '@/hooks/useMicRecorder'
 import { submitVoiceFeedback } from '@/api/assistant'
 import { MAX_RECORDING_SECONDS, WARN_REMAINING_SECONDS } from '@/lib/recordingLimits'
+import { formatDuration } from '@/lib/formatDuration'
+import { BRAND_NAME } from '@/lib/brand'
+import { useQuery } from '@tanstack/react-query'
+import { listSessions } from '@/api/sessionLogs'
+import { formatMonthDay } from '@/utils/formatDate'
 
 const MIN_DURATION_S = 1
 
 type UploadError = 'upload-failed' | 'empty-transcription' | null
 type FeedbackState = 'idle' | 'chip-open' | 'done-up' | 'done-down'
-
-function formatTimer(secs: number) {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0')
-  const s = (secs % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
 
 function WaveformBars() {
   return (
@@ -53,6 +52,7 @@ interface Props {
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
   sessionId?: string | null
+  onSelectSession?: (sessionId: string) => void
 }
 
 export default function AtelierAssistantPanel({
@@ -74,7 +74,31 @@ export default function AtelierAssistantPanel({
   onEditPayload,
   studentId,
   sessionId,
+  onSelectSession,
 }: Props) {
+  const sessionContextMissing = !sessionId
+  const newSessionSelected = sessionId === 'new'
+  const hasSessionProposals = proposals.some(p => p.type === 'session' && (p.status === 'proposed' || p.status === 'error'))
+  const hasSessionProposalsWithoutContext = sessionContextMissing && hasSessionProposals
+  // Show the session picker whenever there are session proposals and no real session is selected yet
+  // (includes the 'new' selection state so the teacher can see / change their choice)
+  const showSessionPicker = (sessionContextMissing || newSessionSelected) && hasSessionProposals
+
+  const { data: recentSessions } = useQuery({
+    queryKey: ['sessions', studentId],
+    queryFn: () => listSessions(studentId!),
+    enabled: !!studentId && showSessionPicker,
+    select: (sessions) =>
+      [...sessions]
+        .filter(s => !s.isCancelled)
+        .sort((a, b) => {
+          const da = new Date(a.sessionDate ?? a.createdAt).getTime()
+          const db = new Date(b.sessionDate ?? b.createdAt).getTime()
+          return db - da
+        })
+        .slice(0, 3),
+  })
+
   const [inputValue, setInputValue] = useState('')
   const [pendingClose, setPendingClose] = useState(false)
   const [currentVoiceNoteId, setCurrentVoiceNoteId] = useState<string | null>(null)
@@ -271,7 +295,10 @@ export default function AtelierAssistantPanel({
   const noHardware = hookError === 'no-hardware'
   const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
-  const applyAllBlocked = !studentId && pendingProposals.some(p => p.type === 'newSession')
+  const applyAllBlocked = (
+    (!studentId && pendingProposals.some(p => p.type === 'newSession')) ||
+    hasSessionProposalsWithoutContext
+  )
 
   return (
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
@@ -284,7 +311,7 @@ export default function AtelierAssistantPanel({
           <div className="h-7 w-7 rounded-full lt-gradient-primary flex items-center justify-center shrink-0">
             <Sparkles className="h-3.5 w-3.5 text-white" aria-hidden="true" />
           </div>
-          <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">Atelier Assistant</span>
+          <span className="font-semibold font-inter text-sm text-[#1A1B22] flex-1">{BRAND_NAME} Assistant</span>
           <div
             className="flex items-center gap-1.5 mr-3"
             role="status"
@@ -339,7 +366,7 @@ export default function AtelierAssistantPanel({
             <div className="flex flex-col items-center justify-center h-full text-center gap-3" data-testid="mic-permission-error">
               <AlertCircle className="h-8 w-8 text-zinc-300" aria-hidden="true" />
               <p className="text-sm font-inter text-zinc-500">
-                Atelier needs microphone access to listen.
+                {BRAND_NAME} needs microphone access to listen.
               </p>
               <p className="text-xs font-inter text-zinc-400">
                 Open your browser settings to allow microphone access, then try again.
@@ -411,20 +438,63 @@ export default function AtelierAssistantPanel({
                     No updates suggested.
                   </p>
                 ) : (
-                  <div className="space-y-2" data-testid="proposals-list">
-                    {proposals.map(proposal => (
-                      <ProposalCard
-                        key={proposal.id}
-                        proposal={proposal}
-                        onApply={onApply}
-                        onDismiss={onDismiss}
-                        onUndo={onUndo}
-                        onRetry={onRetry}
-                        onModify={onModify}
-                        onEditPayload={onEditPayload}
-                        studentId={studentId}
-                      />
-                    ))}
+                  <div className="space-y-3" data-testid="proposals-list">
+                    {showSessionPicker && (
+                      <div
+                        className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50"
+                        data-testid="session-picker-banner"
+                      >
+                        <p className="text-xs font-inter text-violet-700 leading-snug mb-1">
+                          Choose a session to apply these notes to:
+                        </p>
+                        <button
+                          onClick={() => onSelectSession?.('new')}
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter font-semibold transition-colors text-left ${newSessionSelected ? 'text-indigo-700 bg-indigo-100' : 'text-indigo-600 hover:bg-indigo-50'}`}
+                          data-testid="session-picker-new"
+                        >
+                          {newSessionSelected
+                            ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            : <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          }
+                          New session
+                        </button>
+                        {(recentSessions ?? []).map(session => {
+                          const dateLabel = session.sessionDate
+                            ? formatMonthDay(session.sessionDate)
+                            : session.createdAt
+                              ? formatMonthDay(session.createdAt)
+                              : null
+                          const title = session.title ?? 'Session'
+                          return (
+                            <button
+                              key={session.id}
+                              onClick={() => onSelectSession?.(session.id)}
+                              className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter text-zinc-600 hover:bg-violet-100 transition-colors text-left"
+                              data-testid={`session-picker-row-${session.id}`}
+                            >
+                              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden="true" />
+                              <span className="truncate">{dateLabel ? `${dateLabel} — ` : ''}{title}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {proposals.map(proposal => (
+                        <ProposalCard
+                          key={proposal.id}
+                          proposal={proposal}
+                          onApply={onApply}
+                          onDismiss={onDismiss}
+                          onUndo={onUndo}
+                          onRetry={onRetry}
+                          onModify={onModify}
+                          onEditPayload={onEditPayload}
+                          studentId={studentId}
+                          sessionContextMissing={sessionContextMissing}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -564,7 +634,7 @@ export default function AtelierAssistantPanel({
               <div className="flex items-center gap-3 flex-1 px-1" data-testid="recording-bar">
                 <WaveformBars />
                 <span className="text-sm font-inter text-zinc-500 tabular-nums" data-testid="recording-timer">
-                  {formatTimer(micElapsed)}
+                  {formatDuration(micElapsed)}
                 </span>
                 <div className="flex-1" />
                 <button

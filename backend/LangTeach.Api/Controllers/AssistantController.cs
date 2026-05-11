@@ -1,13 +1,10 @@
 using System.Security.Claims;
 using System.Text.Json;
 using LangTeach.Api.AI;
-using LangTeach.Api.Data;
-using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Controllers;
 
@@ -22,7 +19,7 @@ public class AssistantController : ControllerBase
     private readonly IReflectionExtractionService _reflectionExtractionService;
     private readonly IProfileService _profileService;
     private readonly IPedagogyConfigService _pedagogy;
-    private readonly AppDbContext _db;
+    private readonly IAssistantFeedbackService _feedbackService;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -32,7 +29,7 @@ public class AssistantController : ControllerBase
         IReflectionExtractionService reflectionExtractionService,
         IProfileService profileService,
         IPedagogyConfigService pedagogy,
-        AppDbContext db,
+        IAssistantFeedbackService feedbackService,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -41,7 +38,7 @@ public class AssistantController : ControllerBase
         _reflectionExtractionService = reflectionExtractionService;
         _profileService = profileService;
         _pedagogy = pedagogy;
-        _db = db;
+        _feedbackService = feedbackService;
         _logger = logger;
     }
 
@@ -136,8 +133,7 @@ public class AssistantController : ControllerBase
             {
                 if (!string.IsNullOrWhiteSpace(todo.Text))
                 {
-                    var todoPayload = JsonSerializer.SerializeToElement(new { dueDate = todo.DueDate }, camelCaseOpts);
-                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Todo", null, todo.Text, Payload: todoPayload));
+                    proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), "todo", "text", "Teaching Idea", null, todo.Text, Payload: null));
                 }
             }
 
@@ -186,7 +182,7 @@ public class AssistantController : ControllerBase
             ["actualContent"] = (session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value),
             ["generalNotes"] = (session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value),
             ["homeworkAssigned"] = (session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value),
-            ["nextSessionTopics"] = (session?.NextSessionTopics, reflectionExtraction.NextLessonIdeas?.Value),
+            ["nextSessionTopics"] = (session?.NextSessionTopics, reflectionExtraction.NextSessionTopics?.Value),
         };
         foreach (var f in _pedagogy.ProposalFields.SessionFields)
         {
@@ -196,7 +192,10 @@ public class AssistantController : ControllerBase
 
         if (reflectionExtraction.ProposedNewSession is { } proposed)
         {
-            var sessionDate = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var sessionDate = reflectionExtraction.SessionStartTime is { } t
+                ? $"{dateOnly}T{t}"
+                : dateOnly;
             var newSessionPayload = new { title = proposed.Title, sessionDate };
             var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
             proposals.Add(new ProposalDto(
@@ -209,7 +208,28 @@ public class AssistantController : ControllerBase
                 payloadElement));
         }
 
-        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId));
+        Guid? suggestedSessionLogId = null;
+        if (student != null && !request.SessionId.HasValue)
+        {
+            var sessions = await _sessionLogService.ListAsync(teacherId, student.Id, ct);
+            suggestedSessionLogId = sessions
+                .Where(s => !s.IsCancelled)
+                .OrderByDescending(s => s.SessionDate ?? s.CreatedAt)
+                .Select(s => (Guid?)s.Id)
+                .FirstOrDefault();
+        }
+
+        // Provide the extracted session date+time so the frontend can use it when creating a new session
+        // via the picker, regardless of whether a newSession proposal was generated.
+        string? extractedSessionDate = null;
+        if (reflectionExtraction.SessionDate is { } sd)
+        {
+            extractedSessionDate = reflectionExtraction.SessionStartTime is { } st
+                ? $"{sd}T{st}"
+                : sd;
+        }
+
+        return Ok(new AssistantProposeResponse(proposals, request.VoiceNoteId, suggestedSessionLogId, extractedSessionDate));
     }
 
     [HttpPost("voice-notes/{voiceNoteId:guid}/feedback")]
@@ -219,51 +239,21 @@ public class AssistantController : ControllerBase
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
-        var voiceNoteExists = await _db.VoiceNotes
-            .AnyAsync(v => v.Id == voiceNoteId && v.TeacherId == teacherId, ct);
-        if (!voiceNoteExists)
-            return NotFound();
+        var result = await _feedbackService.SubmitAsync(
+            teacherId,
+            voiceNoteId,
+            request.Rating,
+            request.Reason,
+            request.StudentId,
+            request.SessionLogId,
+            request.ProposalsJson,
+            ct);
 
-        var now = DateTime.UtcNow;
-
-        var existing = await _db.AssistantTurnFeedbacks
-            .FirstOrDefaultAsync(f => f.VoiceNoteId == voiceNoteId && f.TeacherId == teacherId, ct);
-
-        if (existing is not null)
+        return result switch
         {
-            existing.Rating = request.Rating;
-            existing.Reason = request.Reason;
-            existing.ProposalsJson = request.ProposalsJson;
-            existing.StudentId = request.StudentId;
-            existing.SessionLogId = request.SessionLogId;
-            existing.UpdatedAt = now;
-        }
-        else
-        {
-            _db.AssistantTurnFeedbacks.Add(new AssistantTurnFeedback
-            {
-                Id = Guid.NewGuid(),
-                TeacherId = teacherId,
-                VoiceNoteId = voiceNoteId,
-                StudentId = request.StudentId,
-                SessionLogId = request.SessionLogId,
-                Rating = request.Rating,
-                Reason = request.Reason,
-                ProposalsJson = request.ProposalsJson,
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
-        }
-
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException) when (existing is null)
-        {
-            // Concurrent request (e.g. mobile double-tap) inserted first; unique constraint honoured.
-        }
-        return NoContent();
+            AssistantFeedbackResult.VoiceNoteNotFound => NotFound(),
+            _ => NoContent(),
+        };
     }
 
     private static void EmitProposal(

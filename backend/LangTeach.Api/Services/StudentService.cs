@@ -400,7 +400,7 @@ public class StudentService : IStudentService
             Kind = TeacherFollowupKinds.Pedagogical,
             CreatedAt = DateTime.UtcNow,
             SourceSessionLogId = sourceSessionLogId,
-            DueDate = ParseDueDate(request.DueDate),
+            DueDate = request.DueDate,
         };
         _db.TeacherFollowups.Add(followup);
         await _db.SaveChangesAsync(cancellationToken);
@@ -511,15 +511,4 @@ public class StudentService : IStudentService
 
     private static string Serialize<T>(List<T> list) =>
         JsonStorageHelper.Serialize(list);
-
-    private DateOnly? ParseDueDate(string? raw)
-    {
-        if (raw is null) return null;
-        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd",
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var parsed))
-            return parsed;
-        _logger.LogWarning("Teaching todo DueDate '{DueDate}' could not be parsed as yyyy-MM-dd; storing null", raw);
-        return null;
-    }
 }

@@ -40,7 +40,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             _logger.LogError(ex, "Claude API call failed during reflection extraction");
             return new ExtractedReflectionDto(
                 WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
-                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                HomeworkAssigned: null, NextSessionTopics: null, SessionDate: null,
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
@@ -140,7 +140,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
                 AreasToImprove: ParseTextFieldOrNull(root, "areasToImprove"),
                 EmotionalSignals: GetStringOrNull(root, "emotionalSignals"),
                 HomeworkAssigned: ParseTextFieldOrNull(root, "homeworkAssigned"),
-                NextLessonIdeas: ParseTextFieldOrNull(root, "nextLessonIdeas"),
+                NextSessionTopics: ParseTextFieldOrNull(root, "nextLessonIdeas"),
                 SessionDate: GetIsoDateOrNull(root, "sessionDate"),
                 SuggestedDifficulties: ParseSuggestedDifficulties(root),
                 RawExtractionJson: cleaned,
@@ -163,7 +163,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
             _logger.LogDebug("Unparseable Claude response: {Preview}...", json is null ? null : json[..Math.Min(200, json.Length)]);
             return new ExtractedReflectionDto(
                 WhatWasCovered: null, AreasToImprove: null, EmotionalSignals: null,
-                HomeworkAssigned: null, NextLessonIdeas: null, SessionDate: null,
+                HomeworkAssigned: null, NextSessionTopics: null, SessionDate: null,
                 SuggestedDifficulties: [], RawExtractionJson: null, SessionTitle: null,
                 TopicTags: [], PreviousHomeworkStatus: null, TeachingTodos: [],
                 TeacherFollowups: [], LevelReassessment: null, DurationMinutes: null,
@@ -232,7 +232,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         var title = GetStringOrNull(root, "newSessionTitle");
         if (string.IsNullOrWhiteSpace(title)) return null;
-        var date = GetIsoDateOrNull(root, "newSessionDate");
+        var date = GetIsoDateOnlyOrNull(root, "newSessionDate");
         return new ProposedNewSession(title, date);
     }
 
@@ -252,13 +252,22 @@ public class ReflectionExtractionService : IReflectionExtractionService
         var raw = GetStringOrNull(root, key);
         if (raw is null) return null;
 
-        return DateOnly.TryParseExact(
-            raw,
-            "yyyy-MM-dd",
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
-            out var parsed)
-            ? parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return raw;
+
+        if (DateTime.TryParseExact(raw, "yyyy-MM-ddTHH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return raw;
+
+        return null;
+    }
+
+    private static string? GetIsoDateOnlyOrNull(JsonElement root, string key)
+    {
+        var raw = GetStringOrNull(root, key);
+        if (raw is null) return null;
+
+        return DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? raw
             : null;
     }
 
@@ -293,14 +302,13 @@ public class ReflectionExtractionService : IReflectionExtractionService
             if (item.ValueKind == JsonValueKind.String)
             {
                 var s = item.GetString();
-                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s, null));
+                if (!string.IsNullOrWhiteSpace(s)) result.Add(new ExtractedTeachingTodoDto(s));
             }
             else if (item.ValueKind == JsonValueKind.Object)
             {
                 var text = GetStringOrNull(item, "text");
                 if (string.IsNullOrWhiteSpace(text)) continue;
-                var dueDate = GetIsoDateOrNull(item, "dueDate");
-                result.Add(new ExtractedTeachingTodoDto(text, dueDate));
+                result.Add(new ExtractedTeachingTodoDto(text));
             }
         }
         return result;

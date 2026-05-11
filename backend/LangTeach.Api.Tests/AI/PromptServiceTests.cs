@@ -2783,13 +2783,13 @@ public class PromptServiceTests
     [Fact]
     public void SessionHistory_SkillLevelOverrides_IncludedInPrompt()
     {
-        var overrides = new Dictionary<string, string> { ["speaking"] = "A1.2", ["writing"] = "B1.2" };
+        var overrides = new Dictionary<string, string> { ["speaking"] = "A1", ["writing"] = "B1" };
         var ctx = BaseCtx() with { SessionHistory = MakeSessionHistory(overrides: overrides) };
 
         var req = _sut.BuildVocabularyPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("speaking A1.2");
-        req.SystemPrompt.Should().Contain("writing B1.2");
+        req.SystemPrompt.Should().Contain("speaking A1");
+        req.SystemPrompt.Should().Contain("writing B1");
     }
 
     [Fact]
@@ -3411,6 +3411,20 @@ public class PromptServiceTests
 
         request.SystemPrompt.Should().Contain("apunta como teaching todo",
             because: "trigger-phrase rule for teachingTodos must remain intact to prevent #1065 regression");
+    }
+
+    [Fact]
+    public void BuildReflectionExtractionPrompt_TeacherFollowupTriggerPhrasesInjectedFromConfig()
+    {
+        // #1147 AC1: follow-up trigger phrases are loaded from intent-triggers.json
+        // and injected into the prompt; this asserts the JSON values reach the prompt text.
+        var today = new DateOnly(2026, 5, 8);
+        var request = _sut.BuildReflectionExtractionPrompt(
+            new ReflectionExtractionContext(today, "Hoy hemos visto el subjuntivo.", HasOpenSession: true));
+
+        request.SystemPrompt.Should().Contain("añade follow up [X]");
+        request.SystemPrompt.Should().Contain("apunta follow up [X]");
+        request.SystemPrompt.Should().Contain("añade como follow up [X]");
     }
 
     [Fact]

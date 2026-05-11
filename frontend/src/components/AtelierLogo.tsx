@@ -1,9 +1,9 @@
-interface LangTeachLogoProps {
+interface AtelierLogoProps {
   className?: string
   size?: number
 }
 
-export default function LangTeachLogo({ className, size = 28 }: LangTeachLogoProps) {
+export default function AtelierLogo({ className, size = 28 }: AtelierLogoProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

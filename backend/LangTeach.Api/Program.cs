@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.Infrastructure;
 using LangTeach.Api.Services;
+using LangTeach.Api.Services.CorrectionDocxExport;
 using LangTeach.Api.Services.PdfExport;
 using Microsoft.Extensions.Options;
 using QuestPDF.Infrastructure;
@@ -134,6 +135,7 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.BaseAddress = new Uri(opts.BaseUrl);
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    client.Timeout = TimeSpan.FromSeconds(RedaccionCorrectionTimeouts.HttpClientSeconds);
 });
 builder.Services.AddHttpClient("AzureSpeech", client =>
 {
@@ -164,6 +166,12 @@ builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>();
+builder.Services.AddScoped<ICorrectionService, CorrectionService>();
+builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
+builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
+builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
+builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>
 {

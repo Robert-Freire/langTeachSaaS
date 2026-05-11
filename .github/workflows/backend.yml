@@ -34,7 +34,7 @@ jobs:
         working-directory: backend
 
       - name: Build
-        run: dotnet build --no-restore -c Release
+        run: dotnet build --no-restore -c Release --warnaserror
         working-directory: backend
 
       - name: Test

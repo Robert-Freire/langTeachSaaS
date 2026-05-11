@@ -14,6 +14,7 @@ import {
 // Re-export so consumers don't need to import from api/assistant directly
 export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
+import { createSession } from '../api/sessionLogs'
 import { normalizeLanguage, normalizeLanguages } from '../lib/extractionNormalizer'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -45,6 +46,7 @@ export interface AtelierAssistantActions {
 export function useAtelierAssistant(
   studentId: string | null,
   sessionId: string | null,
+  onAfterSessionApply?: (sessionId: string) => void,
 ): AtelierAssistantState & AtelierAssistantActions {
   const queryClient = useQueryClient()
   const [transcription, setTranscription] = useState<string | null>(null)
@@ -56,6 +58,12 @@ export function useAtelierAssistant(
   // Ref keeps apply/applyAll free of stale closure on proposals
   const proposalsRef = useRef<ProposalWithStatus[]>([])
   useEffect(() => { proposalsRef.current = proposals }, [proposals])
+  // Tracks the session created when sessionId === 'new', so applyAll reuses one session
+  const newlyCreatedSessionRef = useRef<string | null>(null)
+  // In-flight guard: concurrent apply() calls share this promise instead of each calling createSession
+  const creatingSessionPromiseRef = useRef<Promise<string> | null>(null)
+  // Extracted session date+time from the most recent propose response (e.g. "2026-05-10T13:00")
+  const extractedSessionDateRef = useRef<string | null>(null)
 
   // Clear all undo timers on unmount to prevent memory leaks
   useEffect(() => {
@@ -76,12 +84,13 @@ export function useAtelierAssistant(
     const hasPending = proposalsRef.current.some(p => p.status === 'proposed')
     if (!hasPending) setProposals([])
     try {
-      const { proposals: raw } = await proposeAssistant(
+      const { proposals: raw, extractedSessionDate } = await proposeAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
       )
       if (generationRef.current !== gen) return
+      extractedSessionDateRef.current = extractedSessionDate ?? null
       if (!hasPending) {
         setProposals(raw.map(p => ({ ...p, status: 'proposed', undoVisible: false })))
       } else {
@@ -138,13 +147,32 @@ export function useAtelierAssistant(
         } else {
           await applyStudentProposal(studentId, proposal.field, proposal.newValue)
         }
+      } else if (proposal.type === 'session' && studentId && sessionId === 'new') {
+        // Create one session for this "new" selection; concurrent calls share the same promise
+        if (!newlyCreatedSessionRef.current) {
+          if (!creatingSessionPromiseRef.current) {
+            const now = new Date()
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+            const sessionDate = extractedSessionDateRef.current ?? localDate
+            creatingSessionPromiseRef.current = createSession(studentId, {
+              title: 'Session',
+              sessionDate,
+              previousHomeworkStatus: 'NotApplicable',
+            }).then(s => {
+              newlyCreatedSessionRef.current = s.id
+              creatingSessionPromiseRef.current = null
+              return s.id
+            })
+          }
+          await creatingSessionPromiseRef.current
+        }
+        await applySessionProposal(studentId, newlyCreatedSessionRef.current!, proposal.field, proposal.newValue)
       } else if (proposal.type === 'session' && studentId && !sessionId) {
         throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
       } else if (proposal.type === 'todo' && studentId) {
-        const dueDate = (proposal.payload as { dueDate?: string | null } | null | undefined)?.dueDate ?? null
-        await applyTodoProposal(studentId, proposal.newValue, dueDate)
+        await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
         const data = proposal.newStudentPayload as NewStudentData | null | undefined
         if (!data) throw new Error('Student data is missing.')
@@ -195,9 +223,14 @@ export function useAtelierAssistant(
       // Invalidate relevant queries so the rest of the UI reflects the change
       if (proposal.type === 'student' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
+      } else if (proposal.type === 'session' && studentId && sessionId === 'new' && newlyCreatedSessionRef.current) {
+        const createdId = newlyCreatedSessionRef.current
+        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        Promise.resolve(onAfterSessionApply?.(createdId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
@@ -213,7 +246,7 @@ export function useAtelierAssistant(
     } finally {
       applyingIdsRef.current.delete(id)
     }
-  }, [studentId, sessionId, updateProposal, queryClient])
+  }, [studentId, sessionId, updateProposal, queryClient, onAfterSessionApply])
 
   const dismiss = useCallback((id: string) => {
     updateProposal(id, { status: 'dismissed', undoVisible: true })
@@ -241,11 +274,13 @@ export function useAtelierAssistant(
   }, [updateProposal])
 
   const applyAll = useCallback(async () => {
-    const pending = proposalsRef.current.filter(p => p.status === 'proposed')
+    const pending = proposalsRef.current.filter(p =>
+      p.status === 'proposed' && !(p.type === 'session' && !sessionId)
+    )
     for (const p of pending) {
       await apply(p.id)
     }
-  }, [apply])
+  }, [apply, sessionId])
 
   const dismissAll = useCallback(() => {
     proposalsRef.current.filter(p => p.status === 'proposed').forEach(p => dismiss(p.id))
@@ -263,6 +298,8 @@ export function useAtelierAssistant(
   const reset = useCallback(() => {
     generationRef.current++
     applyingIdsRef.current.clear()
+    newlyCreatedSessionRef.current = null
+    creatingSessionPromiseRef.current = null
     undoTimers.current.forEach(timer => clearTimeout(timer))
     undoTimers.current.clear()
     setTranscription(null)

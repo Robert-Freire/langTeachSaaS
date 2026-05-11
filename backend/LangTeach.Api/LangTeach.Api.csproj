@@ -46,12 +46,15 @@
                       Link="Pedagogy\prompt-fragments.json" />
     <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json"
                       Link="Assistant\proposal-fields.json" />
+    <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json"
+                      Link="Assistant\intent-triggers.json" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />
     <PackageReference Include="Azure.Identity" Version="1.19.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.*">

@@ -199,38 +199,32 @@ export async function ensureStudentHasSessionLog(
 ): Promise<void> {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5175'
 
-  // Check existing sessions via the summary endpoint
-  const [summaryResponse] = await Promise.all([
-    page.waitForResponse(
-      resp =>
-        resp.url().includes(`/api/students/${studentId}/sessions/summary`) &&
-        resp.status() === 200 &&
-        resp.request().resourceType() === 'xhr',
-      { timeout: 10000 }
-    ),
-    page.goto(`${baseURL}/students/${studentId}?tab=sessions`),
-  ])
-
-  const summary: { totalSessions?: number } = await summaryResponse.json()
-  if ((summary.totalSessions ?? 0) > 0) return
-
-  // No sessions — create a minimal confirmed one via the log-session UI
-  await page.goto(`${baseURL}/students/${studentId}/log-session`)
-  await page.locator('[data-testid="log-session-page"]').waitFor({ state: 'visible', timeout: 15000 })
-
-  // Wait for autosave to create the Draft session before clicking Done
-  await page.waitForResponse(
+  // Attach the response listener BEFORE goto so the listener is active
+  // before the page fires the request.
+  const sessionsResponsePromise = page.waitForResponse(
     resp =>
       resp.url().includes(`/api/students/${studentId}/sessions`) &&
-      resp.request().method() === 'POST' &&
-      resp.status() === 201,
+      !resp.url().includes('/extract') &&
+      resp.request().method() === 'GET' &&
+      resp.status() === 200 &&
+      resp.request().resourceType() === 'xhr',
     { timeout: 15000 }
   )
+  await page.goto(`${baseURL}/students/${studentId}?tab=sessions`)
+  const sessionsResponse = await sessionsResponsePromise
+
+  const sessions: unknown[] = await sessionsResponse.json()
+  if (sessions.length > 0) return
+
+  // No sessions — create a minimal confirmed one via the log-session UI.
+  // Clicking Done triggers saveNow() which POSTs the session and redirects.
+  await page.goto(`${baseURL}/students/${studentId}/log-session`)
+  await page.locator('[data-testid="log-session-page"]').waitFor({ state: 'visible', timeout: 15000 })
 
   await page.click('[data-testid="done-btn"]')
 
   // Wait until redirected away from the log-session page
-  await page.waitForURL(`${baseURL}/students/${studentId}**`, { timeout: 15000 })
+  await page.waitForURL(`${baseURL}/students/${studentId}**`, { timeout: 30000 })
 }
 
 // ---------------------------------------------------------------------------

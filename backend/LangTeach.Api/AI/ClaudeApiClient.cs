@@ -14,6 +14,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
     {
         [ClaudeModel.Haiku]  = "claude-haiku-4-5-20251001",
         [ClaudeModel.Sonnet] = "claude-sonnet-4-6",
+        [ClaudeModel.Opus]   = "claude-opus-4-7",
     };
 
     public async Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
@@ -161,6 +162,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)
     {
+        object messages;
         if (request.Attachments is { Count: > 0 })
         {
             var contentParts = new List<object>();
@@ -175,25 +177,25 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
                 });
             }
             contentParts.Add(new { type = "text", text = request.UserPrompt });
-
-            return new
-            {
-                model      = modelId,
-                max_tokens = request.MaxTokens,
-                system     = request.SystemPrompt,
-                stream,
-                messages   = new[] { new { role = "user", content = (object)contentParts } },
-            };
+            messages = new[] { new { role = "user", content = (object)contentParts } };
+        }
+        else
+        {
+            messages = new[] { new { role = "user", content = (object)request.UserPrompt } };
         }
 
-        return new
+        var body = new Dictionary<string, object?>
         {
-            model      = modelId,
-            max_tokens = request.MaxTokens,
-            system     = request.SystemPrompt,
-            stream,
-            messages   = new[] { new { role = "user", content = request.UserPrompt } },
+            ["model"]      = modelId,
+            ["max_tokens"] = request.MaxTokens,
+            ["system"]     = request.SystemPrompt,
+            ["stream"]     = stream,
+            ["messages"]   = messages,
         };
+        // temperature is deprecated for Opus 4 -- omit it entirely for that model family.
+        if (request.Temperature is not null && request.Model != ClaudeModel.Opus)
+            body["temperature"] = request.Temperature;
+        return body;
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)

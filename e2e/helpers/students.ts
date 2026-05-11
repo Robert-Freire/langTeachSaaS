@@ -31,6 +31,37 @@ export async function createStudentViaUI(
   await expect(page).toHaveURL(/\/students\/(?!new$)[^/]+$/, { timeout: UI_TIMEOUT })
 }
 
+/**
+ * Looks up a seeded student by exact name, paging through `/api/students`
+ * until found. Replaces the prior `?pageSize=100` workaround so tests stay
+ * stable as the visual seed roster grows.
+ */
+export async function findStudentByName(
+  page: Page,
+  name: string,
+  authHeader: Record<string, string> = { Authorization: 'Bearer test-token' },
+): Promise<{ id: string; name: string }> {
+  const PAGE_SIZE = 50
+  const MAX_PAGES = 20
+  for (let pageNum = 1; pageNum <= MAX_PAGES; pageNum++) {
+    const res = await page.request.get(
+      `${API_BASE}/api/students?page=${pageNum}&pageSize=${PAGE_SIZE}`,
+      { headers: authHeader },
+    )
+    expect(res.ok()).toBeTruthy()
+    const body = (await res.json()) as {
+      items: Array<{ id: string; name: string }>
+      totalCount: number
+    }
+    const match = body.items.find((s) => s.name === name)
+    if (match) return match
+    if (pageNum * PAGE_SIZE >= body.totalCount) break
+  }
+  throw new Error(
+    `Student '${name}' not found. Ensure the visual seed step ran before tests.`,
+  )
+}
+
 export interface CreateStudentApiOptions {
   name: string
   language?: string

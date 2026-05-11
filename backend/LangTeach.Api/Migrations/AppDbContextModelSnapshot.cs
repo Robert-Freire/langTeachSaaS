@@ -28,6 +28,9 @@ namespace LangTeach.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CorrectionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -63,11 +66,136 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("TeacherId");
 
+                    b.HasIndex("CorrectionId", "TeacherId")
+                        .IsUnique()
+                        .HasFilter("[CorrectionId] IS NOT NULL");
+
                     b.HasIndex("VoiceNoteId", "TeacherId")
                         .IsUnique()
                         .HasFilter("[VoiceNoteId] IS NOT NULL");
 
                     b.ToTable("AssistantTurnFeedbacks");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Correction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssignmentPrompt")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("AssignmentTitle")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("CorrectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MarkedUpOutput")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SchemaVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<Guid?>("SessionLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pendiente");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("StudentText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("SessionLogId");
+
+                    b.HasIndex("StudentId", "DeletedAt");
+
+                    b.HasIndex("TeacherId", "DeletedAt");
+
+                    b.ToTable("Corrections", t =>
+                        {
+                            t.HasCheckConstraint("CK_Corrections_Status", "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')");
+                        });
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.CorrectionTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CorrectedForm")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("CorrectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("EndIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpannedText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("StartIndex")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectionId", "Category");
+
+                    b.ToTable("CorrectionTags", t =>
+                        {
+                            t.HasCheckConstraint("CK_CorrectionTags_Category", "Category COLLATE Latin1_General_100_BIN2 IN ('C', 'G', 'L', 'O', 'MuyBien')");
+
+                            t.HasCheckConstraint("CK_CorrectionTags_Span", "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
+                        });
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
@@ -401,8 +529,9 @@ namespace LangTeach.Api.Migrations
                     b.Property<Guid>("LessonId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("NextLessonIdeas")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("NextSessionTopics")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("NextLessonIdeas");
 
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uniqueidentifier");
@@ -969,6 +1098,11 @@ namespace LangTeach.Api.Migrations
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.AssistantTurnFeedback", b =>
                 {
+                    b.HasOne("LangTeach.Api.Data.Models.Correction", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
@@ -983,6 +1117,42 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Teacher");
 
                     b.Navigation("VoiceNote");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Correction", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.SessionLog", null)
+                        .WithMany()
+                        .HasForeignKey("SessionLogId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Student", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", null)
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.CorrectionTag", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Correction", "Correction")
+                        .WithMany("Tags")
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Correction");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>
@@ -1258,6 +1428,11 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("SessionLog");
 
                     b.Navigation("VoiceNote");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Correction", b =>
+                {
+                    b.Navigation("Tags");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Course", b =>

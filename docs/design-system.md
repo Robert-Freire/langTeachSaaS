@@ -580,3 +580,63 @@ Reference implementation: `AtelierAssistantPanel.tsx` panel header.
 - Date input style: `text-sm font-inter border border-zinc-200 rounded-md px-2 py-0.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-300`.
 
 Reference implementation: `ProposalCard.tsx` (newSession date input, `NewStudentFields.tsx`).
+
+### 11.15 Correction Status Pill
+
+Displays the workflow state of a Redacción (student writing correction). Used in the correction list row (RedaccionesTab) and the correction detail header (RedaccionDetail).
+
+**Anatomy:** `inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wide` — no border, no shadow, no background pattern.
+
+**Persistent states (driven by `CorrectionStatus`):**
+
+| State | Classes | Meaning |
+|-------|---------|---------|
+| Pendiente | `bg-zinc-100 text-zinc-700` | Student has not submitted the text yet |
+| Entregada | `bg-indigo-50 text-indigo-700` | Text received, waiting for teacher to correct |
+| Corregida | `bg-emerald-50 text-emerald-800` | AI correction complete |
+
+**Transient states (local UI only, not persisted):**
+
+| State | Classes | Extra |
+|-------|---------|-------|
+| Corrigiendo | `bg-amber-50 text-amber-800` | Animated pulse dot `h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse` |
+| Error | `bg-red-50 text-red-800` | None |
+
+**Placement:** right-aligned in the header row alongside the page title or list row title. Never inline within body copy.
+
+Reference implementations: `RedaccionDetail.tsx` `StatusPill`, `RedaccionesTab.tsx` `STATUS_BADGE`.
+
+### 11.16 Error Annotation Span (C/G/L/O Chip)
+
+Used in the marked-up correction body to highlight student errors by category. Each span wraps the original student text with a colored underline and a superscript category chip. Clicking opens a Popover with the explanation and corrected form.
+
+**Category color palette** — canonical source is `frontend/src/lib/correction-colors.ts`. These values must match the backend docx export (see `CorrectionDocxExportService.CategoryColors`).
+
+| Category | Label | Underline | Chip bg | Chip text | Hex (for docx) |
+|----------|-------|-----------|---------|-----------|----------------|
+| C | Cohesión | `decoration-indigo-500` | `bg-indigo-100` | `text-indigo-700` | `#6366F1` |
+| G | Gramática | `decoration-orange-500` | `bg-orange-100` | `text-orange-700` | `#F97316` |
+| L | Léxico | `decoration-amber-500` | `bg-amber-100` | `text-amber-700` | `#F59E0B` |
+| O | Ortografía | `decoration-emerald-500` | `bg-emerald-100` | `text-emerald-700` | `#10B981` |
+
+**Span anatomy:**
+- Underline: `underline decoration-2 underline-offset-4` in the category color. `hover:decoration-[3px]` on mouse-over.
+- No background fill on the text itself — only the underline carries the category color.
+- Chip: `<sup>` element, `h-3.5 min-w-3.5 rounded-sm px-0.5 text-[0.6rem] font-semibold leading-none` in the category chip classes. Letter only (C/G/L/O), no full label.
+
+**Trigger behavior:** click to open Popover, not hover. Hover only thickens the underline. The Popover shows the category label, the original spanned text in a blockquote, the explanation, and the corrected form when present.
+
+**Never use:** a background fill on the annotated word span. The color lives in the underline and chip only.
+
+Reference implementations: `TaggedSpan.tsx`, `correction-colors.ts`.
+
+### 11.17 Muy Bien Inline Highlight
+
+Used alongside error annotation spans (§11.16) to mark stretches of text that the AI judged as exemplary.
+
+- **Element:** `<strong className="font-semibold text-zinc-900">`
+- **No underline.** No chip. No popover. No color accent.
+- **When to use:** only when the AI explicitly marks a span as `MuyBien` category. Never apply manually or for editorial emphasis.
+- **When NOT to use:** for error categories (use §11.16 instead), for general bold emphasis in body copy, or for teacher-authored comments.
+
+Reference implementation: `MarkedUpText.tsx` `renderPiece`.

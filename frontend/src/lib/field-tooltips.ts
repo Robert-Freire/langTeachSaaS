@@ -166,7 +166,7 @@ export const fieldTooltips: Record<string, FieldTooltipEntry> = {
   },
   teachingTodos: {
     fieldKey: 'teachingTodos',
-    label: 'Teaching Todos',
+    label: 'Teaching Ideas',
     short: 'Ideas for future classes that accumulate over time without getting buried.',
     detail: 'Things that come up during a session ("I need to work on articles with this student") but live on the student profile so they don\'t disappear when new sessions are added. Different from Difficulties (what the student struggles with) and session topics (what to cover next time).',
     relatedFields: ['difficulties', 'teachingNotes'],

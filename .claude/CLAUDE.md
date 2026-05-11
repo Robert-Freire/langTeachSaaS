@@ -55,7 +55,15 @@ Reviews are invoked as **agents** (Agent tool with `subagent_type`), never as sk
 
 1. Stage and commit all changes (incl. `.claude/memory/`, `plan/`) referencing the task.
 2. `python3 .claude/scripts/task-build-verify.py <worktree-path>`. Fix all failures/warnings.
-3. `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run.
+3. **Mandatory live test for any issue with a Verify section.** If the issue body contains a "Verify" or "Verify in browser" section, you MUST run it against the live e2e stack (`localhost:5174`) before continuing. This applies regardless of label -- `bug`, `area:ai`, `type:polish`, anything. Passing unit tests or build checks is NOT sufficient. Code that compiles and passes tests can still break at runtime (example: #1203 changed the AI correction pipeline, all tests passed, runtime broke). If the Verify section shows the expected behaviour is not present, do not proceed: diagnose and fix, then re-run. Never mark a task complete based on code inspection or test results alone when a live Verify exists.
+
+   **For `area:ai` issues: use realistic input, not synthetic toy examples.** Short synthetic sentences (under 20 words) do not stress token limits, context windows, or multi-tag interactions. For any issue that touches AI generation or prompt changes, the Verify test MUST use a realistic input representative of actual teacher usage: a full paragraph redacción (100+ words) for correction issues, a complete voice note transcript for extraction issues. A test that passes on a 4-word sentence proves nothing about production behaviour. Example failure: #1215 tested with "La musica es bonita" -- passed. Real B1 redacción hit the 4096 MaxTokens limit and failed (#1217).
+
+   **E2e stack coordination (shared resource -- read before touching it):**
+   - Before starting: `docker ps --filter "name=langteachsaas-e2e" --format "{{.Names}}"`.
+   - If the stack is **not running**: start it with `bash e2e/scripts/start-visual-stack.sh`, run the Verify, then **always tear it down** after: `docker compose -f docker-compose.e2e.yml -f docker-compose.visual.yml --env-file .env.e2e down -v`. Never leave the stack running after your task.
+   - If the stack **is already running**: STOP. Do not use it -- another task or the user may be actively working with it. Tell the user: *"The e2e stack is already running. Do you want me to (a) wait for you to confirm it is safe to use, or (b) skip the live test and flag the Verify as unverified?"* Do not proceed until you receive an answer. If the user says skip, document it in the PR description and log it to `plan/observed-issues.md`.
+4. `qa-verify` agent. FAIL or PASS WITH GAPS: fix, re-commit, re-run.
 4. Code reviews **sequentially** (no parallel background agents). Before launching: check issue labels (`gh issue view <N> --json labels`) + diff to determine required reviewers per `.claude/procedures/review-routing.md`. Run all of them, including conditional ones.
 5. **UI Review (before pushing):** required if issue has `area:frontend` OR `area:design`. Launch `review-ui` agent with specific routes/screens changed. Agent manages its own Docker stack. NEEDS WORK: fix, re-run, re-review. Log unfixed findings to `plan/ui-review-backlog.md`. For screens with student data, consult `.claude/procedures/review-ui-scenarios.md` and pass scenario student name(s).
 

@@ -559,7 +559,7 @@ describe('LogSession', () => {
       sessionTitle: 'Great session',
       whatWasCovered: { value: 'Practiced subjunctive', mode: 'replace' as const },
       homeworkAssigned: { value: 'Page 10', mode: 'replace' as const },
-      nextLessonIdeas: { value: 'Review ser/estar', mode: 'replace' as const },
+      nextSessionTopics: { value: 'Review ser/estar', mode: 'replace' as const },
       areasToImprove: null,
       emotionalSignals: null,
       topicTags: [],
@@ -718,7 +718,7 @@ describe('LogSession', () => {
     })
 
     it('subsequent extraction replaces marker set, not stacks', async () => {
-      // First extraction touches actualContent + homework + nextLessonIdeas + sessionTitle
+      // First extraction touches actualContent + homework + nextSessionTopics + sessionTitle
       await triggerExtraction()
       await waitFor(() => {
         expect(screen.getByTestId('actual-content').className).toContain('border-indigo-500')
@@ -733,7 +733,7 @@ describe('LogSession', () => {
         sessionTitle: null,
         whatWasCovered: null,
         homeworkAssigned: { value: 'Page 99', mode: 'replace' as const },
-        nextLessonIdeas: null,
+        nextSessionTopics: null,
         areasToImprove: null,
         emotionalSignals: null,
         topicTags: [],
@@ -761,7 +761,7 @@ describe('LogSession', () => {
         sessionTitle: null,
         whatWasCovered: null,
         homeworkAssigned: null,
-        nextLessonIdeas: null,
+        nextSessionTopics: null,
         areasToImprove: null,
         emotionalSignals: null,
         topicTags: [],
@@ -1396,7 +1396,7 @@ describe('LogSession — voice note extraction', () => {
     areasToImprove: null,
     emotionalSignals: null,
     homeworkAssigned: null,
-    nextLessonIdeas: null,
+    nextSessionTopics: null,
     suggestedDifficulties: [],
     topicTags: [{ tag: 'pretérito perfecto' }, { tag: 'vocabulario de viajes' }],
     rawExtractionJson: '{"sessionTitle":"Pretérito perfecto y viajes"}',

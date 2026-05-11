@@ -295,7 +295,7 @@ public class SessionHistoryServiceTests : IDisposable
     public async Task SkillLevelOverrides_NonEmpty_Deserialized()
     {
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = "{\"speaking\":\"A1.2\",\"writing\":\"B1.2\"}";
+        student!.SkillLevelOverrides = "{\"speaking\":\"A1\",\"writing\":\"A2\"}";
         await _db.SaveChangesAsync();
 
         _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-1)));
@@ -304,8 +304,8 @@ public class SessionHistoryServiceTests : IDisposable
         var result = await _sut.BuildContextAsync(_teacherId, _studentId, DateTime.UtcNow);
 
         result!.SkillLevelOverrides.Should().HaveCount(2);
-        result.SkillLevelOverrides["speaking"].Should().Be("A1.2");
-        result.SkillLevelOverrides["writing"].Should().Be("B1.2");
+        result.SkillLevelOverrides["speaking"].Should().Be("A1");
+        result.SkillLevelOverrides["writing"].Should().Be("A2");
     }
 
     [Fact]
@@ -313,7 +313,7 @@ public class SessionHistoryServiceTests : IDisposable
     {
         // Student is B1; override that also says B1 should be filtered out
         var student = await _db.Students.FindAsync(_studentId);
-        student!.SkillLevelOverrides = "{\"speaking\":\"B1\",\"writing\":\"A2.2\"}";
+        student!.SkillLevelOverrides = "{\"speaking\":\"B1\",\"writing\":\"A2\"}";
         await _db.SaveChangesAsync();
 
         _db.SessionLogs.Add(MakeSession(DateTime.UtcNow.AddDays(-1)));

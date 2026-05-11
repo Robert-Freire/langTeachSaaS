@@ -184,4 +184,10 @@ public interface IPedagogyConfigService
     /// shared between AssistantController and the frontend.
     /// </summary>
     ProposalFieldsConfig ProposalFields { get; }
+
+    /// <summary>
+    /// Returns the intent-trigger phrase lists used by reflection extraction
+    /// (teaching-todo and teacher-followup detection cues for the Atelier prompt).
+    /// </summary>
+    IntentTriggersConfig IntentTriggers { get; }
 }

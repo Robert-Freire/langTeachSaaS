@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\playwright\\playwright.config.ts",
-    "rootDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
+    "configFile": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/playwright.config.ts",
+    "rootDir": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
+        "outputDir": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +24,7 @@
         },
         "id": "",
         "name": "",
-        "testDir": "C:/ws/PersonalOS/03_Workspace/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
+        "testDir": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -49,25 +49,24 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.59.1",
     "workers": 1,
     "webServer": null
   },
   "suites": [
     {
-      "title": "sprint-reviewer.spec.ts",
-      "file": "sprint-reviewer.spec.ts",
+      "title": "marco-b1.spec.ts",
+      "file": "marco-b1.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "Sprint Reviewer — integration test for current sprint features",
-          "ok": true,
+          "title": "Marco B1.1 — create student, generate lesson, capture output",
+          "ok": false,
           "tags": [],
           "tests": [
             {
@@ -80,43 +79,50 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 88066,
-                  "errors": [],
-                  "stdout": [
+                  "status": "timedOut",
+                  "duration": 600041,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
                     {
-                      "text": "Sprint Reviewer run complete. Output: C:\\ws\\PersonalOS\\03_Workspace\\langTeachSaaS\\.claude\\skills\\teacher-qa\\output\\sprint-reviewer-2026-04-22T07-18-00\n"
+                      "message": "\u001b[31mTest timeout of 600000ms exceeded.\u001b[39m"
                     },
                     {
-                      "text": "Topic: \"preterite vs imperfect: narrating past events (targeting L1 interference for English speakers)\"\n"
-                    },
-                    {
-                      "text": "Sprint issues: 0 items\n"
-                    },
-                    {
-                      "text": "Generation took 47s. 5 blocks across 5 sections.\n"
-                    },
-                    {
-                      "text": "Artifacts: student-view=true, pdf=false\n"
+                      "location": {
+                        "file": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/helpers/navigation.ts",
+                        "column": 64,
+                        "line": 111
+                      },
+                      "message": "Error: locator.fill: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"difficulty-row\"]').last().locator('[data-testid=\"difficulty-item\"]')\u001b[22m\n\n\n   at ../helpers/navigation.ts:111\n\n  109 |       const rows = page.locator('[data-testid=\"difficulty-row\"]')\n  110 |       const lastRow = rows.last()\n> 111 |       await lastRow.locator('[data-testid=\"difficulty-item\"]').fill(diff.description)\n      |                                                                ^\n  112 |\n  113 |       await lastRow.locator('[data-testid=\"difficulty-category\"]').click()\n  114 |       await page.getByRole('option', { name: diff.category }).click()\n    at createStudent (/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/helpers/navigation.ts:111:64)\n    at /home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/playwright/tests/marco-b1.spec.ts:59:3"
                     }
                   ],
-                  "stderr": [
-                    {
-                      "text": "[teacher-qa] PDF export failed for lesson 03e293af-c147-47ec-b7a5-2c2ec8944643: TimeoutError: page.waitForEvent: Timeout 30000ms exceeded while waiting for event \"download\"\n=========================== logs ===========================\nwaiting for event \"download\"\n============================================================\n"
-                    }
-                  ],
+                  "stdout": [],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-04-22T07:18:00.070Z",
+                  "startTime": "2026-05-07T20:45:18.390Z",
                   "annotations": [],
-                  "attachments": []
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts/marco-b1-Marco-B1-1-—-crea-7a328-erate-lesson-capture-output/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/rfreire/projects/langTeachSaaS/.claude/skills/teacher-qa/output/test-artifacts/marco-b1-Marco-B1-1-—-crea-7a328-erate-lesson-capture-output/error-context.md"
+                    }
+                  ]
                 }
               ],
-              "status": "expected"
+              "status": "unexpected"
             }
           ],
-          "id": "920727f3123f68d271de-3847e17a49d5bcd80219",
-          "file": "sprint-reviewer.spec.ts",
-          "line": 62,
+          "id": "d6e887fff0dacdb33b4b-7bd203f2331003c8f69c",
+          "file": "marco-b1.spec.ts",
+          "line": 48,
           "column": 5
         }
       ]
@@ -124,11 +130,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-22T07:17:59.234Z",
-    "duration": 89030.96,
-    "expected": 1,
+    "startTime": "2026-05-07T20:45:17.818Z",
+    "duration": 601096.23,
+    "expected": 0,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

@@ -40,7 +40,7 @@ const defaultNoteResponse = {
   whatWasCovered: null,
   homeworkAssigned: null,
   areasToImprove: null,
-  nextLessonIdeas: null,
+  nextSessionTopics: null,
   emotionalSignals: null,
 }
 
@@ -73,7 +73,7 @@ describe('LessonNotesCard', () => {
     })
     expect(screen.getByTestId('notes-homeworkAssigned')).toBeInTheDocument()
     expect(screen.getByTestId('notes-areasToImprove')).toBeInTheDocument()
-    expect(screen.getByTestId('notes-nextLessonIdeas')).toBeInTheDocument()
+    expect(screen.getByTestId('notes-nextSessionTopics')).toBeInTheDocument()
     expect(screen.getByTestId('notes-emotionalSignals')).toBeInTheDocument()
   })
 
@@ -118,7 +118,7 @@ describe('LessonNotesCard', () => {
       areasToImprove: 'Irregular verbs',
       emotionalSignals: 'Student was engaged',
       homeworkAssigned: 'Exercises 1-5',
-      nextLessonIdeas: 'Present perfect',
+      nextSessionTopics: 'Present perfect',
     })
 
     renderCard({ lessonId: 'lesson-1', studentId: 'student-1' })
@@ -151,7 +151,7 @@ describe('LessonNotesCard', () => {
       areasToImprove: null,
       emotionalSignals: null,
       homeworkAssigned: null,
-      nextLessonIdeas: null,
+      nextSessionTopics: null,
     })
 
     renderCard({ lessonId: 'lesson-1', studentId: 'student-1' })

@@ -38,14 +38,14 @@ public record TopicTagDto(string Tag, string? Category);
 
 public record ProposedNewSession(string Title, string? Date);
 
-public record ExtractedTeachingTodoDto(string Text, string? DueDate);
+public record ExtractedTeachingTodoDto(string Text);
 
 public record ExtractedReflectionDto(
     ExtractedTextFieldDto? WhatWasCovered,
     ExtractedTextFieldDto? AreasToImprove,
     string? EmotionalSignals,
     ExtractedTextFieldDto? HomeworkAssigned,
-    ExtractedTextFieldDto? NextLessonIdeas,
+    ExtractedTextFieldDto? NextSessionTopics,
     string? SessionDate,
     List<SuggestedDifficultyDto> SuggestedDifficulties,
     string? RawExtractionJson,

@@ -13,7 +13,8 @@ public record ClaudeRequest(
     string UserPrompt,
     ClaudeModel Model,
     int MaxTokens = 2048,
-    IReadOnlyList<ContentAttachment>? Attachments = null
+    IReadOnlyList<ContentAttachment>? Attachments = null,
+    double? Temperature = null
 );
 
 public record ClaudeResponse(
@@ -23,4 +24,4 @@ public record ClaudeResponse(
     int OutputTokens
 );
 
-public enum ClaudeModel { Haiku, Sonnet }
+public enum ClaudeModel { Haiku, Sonnet, Opus }

@@ -8,5 +8,10 @@
   "personalisationDirective": "Personalize content for this student. Reference their interests in examples{motivationSuffix}.",
   "motivationSuffix": ", and anchor vocabulary to their stated study motivation: {reasonForStudying}",
   "lessonSystemOpener": "You are an expert {language} teacher creating materials for a {cefrLevel} level lesson.",
-  "curriculumSystemOpener": "You are an expert {language} language teacher and curriculum designer."
+  "curriculumSystemOpener": "You are an expert {language} teacher and curriculum designer.",
+  "replanSuggestionOpener": "You are an expert language teaching assistant helping a teacher adapt an upcoming course plan based on recent class data.",
+  "reflectionExtractionOpener": "You are an assistant that helps language teachers structure their post-class notes.",
+  "whatWasCoveredFallbackOpener": "You are an assistant that summarises a language class in one sentence.",
+  "studentProfileExtractionOpener": "You are an assistant that helps language teachers capture student information from free-form voice notes.",
+  "grammarLevelExpertOpener": "You are a CEFR-level grammar expert calibrated to the CEFR Companion Volume (2020) and the PCIC (Plan Curricular del Instituto Cervantes), which is the reference inventory for Spanish grammar scope at each level."
 }

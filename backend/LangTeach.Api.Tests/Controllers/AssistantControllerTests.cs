@@ -327,12 +327,12 @@ public class AssistantControllerTests
     }
 
     [Fact]
-    public async Task Propose_WithLongTermAimAndNextLessonIdeas_EmitsBothProposalsSeparately()
+    public async Task Propose_WithLongTermAimAndNextSessionTopics_EmitsBothProposalsSeparately()
     {
         // AC2 (#1135): a transcript containing BOTH a long-term student aim AND a next-class
         // planning aside must produce exactly two separate proposal cards with no overlap.
         // Stub: [has-learning-goals] returns ShortTermObjectives = "Presentaciones en español"
-        //       reflection stub always returns NextLessonIdeas = "[Extracted] Next lesson ideas"
+        //       reflection stub always returns NextSessionTopics = "[Extracted] Next session topics"
         var (client, studentId) = await SeedTeacherWithStudent(
             "auth0|assistant-dual-content", "assistant-dual-content@example.com");
 
@@ -547,6 +547,32 @@ public class AssistantControllerTests
     }
 
     [Fact]
+    public async Task Propose_WithSchedulingIntentAndTime_CombinesDateAndTimeInPayload()
+    {
+        // When SessionStartTime is non-null, the controller must combine date + time into an ISO datetime.
+        // StubReflectionExtractionService returns date "2026-05-19" and time "09:00" for [schedule-new-session].
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-new-session-with-time", "assistant-new-session-with-time@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "La clase de hoy de las 9:00 fue bien. [schedule-new-session]",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        var newSessionProposal = body!.Proposals.FirstOrDefault(p => p.Type == "newSession");
+        newSessionProposal.Should().NotBeNull();
+
+        var payloadDoc = System.Text.Json.JsonDocument.Parse(newSessionProposal!.Payload!.Value.GetRawText());
+        var sessionDate = payloadDoc.RootElement.GetProperty("sessionDate").GetString();
+        sessionDate.Should().Be("2026-05-19T09:00");
+    }
+
+    [Fact]
     public async Task Propose_WithoutSchedulingIntent_DoesNotEmitNewSessionProposal()
     {
         // Normal reflection text without "[schedule-new-session]" trigger → no newSession proposal.
@@ -564,6 +590,28 @@ public class AssistantControllerTests
         var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
         body.Should().NotBeNull();
         body!.Proposals.Should().NotContain(p => p.Type == "newSession");
+    }
+
+    [Fact]
+    public async Task Propose_ExtractedSessionDate_IncludesDateAndTime()
+    {
+        // The response always includes extractedSessionDate when SessionDate is extracted,
+        // so the frontend can use it when creating a new session via the picker.
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-extracted-date", "assistant-extracted-date@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on subjunctive today.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        // Stub always returns SessionDate="2026-01-15" and SessionStartTime="09:00" for non-new-session
+        body!.ExtractedSessionDate.Should().Be("2026-01-15T09:00");
     }
 
     // TC-01: "Súbele el nivel de escritura a B1" → student proposal skillLevel.writing = "B1"
@@ -636,6 +684,82 @@ public class AssistantControllerTests
             p.Type == "student" && p.Field == "skillLevel.writing" && p.NewValue == "B2");
         body.Proposals.Should().NotContain(p =>
             p.Type == "student" && p.Field == "cefrLevel");
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndNoSessionId_ReturnsSessionLogId()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var teacher = new Teacher
+        {
+            Id = Guid.NewGuid(),
+            Auth0UserId = "auth0|assistant-session-log-id",
+            Email = "assistant-session-log-id@example.com",
+            DisplayName = "Session LogId Test Teacher",
+            IsApproved = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Teachers.Add(teacher);
+
+        var student = new Student
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            Name = "Ana",
+            LearningLanguage = "Spanish",
+            CefrLevel = "A2",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.Students.Add(student);
+
+        var session = new SessionLog
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacher.Id,
+            StudentId = student.Id,
+            SessionDate = DateTime.UtcNow.AddDays(-1),
+            PreviousHomeworkStatus = HomeworkStatus.NotApplicable,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.SessionLogs.Add(session);
+        await db.SaveChangesAsync();
+
+        var client = _factory.CreateAuthenticatedClient("auth0|assistant-session-log-id", "assistant-session-log-id@example.com");
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on past perfect.",
+            StudentId = student.Id,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.SessionLogId.Should().Be(session.Id);
+    }
+
+    [Fact]
+    public async Task Propose_WithStudentAndNoSessions_ReturnsNullSessionLogId()
+    {
+        var (client, studentId) = await SeedTeacherWithStudent(
+            "auth0|assistant-no-sessions", "assistant-no-sessions@example.com");
+
+        var request = new AssistantProposeRequest
+        {
+            Text = "We worked on past perfect.",
+            StudentId = studentId,
+        };
+        var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AssistantProposeResponse>();
+        body.Should().NotBeNull();
+        body!.SessionLogId.Should().BeNull();
     }
 
     // TC-19: "sube el nivel de conversación a B1" → student proposal skillLevel.speaking = "B1"

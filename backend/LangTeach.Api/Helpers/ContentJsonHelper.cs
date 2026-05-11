@@ -19,4 +19,40 @@ public static class ContentJsonHelper
         }
         return trimmed;
     }
+
+    /// <summary>
+    /// Like StripFences, but also strips any prose preamble by advancing to the first '{'.
+    /// Use for JSON-object responses where the model may emit reasoning text before the object.
+    /// Uses balanced-brace counting to find the true end of the JSON object, so post-JSON prose
+    /// (e.g. model self-checks that contain '}' characters) does not corrupt the result.
+    /// </summary>
+    public static string? StripFencesAndPreamble(string? content)
+    {
+        var stripped = StripFences(content);
+        if (string.IsNullOrEmpty(stripped)) return stripped;
+        var objectStart = stripped.IndexOf('{');
+        if (objectStart < 0) return stripped;
+
+        // Walk from the first '{' counting balanced braces to find the true JSON end.
+        int depth = 0;
+        bool inString = false;
+        bool escaped = false;
+        for (int i = objectStart; i < stripped.Length; i++)
+        {
+            char c = stripped[i];
+            if (escaped) { escaped = false; continue; }
+            if (c == '\\' && inString) { escaped = true; continue; }
+            if (c == '"') { inString = !inString; continue; }
+            if (inString) continue;
+            if (c == '{') depth++;
+            else if (c == '}')
+            {
+                depth--;
+                if (depth == 0)
+                    return stripped[objectStart..(i + 1)];
+            }
+        }
+        // Fallback: return from the first '{' to end (partial JSON).
+        return stripped[objectStart..];
+    }
 }
