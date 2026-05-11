@@ -149,12 +149,42 @@ public class StudentsController : ControllerBase
         if (patch.ReasonForStudying is not null) request.ReasonForStudying = patch.ReasonForStudying;
         if (patch.BirthYear.HasValue) request.BirthYear = patch.BirthYear;
         if (patch.CityOfResidence is not null) request.CityOfResidence = patch.CityOfResidence;
-        if (patch.NativeLanguages is not null) request.NativeLanguages = patch.NativeLanguages;
-        if (patch.SpokenLanguages is not null) request.SpokenLanguages = patch.SpokenLanguages;
-        if (patch.Interests is not null) request.Interests = patch.Interests;
-        if (patch.ShortTermObjectives is not null) request.ShortTermObjectives = patch.ShortTermObjectives;
-        if (patch.Difficulties is not null) request.Difficulties = patch.Difficulties;
-        if (patch.TeachingTodos is not null) request.TeachingTodos = patch.TeachingTodos;
+        if (patch.NativeLanguages is not null)
+        {
+            if (patch.NativeLanguages.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.NativeLanguages), $"Cannot exceed {MaxProfileListCount} native languages."); return BadRequest(ModelState); }
+            request.NativeLanguages = patch.NativeLanguages;
+        }
+        if (patch.SpokenLanguages is not null)
+        {
+            if (patch.SpokenLanguages.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.SpokenLanguages), $"Cannot exceed {MaxProfileListCount} spoken languages."); return BadRequest(ModelState); }
+            request.SpokenLanguages = patch.SpokenLanguages;
+        }
+        if (patch.Interests is not null)
+        {
+            if (patch.Interests.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.Interests), $"Cannot exceed {MaxProfileListCount} interests."); return BadRequest(ModelState); }
+            request.Interests = patch.Interests;
+        }
+        if (patch.ShortTermObjectives is not null)
+        {
+            if (patch.ShortTermObjectives.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.ShortTermObjectives), $"Cannot exceed {MaxProfileListCount} objectives."); return BadRequest(ModelState); }
+            request.ShortTermObjectives = patch.ShortTermObjectives;
+        }
+        if (patch.Difficulties is not null)
+        {
+            if (patch.Difficulties.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.Difficulties), $"Cannot exceed {MaxProfileListCount} difficulties."); return BadRequest(ModelState); }
+            request.Difficulties = patch.Difficulties;
+        }
+        if (patch.TeachingTodos is not null)
+        {
+            if (patch.TeachingTodos.Count > MaxProfileListCount)
+            { ModelState.AddModelError(nameof(patch.TeachingTodos), $"Cannot exceed {MaxProfileListCount} teaching todos."); return BadRequest(ModelState); }
+            request.TeachingTodos = patch.TeachingTodos;
+        }
 
         try
         {
