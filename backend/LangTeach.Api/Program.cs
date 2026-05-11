@@ -309,7 +309,7 @@ using (var scope = app.Services.CreateScope())
     if (voiceNoteBlobStorage is not null)
         await voiceNoteBlobStorage.InitializeAsync();
 
-    var correctionsBlobStorage = scope.ServiceProvider.GetService<CorrectionsBlobStorage>();
+    var correctionsBlobStorage = scope.ServiceProvider.GetService<ICorrectionsBlobStorage>();
     if (correctionsBlobStorage is not null)
         await correctionsBlobStorage.InitializeAsync();
 }

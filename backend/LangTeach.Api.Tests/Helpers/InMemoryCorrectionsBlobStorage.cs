@@ -7,6 +7,8 @@ public class InMemoryCorrectionsBlobStorage : ICorrectionsBlobStorage
 {
     private readonly ConcurrentDictionary<string, byte[]> _blobs = new();
 
+    public Task InitializeAsync() => Task.CompletedTask;
+
     public Task UploadAsync(Stream stream, string blobPath, string contentType, CancellationToken ct = default)
     {
         using var ms = new MemoryStream();
