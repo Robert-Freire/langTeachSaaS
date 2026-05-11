@@ -1445,6 +1445,25 @@ public class PromptServiceTests
         req.UserPrompt.Should().Contain("In scope:");
     }
 
+    [Fact]
+    public void GrammarPrompt_B1_ContainsGrammarFocusCeiling()
+    {
+        var req = _sut.BuildGrammarPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING");
+        req.UserPrompt.Should().Contain("B1.1");
+    }
+
+    [Fact]
+    public void WarmUpPrompt_ContainsNoCorrectionAnswerConstraint()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Never generate grammar elicitation");
+        req.UserPrompt.Should().Contain("HARD CONSTRAINT");
+    }
+
     // --- Vocabulary prompt: vocabulary constraints injection ---
 
     [Fact]

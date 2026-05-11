@@ -5,7 +5,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "yes/no or either/or questions using only known vocabulary. Accept single-word answers. Purpose: reduce anxiety. Example: Te gusta mas el cafe o el te? Keep to 1-2 teacher turns.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. Use yes/no or either/or questions using only known vocabulary. Accept single-word answers. Purpose: reduce anxiety. Example: Te gusta mas el cafe o el te? Keep to 1-2 teacher turns.",
       "duration": {
         "min": 2,
         "max": 3
@@ -46,7 +46,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "Open personal questions using present tense. Expect a 2-3 sentence response. Example: Que haces los fines de semana? Include 2-3 suggested follow-up questions. Note: Use preterite only if the student has already learned it.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. Open personal questions using present tense. Expect a 2-3 sentence response. Example: Que haces los fines de semana? Include 2-3 suggested follow-up questions. Note: Use preterite only if the student has already learned it.",
       "duration": {
         "min": 2,
         "max": 4
@@ -89,7 +89,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "Opinion prompts with light justification. Que opinas de...? Por que? Tied to the lesson topic. 2-3 follow-up questions. No scaffolding phrases needed.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. Opinion prompts with light justification. Que opinas de...? Por que? Tied to the lesson topic. 2-3 follow-up questions. No scaffolding phrases needed.",
       "duration": {
         "min": 3,
         "max": 5
@@ -126,7 +126,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "News-related or cultural discussion starters. Expects 4-5 sentence connected discourse. agree/disagree or headline prediction format. 2-3 follow-up questions.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. News-related or cultural discussion starters. Expects 4-5 sentence connected discourse. agree/disagree or headline prediction format. 2-3 follow-up questions.",
       "duration": {
         "min": 3,
         "max": 5
@@ -163,7 +163,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "Provocative statement, abstract prompt, or ethical dilemma. Expects nuanced argumentation. Single trigger, no follow-ups needed; teacher improvises. circumlocution or semantic mapping as alternatives.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. Provocative statement, abstract prompt, or ethical dilemma. Expects nuanced argumentation. Single trigger, no follow-ups needed; teacher improvises. circumlocution or semantic mapping as alternatives.",
       "duration": {
         "min": 3,
         "max": 5
@@ -201,7 +201,7 @@
       "contentTypes": [
         "conversation"
       ],
-      "guidance": "Devil advocate positions or mediation warm-ups (summarize a concept for a non-expert). Expects register-aware extended discourse. Same trigger types as C1.",
+      "guidance": "HARD CONSTRAINT: Never generate grammar elicitation, vocabulary tests, or any activity with correct/incorrect answers -- warm-up is icebreaker activation only. Devil advocate positions or mediation warm-ups (summarize a concept for a non-expert). Expects register-aware extended discourse. Same trigger types as C1.",
       "duration": {
         "min": 3,
         "max": 5
