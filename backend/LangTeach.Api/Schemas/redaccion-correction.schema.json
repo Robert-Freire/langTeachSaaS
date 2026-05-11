@@ -26,7 +26,7 @@
         "startIndex": { "type": "integer", "minimum": 0 },
         "endIndex": { "type": "integer", "minimum": 1 },
         "spannedText": { "type": "string", "minLength": 1 },
-        "contextBefore": { "type": ["string", "null"] },
+        "contextBefore": { "type": ["string", "null"], "maxLength": 40 },
         "explanation": { "type": ["string", "null"] },
         "correctedForm": { "type": ["string", "null"] }
       },

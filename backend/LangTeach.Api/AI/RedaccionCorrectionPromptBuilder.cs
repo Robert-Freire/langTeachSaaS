@@ -100,8 +100,8 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal the student text at [startIndex, endIndex).
-- contextBefore MUST be the exact characters immediately preceding spannedText in the student text (up to 20 chars). This is used to locate spannedText unambiguously when it appears more than once. Always include it.
-- If spannedText still appears more than once even with contextBefore context, choose a longer or more specific span for spannedText that is unique. Tags that cannot be located will be dropped.
+- contextBefore MUST always be emitted: it is the exact characters immediately preceding spannedText in the student text (up to 20 chars, or an empty string if spannedText starts at position 0). It is used server-side to locate the correct occurrence when spannedText appears more than once.
+- If spannedText is still ambiguous after contextBefore (i.e. the same contextBefore + spannedText sequence appears more than once), choose a longer or more specific span for spannedText that is unique. Tags that cannot be located will be dropped.
 - spannedText MUST be the minimum substring that is itself erroneous: the specific word or
   morpheme to replace, not its surrounding context. For a verb error, span the verb only.
   For a missing accent, span the word only. Never span a surrounding phrase (unless a wider
