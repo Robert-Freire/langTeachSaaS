@@ -44,13 +44,13 @@ public class OcrController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
 
         if (file is null || file.Length == 0)
-            return BadRequest(new { message = "No se recibió ningún archivo." });
+            return BadRequest(new { code = "OCR_NO_FILE", message = "No se recibió ningún archivo." });
 
         if (!_options.AcceptedContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
-            return BadRequest(new { message = $"Formato no compatible. Usa JPG, PNG, WEBP o PDF." });
+            return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP o PDF." });
 
         if (file.Length > _options.MaxBytes)
-            return BadRequest(new { message = $"El archivo supera el tamaño máximo de {_options.MaxBytes / 1_048_576} MB." });
+            return BadRequest(new { code = "OCR_FILE_TOO_LARGE", message = $"El archivo supera el tamaño máximo de {_options.MaxBytes / 1_048_576} MB." });
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
@@ -58,7 +58,7 @@ public class OcrController : ControllerBase
         if (string.IsNullOrEmpty(ext))
             ext = file.ContentType.Split('/').Last();
 
-        var blobPath = $"corrections/{teacherId}/{Guid.NewGuid()}/source.{ext}";
+        var blobPath = $"{teacherId}/{Guid.NewGuid()}/source.{ext}";
 
         await using var stream = file.OpenReadStream();
 
@@ -71,7 +71,7 @@ public class OcrController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to upload OCR source image. BlobPath={BlobPath}", blobPath);
-            return StatusCode(500, new { message = "No se pudo almacenar el archivo. Inténtalo de nuevo." });
+            return StatusCode(500, new { code = "OCR_UPLOAD_FAILED", message = "No se pudo almacenar el archivo. Inténtalo de nuevo." });
         }
 
         stream.Position = 0;
@@ -83,12 +83,12 @@ public class OcrController : ControllerBase
         catch (OcrException ex)
         {
             _logger.LogWarning("OCR returned no text. BlobPath={BlobPath} Message={Message}", blobPath, ex.Message);
-            return UnprocessableEntity(new { message = "No se pudo extraer texto del archivo. Comprueba que la imagen sea legible." });
+            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = "No se pudo extraer texto del archivo. Comprueba que la imagen sea legible." });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "OCR service error. BlobPath={BlobPath}", blobPath);
-            return StatusCode(500, new { message = "El servicio de OCR no está disponible. Inténtalo de nuevo." });
+            return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de OCR no está disponible. Inténtalo de nuevo." });
         }
 
         _logger.LogInformation(
