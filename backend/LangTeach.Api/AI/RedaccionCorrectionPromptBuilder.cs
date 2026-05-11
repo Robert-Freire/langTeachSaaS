@@ -82,6 +82,7 @@ Emit raw JSON only. Start directly with {. No prose before or after. No markdown
       "startIndex": <int>,
       "endIndex": <int>,
       "spannedText": "<exact substring of the student text at [startIndex..endIndex]>",
+      "contextBefore": "<the substring of the student text immediately before spannedText, up to 20 characters; use empty string if spannedText starts at position 0>",
       "explanation": "<short, in Spanish>",
       "correctedForm": "<the corrected form>"
     }
@@ -99,7 +100,8 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal the student text at [startIndex, endIndex).
-- If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
+- contextBefore MUST be the exact characters immediately preceding spannedText in the student text (up to 20 chars). This is used to locate spannedText unambiguously when it appears more than once. Always include it.
+- If spannedText still appears more than once even with contextBefore context, choose a longer or more specific span for spannedText that is unique. Tags that cannot be located will be dropped.
 - spannedText MUST be the minimum substring that is itself erroneous: the specific word or
   morpheme to replace, not its surrounding context. For a verb error, span the verb only.
   For a missing accent, span the word only. Never span a surrounding phrase (unless a wider
