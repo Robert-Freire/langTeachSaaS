@@ -19,7 +19,7 @@ public class CorrectionDocxExportServiceTests
         bytes.Should().NotBeEmpty();
         using var stream = new MemoryStream(bytes);
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
-        doc.MainDocumentPart!.Document.Body!.ChildElements.OfType<Paragraph>().Should().NotBeEmpty();
+        doc.MainDocumentPart!.Document!.Body!.ChildElements.OfType<Paragraph>().Should().NotBeEmpty();
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class CorrectionDocxExportServiceTests
 
         using var stream = new MemoryStream(bytes);
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
-        var body = doc.MainDocumentPart!.Document.Body!;
+        var body = doc.MainDocumentPart!.Document!.Body!;
 
         var bodyTexts = body.Descendants<Paragraph>()
             .Select(p => string.Concat(p.Descendants<Text>().Select(t => t.Text)))
@@ -213,7 +213,7 @@ public class CorrectionDocxExportServiceTests
     {
         using var stream = new MemoryStream(bytes);
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
-        var runs = doc.MainDocumentPart!.Document.Body!
+        var runs = doc.MainDocumentPart!.Document!.Body!
             .Descendants<Run>()
             .ToList();
         var texts = runs

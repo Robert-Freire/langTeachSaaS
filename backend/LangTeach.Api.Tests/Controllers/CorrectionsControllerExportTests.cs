@@ -136,7 +136,7 @@ public class CorrectionsControllerExportTests
 
         using var stream = new MemoryStream(bytes);
         using var doc = WordprocessingDocument.Open(stream, isEditable: false);
-        var runs = doc.MainDocumentPart!.Document.Body!.Descendants<Run>().ToList();
+        var runs = doc.MainDocumentPart!.Document!.Body!.Descendants<Run>().ToList();
 
         // Section 1: O-category tag "ablar" -> emerald-500 10B981, underlined (not bold)
         var coloredRun = runs.FirstOrDefault(r =>
