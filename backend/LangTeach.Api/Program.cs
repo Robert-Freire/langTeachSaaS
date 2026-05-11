@@ -195,7 +195,7 @@ builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>(
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
 builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
-builder.Services.AddSingleton<ICorrectionPromptService, CorrectionPromptService>();
+builder.Services.AddScoped<ICorrectionPromptService, CorrectionPromptService>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
 builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();

@@ -49,6 +49,9 @@ public class CorrectionStaleRecoveryService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        // Intentionally cross-tenant: the background service sweeps all teachers' corrections
+        // globally. This differs from the per-teacher queries in CorrectionService by design --
+        // stale recovery must not depend on a specific teacher initiating a list request.
         var stale = await db.Corrections
             .Where(c => c.DeletedAt == null
                      && c.Status == CorrectionStatus.Corrigiendo
