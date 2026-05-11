@@ -1460,8 +1460,8 @@ public class PromptServiceTests
         var ctx = BaseCtx() with { SectionType = "WarmUp" };
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Never generate grammar elicitation");
-        req.UserPrompt.Should().Contain("HARD CONSTRAINT");
+        req.UserPrompt.Should().Contain("Warm-up is icebreaker activation only");
+        req.UserPrompt.Should().Contain("Never frame it as grammar elicitation");
     }
 
     // --- Vocabulary prompt: vocabulary constraints injection ---
