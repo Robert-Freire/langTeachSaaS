@@ -72,6 +72,7 @@ CRITICAL RULES:
 - A wrong preposition is G, NEVER L.
 - A literal translation from the student's L1 is L, NEVER G.
 - A missing or wrong connector is C, NEVER G.
+- An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G or L.
 
 OUTPUT CONTRACT:
 
