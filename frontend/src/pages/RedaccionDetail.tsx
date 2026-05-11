@@ -9,13 +9,38 @@ import {
   submitCorrectionFeedback,
   type CorrectionDetail,
 } from '../api/corrections'
+import { getStudent } from '../api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
+import { getCategoryStyle } from '@/lib/correction-colors'
+import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
+
+const CHIP_CATEGORIES = ['C', 'G', 'L', 'O'] as const
+
+function ChipLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {CHIP_CATEGORIES.map((cat) => {
+        const s = getCategoryStyle(cat)
+        return (
+          <span key={cat} className="inline-flex items-center gap-1.5">
+            <span
+              className={`inline-flex h-5 w-5 items-center justify-center rounded text-[0.6rem] font-bold ${s.chipBg} ${s.chipText}`}
+            >
+              {s.letter}
+            </span>
+            <span className="text-xs text-zinc-500">{s.label}</span>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function RedaccionDetail() {
   const { id, correctionId } = useParams<{ id: string; correctionId: string }>()
@@ -31,6 +56,12 @@ export default function RedaccionDetail() {
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
+  })
+
+  const { data: student } = useQuery({
+    queryKey: ['student', studentId],
+    queryFn: () => getStudent(studentId!),
+    enabled: !!studentId,
   })
 
   const corregir = useMutation({
@@ -84,6 +115,8 @@ export default function RedaccionDetail() {
   const isPendiente = data.status === 'Pendiente'
   const isFallida = data.status === 'CorreccionFallida'
 
+  const breadcrumbLabel = student ? `${student.name} / Redacciones` : 'Redacciones'
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <div className="flex items-center justify-between gap-3">
@@ -92,7 +125,7 @@ export default function RedaccionDetail() {
           className="inline-flex items-center text-sm text-zinc-600 hover:text-zinc-900"
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
-          Redacciones
+          {breadcrumbLabel}
         </Link>
         <div className="flex items-center gap-2">
           <StatusPill status={data.status} viewState={viewState} />
@@ -105,11 +138,12 @@ export default function RedaccionDetail() {
         </div>
       </div>
 
-      <div>
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold text-zinc-900">{data.assignmentTitle}</h1>
         {data.assignmentPrompt && (
-          <p className="mt-1 text-sm text-zinc-600">{data.assignmentPrompt}</p>
+          <p className="text-sm text-zinc-600">{data.assignmentPrompt}</p>
         )}
+        {isCorregida && data.tags.length > 0 && <ChipLegend />}
       </div>
 
       {downloadError && (
@@ -302,19 +336,11 @@ function StatusPill({ status, viewState }: StatusPillProps) {
       </span>
     )
   }
-  const palette: Record<typeof status, string> = {
-    Pendiente: 'bg-zinc-100 text-zinc-700',
-    Entregada: 'bg-indigo-50 text-indigo-700',
-    Corrigiendo: 'bg-amber-50 text-amber-800',
-    Corregida: 'bg-emerald-50 text-emerald-800',
-    CorreccionFallida: 'bg-red-50 text-red-700',
-  }
-  const label = status === 'CorreccionFallida' ? 'Error al corregir' : status
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wide ${palette[status]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wide ${STATUS_BADGE[status]}`}
     >
-      {label}
+      {STATUS_LABEL[status]}
     </span>
   )
 }
