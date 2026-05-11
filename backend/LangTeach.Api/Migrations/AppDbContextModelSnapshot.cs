@@ -116,7 +116,8 @@ namespace LangTeach.Api.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("SourceImageUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("Status")
                         .IsRequired()
