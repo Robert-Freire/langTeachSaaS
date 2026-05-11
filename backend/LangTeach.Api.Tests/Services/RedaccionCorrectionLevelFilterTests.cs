@@ -38,16 +38,16 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
 
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton(promptBuilder);
-        scopeServices.AddSingleton(filterPromptBuilder);
+        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory, promptBuilder,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent(cefrLevel: "A2");

@@ -15,7 +15,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly RedaccionCorrectionPromptBuilder _promptBuilder;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -27,12 +26,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     public RedaccionCorrectionService(
         AppDbContext db,
         IServiceScopeFactory scopeFactory,
-        RedaccionCorrectionPromptBuilder promptBuilder,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
         _scopeFactory = scopeFactory;
-        _promptBuilder = promptBuilder;
         _logger = logger;
     }
 
@@ -77,10 +74,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 var sp = scope.ServiceProvider;
                 var db = sp.GetRequiredService<AppDbContext>();
                 var claude = sp.GetRequiredService<IClaudeClient>();
-                var promptBuilder = sp.GetRequiredService<RedaccionCorrectionPromptBuilder>();
-                var filterPromptBuilder = sp.GetRequiredService<RedaccionLevelFilterPromptBuilder>();
+                var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
                 scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, filterPromptBuilder, scopeLogger);
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, correctionPromptService, scopeLogger);
             }
             catch (ClaudeRateLimitException rle)
             {
@@ -140,8 +136,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private static async Task RunCorrectionInScopeAsync(
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
-        RedaccionCorrectionPromptBuilder promptBuilder,
-        RedaccionLevelFilterPromptBuilder filterPromptBuilder,
+        ICorrectionPromptService correctionPromptService,
         ILogger logger)
     {
         var correction = await db.Corrections
@@ -176,7 +171,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
-        var request = promptBuilder.Build(ctx);
+        var request = correctionPromptService.BuildCorrectionPrompt(ctx);
         var sentText = ctx.StudentText.TrimEnd();
 
         var response = await claude.CompleteAsync(request, CancellationToken.None);
@@ -223,7 +218,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, filterPromptBuilder, correctionId, logger);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
@@ -446,7 +441,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string cefr,
         string? assignmentPrompt,
         IClaudeClient claude,
-        RedaccionLevelFilterPromptBuilder filterBuilder,
+        ICorrectionPromptService correctionPromptService,
         Guid correctionId,
         ILogger logger)
     {
@@ -460,7 +455,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         ClaudeResponse filterResponse;
         try
         {
-            var filterRequest = filterBuilder.Build(cefr, inputs, assignmentPrompt);
+            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt);
             filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
         }
         catch (Exception ex)
