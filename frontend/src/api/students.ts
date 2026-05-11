@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/apiClient'
+import type { VoiceMergePatch } from '../lib/voiceUpdateMerge'
 
 export interface StudentWeaknessItem {
   description: string
@@ -149,6 +150,10 @@ export async function createStudent(data: StudentFormData): Promise<Student> {
 export async function updateStudent(id: string, data: StudentFormData): Promise<Student> {
   const res = await apiClient.put<Student>(`/api/students/${id}`, data)
   return res.data
+}
+
+export async function patchStudentVoice(id: string, patch: VoiceMergePatch): Promise<void> {
+  await apiClient.patch(`/api/students/${id}`, patch)
 }
 
 export async function deleteStudent(id: string): Promise<void> {
