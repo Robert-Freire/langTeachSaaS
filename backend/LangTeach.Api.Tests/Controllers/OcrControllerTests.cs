@@ -70,6 +70,20 @@ public class OcrControllerTests
     }
 
     [Fact]
+    public async Task Extract_ValidJpeg_IncompleteFlag_FalseForLongStubText()
+    {
+        // Stub returns ~120 chars which is well above MinExtractedChars (10) -- incomplete should be false
+        var client = _factory.CreateAuthenticatedClient("auth0|ocr-incomplete", "ocr-incomplete@example.com");
+        var form = CreateFileContent("handwriting.jpg", "image/jpeg");
+
+        var res = await client.PostAsync("/api/corrections/ocr", form);
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+        json.GetProperty("incomplete").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Extract_NoFile_ReturnsBadRequest()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|ocr-nofile", "ocr-nofile@example.com");

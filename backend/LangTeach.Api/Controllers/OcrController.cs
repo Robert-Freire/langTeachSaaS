@@ -60,12 +60,16 @@ public class OcrController : ControllerBase
 
         var blobPath = $"{teacherId}/{Guid.NewGuid()}/source.{ext}";
 
-        await using var stream = file.OpenReadStream();
+        // Copy to MemoryStream to guarantee seekability for both upload and OCR.
+        // IFormFile.OpenReadStream() may return a non-seekable stream in some hosting environments.
+        using var memStream = new MemoryStream();
+        await file.CopyToAsync(memStream, cancellationToken);
+        memStream.Position = 0;
 
         string blobUrl;
         try
         {
-            await _blob.UploadAsync(stream, blobPath, file.ContentType, cancellationToken);
+            await _blob.UploadAsync(memStream, blobPath, file.ContentType, cancellationToken);
             blobUrl = await _blob.GetDownloadUrlAsync(blobPath);
         }
         catch (Exception ex)
@@ -74,11 +78,11 @@ public class OcrController : ControllerBase
             return StatusCode(500, new { code = "OCR_UPLOAD_FAILED", message = "No se pudo almacenar el archivo. Inténtalo de nuevo." });
         }
 
-        stream.Position = 0;
+        memStream.Position = 0;
         string text;
         try
         {
-            text = await _ocr.ExtractTextAsync(stream, file.ContentType, cancellationToken);
+            text = await _ocr.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
         }
         catch (OcrException ex)
         {
