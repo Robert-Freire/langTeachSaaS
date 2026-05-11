@@ -102,7 +102,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 }
                 catch (Exception saveEx)
                 {
-                    (scopeLogger ?? outerLogger).LogError(saveEx,
+                    errLogger.LogError(saveEx,
                         "Failed to revert status to Entregada after Claude rate limit. CorrectionId={CorrectionId}", correctionId);
                 }
             }
