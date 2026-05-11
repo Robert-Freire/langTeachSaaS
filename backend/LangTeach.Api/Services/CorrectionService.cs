@@ -73,6 +73,7 @@ public class CorrectionService : ICorrectionService
             AssignmentTitle = DefaultIfBlank(request.AssignmentTitle, now),
             AssignmentPrompt = NullIfBlank(request.AssignmentPrompt),
             StudentText = hasText ? request.StudentText : null,
+            SourceImageUrl = ToValidImageUrl(request.SourceImageUrl),
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -199,6 +200,15 @@ public class CorrectionService : ICorrectionService
 
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? ToValidImageUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+               && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? value.Trim()
+            : null;
+    }
 
     private static CorrectionDetailDto ToDetail(Correction c, IEnumerable<CorrectionTag> tags) =>
         CorrectionDtoMapper.ToDetail(c, tags);

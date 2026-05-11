@@ -229,6 +229,13 @@ else
 
 builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
+builder.Services.AddSingleton<CorrectionsBlobStorage>();
+builder.Services.AddSingleton<ICorrectionsBlobStorage>(sp => sp.GetRequiredService<CorrectionsBlobStorage>());
+if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<IOcrService, StubOcrService>();
+else
+    builder.Services.AddScoped<IOcrService, AzureAIVisionOcrService>();
+builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
@@ -301,6 +308,10 @@ using (var scope = app.Services.CreateScope())
     var voiceNoteBlobStorage = scope.ServiceProvider.GetService<VoiceNoteBlobStorage>();
     if (voiceNoteBlobStorage is not null)
         await voiceNoteBlobStorage.InitializeAsync();
+
+    var correctionsBlobStorage = scope.ServiceProvider.GetService<ICorrectionsBlobStorage>();
+    if (correctionsBlobStorage is not null)
+        await correctionsBlobStorage.InitializeAsync();
 }
 
 // Demo seeder: dotnet run -- --seed <auth0-user-id|email>

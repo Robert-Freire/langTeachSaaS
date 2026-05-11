@@ -15,6 +15,8 @@ public class Correction
     public string? AssignmentPrompt { get; set; }
     public string? StudentText { get; set; }
     public string? MarkedUpOutput { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2048)]
+    public string? SourceImageUrl { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

@@ -47,7 +47,9 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
                          || d.ServiceType == typeof(BlobStorageService)
                          || d.ServiceType == typeof(IBlobStorageService)
                          || d.ServiceType == typeof(VoiceNoteBlobStorage)
-                         || d.ServiceType == typeof(IVoiceNoteBlobStorage))
+                         || d.ServiceType == typeof(IVoiceNoteBlobStorage)
+                         || d.ServiceType == typeof(CorrectionsBlobStorage)
+                         || d.ServiceType == typeof(ICorrectionsBlobStorage))
                 .ToList();
             foreach (var d in blobDescriptors)
                 services.Remove(d);
@@ -56,6 +58,7 @@ public class AuthenticatedWebAppFactory : WebApplicationFactory<Program>
             services.AddSingleton<IBlobStorageService>(inMemoryBlob);
             services.AddSingleton(inMemoryBlob);
             services.AddSingleton<IVoiceNoteBlobStorage>(new InMemoryVoiceNoteBlobStorage());
+            services.AddSingleton<ICorrectionsBlobStorage>(new InMemoryCorrectionsBlobStorage());
 
             // Replace the live Claude client with a stub so corregir tests don't hit the network.
             // Tests can resolve StubClaudeClient from the factory's services to enqueue responses.

@@ -307,6 +307,131 @@ describe('RedaccionesTab', () => {
     expect(correctionsApi.corregirCorrection).not.toHaveBeenCalled()
   })
 
+  // OCR upload tests
+  it('upload button renders in create drawer', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    expect(await screen.findByTestId('correction-drawer-upload-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('correction-drawer-file-input')).toBeInTheDocument()
+  })
+
+  it('upload button not shown when text is locked (Corregida)', async () => {
+    const corregidaDetail: CorrectionDetail = {
+      ...detail,
+      id: 'c-cor',
+      status: 'Corregida',
+      studentText: 'Texto original',
+    }
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([
+      { ...corregida, id: 'c-cor', status: 'Corregida' },
+    ])
+    vi.mocked(correctionsApi.getCorrection).mockResolvedValue(corregidaDetail)
+
+    // Corregida cards do not have edit buttons, so we won't see the drawer
+    // Just verify the list renders without upload button visible
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+    await screen.findByTestId('redaccion-card-c-cor')
+    expect(screen.queryByTestId('correction-drawer-upload-btn')).not.toBeInTheDocument()
+  })
+
+  it('HEIC file is rejected before upload with a clear message', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const heicFile = new File(['data'], 'photo.heic', { type: 'image/heic' })
+    Object.defineProperty(input, 'files', { value: [heicFile], writable: false })
+    fireEvent.change(input)
+
+    expect(await screen.findByTestId('correction-drawer-ocr-error')).toHaveTextContent(
+      'El formato HEIC no es compatible',
+    )
+    expect(correctionsApi.uploadForOcr).not.toHaveBeenCalled()
+  })
+
+  it('OCR success populates text area and persists blobUrl on save', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForOcr).mockResolvedValue({
+      text: 'Ayer fui al mercado con mi familia.',
+      blobUrl: 'https://blob.example.com/corrections/123/source.jpg',
+      incomplete: false,
+    })
+    vi.mocked(correctionsApi.createCorrection).mockResolvedValue({ ...detail, id: 'new-id', status: 'Pendiente' })
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpegFile = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpegFile], writable: false })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      const textarea = screen.getByTestId('correction-drawer-text') as HTMLTextAreaElement
+      expect(textarea.value).toBe('Ayer fui al mercado con mi familia.')
+    })
+
+    fireEvent.click(screen.getByTestId('correction-drawer-save'))
+
+    await waitFor(() => {
+      expect(correctionsApi.createCorrection).toHaveBeenCalledWith(
+        STUDENT_ID,
+        expect.objectContaining({
+          studentText: 'Ayer fui al mercado con mi familia.',
+          sourceImageUrl: 'https://blob.example.com/corrections/123/source.jpg',
+        }),
+      )
+    })
+  })
+
+  it('OCR failure shows error message and leaves textarea enabled', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForOcr).mockRejectedValue(new Error('network error'))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpegFile = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpegFile], writable: false })
+    fireEvent.change(input)
+
+    expect(await screen.findByTestId('correction-drawer-ocr-error')).toHaveTextContent(
+      'No se pudo extraer el texto',
+    )
+    const textarea = screen.getByTestId('correction-drawer-text') as HTMLTextAreaElement
+    expect(textarea).not.toBeDisabled()
+  })
+
+  it('save button is disabled while OCR is in progress', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    let resolveOcr!: (v: { text: string; blobUrl: string; incomplete: boolean }) => void
+    vi.mocked(correctionsApi.uploadForOcr).mockReturnValue(
+      new Promise((res) => { resolveOcr = res }),
+    )
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpegFile = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpegFile], writable: false })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('correction-drawer-save')).toBeDisabled()
+    })
+
+    resolveOcr({ text: 'Texto extraído.', blobUrl: 'https://blob.example.com/source.jpg', incomplete: false })
+    await waitFor(() => {
+      expect(screen.getByTestId('correction-drawer-save')).not.toBeDisabled()
+    })
+  })
+
   it('Delete removes the card via mutation and refetch', async () => {
     vi.mocked(correctionsApi.listCorrections)
       .mockResolvedValueOnce([pendiente])

@@ -30,7 +30,8 @@ public record CorrectionDetailDto(
     IReadOnlyList<CorrectionTagDto> Tags,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    DateTime? CorrectedAt);
+    DateTime? CorrectedAt,
+    string? SourceImageUrl = null);
 
 public class CreateCorrectionRequest
 {
@@ -42,6 +43,9 @@ public class CreateCorrectionRequest
 
     [MaxLength(StudentTextMaxLength)]
     public string? StudentText { get; set; }
+
+    [MaxLength(2048)]
+    public string? SourceImageUrl { get; set; }
 
     public const int StudentTextMaxLength = 10_000;
 }

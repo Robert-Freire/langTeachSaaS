@@ -630,6 +630,26 @@ public class CorrectionsControllerTests
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Create_WithSourceImageUrl_PersistsBlobUrl()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-source-img");
+        const string blobUrl = "https://example.blob.core.windows.net/corrections/123/source.jpg";
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest
+            {
+                AssignmentTitle = "Foto de redacción",
+                StudentText = "Texto extraído por OCR.",
+                SourceImageUrl = blobUrl,
+            });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.SourceImageUrl.Should().Be(blobUrl);
+    }
+
     private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(
         HttpClient client, Guid studentId, Guid correctionId, string expectedStatus,
         int maxWaitMs = 5000, int pollIntervalMs = 50, DateTime? stopWhenUpdatedAtAdvances = null)

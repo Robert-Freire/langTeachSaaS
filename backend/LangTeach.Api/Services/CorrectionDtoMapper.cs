@@ -26,5 +26,6 @@ internal static class CorrectionDtoMapper
                 .ToList(),
             c.CreatedAt,
             c.UpdatedAt,
-            c.CorrectedAt);
+            c.CorrectedAt,
+            SourceImageUrl: c.SourceImageUrl);
 }
