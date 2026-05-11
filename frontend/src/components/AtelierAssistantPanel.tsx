@@ -305,6 +305,7 @@ export default function AtelierAssistantPanel({
       <SheetContent
         data-testid="assistant-panel"
         className="right-0 left-auto w-[380px] max-w-full flex flex-col p-0 backdrop-blur-[12px] bg-white/80 shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] data-open:slide-in-from-right data-closed:slide-out-to-right"
+        overlayClassName="bg-transparent supports-backdrop-filter:backdrop-blur-none"
       >
         {/* Header */}
         <div className="flex items-center px-5 py-4 gap-2 shrink-0">
