@@ -54,25 +54,23 @@ public class CorrectionStaleRecoveryService : BackgroundService
         // Intentionally cross-tenant: the background service sweeps all teachers' corrections
         // globally. This differs from the per-teacher queries in CorrectionService by design --
         // stale recovery must not depend on a specific teacher initiating a list request.
-        var stale = await db.Corrections
+        //
+        // ExecuteUpdateAsync generates a single UPDATE ... WHERE Status='Corrigiendo' AND ...
+        // so a correction that completes normally (Corrigiendo -> Corregida) between the
+        // WHERE evaluation and the UPDATE is not overwritten.
+        var now = DateTime.UtcNow;
+        var count = await db.Corrections
             .Where(c => c.DeletedAt == null
                      && c.Status == CorrectionStatus.Corrigiendo
                      && c.UpdatedAt < staleThreshold)
-            .ToListAsync(ct);
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(c => c.Status, CorrectionStatus.Entregada)
+                .SetProperty(c => c.UpdatedAt, now), ct);
 
-        if (stale.Count == 0) return;
-
-        var now = DateTime.UtcNow;
-        foreach (var s in stale)
-        {
-            s.Status = CorrectionStatus.Entregada;
-            s.UpdatedAt = now;
-        }
-
-        await db.SaveChangesAsync(ct);
+        if (count == 0) return;
 
         _logger.LogInformation(
             "CorrectionStaleRecoveryService: reverted {Count} stale Corrigiendo corrections to Entregada",
-            stale.Count);
+            count);
     }
 }
