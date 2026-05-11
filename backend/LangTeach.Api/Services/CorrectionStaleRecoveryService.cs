@@ -9,6 +9,8 @@ namespace LangTeach.Api.Services;
 
 public class CorrectionStaleRecoveryService : BackgroundService
 {
+    // 60-second sweep cadence. Assumes single API instance -- multiple replicas will
+    // redundantly sweep the same rows but each update is idempotent (status + timestamp).
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(60);
 
     private readonly IServiceScopeFactory _scopeFactory;
