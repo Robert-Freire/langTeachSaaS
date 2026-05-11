@@ -48,7 +48,7 @@ CATEGORIES (use the exact code letter):
 
 - C (Cohesión y Coherencia): connector-level or discourse-organization error.
   Connector-level: missing connector, wrong connector, missing temporal marker, repetitive linking structure.
-  Discourse-level (most significant at B2+): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered.
+  Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered.
   Example (connector): "Fui al cine. Vi una película." → missing connector → C.
   Example (discourse): "Hay muchos plásticos en el océano. El reciclaje es costoso. Por eso debemos reciclar más." → the paragraph lists facts before stating the main claim, leaving the reader uncertain what point is being made → C.
 - G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
