@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -453,7 +454,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return tags;
 
         var inputs = tags
-            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation))
+            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
             .ToList();
 
         ClaudeResponse filterResponse;
@@ -501,8 +502,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var tag = tags[i];
 
-            // O and MuyBien tags always pass through regardless of filter decision.
-            if (tag.Category == CorrectionTagCategory.Ortografia || tag.Category == CorrectionTagCategory.MuyBien)
+            // O, MuyBien, and ser/estar G tags always pass through regardless of filter decision.
+            if (tag.Category == CorrectionTagCategory.Ortografia || tag.Category == CorrectionTagCategory.MuyBien
+                || inputs[i].IsSerEstar)
             {
                 result.Add(tag);
                 continue;
@@ -545,6 +547,17 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         return result;
+    }
+
+    // Word-boundary regex avoids false positives from words containing "ser" or "estar" as substrings.
+    private static readonly Regex SerRegex = new(@"\bser\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex EstarRegex = new(@"\bestar\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static bool IsSerEstarGTag(RedaccionCorrectionTagDto tag)
+    {
+        if (tag.Category != CorrectionTagCategory.Gramatica) return false;
+        var expl = tag.Explanation ?? "";
+        return SerRegex.IsMatch(expl) && EstarRegex.IsMatch(expl);
     }
 
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests
