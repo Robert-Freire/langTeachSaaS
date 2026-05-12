@@ -10,7 +10,7 @@ public class AssistantProposeRequest
     public string Text { get; set; } = "";
 
     public Guid? StudentId { get; set; }
-    public Guid? SessionId { get; set; }
+    public Guid? SessionLogId { get; set; }
     public Guid? VoiceNoteId { get; set; }
 }
 

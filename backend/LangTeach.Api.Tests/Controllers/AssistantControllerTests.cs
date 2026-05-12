@@ -106,7 +106,7 @@ public class AssistantControllerTests
         {
             Text = "Nueva alumna: María García, ingeniera, aprende inglés.",
             StudentId = null,
-            SessionId = null,
+            SessionLogId = null,
         };
         var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
 
@@ -452,7 +452,7 @@ public class AssistantControllerTests
         {
             Text = "Le di clase ayer, trabajamos el subjuntivo. [schedule-new-session]",
             StudentId = studentId,
-            SessionId = null, // student-detail context: no open session
+            SessionLogId = null, // student-detail context: no open session
         };
         var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
 
@@ -474,7 +474,7 @@ public class AssistantControllerTests
         {
             Text = "Normal text without schedule trigger.",
             StudentId = studentId,
-            SessionId = null,
+            SessionLogId = null,
         };
         var response = await client.PostAsJsonAsync("/api/assistant/propose", request);
 
