@@ -32,8 +32,8 @@ public class RedaccionLevelFilterPromptBuilder
             "PromptUser | blockType=redaccion-level-filter level={Level} tagCount={Count}\n{UserPrompt}",
             cefr, tags.Count, user);
 
-        // Scale MaxTokens with tag count: each decision + optional note is ~60-80 tokens;
-        // 2048 is safe for up to ~25 tags with notes; hard cap avoids truncation on dense texts.
+        // Scale MaxTokens with tag count: each decision is ~30-40 tokens;
+        // 2048 is safe for up to ~50 tags; hard cap avoids truncation on dense texts.
         var maxTokens = Math.Max(1024, Math.Min(2048, 512 + tags.Count * 64));
         return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: maxTokens, Temperature: 0);
     }
@@ -41,9 +41,9 @@ public class RedaccionLevelFilterPromptBuilder
     private const string SystemPrompt = """
 You are a CEFR grammar filter for a Spanish writing correction pipeline. You receive a numbered list of error tags detected in a student's text, the student's CEFR level, the grammar scope for that level, and the assignment context. For each tag, classify it as one of:
 - keep    -- the error is within the student's level scope; surface it.
-- soften  -- the error is above level but the attempt deserves a warm acknowledgement; do not penalise. (include a warm note in Spanish)
+- soften  -- the error is above level but the attempt deserves a warm acknowledgement; do not penalise.
 - remove  -- the error is above level and should not be surfaced.
-- muybien -- the structure is at or near the student's level ceiling, used correctly or nearly correctly, AND appropriate for the register of the assignment; highlight it as praiseworthy. (include a warm note in Spanish)
+- muybien -- the structure is at or near the student's level ceiling, used correctly or nearly correctly, AND appropriate for the register of the assignment; highlight it as praiseworthy.
 
 MANDATORY RULES:
 1. Tags with category "O" (Ortografía: accents, spelling, punctuation) MUST always be "keep".
@@ -60,7 +60,7 @@ GUIDANCE:
 OUTPUT CONTRACT:
 Emit raw JSON only. No prose. No markdown fences. The JSON must be an array:
 [
-  {"index": <int>, "decision": "keep" | "soften" | "remove" | "muybien", "note": "<warm praise in Spanish, only when decision=soften or decision=muybien>"}
+  {"index": <int>, "decision": "keep" | "soften" | "remove" | "muybien"}
 ]
 Every input tag must appear in the output exactly once, identified by its index.
 """;
