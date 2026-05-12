@@ -640,3 +640,64 @@ Used alongside error annotation spans (§11.16) to mark stretches of text that t
 - **When NOT to use:** for error categories (use §11.16 instead), for general bold emphasis in body copy, or for teacher-authored comments.
 
 Reference implementation: `MarkedUpText.tsx` `renderPiece`.
+
+### 11.18 Correction Feedback Thumbs
+
+Used in the correction detail view (`RedaccionDetail.tsx`) to collect teacher rating on AI correction quality.
+
+```tsx
+<div className="space-y-2">
+  <p className="text-xs text-zinc-500">¿Fue útil esta corrección?</p>
+  {/* thumbs buttons or thumbs-down text input */}
+</div>
+```
+
+**Label:** Always show `¿Fue útil esta corrección?` as a `text-xs text-zinc-500` paragraph above the controls. Place it outside the conditional blocks so it appears in all non-success states (idle and thumbs-down-open).
+
+**Idle state (thumbs pair):**
+- Both icons: `text-zinc-400`, 16x16.
+- Thumbs-up hover: `hover:text-emerald-600`.
+- Thumbs-down hover: `hover:text-red-500`.
+- Pending spinner: `Loader2 animate-spin text-zinc-400`.
+
+**Thumbs-down open state:** replaces icons with an inline text input + Send + Cancel row.
+
+**Success state:** replace entire block with `<p className="text-sm text-zinc-500" role="status">Gracias por tu feedback.</p>`.
+
+Reference implementation: `RedaccionDetail.tsx` `CorrectionFeedback`.
+
+### 11.19 Atelier Inline Session Picker
+
+Used inside the Atelier proposals view when no session is selected and session proposals exist. Rendered as an inline banner above the proposal cards.
+
+```tsx
+<div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50">
+  <p className="text-xs font-inter text-gray-700 leading-snug mb-1">
+    Choose a session to apply these notes to:
+  </p>
+  {/* New session button */}
+  <button className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter font-semibold transition-colors text-left text-indigo-600 hover:bg-indigo-50">
+    <Plus className="h-3.5 w-3.5 shrink-0" />
+    New session
+  </button>
+  {/* Selected state */}
+  <button className="... text-indigo-700 bg-indigo-100">
+    <Check className="h-3.5 w-3.5 shrink-0" />
+    New session
+  </button>
+  {/* Existing session row */}
+  <button className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-inter text-zinc-600 hover:bg-violet-100 transition-colors text-left">
+    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+    <span className="truncate">{dateLabel} — {title}</span>
+  </button>
+</div>
+```
+
+- **Container:** `bg-violet-50 rounded-xl` — tonal match to the Atelier violet theme.
+- **Instruction text:** `text-xs font-inter text-gray-700` — minimum for WCAG AA at 12px on `bg-violet-50`.
+- **New session / unselected:** `text-indigo-600 hover:bg-indigo-50`.
+- **Selected state:** `text-indigo-700 bg-indigo-100` + Check icon replaces Plus.
+- **Existing session rows:** ghost style `text-zinc-600 hover:bg-violet-100` to stay within the violet container theme.
+- No selected/active state defined for existing session rows — clicking immediately applies and dismisses the picker.
+
+Reference implementation: `AtelierAssistantPanel.tsx` `session-picker-banner` test id.
