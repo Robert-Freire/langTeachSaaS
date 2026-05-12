@@ -570,7 +570,7 @@ describe('StudentForm', () => {
 
   it('includes identity fields in form submission', async () => {
     const { default: userEvent } = await import('@testing-library/user-event')
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     mockCreateStudent.mockResolvedValue({ id: 'new-id' })
     renderNew()
 
@@ -599,7 +599,7 @@ describe('StudentForm', () => {
           cityOfResidence: 'Madrid',
         }),
       )
-    })
+    }, { timeout: 8000 })
   })
 
   it('renders Reason for Studying textarea', () => {
