@@ -235,26 +235,7 @@ public class TelegramConversationService : ITelegramConversationService
             };
         }
 
-        // Mirror of SessionLogDialog.tsx:316-346 — join AreasToImprove + EmotionalSignals into GeneralNotes,
-        // map the rest onto their structured fields.
-        var generalNotes = string.Join("\n",
-            new[] { extracted.AreasToImprove?.Value, extracted.EmotionalSignals }
-                .Where(s => !string.IsNullOrWhiteSpace(s)));
-
-        return new CreateSessionLogRequest
-        {
-            SessionDate = ParseSessionDate(extracted.SessionDate),
-            ActualContent = extracted.WhatWasCovered?.Value,
-            HomeworkAssigned = extracted.HomeworkAssigned?.Value,
-            NextSessionTopics = extracted.NextSessionTopics?.Value,
-            GeneralNotes = string.IsNullOrEmpty(generalNotes) ? null : generalNotes,
-            SuggestedDifficulties = extracted.SuggestedDifficulties.Count > 0
-                ? extracted.SuggestedDifficulties
-                : null,
-            Title = extracted.SessionTitle is { Length: > 120 } t ? t[..120] : extracted.SessionTitle,
-            VoiceNoteTranscription = notes,
-            RawExtractionJson = extracted.RawExtractionJson
-        };
+        return ReflectionMapper.ToSessionLogRequest(extracted, notes);
     }
 
     public async Task<TelegramStatusResponse> GetLinkStatusAsync(Guid teacherId, CancellationToken ct)
@@ -314,14 +295,4 @@ public class TelegramConversationService : ITelegramConversationService
             ct);
     }
 
-    private static DateTime ParseSessionDate(string? isoDate)
-    {
-        if (isoDate is not null &&
-            DateOnly.TryParseExact(isoDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var parsed))
-        {
-            return parsed.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        }
-        return DateTime.UtcNow.Date;
-    }
 }
