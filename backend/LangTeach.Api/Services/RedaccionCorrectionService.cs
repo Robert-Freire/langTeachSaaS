@@ -69,8 +69,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         catch (DbUpdateConcurrencyException)
         {
             // Another concurrent request won the race and already set Corrigiendo (or later).
-            // Re-read and return the current state so the caller gets a consistent DTO.
-            await _db.Entry(correction).ReloadAsync(cancellationToken);
+            // Re-query with Include so Tags are also fresh (ReloadAsync only refreshes scalars).
+            correction = await _db.Corrections
+                .Include(c => c.Tags)
+                .FirstAsync(c => c.Id == correctionId, cancellationToken);
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         }
 
