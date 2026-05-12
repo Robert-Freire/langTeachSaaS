@@ -176,19 +176,7 @@ public class AssistantController : ControllerBase
             }
         }
 
-        var sessionFieldValues = new Dictionary<string, (string? current, string? extracted)>
-        {
-            ["title"] = (session?.Title, reflectionExtraction.SessionTitle),
-            ["actualContent"] = (session?.ActualContent, reflectionExtraction.WhatWasCovered?.Value),
-            ["generalNotes"] = (session?.GeneralNotes, reflectionExtraction.AreasToImprove?.Value),
-            ["homeworkAssigned"] = (session?.HomeworkAssigned, reflectionExtraction.HomeworkAssigned?.Value),
-            ["nextSessionTopics"] = (session?.NextSessionTopics, reflectionExtraction.NextSessionTopics?.Value),
-        };
-        foreach (var f in _pedagogy.ProposalFields.SessionFields)
-        {
-            if (sessionFieldValues.TryGetValue(f.Field, out var vals))
-                EmitProposal(proposals, "session", f.Field, f.Label, vals.current, vals.extracted);
-        }
+        proposals.AddRange(ReflectionMapper.ToSessionFieldProposals(reflectionExtraction, session, _pedagogy.ProposalFields));
 
         if (reflectionExtraction.ProposedNewSession is { } proposed)
         {
@@ -266,8 +254,7 @@ public class AssistantController : ControllerBase
         string? oldValue,
         string? newValue)
     {
-        if (string.IsNullOrWhiteSpace(newValue)) return;
-        if (string.Equals(oldValue?.Trim(), newValue.Trim(), StringComparison.OrdinalIgnoreCase)) return;
-        proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), type, field, label, oldValue, newValue));
+        var proposal = ReflectionMapper.MakeFieldProposal(type, field, label, oldValue, newValue);
+        if (proposal is not null) proposals.Add(proposal);
     }
 }
