@@ -64,7 +64,7 @@ public class AssistantController : ControllerBase
             .ToList() as IReadOnlyList<string>;
 
         var studentTask = _studentExtractionService.ExtractAsync(request.Text, ct);
-        var reflectionTask = _reflectionExtractionService.ExtractAsync(request.Text, knownDifficulties, hasOpenSession: request.SessionId.HasValue, ct);
+        var reflectionTask = _reflectionExtractionService.ExtractAsync(request.Text, knownDifficulties, hasOpenSession: request.SessionLogId.HasValue, ct);
 
         await Task.WhenAll(studentTask, reflectionTask);
 
@@ -72,8 +72,8 @@ public class AssistantController : ControllerBase
         var reflectionExtraction = await reflectionTask;
 
         SessionLogDto? session = null;
-        if (student != null && request.SessionId.HasValue)
-            session = await _sessionLogService.GetByIdAsync(teacherId, student.Id, request.SessionId.Value, ct);
+        if (student != null && request.SessionLogId.HasValue)
+            session = await _sessionLogService.GetByIdAsync(teacherId, student.Id, request.SessionLogId.Value, ct);
 
         var proposals = new List<ProposalDto>();
 
@@ -193,6 +193,7 @@ public class AssistantController : ControllerBase
         if (reflectionExtraction.ProposedNewSession is { } proposed)
         {
             var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            // dateOnly is yyyy-MM-dd; t is HH:mm -- both guaranteed by the extraction schema.
             var sessionDate = reflectionExtraction.SessionStartTime is { } t
                 ? $"{dateOnly}T{t}"
                 : dateOnly;
@@ -209,7 +210,7 @@ public class AssistantController : ControllerBase
         }
 
         Guid? suggestedSessionLogId = null;
-        if (student != null && !request.SessionId.HasValue)
+        if (student != null && !request.SessionLogId.HasValue)
         {
             var sessions = await _sessionLogService.ListAsync(teacherId, student.Id, ct);
             suggestedSessionLogId = sessions
@@ -224,6 +225,7 @@ public class AssistantController : ControllerBase
         string? extractedSessionDate = null;
         if (reflectionExtraction.SessionDate is { } sd)
         {
+            // sd is yyyy-MM-dd; st is HH:mm -- both guaranteed by the extraction schema.
             extractedSessionDate = reflectionExtraction.SessionStartTime is { } st
                 ? $"{sd}T{st}"
                 : sd;
