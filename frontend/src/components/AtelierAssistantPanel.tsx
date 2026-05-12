@@ -353,7 +353,7 @@ export default function AtelierAssistantPanel({
               <button
                 onClick={() => setPendingClose(false)}
                 data-testid="discard-confirm-cancel"
-                className="text-sm font-inter font-medium text-indigo-600 hover:text-indigo-700 transition-colors px-2 py-1 rounded-lg hover:bg-indigo-50"
+                className="text-sm font-inter font-medium text-zinc-500 hover:text-zinc-700 px-2 py-1 rounded-lg hover:bg-zinc-100"
               >
                 Keep editing
               </button>
@@ -445,7 +445,7 @@ export default function AtelierAssistantPanel({
                         className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-violet-50"
                         data-testid="session-picker-banner"
                       >
-                        <p className="text-xs font-inter text-violet-700 leading-snug mb-1">
+                        <p className="text-xs font-inter text-gray-700 leading-snug mb-1">
                           Choose a session to apply these notes to:
                         </p>
                         <button

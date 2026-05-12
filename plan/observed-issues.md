@@ -27,6 +27,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 | #1065 | 2026-05-04 | low | CreateTeachingTodoDto.DueDate is string? while sibling CreateTeacherFollowupRequest.DueDate is DateOnly?; inconsistent binding strategy for same entity field (arch review) |
 | #1165 | 2026-05-09 | low | AssistantProposeRequest uses `SessionId` but AssistantProposeResponse uses `SessionLogId` for the same entity; naming asymmetry in the API contract (Sophy) |
 | #smoke-hardening | 2026-05-04 | low | "Apply" button in Atelier Assistant proposal flow not smoke-testable without real audio; #1065 fix end-to-end unconfirmed |
+| #1231 | 2026-05-12 | low | Arch reviewer noted AtelierAssistantPanel mic-retry-btn (line 377) uses indigo while Keep editing uses zinc; these are different UI states (mic error vs discard confirm) so no inconsistency -- dismissed. |
 | #1153 | 2026-05-08 | low | `frontend/src/pages/StudentForm.test.tsx > "includes identity fields in form submission"` is flaky under parallel vitest load (1 fail in full run, 72/72 pass when isolated). Pre-existing, unrelated to redacciones. |
 | #1155 | 2026-05-08 | low | CorrectionDetailDto has no studentTextUpdatedAt field; stale-markup banner (issue #1155 edge case) deferred until DTO grows that field (plan revision) |
 | #1155 | 2026-05-08 | low | DemoSeeder Ana Visual correction duplicates marked-up JSON literal and tagSpecs array; could be serialized once from tagSpecs (Sophy) |

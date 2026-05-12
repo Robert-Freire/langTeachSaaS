@@ -235,6 +235,7 @@ function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps
 
   return (
     <div className="space-y-2">
+      <p className="text-xs text-zinc-500">¿Fue útil esta corrección?</p>
       {inputState !== 'down-open' && (
         <div className="flex items-center gap-3">
           <button
