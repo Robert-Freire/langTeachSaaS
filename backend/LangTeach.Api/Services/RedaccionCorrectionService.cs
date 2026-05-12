@@ -15,7 +15,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly RedaccionCorrectionPromptBuilder _promptBuilder;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -27,12 +26,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     public RedaccionCorrectionService(
         AppDbContext db,
         IServiceScopeFactory scopeFactory,
-        RedaccionCorrectionPromptBuilder promptBuilder,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
         _scopeFactory = scopeFactory;
-        _promptBuilder = promptBuilder;
         _logger = logger;
     }
 
@@ -77,10 +74,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 var sp = scope.ServiceProvider;
                 var db = sp.GetRequiredService<AppDbContext>();
                 var claude = sp.GetRequiredService<IClaudeClient>();
-                var promptBuilder = sp.GetRequiredService<RedaccionCorrectionPromptBuilder>();
-                var filterPromptBuilder = sp.GetRequiredService<RedaccionLevelFilterPromptBuilder>();
+                var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
                 scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, filterPromptBuilder, scopeLogger);
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, correctionPromptService, scopeLogger);
             }
             catch (ClaudeRateLimitException rle)
             {
@@ -140,8 +136,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private static async Task RunCorrectionInScopeAsync(
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
-        RedaccionCorrectionPromptBuilder promptBuilder,
-        RedaccionLevelFilterPromptBuilder filterPromptBuilder,
+        ICorrectionPromptService correctionPromptService,
         ILogger logger)
     {
         var correction = await db.Corrections
@@ -176,7 +171,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
-        var request = promptBuilder.Build(ctx);
+        var request = correctionPromptService.BuildCorrectionPrompt(ctx);
         var sentText = ctx.StudentText.TrimEnd();
 
         var response = await claude.CompleteAsync(request, CancellationToken.None);
@@ -223,7 +218,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, filterPromptBuilder, correctionId, logger);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
@@ -357,40 +352,67 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                         "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
                     continue;
                 }
-                // Collect all occurrences of spannedText in the original text.
-                var occurrences = new List<int>();
-                var searchFrom = 0;
-                while (true)
+
+                // Try contextBefore + spannedText for unambiguous rescue (avoids proximity
+                // heuristic failures when a common word like "es" appears many times).
+                int? contextFoundAt = null;
+                if (!string.IsNullOrEmpty(tag.ContextBefore))
                 {
-                    var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
-                    if (hit < 0) break;
-                    occurrences.Add(hit);
-                    searchFrom = hit + 1;
+                    var combined = tag.ContextBefore + tag.SpannedText;
+                    var combinedHits = new List<int>();
+                    var cf = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(combined, cf, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        combinedHits.Add(hit + tag.ContextBefore.Length);
+                        cf = hit + 1;
+                    }
+                    if (combinedHits.Count == 1)
+                        contextFoundAt = combinedHits[0];
                 }
-                if (occurrences.Count == 0)
+
+                if (contextFoundAt.HasValue)
                 {
+                    tag = tag with { StartIndex = contextFoundAt.Value, EndIndex = contextFoundAt.Value + tag.SpannedText.Length };
+                }
+                else
+                {
+                    // Fall back to proximity-based rescue.
+                    var occurrences = new List<int>();
+                    var searchFrom = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        occurrences.Add(hit);
+                        searchFrom = hit + 1;
+                    }
+                    if (occurrences.Count == 0)
+                    {
+                        logger.LogWarning(
+                            "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
+                            tag.SpannedText, correctionId);
+                        continue;
+                    }
+                    // When there are multiple occurrences, use the model's startIndex as a proximity hint:
+                    // the model knows approximately where the error is even if the exact offset drifted due
+                    // to accented characters. Pick the occurrence closest to the reported startIndex.
+                    // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
+                    var foundAt = occurrences.Count == 1
+                        ? occurrences[0]
+                        : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
+                    if (occurrences.Count > 1)
+                    {
+                        logger.LogWarning(
+                            "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
+                            tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
+                    }
                     logger.LogWarning(
-                        "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
-                        tag.SpannedText, correctionId);
-                    continue;
+                        "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
+                        tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
+                    tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
                 }
-                // When there are multiple occurrences, use the model's startIndex as a proximity hint:
-                // the model knows approximately where the error is even if the exact offset drifted due
-                // to accented characters. Pick the occurrence closest to the reported startIndex.
-                // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
-                var foundAt = occurrences.Count == 1
-                    ? occurrences[0]
-                    : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
-                if (occurrences.Count > 1)
-                {
-                    logger.LogWarning(
-                        "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
-                        tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
-                }
-                logger.LogWarning(
-                    "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
-                    tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
-                tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
             }
 
             string? explanation = tag.Explanation;
@@ -446,7 +468,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string cefr,
         string? assignmentPrompt,
         IClaudeClient claude,
-        RedaccionLevelFilterPromptBuilder filterBuilder,
+        ICorrectionPromptService correctionPromptService,
         Guid correctionId,
         ILogger logger)
     {
@@ -460,7 +482,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         ClaudeResponse filterResponse;
         try
         {
-            var filterRequest = filterBuilder.Build(cefr, inputs, assignmentPrompt);
+            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt);
             filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
         }
         catch (Exception ex)
@@ -572,7 +594,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         [property: JsonPropertyName("endIndex")] int EndIndex,
         [property: JsonPropertyName("spannedText")] string SpannedText,
         [property: JsonPropertyName("explanation")] string? Explanation,
-        [property: JsonPropertyName("correctedForm")] string? CorrectedForm);
+        [property: JsonPropertyName("correctedForm")] string? CorrectedForm,
+        [property: JsonPropertyName("contextBefore")] string? ContextBefore = null);
 
     private record FilterDecision(
         [property: JsonPropertyName("index")] int Index,

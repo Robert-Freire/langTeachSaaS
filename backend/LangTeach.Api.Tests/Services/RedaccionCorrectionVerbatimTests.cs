@@ -145,6 +145,9 @@ public class RedaccionCorrectionVerbatimTests
         var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
+        var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
         var claude = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(),
             NullLogger<ClaudeApiClient>.Instance);
 
@@ -152,11 +155,11 @@ public class RedaccionCorrectionVerbatimTests
         var scopeServices = new ServiceCollection();
         scopeServices.AddSingleton<AppDbContext>(_ => new AppDbContext(dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(claude);
-        scopeServices.AddSingleton(promptBuilder);
+        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
-        var service = new RedaccionCorrectionService(db, scopeFactory, promptBuilder,
+        var service = new RedaccionCorrectionService(db, scopeFactory,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         await service.CorregirAsync(teacherId, studentId, correctionId);

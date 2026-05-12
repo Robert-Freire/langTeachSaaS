@@ -10,7 +10,7 @@ export interface CategoryStyle {
 
 const STYLES: Record<Exclude<CorrectionTagCategory, 'MuyBien'>, CategoryStyle> = {
   C: {
-    label: 'Cohesión',
+    label: 'Cohesión y Coherencia',
     underline: 'decoration-indigo-500',
     chipBg: 'bg-indigo-100',
     chipText: 'text-indigo-700',

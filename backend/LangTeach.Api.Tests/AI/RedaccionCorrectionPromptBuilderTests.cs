@@ -211,6 +211,18 @@ public class RedaccionCorrectionPromptBuilderTests
         req.SystemPrompt.Should().Contain("interesantes", "minimum-span example must show the corrected plural form");
     }
 
+    [Fact]
+    public void Build_SystemPromptContainsDiscourseOrganizationInCCategory()
+    {
+        // Issue #1226: C must cover discourse-level errors (paragraph structure, topic
+        // sentences, logical ordering) not just connectors, per EOI Coherencia y Cohesión rubric.
+        var req = _builder.Build(MakeCtx());
+
+        req.SystemPrompt.Should().Contain("Cohesión y Coherencia", "C must be labelled as CCoh, covering both connector and discourse errors");
+        req.SystemPrompt.Should().Contain("topic sentence", "C must include topic-sentence absence as a discourse-level example");
+        req.SystemPrompt.Should().Contain("logically ordered", "C must include logical ordering as a discourse-level error");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx() =>
         new("Texto.", null, Array.Empty<string>(), null);
 }
