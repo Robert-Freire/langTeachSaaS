@@ -614,6 +614,5 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
     private record FilterDecision(
         [property: JsonPropertyName("index")] int Index,
-        [property: JsonPropertyName("decision")] string Decision,
-        [property: JsonPropertyName("note")] string? Note);
+        [property: JsonPropertyName("decision")] string Decision);
 }
