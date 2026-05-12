@@ -96,10 +96,18 @@ public class ReflectionMapperTests
     }
 
     [Fact]
-    public void ParseSessionDate_NullOrInvalid_ReturnsTodayUtc()
+    public void ParseSessionDate_Null_ReturnsTodayUtc()
     {
         var before = DateTime.UtcNow.Date;
         var result = ReflectionMapper.ParseSessionDate(null);
+        Assert.True(result >= before);
+    }
+
+    [Fact]
+    public void ParseSessionDate_InvalidString_ReturnsTodayUtc()
+    {
+        var before = DateTime.UtcNow.Date;
+        var result = ReflectionMapper.ParseSessionDate("bad-date");
         Assert.True(result >= before);
     }
 

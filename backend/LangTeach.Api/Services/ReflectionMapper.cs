@@ -47,13 +47,17 @@ internal static class ReflectionMapper
         }
     }
 
-    internal static string? NormalizeSessionTitle(string? title) =>
-        title is { Length: > 120 } t ? t[..120] : title;
+    internal static string? NormalizeSessionTitle(string? title)
+    {
+        if (title is null) return null;
+        var trimmed = title.Trim();
+        return trimmed.Length > 120 ? trimmed[..120] : trimmed;
+    }
 
     internal static string? JoinGeneralNotes(string? areasToImprove, string? emotionalSignals)
     {
         var joined = string.Join("\n",
-            new[] { areasToImprove, emotionalSignals }
+            new[] { areasToImprove?.Trim(), emotionalSignals?.Trim() }
                 .Where(s => !string.IsNullOrWhiteSpace(s)));
         return string.IsNullOrEmpty(joined) ? null : joined;
     }
