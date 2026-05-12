@@ -3,9 +3,9 @@ using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
-public static class ReflectionMapper
+internal static class ReflectionMapper
 {
-    public static CreateSessionLogRequest ToSessionLogRequest(ExtractedReflectionDto extracted, string rawNotes)
+    internal static CreateSessionLogRequest ToSessionLogRequest(ExtractedReflectionDto extracted, string rawNotes)
     {
         var generalNotes = JoinGeneralNotes(extracted.AreasToImprove?.Value, extracted.EmotionalSignals);
 
@@ -25,7 +25,7 @@ public static class ReflectionMapper
         };
     }
 
-    public static IEnumerable<ProposalDto> ToSessionFieldProposals(
+    internal static IEnumerable<ProposalDto> ToSessionFieldProposals(
         ExtractedReflectionDto extracted,
         SessionLogDto? current,
         ProposalFieldsConfig config)
@@ -47,10 +47,10 @@ public static class ReflectionMapper
         }
     }
 
-    public static string? NormalizeSessionTitle(string? title) =>
+    internal static string? NormalizeSessionTitle(string? title) =>
         title is { Length: > 120 } t ? t[..120] : title;
 
-    public static string? JoinGeneralNotes(string? areasToImprove, string? emotionalSignals)
+    internal static string? JoinGeneralNotes(string? areasToImprove, string? emotionalSignals)
     {
         var joined = string.Join("\n",
             new[] { areasToImprove, emotionalSignals }
@@ -58,7 +58,7 @@ public static class ReflectionMapper
         return string.IsNullOrEmpty(joined) ? null : joined;
     }
 
-    public static DateTime ParseSessionDate(string? isoDate)
+    internal static DateTime ParseSessionDate(string? isoDate)
     {
         if (isoDate is not null &&
             DateOnly.TryParseExact(isoDate, "yyyy-MM-dd",
@@ -70,7 +70,7 @@ public static class ReflectionMapper
         return DateTime.UtcNow.Date;
     }
 
-    private static ProposalDto? MakeFieldProposal(
+    internal static ProposalDto? MakeFieldProposal(
         string type, string field, string label, string? oldValue, string? newValue)
     {
         if (string.IsNullOrWhiteSpace(newValue)) return null;

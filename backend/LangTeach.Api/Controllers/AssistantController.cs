@@ -254,8 +254,7 @@ public class AssistantController : ControllerBase
         string? oldValue,
         string? newValue)
     {
-        if (string.IsNullOrWhiteSpace(newValue)) return;
-        if (string.Equals(oldValue?.Trim(), newValue.Trim(), StringComparison.OrdinalIgnoreCase)) return;
-        proposals.Add(new ProposalDto(Guid.NewGuid().ToString(), type, field, label, oldValue, newValue));
+        var proposal = ReflectionMapper.MakeFieldProposal(type, field, label, oldValue, newValue);
+        if (proposal is not null) proposals.Add(proposal);
     }
 }
