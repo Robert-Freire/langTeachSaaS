@@ -356,6 +356,24 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         userPrompt.Should().NotMatchRegex(@"\[SER/ESTAR\].*\[1\]", "only the ser/estar tag gets the marker");
     }
 
+    [Theory]
+    [InlineData("A1")]
+    [InlineData("B1")]
+    [InlineData("C2")]
+    public void LevelFilterPrompt_CalibrationCue_AppearsInUserPrompt(string cefr)
+    {
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+
+        var tags = new[] { new LevelFilterTagInput("G", "hable", "Conjugación incorrecta.") };
+        var req = builder.Build(cefr, tags);
+
+        req.UserPrompt.Should().Contain($"Calibration guidance for {cefr}:",
+            $"calibration cue for {cefr} must be injected into the user prompt");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")

@@ -131,7 +131,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
     {
         try
         {
-            var cleaned = ContentJsonHelper.StripFences(json) ?? string.Empty;
+            var cleaned = ContentJsonHelper.StripFencesAndPreamble(json) ?? string.Empty;
             using var doc = JsonDocument.Parse(cleaned);
             var root = doc.RootElement;
 

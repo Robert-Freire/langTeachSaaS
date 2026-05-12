@@ -190,4 +190,15 @@ public interface IPedagogyConfigService
     /// (teaching-todo and teacher-followup detection cues for the Atelier prompt).
     /// </summary>
     IntentTriggersConfig IntentTriggers { get; }
+
+    /// <summary>
+    /// Returns the C/G/L/O correction category definitions, anti-pattern rules, and critical rules
+    /// loaded from correction-categories.json. Used to build the system prompt dynamically.
+    /// </summary>
+    CorrectionCategoriesFile GetCorrectionCategories();
+
+    /// <summary>
+    /// Returns the CEFR-specific calibration cue for the level filter prompt, or null if not defined.
+    /// </summary>
+    string? GetCorrectionCalibrationCue(string level);
 }

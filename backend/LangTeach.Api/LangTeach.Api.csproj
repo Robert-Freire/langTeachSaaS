@@ -28,6 +28,8 @@
     <EmbeddedResource Include="..\..\data\pedagogy\grammar-validation-rules.json" Link="Pedagogy\grammar-validation-rules.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\difficulty-taxonomy.json" Link="Pedagogy\difficulty-taxonomy.json" />
     <EmbeddedResource Include="..\..\data\pedagogy\prompt-fragments.json" Link="Pedagogy\prompt-fragments.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\correction-categories.json" Link="Pedagogy\correction-categories.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\correction-calibration.json" Link="Pedagogy\correction-calibration.json" />
     <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json" Link="Assistant\proposal-fields.json" />
     <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json" Link="Assistant\intent-triggers.json" />
   </ItemGroup>

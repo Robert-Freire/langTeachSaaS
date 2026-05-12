@@ -26,6 +26,8 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly SessionGapPolicyFile _sessionGapPolicy;
     private readonly FrozenSet<string> _difficultyCompetencies;
     private readonly FrozenSet<string> _difficultySeverities;
+    private readonly CorrectionCategoriesFile _correctionCategories;
+    private readonly Dictionary<string, string> _correctionCalibration;
     public PromptFragmentsConfig PromptFragments { get; }
     public ProposalFieldsConfig ProposalFields { get; }
     public IntentTriggersConfig IntentTriggers { get; }
@@ -136,6 +138,11 @@ public class PedagogyConfigService : IPedagogyConfigService
         IntentTriggers = LoadJson<IntentTriggersConfig>(assembly, "LangTeach.Api.Assistant.intent-triggers.json");
         ValidateIntentTriggers(IntentTriggers);
         ValidatePromptFragments(PromptFragments);
+
+        // Load correction categories and calibration cues
+        _correctionCategories = LoadJson<CorrectionCategoriesFile>(assembly, "LangTeach.Api.Pedagogy.correction-categories.json");
+        var calibrationFile = LoadJson<CorrectionCalibrationFile>(assembly, "LangTeach.Api.Pedagogy.correction-calibration.json");
+        _correctionCalibration = new Dictionary<string, string>(calibrationFile.CefrCalibration, StringComparer.OrdinalIgnoreCase);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -455,6 +462,11 @@ public class PedagogyConfigService : IPedagogyConfigService
         return new NoticingTaskGuidance(
             nt.TargetCategories, nt.QuestionComplexity, nt.Scaffolding, nt.Guidance);
     }
+
+    public CorrectionCategoriesFile GetCorrectionCategories() => _correctionCategories;
+
+    public string? GetCorrectionCalibrationCue(string level) =>
+        _correctionCalibration.TryGetValue(NormalizeLevel(level), out var cue) ? cue : null;
 
     // --- Private helpers ---
 

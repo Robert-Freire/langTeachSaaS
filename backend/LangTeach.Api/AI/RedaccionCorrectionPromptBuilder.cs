@@ -25,7 +25,7 @@ public class RedaccionCorrectionPromptBuilder
 
     public ClaudeRequest Build(RedaccionCorrectionPromptContext ctx)
     {
-        var system = SystemPrompt;
+        var system = BuildSystemPrompt(_pedagogy.GetCorrectionCategories());
         var user = BuildUserPrompt(ctx);
 
         _logger.LogDebug("PromptSystem | blockType=redaccion-correction chars={Chars}", system.Length);
@@ -41,39 +41,57 @@ public class RedaccionCorrectionPromptBuilder
         return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 16384, Temperature: 0);
     }
 
-    private const string SystemPrompt = """
-You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories.
+    private static string BuildSystemPrompt(CorrectionCategoriesFile config)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories.");
+        sb.AppendLine();
+        sb.AppendLine("CATEGORIES (use the exact code letter):");
+        sb.AppendLine();
 
-CATEGORIES (use the exact code letter):
+        foreach (var cat in config.Categories)
+        {
+            sb.Append($"- {cat.Code} ({cat.Name}): {cat.Description}");
+            if (cat.SubTypes.Length > 0)
+            {
+                sb.AppendLine();
+                foreach (var sub in cat.SubTypes)
+                    sb.AppendLine($"  {sub}");
+            }
+            else
+            {
+                sb.AppendLine();
+            }
+            foreach (var ex in cat.Examples)
+                sb.AppendLine($"  Example: \"{ex.Text}\" → {ex.Note} → {ex.Label}.");
+        }
 
-- C (Cohesión y Coherencia): connector-level or discourse-organization error.
-  Connector-level: missing connector, wrong connector, missing temporal marker, repetitive linking structure.
-  Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered.
-  Example (connector): "Fui al cine. Vi una película." → missing connector → C.
-  Example (discourse): "Hay muchos plásticos en el océano. El reciclaje es costoso. Por eso debemos reciclar más." → the paragraph lists facts before stating the main claim, leaving the reader uncertain what point is being made → C.
-- G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
-  Example: "*el problema es muy grande*" → if "el" is wrong gender for the noun, G.
-- L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).
-  Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register).
-  register mismatch: flag when the structure would be penalised in a written EOI task for that register (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures.
-- O (Ortografía): accents (tildes), misspelled words, punctuation.
-  Example: "*musica*" instead of "música" → O. "*ablar*" instead of "hablar" → O.
+        sb.AppendLine();
+        sb.AppendLine("CRITICAL RULES:");
+        sb.AppendLine();
 
-CRITICAL RULES:
+        foreach (var rule in config.CriticalRules)
+        {
+            sb.AppendLine($"- {rule.Preamble}");
+            foreach (var g in rule.Guidance)
+                sb.AppendLine($"  {g}");
+            foreach (var ex in rule.Examples)
+            {
+                sb.AppendLine($"  Example: \"{ex.Text}\" → this is a {ex.Situation}.");
+                sb.AppendLine($"  spannedText = \"{ex.SpannedText}\", category {ex.Category}, correctedForm = \"{ex.CorrectedForm}\". {ex.Note}");
+            }
+        }
 
-- ser/estar (never omit): a verb that violates the ser/estar distinction is always G at every level.
-  Use ser for general characteristics, classifications, and cultural norms
-  (es común, es importante, es normal, es difícil).
-  Use estar for temporary states and ongoing conditions.
-  If the correct form is a different word (e.g. "esta" corrected to "es"): tag G; spannedText is the verb only; correctedForm is the correct verb.
-  If only a tilde is missing (e.g. "esta" corrected to "está"): tag O; spannedText is the word only; correctedForm is the accented form.
-  Example: "Aquí esta bastante común" → this is a wrong-word error, not a tilde case.
-  spannedText = "esta", category G, correctedForm = "es". Never span the surrounding phrase.
-- A wrong preposition is G, NEVER L.
-- A literal translation from the student's L1 is L, NEVER G.
-- A missing or wrong connector is C, NEVER G.
-- An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G.
+        foreach (var rule in config.AntiPatternRules)
+            sb.AppendLine($"- {rule}");
 
+        sb.AppendLine();
+        sb.AppendLine(OutputContract);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private const string OutputContract = """
 OUTPUT CONTRACT:
 
 Emit raw JSON only. Start directly with {. No prose before or after. No markdown fences. The JSON must match exactly:
