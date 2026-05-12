@@ -39,6 +39,8 @@ const STYLES: Record<Exclude<CorrectionTagCategory, 'MuyBien'>, CategoryStyle> =
   },
 }
 
+export const CHIP_CATEGORIES = Object.keys(STYLES) as Array<Exclude<CorrectionTagCategory, 'MuyBien'>>
+
 export function getCategoryStyle(
   category: Exclude<CorrectionTagCategory, 'MuyBien'>,
 ): CategoryStyle {
