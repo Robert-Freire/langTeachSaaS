@@ -4,7 +4,6 @@ using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
-using LangTeach.Api.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -120,7 +119,7 @@ public static class CorrectionTestHarness
         {
             using var check = new AppDbContext(dbOptions);
             var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == correctionId);
-            if (row?.Status == "Corregida")
+            if (row?.Status == CorrectionStatus.Corregida)
             {
                 detail = CorrectionDtoMapper.ToDetail(row, row.Tags);
                 break;

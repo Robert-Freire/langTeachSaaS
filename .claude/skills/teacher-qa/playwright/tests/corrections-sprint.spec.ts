@@ -6,7 +6,7 @@
  *   2. Navigates to the A2 student Redacciones tab
  *   3. Creates corrections for both students via the API (same seed text at two CEFR levels)
  *   4. Triggers Corregir for both via the API
- *   5. Polls for Corregida status (up to 3 minutes per correction)
+ *   5. Polls for Corregida status (up to 3 minutes per correction, run concurrently)
  *   6. Asserts: (a) Corregida status reached, (b) at least one G tag present,
  *      (c) A2/B1 moat — tag count or category distribution must differ
  *
@@ -38,6 +38,12 @@ const ASSIGNMENT_PROMPT = 'Describe tu fin de semana.'
 const CORREGIDA_POLL_INTERVAL_MS = 3000
 const CORREGIDA_TIMEOUT_MS = 180_000
 
+interface CorrectionDetail {
+  id: string
+  status: string
+  tags: Array<{ category: string; spannedText?: string; explanation?: string }>
+}
+
 // API calls go through the page context so Auth0 token in localStorage is accessible.
 // The frontend on port 5175 reverse-proxies /api to the backend on port 5176.
 async function apiCall<T>(
@@ -45,9 +51,10 @@ async function apiCall<T>(
   method: 'GET' | 'POST',
   path: string,
   body?: unknown,
+  extraOkStatuses: number[] = [],
 ): Promise<T> {
   return page.evaluate(
-    async ({ method, path, body }) => {
+    async ({ method, path, body, extraOkStatuses }) => {
       const auth0KeyPrefix = '@@auth0spajs@@'
       const cacheKey = Object.keys(localStorage).find(
         k => k.startsWith(auth0KeyPrefix) && !k.endsWith('::@@user@@'),
@@ -67,21 +74,16 @@ async function apiCall<T>(
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
       })
-      if (!res.ok) {
+      if (!res.ok && !extraOkStatuses.includes(res.status)) {
         const text = await res.text()
         throw new Error(`${method} ${path} failed: ${res.status} ${text}`)
       }
-      if (res.status === 204) return null as unknown as T
+      if (res.status === 204 || (res.status === 409 && extraOkStatuses.includes(409)))
+        return null as unknown as T
       return res.json() as Promise<T>
     },
-    { method, path, body },
+    { method, path, body, extraOkStatuses },
   )
-}
-
-interface CorrectionDetail {
-  id: string
-  status: string
-  tags: Array<{ category: string; spannedText?: string; explanation?: string }>
 }
 
 async function createCorrection(page: Page, studentId: string): Promise<string> {
@@ -95,29 +97,13 @@ async function createCorrection(page: Page, studentId: string): Promise<string> 
 }
 
 async function triggerCorregir(page: Page, studentId: string, correctionId: string): Promise<void> {
-  await page.evaluate(
-    async ({ studentId, correctionId }) => {
-      const auth0KeyPrefix = '@@auth0spajs@@'
-      const cacheKey = Object.keys(localStorage).find(
-        k => k.startsWith(auth0KeyPrefix) && !k.endsWith('::@@user@@'),
-      )
-      if (!cacheKey) throw new Error('Auth0 token cache key not found')
-      const raw = localStorage.getItem(cacheKey)
-      if (!raw) throw new Error('Auth0 token cache empty')
-      const token = JSON.parse(raw)?.body?.access_token
-      if (!token) throw new Error('No access_token in Auth0 cache')
-
-      const res = await fetch(`/api/students/${studentId}/corrections/${correctionId}/corregir`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      // 200 = corregir accepted; 409 = already running (both are OK)
-      if (!res.ok && res.status !== 409) {
-        const text = await res.text()
-        throw new Error(`POST /corregir failed: ${res.status} ${text}`)
-      }
-    },
-    { studentId, correctionId },
+  // 200 = corregir accepted; 409 = already running (both are OK)
+  await apiCall<null>(
+    page,
+    'POST',
+    `/api/students/${studentId}/corrections/${correctionId}/corregir`,
+    undefined,
+    [409],
   )
 }
 
@@ -172,8 +158,7 @@ test('Corrections Sprint — A2/B1 moat and tag coverage', async ({ browser }) =
 
   // 2. Navigate to A2 student's Redacciones tab (UI coverage)
   await page.goto(`${baseURL}/students/${a2StudentId}?tab=redacciones`)
-  await page.waitForLoadState('networkidle', { timeout: 15000 })
-  await expect(page.getByTestId('redacciones-tab')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByTestId('redacciones-tab')).toBeVisible({ timeout: 15000 })
 
   // 3. Create corrections for both students via the API (same seed text)
   const a2CorrectionId = await createCorrection(page, a2StudentId)
@@ -190,14 +175,14 @@ test('Corrections Sprint — A2/B1 moat and tag coverage', async ({ browser }) =
   await page.goto(`${baseURL}/students/${a2StudentId}/redacciones/${a2CorrectionId}`)
   await expect(page.locator('h1')).toBeVisible({ timeout: 10000 })
 
-  // 5. Poll both corrections for Corregida status (real Claude API — up to 3 min each)
+  // 5. Poll both corrections for Corregida status (real Claude API — up to 3 min each).
   // Run concurrently so total wait is bounded by the slower of the two, not both summed.
   const [a2Detail, b1Detail] = await Promise.all([
     pollForCorregida(page, a2StudentId, a2CorrectionId),
     pollForCorregida(page, b1StudentId, b1CorrectionId),
   ])
 
-  // Navigate to A2 correction detail to capture final state (UI coverage)
+  // Navigate to the A2 correction detail to show the final marked-up result (UI coverage)
   await page.goto(`${baseURL}/students/${a2StudentId}/redacciones/${a2CorrectionId}`)
   await expect(page.getByTestId('marked-up-text')).toBeVisible({ timeout: 10000 })
 
