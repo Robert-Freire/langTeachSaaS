@@ -106,7 +106,8 @@ public static class CorrectionTestHarness
         scopeServices.AddSingleton<IClaudeClient>(claude);
         scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
         scopeServices.AddLogging();
-        var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
+        var scopeSp = scopeServices.BuildServiceProvider();
+        var scopeFactory = new FakeServiceScopeFactory(scopeSp);
 
         var service = new RedaccionCorrectionService(db, scopeFactory,
             NullLogger<RedaccionCorrectionService>.Instance);
@@ -129,7 +130,7 @@ public static class CorrectionTestHarness
         if (detail is null)
             throw new TimeoutException($"Correction {correctionId} never reached Corregida in 120s.");
 
-        return new CorrectionRun(detail, db, sp);
+        return new CorrectionRun(detail, db, sp, scopeSp);
     }
 }
 
@@ -139,11 +140,13 @@ public static class CorrectionTestHarness
 public sealed record CorrectionRun(
     CorrectionDetailDto Result,
     AppDbContext Db,
-    ServiceProvider ServiceProvider) : IAsyncDisposable
+    ServiceProvider ServiceProvider,
+    ServiceProvider ScopeServiceProvider) : IAsyncDisposable
 {
     public async ValueTask DisposeAsync()
     {
         await Db.DisposeAsync();
+        await ScopeServiceProvider.DisposeAsync();
         await ServiceProvider.DisposeAsync();
     }
 }
