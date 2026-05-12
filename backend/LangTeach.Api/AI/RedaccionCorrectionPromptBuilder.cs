@@ -98,7 +98,7 @@ Emit raw JSON only. Start directly with {. No prose before or after. No markdown
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
 - startIndex and endIndex are Unicode character offsets into the student text between the markers (0-based, end-exclusive).
 - DO NOT derive offsets by counting characters forward from the start of the text. Counting is unreliable near accented characters (é, ó, á, ñ, ü, etc.) because your internal position tracking may not match the host's character indices.
-- CORRECT procedure for every tag:
+- CORRECT procedure for every tag (internal reasoning only -- output nothing for these steps):
   1. Decide which substring of the student text to mark; that substring is spannedText.
   2. Write the explanation.
   3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
@@ -113,7 +113,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   Example: in "Los libros son interesante", spannedText must be "interesante" (the wrong
   adjective) and correctedForm must be "interesantes", not "Los libros son interesante"
   or any larger span.
-- Tags MUST NOT overlap. Sort tags by startIndex.
+- Sort tags by startIndex.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)

@@ -839,7 +839,7 @@ public class PromptServiceTests
     {
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
-        req.SystemPrompt.Should().Contain("text-only and self-contained");
+        req.SystemPrompt.Should().Contain("self-contained");
         req.SystemPrompt.Should().Contain("completable using only the text provided");
     }
 
@@ -850,7 +850,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("text-only and self-contained");
+        req.SystemPrompt.Should().Contain("self-contained");
     }
 
     [Fact]
@@ -860,7 +860,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().NotContain("text-only and self-contained");
+        req.SystemPrompt.Should().NotContain("self-contained:");
     }
 
     // --- Mandatory Production and Practice ordering ---

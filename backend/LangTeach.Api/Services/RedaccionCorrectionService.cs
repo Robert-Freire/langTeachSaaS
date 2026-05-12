@@ -564,8 +564,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 case "soften":
                 case "muybien":
                     // Convert to MuyBien: highlights the attempt without penalising the student.
-                    // decision.Note (the warm Spanish praise) is not persisted to DB in this
-                    // version; CorrectionTag has no note column. Pending schema enhancement.
                     result.Add(tag with
                     {
                         Category = CorrectionTagCategory.MuyBien,
