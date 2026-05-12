@@ -24,7 +24,7 @@ public class CorrectionService : ICorrectionService
             return null;
 
         var rows = await _db.Corrections
-            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && c.DeletedAt == null)
+            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && !c.IsDeleted)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new CorrectionSummaryDto(c.Id, c.AssignmentTitle, c.Status, c.CreatedAt, c.CorrectedAt))
             .ToListAsync(cancellationToken);
@@ -74,7 +74,7 @@ public class CorrectionService : ICorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         return correction is null ? null : ToDetail(correction, correction.Tags);
@@ -89,7 +89,7 @@ public class CorrectionService : ICorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         if (correction is null) return null;
@@ -131,13 +131,13 @@ public class CorrectionService : ICorrectionService
             c => c.Id == correctionId
               && c.TeacherId == teacherId
               && c.StudentId == studentId
-              && c.DeletedAt == null,
+              && !c.IsDeleted,
             cancellationToken);
 
         if (correction is null) return false;
 
-        correction.DeletedAt = DateTime.UtcNow;
-        correction.UpdatedAt = correction.DeletedAt.Value;
+        correction.IsDeleted = true;
+        correction.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -151,7 +151,7 @@ public class CorrectionService : ICorrectionService
             where c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null
+                  && !c.IsDeleted
                   && s.TeacherId == teacherId
                   && !s.IsDeleted
             select new { Correction = c, StudentName = s.Name }

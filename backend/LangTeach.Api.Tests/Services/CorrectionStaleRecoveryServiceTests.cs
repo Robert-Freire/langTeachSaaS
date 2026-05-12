@@ -125,7 +125,8 @@ public class CorrectionStaleRecoveryServiceTests : IDisposable
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL,
                 CorrectedAt TEXT,
-                DeletedAt TEXT
+                IsDeleted INTEGER NOT NULL DEFAULT 0,
+                RowVersion BLOB NOT NULL DEFAULT (randomblob(8))
             );
             CREATE TABLE IF NOT EXISTS CorrectionTags (
                 Id TEXT NOT NULL PRIMARY KEY,

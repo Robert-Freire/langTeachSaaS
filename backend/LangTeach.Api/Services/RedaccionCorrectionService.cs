@@ -42,7 +42,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         if (correction is null)
@@ -62,7 +62,19 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         correction.Status = CorrectionStatus.Corrigiendo;
         correction.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another concurrent request won the race and already set Corrigiendo (or later).
+            // Re-query with Include so Tags are also fresh (ReloadAsync only refreshes scalars).
+            correction = await _db.Corrections
+                .Include(c => c.Tags)
+                .FirstAsync(c => c.Id == correctionId, cancellationToken);
+            return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
+        }
 
         var outerLogger = _logger;
         _ = Task.Run(async () =>
@@ -89,11 +101,14 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     using var failScope = _scopeFactory.CreateScope();
                     var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
                     if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
                     {
                         failRow.Status = CorrectionStatus.Entregada;
                         failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: if a race occurs the outer
+                        // catch (Exception saveEx) logs it, and CorrectionStaleRecoveryService
+                        // will reset the row on the next timer tick.
                         await failDb.SaveChangesAsync();
                     }
                 }
@@ -114,11 +129,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     using var failScope = _scopeFactory.CreateScope();
                     var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
                     if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
                     {
                         failRow.Status = CorrectionStatus.CorreccionFallida;
                         failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: outer catch logs it,
+                        // and CorrectionStaleRecoveryService resets the row on the next tick.
                         await failDb.SaveChangesAsync();
                     }
                 }
@@ -141,7 +158,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
 
         if (correction is null)
         {
@@ -270,7 +287,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             StudentText: studentText,
             StudentL1: l1,
             StudentDifficulties: difficulties,
-            AssignmentPrompt: correction.AssignmentPrompt);
+            AssignmentPrompt: InputSanitizer.Sanitize(correction.AssignmentPrompt));
     }
 
     private static string? ParseFirstString(string json)

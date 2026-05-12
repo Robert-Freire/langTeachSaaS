@@ -141,7 +141,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 
         if (!string.IsNullOrWhiteSpace(ctx.AssignmentPrompt))
         {
-            sb.AppendLine($"ASSIGNMENT CONTEXT: {InputSanitizer.Sanitize(ctx.AssignmentPrompt)}");
+            sb.AppendLine($"ASSIGNMENT CONTEXT: {ctx.AssignmentPrompt}");
             sb.AppendLine();
         }
 

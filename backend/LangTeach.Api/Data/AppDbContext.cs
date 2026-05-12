@@ -368,19 +368,18 @@ public class AppDbContext : DbContext
         });
 
         // Correction — cascade from Teacher; NoAction from Student/Lesson/SessionLog
-        // (avoids SQL Server multi-cascade-path errors). Soft-delete via DeletedAt timestamp
-        // (null = active). Unidirectional nav: WithMany() with no argument so the principal
-        // entities (Student, Teacher, Lesson, SessionLog) do not need a Corrections collection.
-        // CHECK constraints are a backstop against non-API writes (the AI generation service
-        // will write Status/Category directly once #PROMPT_SERVICE lands).
+        // (avoids SQL Server multi-cascade-path errors). Soft-delete via IsDeleted bool
+        // (matches all other entities). Unidirectional nav: WithMany() with no argument so the
+        // principal entities (Student, Teacher, Lesson, SessionLog) do not need a Corrections
+        // collection. CHECK constraints are a backstop against non-API writes.
         modelBuilder.Entity<Correction>(e =>
         {
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_Corrections_Status",
                 "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')"));
             e.HasKey(c => c.Id);
-            e.HasIndex(c => new { c.TeacherId, c.DeletedAt });
-            e.HasIndex(c => new { c.StudentId, c.DeletedAt });
+            e.HasIndex(c => new { c.TeacherId, c.IsDeleted });
+            e.HasIndex(c => new { c.StudentId, c.IsDeleted });
             e.HasOne<Teacher>()
              .WithMany()
              .HasForeignKey(c => c.TeacherId)
@@ -399,6 +398,8 @@ public class AppDbContext : DbContext
              .HasForeignKey(c => c.SessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            e.Property(c => c.IsDeleted).HasDefaultValue(false);
+            e.Property(c => c.RowVersion).IsRowVersion();
             e.Property(c => c.SchemaVersion).HasDefaultValue(1);
             e.Property(c => c.Status).HasMaxLength(20).HasDefaultValue(CorrectionStatus.Pendiente).IsRequired();
             e.Property(c => c.AssignmentTitle).HasMaxLength(200).IsRequired();

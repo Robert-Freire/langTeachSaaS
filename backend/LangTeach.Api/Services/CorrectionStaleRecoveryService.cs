@@ -60,7 +60,7 @@ public class CorrectionStaleRecoveryService : BackgroundService
         // WHERE evaluation and the UPDATE is not overwritten.
         var now = DateTime.UtcNow;
         var count = await db.Corrections
-            .Where(c => c.DeletedAt == null
+            .Where(c => !c.IsDeleted
                      && c.Status == CorrectionStatus.Corrigiendo
                      && c.UpdatedAt < staleThreshold)
             .ExecuteUpdateAsync(setters => setters

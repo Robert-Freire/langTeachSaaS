@@ -78,7 +78,7 @@ Every input tag must appear in the output exactly once, identified by its index.
             sb.AppendLine($"Grammar out of scope for {cefr}: {string.Join(", ", scope.OutOfScope)}");
 
         if (!string.IsNullOrWhiteSpace(assignmentPrompt))
-            sb.AppendLine($"Assignment context: {SanitizeForPrompt(assignmentPrompt)}");
+            sb.AppendLine($"Assignment context: {assignmentPrompt}");
 
         sb.AppendLine();
         sb.AppendLine("Tags to classify:");
