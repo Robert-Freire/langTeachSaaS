@@ -15,6 +15,11 @@
           "label": "C"
         },
         {
+          "text": "Fui al mercado y compré fruta. Comí en casa. Después estudié.",
+          "note": "three clauses juxtaposed without connectors showing sequence or contrast at B1",
+          "label": "C"
+        },
+        {
           "text": "Hay muchos plásticos en el océano. El reciclaje es costoso. Por eso debemos reciclar más.",
           "note": "the paragraph lists facts before stating the main claim, leaving the reader uncertain what point is being made",
           "label": "C"
@@ -24,7 +29,7 @@
     {
       "code": "G",
       "name": "Gramática",
-      "description": "verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.",
+      "description": "verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles. See also: ser/estar distinction (criticalRules).",
       "subTypes": [],
       "examples": [
         {
@@ -39,7 +44,7 @@
       "name": "Léxico",
       "description": "wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).",
       "subTypes": [
-        "register mismatch: flag when the structure would be penalised in a written EOI task for that register (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures."
+        "register mismatch: only flag when the EOI task rubric specifies a register and the mismatch would cost marks (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures."
       ],
       "examples": [
         {
@@ -49,7 +54,7 @@
         },
         {
           "text": "Si te invitaran",
-          "note": "over-formal for a casual informal letter register",
+          "note": "over-formal for a casual informal letter register when the task rubric penalises register mismatch",
           "label": "L"
         }
       ]
@@ -85,12 +90,20 @@
       ],
       "examples": [
         {
-          "situation": "wrong-word (not a tilde case)",
+          "situation": "wrong-word: general state described with estar instead of ser",
+          "text": "La situación esta complicada",
+          "spannedText": "esta",
+          "category": "G",
+          "correctedForm": "es",
+          "note": "Never span the surrounding phrase."
+        },
+        {
+          "situation": "wrong-word: locative context, estar needed, not a tilde case",
           "text": "Aquí esta bastante común",
           "spannedText": "esta",
           "category": "G",
           "correctedForm": "es",
-          "note": "spannedText = \"esta\", category G, correctedForm = \"es\". Never span the surrounding phrase."
+          "note": "Never span the surrounding phrase."
         }
       ]
     }

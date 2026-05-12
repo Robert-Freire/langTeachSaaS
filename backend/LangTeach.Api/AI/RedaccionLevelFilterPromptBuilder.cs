@@ -79,7 +79,10 @@ Every input tag must appear in the output exactly once, identified by its index.
             sb.AppendLine($"Grammar out of scope for {cefr}: {string.Join(", ", scope.OutOfScope)}");
 
         if (!string.IsNullOrWhiteSpace(calibrationCue))
-            sb.AppendLine($"Calibration guidance for {cefr}: {calibrationCue}");
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Level calibration for {cefr}: {calibrationCue}");
+        }
 
         if (!string.IsNullOrWhiteSpace(assignmentPrompt))
             sb.AppendLine($"Assignment context: {SanitizeForPrompt(assignmentPrompt)}");

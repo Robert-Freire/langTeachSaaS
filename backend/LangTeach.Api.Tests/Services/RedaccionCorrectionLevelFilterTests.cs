@@ -370,7 +370,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         var tags = new[] { new LevelFilterTagInput("G", "hable", "Conjugación incorrecta.") };
         var req = builder.Build(cefr, tags);
 
-        req.UserPrompt.Should().Contain($"Calibration guidance for {cefr}:",
+        req.UserPrompt.Should().Contain($"Level calibration for {cefr}:",
             $"calibration cue for {cefr} must be injected into the user prompt");
     }
 
