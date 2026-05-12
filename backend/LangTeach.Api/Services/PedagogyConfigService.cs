@@ -227,7 +227,7 @@ public class PedagogyConfigService : IPedagogyConfigService
         var normalLevel = NormalizeLevel(level);
         if (!_cefrRules.TryGetValue(normalLevel, out var rule))
             return new GrammarScope([], []);
-        return new GrammarScope(rule.GrammarInScope, rule.GrammarOutOfScope);
+        return new GrammarScope(rule.GrammarInScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling);
     }
 
     public GuidedWritingGuidance GetGuidedWritingGuidance(string level)

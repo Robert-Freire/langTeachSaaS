@@ -2,28 +2,30 @@
   "level": "B1",
   "grammarInScope": [
     "Preterito imperfecto y su contraste con indefinido (habito vs evento, descripcion vs accion)",
-    "Preterito pluscuamperfecto",
     "Futuro simple (irregulares incluidos)",
     "Condicional simple",
-    "Subjuntivo presente (introduccion): ojala, quiero que, cuando + subjuntivo, para que, es necesario que",
     "Imperativo negativo",
     "Oraciones temporales (cuando, mientras, antes de que, despues de que)",
     "Oraciones causales y finales (porque, como, para que, a fin de que)",
-    "Estilo indirecto basico (dijo que + imperfecto)",
     "Conectores avanzados: sin embargo, no obstante, en primer lugar, por un lado/por otro, en conclusion",
     "Perifrasis: llevar + gerundio, dejar de + infinitivo, seguir + gerundio, volver a + infinitivo",
     "Oraciones relativas con indicativo (que, donde, quien)",
     "Expresar condiciones reales (si + presente, futuro)",
+    "Preterito pluscuamperfecto (B1.2 -- Grammar Focus target only after imperfecto/indefinido contrast is consolidated)",
+    "Subjuntivo presente introduccion: ojala, quiero que, cuando + subjuntivo, para que, es necesario que (B1.2 -- Grammar Focus target only after core B1.1 tenses are mastered)",
+    "Estilo indirecto basico con imperfecto indicativo: dijo que + imperfecto (B1.2 -- not imperfecto de subjuntivo, which is B2)",
     "Expresar hipotesis (si + imperfecto de subjuntivo, condicional) (B1.2)"
   ],
   "grammarOutOfScope": [
-    "Subjuntivo imperfecto en todos sus usos (solo la condicional irreal se introduce en B1.2)",
+    "Subjuntivo imperfecto en todos sus usos excepto la condicional irreal (B1.2)",
     "Subjuntivo perfecto y pluscuamperfecto",
     "Oraciones concesivas complejas (aunque + subjuntivo, se ve al final de B1.2/inicio de B2)",
     "Voz pasiva con ser (B2)",
     "Construcciones impersonales complejas",
-    "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)"
+    "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)",
+    "Subjuntivo imperfecto en estilo indirecto (dijo que enviara) -- B2, not B1"
   ],
+  "grammarFocusCeiling": "Grammar Focus targets for B1.1 students are restricted to: imperfecto/indefinido contrast, futuro simple, condicional simple, imperativo negativo, real conditions (si + presente), oraciones temporales/causales, conectores, and perifrasis verbales. Pluscuamperfecto, subjuntivo (any mood), and indirect-speech tense shifts are B1.2 structures; they become available as Grammar Focus targets only when teacher notes confirm prior mastery.",
   "appropriateExerciseTypes": [
     "GR-01",
     "GR-02",

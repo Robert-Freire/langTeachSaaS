@@ -21,7 +21,8 @@ public record CefrLevelRules(
     string ErrorCorrection,
     string ScaffoldingDefault,
     GuidedWritingConfig? GuidedWriting = null,
-    NoticingTaskConfig? NoticingTask = null
+    NoticingTaskConfig? NoticingTask = null,
+    string? GrammarFocusCeiling = null
 );
 
 public record GuidedWritingConfig(

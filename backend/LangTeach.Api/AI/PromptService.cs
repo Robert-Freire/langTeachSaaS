@@ -234,6 +234,8 @@ public class PromptService : IPromptService
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
         if (scope.OutOfScope.Length > 0)
             sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
+        if (!string.IsNullOrWhiteSpace(scope.CeilingNote))
+            sb.AppendLine($"GRAMMAR FOCUS CEILING: {scope.CeilingNote}");
         return sb.ToString().TrimEnd();
     }
 
