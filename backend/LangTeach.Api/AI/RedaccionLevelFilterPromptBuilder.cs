@@ -24,7 +24,8 @@ public class RedaccionLevelFilterPromptBuilder
     public ClaudeRequest Build(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null)
     {
         var scope = _pedagogy.GetGrammarScope(cefr);
-        var user = BuildUserPrompt(cefr, scope, tags, assignmentPrompt);
+        var calibrationCue = _pedagogy.GetCorrectionCalibrationCue(cefr);
+        var user = BuildUserPrompt(cefr, scope, tags, assignmentPrompt, calibrationCue);
 
         _logger.LogDebug("PromptSystem | blockType=redaccion-level-filter\n{SystemPrompt}", SystemPrompt);
         _logger.LogDebug(
@@ -64,7 +65,7 @@ Emit raw JSON only. No prose. No markdown fences. The JSON must be an array:
 Every input tag must appear in the output exactly once, identified by its index.
 """;
 
-    private static string BuildUserPrompt(string cefr, GrammarScope scope, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt)
+    private static string BuildUserPrompt(string cefr, GrammarScope scope, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt, string? calibrationCue = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"Student CEFR level: {cefr}");
@@ -76,6 +77,12 @@ Every input tag must appear in the output exactly once, identified by its index.
 
         if (scope.OutOfScope.Length > 0)
             sb.AppendLine($"Grammar out of scope for {cefr}: {string.Join(", ", scope.OutOfScope)}");
+
+        if (!string.IsNullOrWhiteSpace(calibrationCue))
+        {
+            sb.AppendLine();
+            sb.AppendLine($"Level calibration for {cefr}: {calibrationCue}");
+        }
 
         if (!string.IsNullOrWhiteSpace(assignmentPrompt))
             sb.AppendLine($"Assignment context: {assignmentPrompt}");

@@ -26,6 +26,8 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly SessionGapPolicyFile _sessionGapPolicy;
     private readonly FrozenSet<string> _difficultyCompetencies;
     private readonly FrozenSet<string> _difficultySeverities;
+    private readonly CorrectionCategoriesFile _correctionCategories;
+    private readonly Dictionary<string, string> _correctionCalibration;
     public PromptFragmentsConfig PromptFragments { get; }
     public ProposalFieldsConfig ProposalFields { get; }
     public IntentTriggersConfig IntentTriggers { get; }
@@ -136,6 +138,13 @@ public class PedagogyConfigService : IPedagogyConfigService
         IntentTriggers = LoadJson<IntentTriggersConfig>(assembly, "LangTeach.Api.Assistant.intent-triggers.json");
         ValidateIntentTriggers(IntentTriggers);
         ValidatePromptFragments(PromptFragments);
+
+        // Load correction categories and calibration cues
+        _correctionCategories = LoadJson<CorrectionCategoriesFile>(assembly, "LangTeach.Api.Pedagogy.correction-categories.json");
+        ValidateCorrectionCategories(_correctionCategories);
+        var calibrationFile = LoadJson<CorrectionCalibrationFile>(assembly, "LangTeach.Api.Pedagogy.correction-calibration.json");
+        _correctionCalibration = new Dictionary<string, string>(calibrationFile.CefrCalibration, StringComparer.OrdinalIgnoreCase);
+        ValidateCorrectionCalibration(_correctionCalibration);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -456,6 +465,11 @@ public class PedagogyConfigService : IPedagogyConfigService
             nt.TargetCategories, nt.QuestionComplexity, nt.Scaffolding, nt.Guidance);
     }
 
+    public CorrectionCategoriesFile GetCorrectionCategories() => _correctionCategories;
+
+    public string? GetCorrectionCalibrationCue(string level) =>
+        _correctionCalibration.TryGetValue(NormalizeLevel(level), out var cue) ? cue : null;
+
     // --- Private helpers ---
 
     private static readonly HashSet<string> KnownPromptTokens = new(StringComparer.Ordinal)
@@ -525,6 +539,68 @@ public class PedagogyConfigService : IPedagogyConfigService
             throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teachingTodos has a blank entry.");
         if (c.TeacherFollowups.Any(string.IsNullOrWhiteSpace))
             throw new InvalidOperationException("PedagogyConfigService: intent-triggers.json teacherFollowups has a blank entry.");
+    }
+
+    private static readonly HashSet<string> ValidCorrectionCategoryCodes = new(StringComparer.OrdinalIgnoreCase)
+        { "C", "G", "L", "O" };
+
+    private static readonly HashSet<string> ValidCefrLevels = new(StringComparer.OrdinalIgnoreCase)
+        { "A1", "A2", "B1", "B2", "C1", "C2" };
+
+    internal static void ValidateCorrectionCategories(CorrectionCategoriesFile f)
+    {
+        if (f.Categories is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json categories is empty.");
+        if (f.CriticalRules is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json criticalRules is empty.");
+        if (f.AntiPatternRules is not { Length: > 0 })
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json antiPatternRules is empty.");
+
+        var codes = f.Categories.Select(c => c.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var missing = ValidCorrectionCategoryCodes.Except(codes).ToList();
+        var extra = codes.Except(ValidCorrectionCategoryCodes).ToList();
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"PedagogyConfigService: correction-categories.json missing required codes: {string.Join(", ", missing)}.");
+        if (extra.Count > 0)
+            throw new InvalidOperationException(
+                $"PedagogyConfigService: correction-categories.json has unknown codes: {string.Join(", ", extra)}.");
+
+        if (f.Categories.Any(c => string.IsNullOrWhiteSpace(c.Code) || string.IsNullOrWhiteSpace(c.Name) || string.IsNullOrWhiteSpace(c.Description)))
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a category with a blank Code, Name, or Description.");
+
+        foreach (var cat in f.Categories)
+        {
+            if (cat.Examples is not { Length: > 0 })
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has no examples.");
+            if (cat.Examples.Any(e => string.IsNullOrWhiteSpace(e.Text) || string.IsNullOrWhiteSpace(e.Note) || string.IsNullOrWhiteSpace(e.Label)))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has an example with a blank Text, Note, or Label.");
+        }
+
+        if (f.CriticalRules.Any(r => string.IsNullOrWhiteSpace(r.Topic) || string.IsNullOrWhiteSpace(r.Preamble)))
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a criticalRule with a blank Topic or Preamble.");
+        foreach (var rule in f.CriticalRules)
+        {
+            if (rule.Examples.Any(e => string.IsNullOrWhiteSpace(e.Situation) || string.IsNullOrWhiteSpace(e.Text)
+                || string.IsNullOrWhiteSpace(e.SpannedText) || string.IsNullOrWhiteSpace(e.Category)
+                || string.IsNullOrWhiteSpace(e.CorrectedForm) || string.IsNullOrWhiteSpace(e.Note)))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: correction-categories.json criticalRule '{rule.Topic}' has an example with a blank required field.");
+        }
+    }
+
+    internal static void ValidateCorrectionCalibration(Dictionary<string, string> calibration)
+    {
+        var missing = ValidCefrLevels.Except(calibration.Keys, StringComparer.OrdinalIgnoreCase).ToList();
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"PedagogyConfigService: correction-calibration.json missing CEFR levels: {string.Join(", ", missing)}.");
+        var extra = calibration.Keys.Except(ValidCefrLevels, StringComparer.OrdinalIgnoreCase).ToList();
+        if (extra.Count > 0)
+            throw new InvalidOperationException(
+                $"PedagogyConfigService: correction-calibration.json has unknown CEFR level keys: {string.Join(", ", extra)}. Valid levels: A1, A2, B1, B2, C1, C2.");
     }
 
     private static void ValidatePromptFragments(PromptFragmentsConfig f)
