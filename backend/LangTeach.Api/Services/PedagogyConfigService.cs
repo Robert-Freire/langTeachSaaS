@@ -566,11 +566,28 @@ public class PedagogyConfigService : IPedagogyConfigService
             throw new InvalidOperationException(
                 $"PedagogyConfigService: correction-categories.json has unknown codes: {string.Join(", ", extra)}.");
 
+        if (f.Categories.Any(c => string.IsNullOrWhiteSpace(c.Code) || string.IsNullOrWhiteSpace(c.Name) || string.IsNullOrWhiteSpace(c.Description)))
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a category with a blank Code, Name, or Description.");
+
         foreach (var cat in f.Categories)
         {
             if (cat.Examples is not { Length: > 0 })
                 throw new InvalidOperationException(
                     $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has no examples.");
+            if (cat.Examples.Any(e => string.IsNullOrWhiteSpace(e.Text) || string.IsNullOrWhiteSpace(e.Note) || string.IsNullOrWhiteSpace(e.Label)))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has an example with a blank Text, Note, or Label.");
+        }
+
+        if (f.CriticalRules.Any(r => string.IsNullOrWhiteSpace(r.Topic) || string.IsNullOrWhiteSpace(r.Preamble)))
+            throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a criticalRule with a blank Topic or Preamble.");
+        foreach (var rule in f.CriticalRules)
+        {
+            if (rule.Examples.Any(e => string.IsNullOrWhiteSpace(e.Situation) || string.IsNullOrWhiteSpace(e.Text)
+                || string.IsNullOrWhiteSpace(e.SpannedText) || string.IsNullOrWhiteSpace(e.Category)
+                || string.IsNullOrWhiteSpace(e.CorrectedForm) || string.IsNullOrWhiteSpace(e.Note)))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: correction-categories.json criticalRule '{rule.Topic}' has an example with a blank required field.");
         }
     }
 
