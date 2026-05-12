@@ -13,6 +13,8 @@
  * Run: npx playwright test tests/corrections-sprint.spec.ts --config playwright.config.ts
  */
 import { test, expect, Page } from '@playwright/test'
+import path from 'path'
+import fs from 'fs'
 import { createQAAuthContext } from '../helpers/auth'
 import { upsertStudent } from '../helpers/navigation'
 
@@ -195,6 +197,35 @@ test('Corrections Sprint — A2/B1 moat and tag coverage', async ({ browser }) =
 
   console.log(`[corrections-sprint] A2 tags (${a2Tags.length}): ${tagDistributionKey(a2Tags)}`)
   console.log(`[corrections-sprint] B1 tags (${b1Tags.length}): ${tagDistributionKey(b1Tags)}`)
+
+  // Save run artifacts for post-run review (matches teacher-qa spec convention)
+  const outputDir = path.resolve(
+    __dirname,
+    '../../output',
+    `corrections-sprint-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`,
+  )
+  fs.mkdirSync(outputDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(outputDir, 'run-metadata.json'),
+    JSON.stringify({
+      persona: 'Corrections Sprint',
+      a2StudentId,
+      b1StudentId,
+      a2CorrectionId,
+      b1CorrectionId,
+      a2TagCount: a2Tags.length,
+      b1TagCount: b1Tags.length,
+      a2Distribution: tagDistributionKey(a2Tags),
+      b1Distribution: tagDistributionKey(b1Tags),
+      branch: process.env.QA_BRANCH ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    }, null, 2),
+  )
+  fs.writeFileSync(
+    path.join(outputDir, 'correction-tags.json'),
+    JSON.stringify({ a2: a2Detail, b1: b1Detail }, null, 2),
+  )
+  console.log(`[corrections-sprint] Artifacts saved to ${outputDir}`)
 
   // 6. Assert (b): at least one G (Grammar) tag present across both corrections
   const allTags = [...a2Tags, ...b1Tags]
