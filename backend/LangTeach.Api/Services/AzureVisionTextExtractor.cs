@@ -3,12 +3,12 @@ using Azure.AI.Vision.ImageAnalysis;
 
 namespace LangTeach.Api.Services;
 
-public class AzureAIVisionOcrService : IOcrService
+public class AzureVisionTextExtractor : ITextExtractor
 {
     private readonly ImageAnalysisClient _client;
-    private readonly ILogger<AzureAIVisionOcrService> _logger;
+    private readonly ILogger<AzureVisionTextExtractor> _logger;
 
-    public AzureAIVisionOcrService(IConfiguration configuration, ILogger<AzureAIVisionOcrService> logger)
+    public AzureVisionTextExtractor(IConfiguration configuration, ILogger<AzureVisionTextExtractor> logger)
     {
         var endpoint = configuration["AzureAIVision:Endpoint"]
             ?? throw new InvalidOperationException("AzureAIVision:Endpoint is not configured.");
@@ -19,9 +19,12 @@ public class AzureAIVisionOcrService : IOcrService
         _logger = logger;
     }
 
-    public async Task<string> ExtractTextAsync(Stream imageStream, string contentType, CancellationToken ct = default)
+    public bool CanHandle(string contentType) =>
+        contentType is "image/jpeg" or "image/png" or "image/webp" or "application/pdf";
+
+    public async Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
     {
-        var imageData = BinaryData.FromStream(imageStream);
+        var imageData = BinaryData.FromStream(stream);
         var result = await _client.AnalyzeAsync(imageData, VisualFeatures.Read, cancellationToken: ct);
 
         var readResult = result.Value.Read;

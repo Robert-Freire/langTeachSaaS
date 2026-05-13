@@ -52,6 +52,23 @@ public class OcrControllerTests
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await res.Content.ReadAsStringAsync();
         body.Should().Contain("Formato no compatible");
+        body.Should().Contain("DOCX");
+    }
+
+    [Fact]
+    public async Task Extract_ValidDocx_ReturnsOkWithTextAndBlobUrl()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|ocr-docx", "ocr-docx@example.com");
+        var form = CreateFileContent(
+            "homework.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+        var res = await client.PostAsync("/api/corrections/ocr", form);
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+        json.GetProperty("text").GetString().Should().NotBeNullOrEmpty();
+        json.GetProperty("blobUrl").GetString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]

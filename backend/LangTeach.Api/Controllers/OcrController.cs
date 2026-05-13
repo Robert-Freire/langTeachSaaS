@@ -14,20 +14,20 @@ namespace LangTeach.Api.Controllers;
 [Authorize]
 public class OcrController : ControllerBase
 {
-    private readonly IOcrService _ocr;
+    private readonly IEnumerable<ITextExtractor> _extractors;
     private readonly ICorrectionsBlobStorage _blob;
     private readonly IProfileService _profileService;
     private readonly OcrOptions _options;
     private readonly ILogger<OcrController> _logger;
 
     public OcrController(
-        IOcrService ocr,
+        IEnumerable<ITextExtractor> extractors,
         ICorrectionsBlobStorage blob,
         IProfileService profileService,
         IOptions<OcrOptions> options,
         ILogger<OcrController> logger)
     {
-        _ocr = ocr;
+        _extractors = extractors;
         _blob = blob;
         _profileService = profileService;
         _options = options.Value;
@@ -47,10 +47,17 @@ public class OcrController : ControllerBase
             return BadRequest(new { code = "OCR_NO_FILE", message = "No se recibió ningún archivo." });
 
         if (!_options.AcceptedContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
-            return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP o PDF." });
+            return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX." });
 
         if (file.Length > _options.MaxBytes)
             return BadRequest(new { code = "OCR_FILE_TOO_LARGE", message = $"El archivo supera el tamaño máximo de {_options.MaxBytes / 1_048_576} MB." });
+
+        var extractor = _extractors.FirstOrDefault(e => e.CanHandle(file.ContentType));
+        if (extractor is null)
+        {
+            _logger.LogError("No ITextExtractor registered for content type {ContentType}", file.ContentType);
+            return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX." });
+        }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
@@ -60,7 +67,7 @@ public class OcrController : ControllerBase
 
         var blobPath = $"{teacherId}/{Guid.NewGuid()}/source.{ext}";
 
-        // Copy to MemoryStream to guarantee seekability for both upload and OCR.
+        // Copy to MemoryStream to guarantee seekability for both upload and extraction.
         // IFormFile.OpenReadStream() may return a non-seekable stream in some hosting environments.
         using var memStream = new MemoryStream();
         await file.CopyToAsync(memStream, cancellationToken);
@@ -82,21 +89,21 @@ public class OcrController : ControllerBase
         string text;
         try
         {
-            text = await _ocr.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
+            text = await extractor.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
         }
         catch (OcrException ex)
         {
-            _logger.LogWarning("OCR returned no text. BlobPath={BlobPath} Message={Message}", blobPath, ex.Message);
-            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = "No se pudo extraer texto del archivo. Comprueba que la imagen sea legible." });
+            _logger.LogWarning("Extractor returned no text. BlobPath={BlobPath} Message={Message}", blobPath, ex.Message);
+            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "OCR service error. BlobPath={BlobPath}", blobPath);
-            return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de OCR no está disponible. Inténtalo de nuevo." });
+            _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);
+            return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de extracción no está disponible. Inténtalo de nuevo." });
         }
 
         _logger.LogInformation(
-            "OCR extraction complete. TeacherId={TeacherId} BlobPath={BlobPath} ExtractedChars={Chars}",
+            "Text extraction complete. TeacherId={TeacherId} BlobPath={BlobPath} ExtractedChars={Chars}",
             teacherId, blobPath, text.Length);
 
         return Ok(new OcrResultDto(text, blobUrl, Incomplete: text.Length < _options.MinExtractedChars));

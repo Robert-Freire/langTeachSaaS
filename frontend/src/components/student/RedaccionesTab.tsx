@@ -292,7 +292,7 @@ interface CorrectionDrawerProps {
   onCorregirError: (msg: string) => void
 }
 
-const OCR_ACCEPTED = '.jpg,.jpeg,.png,.webp,.pdf'
+const OCR_ACCEPTED = '.jpg,.jpeg,.png,.webp,.pdf,.docx'
 const HEIC_EXTENSIONS = ['.heic', '.heif']
 
 function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError }: CorrectionDrawerProps) {
