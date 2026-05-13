@@ -3,7 +3,6 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FluentAssertions;
 using LangTeach.Api.Services;
-using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.Services;
 
@@ -12,10 +11,7 @@ public class OpenXmlDocxTextExtractorTests
     private const string DocxContentType =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-    private static readonly OcrOptions DefaultOptions = new();
-
-    private static OpenXmlDocxTextExtractor CreateExtractor(OcrOptions? options = null) =>
-        new(Options.Create(options ?? DefaultOptions));
+    private static OpenXmlDocxTextExtractor CreateExtractor() => new();
 
     private static MemoryStream CreateDocxStream(params string[] paragraphs)
     {
@@ -48,8 +44,7 @@ public class OpenXmlDocxTextExtractorTests
     [InlineData("image/gif")]
     public void CanHandle_NonDocxContentType_ReturnsFalse(string contentType)
     {
-        var sut = CreateExtractor();
-        sut.CanHandle(contentType).Should().BeFalse();
+        CreateExtractor().CanHandle(contentType).Should().BeFalse();
     }
 
     [Fact]
@@ -89,23 +84,10 @@ public class OpenXmlDocxTextExtractorTests
     }
 
     [Fact]
-    public async Task ExtractTextAsync_EmptyDocx_ThrowsOcrException()
+    public async Task ExtractTextAsync_DocxWithNoParagraphs_ThrowsOcrException()
     {
         var sut = CreateExtractor();
         using var ms = CreateDocxStream();
-
-        var act = () => sut.ExtractTextAsync(ms, DocxContentType);
-
-        await act.Should().ThrowAsync<OcrException>()
-            .WithMessage("*extraer texto*");
-    }
-
-    [Fact]
-    public async Task ExtractTextAsync_TextBelowMinChars_ThrowsOcrException()
-    {
-        var options = new OcrOptions { MinExtractedChars = 100 };
-        var sut = CreateExtractor(options);
-        using var ms = CreateDocxStream("Corto.");
 
         var act = () => sut.ExtractTextAsync(ms, DocxContentType);
 

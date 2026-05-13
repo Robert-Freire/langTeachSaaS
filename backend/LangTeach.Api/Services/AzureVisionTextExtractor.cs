@@ -31,7 +31,7 @@ public class AzureVisionTextExtractor : ITextExtractor
         if (readResult is null || readResult.Blocks.Count == 0)
         {
             _logger.LogWarning("Azure AI Vision returned no text blocks.");
-            throw new OcrException("No text could be extracted from the image.");
+            throw new OcrException("No se pudo extraer texto del archivo. Comprueba que la imagen sea legible.");
         }
 
         var lines = readResult.Blocks

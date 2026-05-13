@@ -5,13 +5,6 @@ namespace LangTeach.Api.Services;
 
 public class OpenXmlDocxTextExtractor : ITextExtractor
 {
-    private readonly OcrOptions _options;
-
-    public OpenXmlDocxTextExtractor(Microsoft.Extensions.Options.IOptions<OcrOptions> options)
-    {
-        _options = options.Value;
-    }
-
     public bool CanHandle(string contentType) =>
         contentType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -39,7 +32,7 @@ public class OpenXmlDocxTextExtractor : ITextExtractor
             throw new OcrException("El archivo Word no es válido o está dañado.");
         }
 
-        if (string.IsNullOrWhiteSpace(text) || text.Length < _options.MinExtractedChars)
+        if (string.IsNullOrWhiteSpace(text))
             throw new OcrException("No se pudo extraer texto del archivo Word.");
 
         return Task.FromResult(text);
