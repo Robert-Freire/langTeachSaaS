@@ -105,6 +105,10 @@ public class OcrController : ControllerBase
                 lastOcrError = ex;
                 break;
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);

@@ -19,12 +19,14 @@ public class PdfTextExtractor : ITextExtractor
 
     public Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         try
         {
             using var pdf = PdfDocument.Open(stream);
             var sb = new System.Text.StringBuilder();
             foreach (var page in pdf.GetPages())
             {
+                ct.ThrowIfCancellationRequested();
                 foreach (var word in page.GetWords())
                     sb.Append(word.Text).Append(' ');
                 sb.AppendLine();
