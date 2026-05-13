@@ -1,8 +1,10 @@
 namespace LangTeach.Api.Services;
 
-public class StubOcrService : IOcrService
+public class StubTextExtractor : ITextExtractor
 {
-    public Task<string> ExtractTextAsync(Stream imageStream, string contentType, CancellationToken ct = default)
+    public bool CanHandle(string contentType) => true;
+
+    public Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
     {
         return Task.FromResult(
             "Este es un texto de prueba extraído por el servicio OCR de pruebas. " +

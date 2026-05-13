@@ -234,9 +234,12 @@ builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService
 builder.Services.AddSingleton<CorrectionsBlobStorage>();
 builder.Services.AddSingleton<ICorrectionsBlobStorage>(sp => sp.GetRequiredService<CorrectionsBlobStorage>());
 if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
-    builder.Services.AddScoped<IOcrService, StubOcrService>();
+    builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
 else
-    builder.Services.AddScoped<IOcrService, AzureAIVisionOcrService>();
+{
+    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>();
+    builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>();
+}
 builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
