@@ -237,8 +237,9 @@ if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnv
     builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
 else
 {
-    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>();
-    builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>();
+    builder.Services.AddScoped<ITextExtractor, PdfTextExtractor>();        // fast-path: typed PDFs skip Vision
+    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // Vision fallback for scanned/encrypted PDFs and images
+    builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>(); // .docx
 }
 builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
