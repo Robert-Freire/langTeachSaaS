@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, ImageUp, Loader2, X } from 'lucide-react'
+import { ChevronRight, FileUp, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -538,13 +538,13 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                         onClick={() => fileInputRef.current?.click()}
                         disabled={ocrState === 'loading'}
                         className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-indigo-600 hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Subir foto o archivo para extraer texto"
+                        title="Subir archivo: foto, PDF o documento Word"
                         data-testid="correction-drawer-upload-btn"
                       >
                         {ocrState === 'loading'
                           ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <ImageUp className="h-3.5 w-3.5" />}
-                        Subir imagen
+                          : <FileUp className="h-3.5 w-3.5" />}
+                        Subir archivo
                       </button>
                     </>
                   )}
@@ -555,7 +555,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                   onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
                   placeholder={ocrState === 'loading' ? 'Extrayendo texto...' : 'Pega el texto del alumno aquí'}
                   rows={10}
-                  className="resize-y max-h-[50vh]"
+                  className="resize-y max-h-[50vh] min-h-[12rem]"
                   disabled={studentTextLocked || ocrState === 'loading'}
                   data-testid="correction-drawer-text"
                 />
@@ -572,7 +572,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                 <p className="text-xs text-zinc-500">
                   {studentTextLocked
                     ? 'El texto no se puede modificar una vez generada la corrección.'
-                    : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto. Lo puedes añadir más tarde.'}
+                    : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto, PDF o documento Word. Lo puedes añadir más tarde.'}
                 </p>
                 {textLockedError && (
                   <p className="text-xs text-red-600" data-testid="correction-drawer-text-error">
