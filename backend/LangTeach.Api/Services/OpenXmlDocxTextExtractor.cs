@@ -6,7 +6,10 @@ namespace LangTeach.Api.Services;
 public class OpenXmlDocxTextExtractor : ITextExtractor
 {
     public bool CanHandle(string contentType) =>
-        contentType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        string.Equals(
+            contentType?.Split(';', 2)[0].Trim(),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            StringComparison.OrdinalIgnoreCase);
 
     public Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
     {

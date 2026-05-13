@@ -19,8 +19,14 @@ public class AzureVisionTextExtractor : ITextExtractor
         _logger = logger;
     }
 
-    public bool CanHandle(string contentType) =>
-        contentType is "image/jpeg" or "image/png" or "image/webp" or "application/pdf";
+    public bool CanHandle(string contentType)
+    {
+        var mime = contentType?.Split(';', 2)[0].Trim() ?? string.Empty;
+        return mime.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase)
+            || mime.Equals("image/png", StringComparison.OrdinalIgnoreCase)
+            || mime.Equals("image/webp", StringComparison.OrdinalIgnoreCase)
+            || mime.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+    }
 
     public async Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
     {
