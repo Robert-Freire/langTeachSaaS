@@ -52,8 +52,8 @@ public class OcrController : ControllerBase
         if (file.Length > _options.MaxBytes)
             return BadRequest(new { code = "OCR_FILE_TOO_LARGE", message = $"El archivo supera el tamaño máximo de {_options.MaxBytes / 1_048_576} MB." });
 
-        var extractor = _extractors.FirstOrDefault(e => e.CanHandle(file.ContentType));
-        if (extractor is null)
+        var hasExtractor = _extractors.Any(e => e.CanHandle(file.ContentType));
+        if (!hasExtractor)
         {
             _logger.LogError("No ITextExtractor registered for content type {ContentType}", file.ContentType);
             return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX." });
@@ -86,20 +86,40 @@ public class OcrController : ControllerBase
         }
 
         memStream.Position = 0;
-        string text;
-        try
+        string? text = null;
+        OcrException? lastOcrError = null;
+        foreach (var extractor in _extractors.Where(e => e.CanHandle(file.ContentType)))
         {
-            text = await extractor.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
+            try
+            {
+                text = await extractor.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
+                break;
+            }
+            catch (OcrFallbackException)
+            {
+                memStream.Position = 0;
+                continue;
+            }
+            catch (OcrException ex)
+            {
+                lastOcrError = ex;
+                break;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);
+                return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de extracción no está disponible. Inténtalo de nuevo." });
+            }
         }
-        catch (OcrException ex)
+        if (text is null)
         {
-            _logger.LogWarning("Extractor returned no text. BlobPath={BlobPath} Message={Message}", blobPath, ex.Message);
-            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);
-            return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de extracción no está disponible. Inténtalo de nuevo." });
+            var msg = lastOcrError?.Message ?? "No se pudo extraer texto del archivo.";
+            _logger.LogWarning("No extractor succeeded. BlobPath={BlobPath}", blobPath);
+            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = msg });
         }
 
         _logger.LogInformation(
