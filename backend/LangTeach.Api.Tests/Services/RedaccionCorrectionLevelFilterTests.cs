@@ -38,7 +38,9 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
+        var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
@@ -153,7 +155,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
 
         row.Tags.Should().HaveCount(1, "fall-open: all tags kept when filter JSON is invalid");
-        _claude.CompleteCallCount.Should().Be(2, "Pass 1 + Pass 2 filter (which failed gracefully)");
+        _claude.CompleteCallCount.Should().Be(3, "Pass 1 + Pass 2 filter (failed gracefully) + ScopeAffirmer (failed gracefully on default response)");
     }
 
     [Fact]
@@ -169,7 +171,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
 
         row.Tags.Should().BeEmpty();
-        _claude.CompleteCallCount.Should().Be(1, "only Pass 1 should be called when tag list is empty");
+        _claude.CompleteCallCount.Should().Be(2, "Pass 1 + ScopeAffirmer (no filter call when tag list is empty; ScopeAffirmer runs on original text)");
     }
 
     [Fact]
@@ -190,10 +192,13 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         await WaitForStatusAsync(id, CorrectionStatus.Corregida);
 
-        _claude.LastRequest.Should().NotBeNull();
-        _claude.LastRequest!.Model.Should().Be(ClaudeModel.Haiku, "level filter uses Haiku");
-        _claude.LastRequest.UserPrompt.Should().Contain("A2", "user prompt must include the student's CEFR level");
-        _claude.LastRequest.UserPrompt.Should().Contain("Escribe sobre tu día.", "user prompt must include assignment context for register-aware MuyBien decisions");
+        // Requests: [0] = Pass1 (correction), [1] = Pass2 (filter), [2] = ScopeAffirmer.
+        // Use Requests[1] to assert on the filter prompt specifically.
+        _claude.Requests.Should().HaveCountGreaterThanOrEqualTo(2);
+        var filterReq = _claude.Requests[1];
+        filterReq.Model.Should().Be(ClaudeModel.Haiku, "level filter uses Haiku");
+        filterReq.UserPrompt.Should().Contain("A2", "user prompt must include the student's CEFR level");
+        filterReq.UserPrompt.Should().Contain("Escribe sobre tu día.", "user prompt must include assignment context for register-aware MuyBien decisions");
     }
 
     [Fact]
@@ -250,9 +255,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     }
 
     [Fact]
-    public async Task LevelFilter_MuyBienTagPassesThrough_FilterDecisionIgnored()
+    public async Task LevelFilter_MuyBienFromPass1_DroppedBeforeFilter()
     {
-        // MuyBien tags from Pass 1 (if any reach the filter) always survive regardless of filter decision.
+        // MuyBien is not a valid Pass 1 output -- it is produced only by the level filter
+        // or ScopeAffirmer. A hallucinated Pass-1 MuyBien must be dropped before the filter.
         var text = "Hoy, sin embargo, me quedé en casa tranquilamente.";
         var id = SeedCorrection(text, CorrectionStatus.Entregada);
 
@@ -262,13 +268,13 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         {
             ("MuyBien", mbStart, mbStart + "sin embargo".Length, "sin embargo", "", ""),
         }));
-        _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
+        // Filter is skipped (no validated tags after the MuyBien is dropped).
+        // ScopeAffirmer uses the default response (fails gracefully -> 0 affirmer tags).
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
 
-        row.Tags.Should().HaveCount(1, "MuyBien tag must always pass through the filter");
-        row.Tags.First().Category.Should().Be("MuyBien");
+        row.Tags.Should().BeEmpty("Pass-1 MuyBien hallucination must be dropped");
     }
 
     [Fact]
