@@ -407,6 +407,43 @@ describe('RedaccionesTab', () => {
     expect(textarea).not.toBeDisabled()
   })
 
+  it('OCR failure with backend error body shows backend message, not generic fallback', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    const axiosError = {
+      isAxiosError: true,
+      response: { data: { code: 'OCR_FORMAT_UNSUPPORTED', message: 'Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX.' } },
+    }
+    vi.mocked(correctionsApi.uploadForExtractText).mockRejectedValue(axiosError)
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+    const jpegFile = new File(['data'], 'photo.gif', { type: 'image/gif' })
+    Object.defineProperty(input, 'files', { value: [jpegFile], writable: false })
+    fireEvent.change(input)
+
+    const banner = await screen.findByTestId('correction-drawer-ocr-error')
+    expect(banner).toHaveTextContent('Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX.')
+    expect(banner).not.toHaveTextContent('No se pudo extraer el texto')
+    expect(banner).toHaveAttribute('data-error-code', 'OCR_FORMAT_UNSUPPORTED')
+  })
+
+  it('OCR failure with network error (no response body) shows generic fallback without data-error-code', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockRejectedValue(new Error('Network Error'))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+    const jpegFile = new File(['data'], 'photo.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpegFile], writable: false })
+    fireEvent.change(input)
+
+    const banner = await screen.findByTestId('correction-drawer-ocr-error')
+    expect(banner).toHaveTextContent('No se pudo extraer el texto')
+    expect(banner).not.toHaveAttribute('data-error-code')
+  })
+
   it('save button is disabled while OCR is in progress', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
     let resolveOcr!: (v: { text: string; blobUrl: string; incomplete: boolean }) => void

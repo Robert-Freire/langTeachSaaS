@@ -20,6 +20,16 @@ public class FileTextExtractController : ControllerBase
     private readonly OcrOptions _options;
     private readonly ILogger<FileTextExtractController> _logger;
 
+    private static readonly Dictionary<string, string> ExtensionToMime = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { ".jpg",  "image/jpeg" },
+        { ".jpeg", "image/jpeg" },
+        { ".png",  "image/png" },
+        { ".webp", "image/webp" },
+        { ".pdf",  "application/pdf" },
+        { ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+    };
+
     public FileTextExtractController(
         IEnumerable<ITextExtractor> extractors,
         ICorrectionsBlobStorage blob,
@@ -37,6 +47,20 @@ public class FileTextExtractController : ControllerBase
     private string? Auth0Id => User.FindFirstValue(ClaimTypes.NameIdentifier);
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
+    // Browsers can send unexpected Content-Type values for the same file (e.g. application/octet-stream
+    // for a dragged .jpg). Fall back to extension-based MIME detection so valid files are not rejected.
+    internal static string ResolveEffectiveContentType(IFormFile file, string[] acceptedContentTypes)
+    {
+        if (acceptedContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
+            return file.ContentType;
+
+        var ext = Path.GetExtension(file.FileName);
+        if (!string.IsNullOrEmpty(ext) && ExtensionToMime.TryGetValue(ext, out var mapped))
+            return mapped;
+
+        return file.ContentType;
+    }
+
     [HttpPost]
     [RequestSizeLimit(11_534_336)] // 11 MB hard limit (10 MB file + headers/overhead)
     public async Task<IActionResult> Extract(IFormFile file, CancellationToken cancellationToken)
@@ -46,16 +70,18 @@ public class FileTextExtractController : ControllerBase
         if (file is null || file.Length == 0)
             return BadRequest(new { code = "OCR_NO_FILE", message = "No se recibió ningún archivo." });
 
-        if (!_options.AcceptedContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
+        var effectiveContentType = ResolveEffectiveContentType(file, _options.AcceptedContentTypes);
+
+        if (!_options.AcceptedContentTypes.Contains(effectiveContentType, StringComparer.OrdinalIgnoreCase))
             return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX." });
 
         if (file.Length > _options.MaxBytes)
             return BadRequest(new { code = "OCR_FILE_TOO_LARGE", message = $"El archivo supera el tamaño máximo de {_options.MaxBytes / 1_048_576} MB." });
 
-        var hasExtractor = _extractors.Any(e => e.CanHandle(file.ContentType));
+        var hasExtractor = _extractors.Any(e => e.CanHandle(effectiveContentType));
         if (!hasExtractor)
         {
-            _logger.LogError("No ITextExtractor registered for content type {ContentType}", file.ContentType);
+            _logger.LogError("No ITextExtractor registered for content type {ContentType}", effectiveContentType);
             return BadRequest(new { code = "OCR_FORMAT_UNSUPPORTED", message = "Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX." });
         }
 
@@ -63,7 +89,7 @@ public class FileTextExtractController : ControllerBase
 
         var ext = Path.GetExtension(file.FileName).TrimStart('.').ToLowerInvariant();
         if (string.IsNullOrEmpty(ext))
-            ext = file.ContentType.Split('/').Last();
+            ext = effectiveContentType.Split('/').Last();
 
         var blobPath = $"{teacherId}/{Guid.NewGuid()}/source.{ext}";
 
@@ -76,7 +102,7 @@ public class FileTextExtractController : ControllerBase
         string blobUrl;
         try
         {
-            await _blob.UploadAsync(memStream, blobPath, file.ContentType, cancellationToken);
+            await _blob.UploadAsync(memStream, blobPath, effectiveContentType, cancellationToken);
             blobUrl = await _blob.GetDownloadUrlAsync(blobPath);
         }
         catch (Exception ex)
@@ -88,11 +114,11 @@ public class FileTextExtractController : ControllerBase
         memStream.Position = 0;
         string? text = null;
         OcrException? lastOcrError = null;
-        foreach (var extractor in _extractors.Where(e => e.CanHandle(file.ContentType)))
+        foreach (var extractor in _extractors.Where(e => e.CanHandle(effectiveContentType)))
         {
             try
             {
-                text = await extractor.ExtractTextAsync(memStream, file.ContentType, cancellationToken);
+                text = await extractor.ExtractTextAsync(memStream, effectiveContentType, cancellationToken);
                 break;
             }
             catch (OcrFallbackException)

@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -307,6 +308,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
   const [statusFromLoad, setStatusFromLoad] = useState<CorrectionStatus | null>(null)
   const [ocrState, setOcrState] = useState<'idle' | 'loading' | 'warn' | 'error'>('idle')
   const [ocrError, setOcrError] = useState<string | null>(null)
+  const [ocrErrorCode, setOcrErrorCode] = useState<string | null>(null)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -343,9 +345,17 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
       setText(result.text)
       setBlobUrl(result.blobUrl)
       setOcrState(result.incomplete ? 'warn' : 'idle')
-    } catch {
+    } catch (err) {
       setOcrState('error')
-      setOcrError('No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')
+      let backendCode: string | null = null
+      let backendMessage: string | null = null
+      if (axios.isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
+        const data = err.response.data as Record<string, unknown>
+        backendCode = typeof data.code === 'string' ? data.code : null
+        backendMessage = typeof data.message === 'string' ? data.message : null
+      }
+      setOcrErrorCode(backendCode)
+      setOcrError(backendMessage ?? 'No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')
     }
   }
 
@@ -571,7 +581,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                   </p>
                 )}
                 {ocrState === 'error' && ocrError && (
-                  <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error">
+                  <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error" data-error-code={ocrErrorCode ?? undefined}>
                     {ocrError}
                   </p>
                 )}

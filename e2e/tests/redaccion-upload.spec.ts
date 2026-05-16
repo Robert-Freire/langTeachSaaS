@@ -83,6 +83,59 @@ test('text-layer PDF upload populates student text field without error', async (
   await ctx.close()
 })
 
+test('unsupported file type shows backend-specific error, not generic fallback', async ({ browser }) => {
+  const setupCtx = await createMockAuthContext(browser)
+  const setupPage = await setupCtx.newPage()
+  const student = await createStudentViaApi(setupPage, {
+    name: `Upload Unsupported ${Date.now()}`,
+    cefrLevel: 'B1',
+  })
+  await setupPage.close()
+  await setupCtx.close()
+
+  const { page, ctx } = await openNewRedaccionDrawer(browser, student.id)
+
+  // Create a .txt file in memory and upload it
+  const fileInput = page.getByTestId('correction-drawer-file-input')
+  await fileInput.setInputFiles({
+    name: 'essay.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('some text content'),
+  })
+
+  const banner = page.getByTestId('correction-drawer-ocr-error')
+  await expect(banner).toBeVisible({ timeout: UI_TIMEOUT })
+  // The frontend must surface the backend's specific message, not the generic fallback
+  await expect(banner).toContainText('Formato no compatible', { timeout: UI_TIMEOUT })
+  await expect(banner).not.toContainText('No se pudo extraer el texto')
+  await expect(banner).toHaveAttribute('data-error-code', 'OCR_FORMAT_UNSUPPORTED')
+
+  await ctx.close()
+})
+
+test('jpg upload succeeds (StubTextExtractor handles image/jpeg)', async ({ browser }) => {
+  const setupCtx = await createMockAuthContext(browser)
+  const setupPage = await setupCtx.newPage()
+  const student = await createStudentViaApi(setupPage, {
+    name: `Upload JPG ${Date.now()}`,
+    cefrLevel: 'B1',
+  })
+  await setupPage.close()
+  await setupCtx.close()
+
+  const { page, ctx } = await openNewRedaccionDrawer(browser, student.id)
+
+  const fileInput = page.getByTestId('correction-drawer-file-input')
+  await fileInput.setInputFiles(path.resolve(__dirname, '../fixtures/test-image.jpg'))
+
+  await expect(page.getByTestId('correction-drawer-ocr-error')).not.toBeVisible({ timeout: UI_TIMEOUT })
+
+  const textarea = page.getByTestId('correction-drawer-text')
+  await expect(textarea).not.toBeEmpty({ timeout: UI_TIMEOUT })
+
+  await ctx.close()
+})
+
 test('image upload populates student text field (requires Azure Vision)', async ({ browser }) => {
   // Skip when Vision is not configured -- AzureVisionTextExtractor gracefully degrades but
   // image uploads will have no handler, returning OCR_FORMAT_UNSUPPORTED.
