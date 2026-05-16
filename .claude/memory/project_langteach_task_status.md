@@ -4,16 +4,26 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-16, round 2)
+## In-Flight Tasks (2026-05-16, round 4)
 
-Hardening II sprint-close round 1 follow-ups (#1263-#1266) merged. Re-run of phases 2 (UI), 3b (prompt-health), 4 (pedagogy) surfaced 4 more follow-up issues. Must close before sprint advances:
+Hardening II rounds 1-3 follow-ups all merged. Teacher-qa PASS. Smoke-test corrections promise PASS. Smoke also surfaced infra wiring gaps + A9 missing feature + A10 ceiling drift.
 
-- #1271 (P2:should) -- warmup sharedGuidance coverage gap + correction-calibration note leak (bot debt from #1263/#1265 PRs)
-- #1272 (P1:must) -- silent ceiling gap antes/despues de que + correction-categories author notes (pedagogy load-bearing)
-- #1273 (P1:must) -- Atelier mic-open blur + Nueva redaccion upload label discoverability (sprint-promise regressions on #1234/#1237/#1257)
-- #1274 (P3:nice) -- thumbs touch target + list dividers + textarea resize handle (UI polish)
+In-flight in Hardening II:
+- #1279 (P1:must) -- file upload code: AzureVisionTextExtractor graceful degradation + drop e2e stub + real extractor tests + endpoint rename
+- #1280 (P1:must) -- Vision infra: provision Azure Computer Vision resource + wire through Bicep / Key Vault / env / docker-compose / CI
+- #1281 (P1:must) -- transcription + Telegram wiring: declared secrets present in .env.qa but never passed to QA / e2e api containers
+- #1286 (P1:must) -- A9 feature: emit MuyBien tag for correct above-level structures (new ScopeAffirmer pass in correction pipeline)
 
-Sprint-close paused. Remaining when these land: smoke-test walkthrough (now with A8/A9/A10 B1 ceiling scenarios) + teacher-qa sprint.
+Deferred to Groups milestone:
+- #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
+- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + docker-compose
+- #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard
+
+Procedure updates landed in sprint branch (will reach main when sprint merges):
+- .claude/procedures/issue-management.md: External Infrastructure gate added to qa:ready specialist gates
+- .claude/skills/smoke-test/SKILL.md: UNVERIFIED result state replaces PASS(partial); blocks sprint close until human-verify or explicit waiver
+
+Sprint-close paused. When #1279/#1280/#1281/#1286 land: re-run smoke A1 (file upload end-to-end) and re-run smoke A9 (MuyBien on Ojala vengas).
 
 ## Next Sprint: Groups
 
