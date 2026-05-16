@@ -23,11 +23,14 @@ async function openNewRedaccionDrawer(
   await expect(page.getByTestId('student-detail-name')).toBeVisible({ timeout: NAV_TIMEOUT })
   await page.getByTestId('tab-redacciones').click()
 
-  // The tab may show the empty CTA or the list-level new button depending on state
+  // The tab may show the empty CTA (no redacciones yet) or the list-level new button
   const emptyBtn = page.getByTestId('redacciones-empty-cta')
   const newBtn = page.getByTestId('redacciones-new-button')
-  const btn = (await emptyBtn.isVisible({ timeout: 3000 }).catch(() => false)) ? emptyBtn : newBtn
-  await btn.click()
+  const emptyVisible = await emptyBtn.isVisible({ timeout: UI_TIMEOUT }).catch(() => false)
+  const newVisible = emptyVisible ? false : await newBtn.isVisible({ timeout: UI_TIMEOUT }).catch(() => false)
+  if (!emptyVisible && !newVisible)
+    throw new Error('Neither redacciones-empty-cta nor redacciones-new-button is visible')
+  await (emptyVisible ? emptyBtn : newBtn).click()
 
   await expect(page.getByTestId('correction-drawer')).toBeVisible({ timeout: UI_TIMEOUT })
   return { page, ctx }

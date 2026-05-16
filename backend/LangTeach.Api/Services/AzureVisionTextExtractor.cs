@@ -18,7 +18,13 @@ public class AzureVisionTextExtractor : ITextExtractor
             _logger.LogWarning("AzureAIVision:Endpoint or Key is not configured. Image OCR will be unavailable.");
             return;
         }
-        _client = new ImageAnalysisClient(new Uri(endpoint), new AzureKeyCredential(key));
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            _logger.LogWarning("AzureAIVision:Endpoint '{Endpoint}' is not a valid HTTP/HTTPS URI. Image OCR will be unavailable.", endpoint);
+            return;
+        }
+        _client = new ImageAnalysisClient(uri, new AzureKeyCredential(key));
     }
 
     public bool CanHandle(string contentType)
