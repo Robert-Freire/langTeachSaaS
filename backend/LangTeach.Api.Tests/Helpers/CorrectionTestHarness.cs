@@ -97,7 +97,9 @@ public static class CorrectionTestHarness
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
+        var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
         var claude = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(),
             NullLogger<ClaudeApiClient>.Instance);
 

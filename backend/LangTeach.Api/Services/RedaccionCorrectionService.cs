@@ -237,6 +237,11 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         var filteredTags = await ApplyLevelFilterAsync(
             validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
 
+        var affirmerTags = await RunScopeAffirmerAsync(
+            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger);
+
+        var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
+
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
         correction.Status = CorrectionStatus.Corregida;
@@ -244,9 +249,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = now;
         correction.SchemaVersion = 1;
 
-        for (var i = 0; i < filteredTags.Count; i++)
+        for (var i = 0; i < mergedTags.Count; i++)
         {
-            var t = filteredTags[i];
+            var t = mergedTags[i];
             db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
@@ -264,9 +269,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         await db.SaveChangesAsync(CancellationToken.None);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} ModelTokens={InputTokens}/{OutputTokens}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded} ModelTokens={InputTokens}/{OutputTokens}",
             correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
-            filteredTags.Count, validatedTags.Count - filteredTags.Count, response.InputTokens, response.OutputTokens);
+            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count,
+            response.InputTokens, response.OutputTokens);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -432,29 +438,25 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 }
             }
 
+            // MuyBien is produced by the level filter or ScopeAffirmer -- never by Pass 1.
+            // Drop any MuyBien that the model hallucinated in Pass 1.
+            if (tag.Category == CorrectionTagCategory.MuyBien)
+            {
+                logger.LogWarning(
+                    "Drop tag: MuyBien from Pass 1 is unexpected (produced by filter/ScopeAffirmer, not by correction prompt). CorrectionId={CorrectionId}",
+                    correctionId);
+                continue;
+            }
+
             string? explanation = tag.Explanation;
             string? correctedForm = tag.CorrectedForm;
 
-            if (tag.Category == CorrectionTagCategory.MuyBien)
+            if (string.IsNullOrWhiteSpace(explanation) || string.IsNullOrWhiteSpace(correctedForm))
             {
-                if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(correctedForm))
-                {
-                    logger.LogWarning(
-                        "MuyBien tag had non-null explanation/correctedForm; coercing to null. CorrectionId={CorrectionId}",
-                        correctionId);
-                }
-                explanation = null;
-                correctedForm = null;
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(explanation) || string.IsNullOrWhiteSpace(correctedForm))
-                {
-                    logger.LogWarning(
-                        "Drop tag: category {Category} requires non-empty explanation and correctedForm. CorrectionId={CorrectionId}",
-                        tag.Category, correctionId);
-                    continue;
-                }
+                logger.LogWarning(
+                    "Drop tag: category {Category} requires non-empty explanation and correctedForm. CorrectionId={CorrectionId}",
+                    tag.Category, correctionId);
+                continue;
             }
 
             kept.Add(tag with { Explanation = explanation, CorrectedForm = correctedForm });
@@ -581,6 +583,117 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     result.Add(tag);
                     break;
             }
+        }
+
+        return result;
+    }
+
+    private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> RunScopeAffirmerAsync(
+        IReadOnlyList<RedaccionCorrectionTagDto> existingTags,
+        string cefr,
+        string originalText,
+        IClaudeClient claude,
+        ICorrectionPromptService correctionPromptService,
+        Guid correctionId,
+        ILogger logger)
+    {
+        // Skip C2 (nothing is above C2).
+        if (!RedaccionScopeAffirmerPromptBuilder.NextLevel.TryGetValue(cefr, out var nextCefr))
+        {
+            logger.LogDebug("ScopeAffirmer: skipping for level {Cefr}. CorrectionId={CorrectionId}", cefr, correctionId);
+            return [];
+        }
+
+        // Skip very long texts to keep cost bounded.
+        var wordCount = originalText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+        if (wordCount > 800)
+        {
+            logger.LogDebug("ScopeAffirmer: skipping -- text too long ({Words} words). CorrectionId={CorrectionId}", wordCount, correctionId);
+            return [];
+        }
+
+        List<ScopeAffirmerSpan>? results;
+        try
+        {
+            var request = correctionPromptService.BuildScopeAffirmerPrompt(cefr, originalText, nextCefr);
+            var response = await claude.CompleteAsync(request, CancellationToken.None);
+            var raw = ContentJsonHelper.StripFences(response.Content);
+            results = JsonSerializer.Deserialize<List<ScopeAffirmerSpan>>(raw ?? string.Empty, JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "ScopeAffirmer: call or parse failed; no affirmations added. CorrectionId={CorrectionId}", correctionId);
+            return [];
+        }
+
+        if (results is null || results.Count == 0)
+            return [];
+
+        var affirmerTags = new List<RedaccionCorrectionTagDto>(results.Count);
+        foreach (var result in results)
+        {
+            // Validate span: reject if offsets are out of range or text doesn't match.
+            if (result.StartIndex < 0 || result.EndIndex <= result.StartIndex || result.EndIndex > originalText.Length)
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop result -- bad offsets [{Start},{End}) for text length {Len}. CorrectionId={CorrectionId}",
+                    result.StartIndex, result.EndIndex, originalText.Length, correctionId);
+                continue;
+            }
+            var actualSpan = originalText.Substring(result.StartIndex, result.EndIndex - result.StartIndex);
+            if (!string.Equals(actualSpan, result.SpannedText, StringComparison.Ordinal))
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop result -- hallucinated span '{Span}' not at [{Start},{End}). CorrectionId={CorrectionId}",
+                    result.SpannedText, result.StartIndex, result.EndIndex, correctionId);
+                continue;
+            }
+
+            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} -- una estructura de {result.StructureLevel}. " +
+                              $"Aunque está por encima de tu nivel oficial ({cefr.ToUpperInvariant()}), lo aplicaste correctamente.";
+
+            affirmerTags.Add(new RedaccionCorrectionTagDto(
+                Category: CorrectionTagCategory.MuyBien,
+                StartIndex: result.StartIndex,
+                EndIndex: result.EndIndex,
+                SpannedText: result.SpannedText,
+                Explanation: explanation,
+                CorrectedForm: null));
+        }
+
+        return affirmerTags;
+    }
+
+    private static IReadOnlyList<RedaccionCorrectionTagDto> MergeAndDedupWithAffirmer(
+        IReadOnlyList<RedaccionCorrectionTagDto> filteredTags,
+        IReadOnlyList<RedaccionCorrectionTagDto> affirmerTags,
+        Guid correctionId,
+        ILogger logger)
+    {
+        if (affirmerTags.Count == 0)
+            return filteredTags;
+
+        // Merge with origin key: 0 = filter (wins ties), 1 = affirmer (loses ties).
+        var combined = filteredTags
+            .Select(t => (tag: t, origin: 0))
+            .Concat(affirmerTags.Select(t => (tag: t, origin: 1)))
+            .OrderBy(x => x.tag.StartIndex)
+            .ThenBy(x => x.origin)
+            .ToList();
+
+        var result = new List<RedaccionCorrectionTagDto>(combined.Count);
+        var lastEnd = 0;
+        foreach (var (tag, _) in combined)
+        {
+            if (tag.StartIndex < lastEnd)
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop overlapping affirmer span [{Start},{End}). CorrectionId={CorrectionId}",
+                    tag.StartIndex, tag.EndIndex, correctionId);
+                continue;
+            }
+            result.Add(tag);
+            lastEnd = tag.EndIndex;
         }
 
         return result;

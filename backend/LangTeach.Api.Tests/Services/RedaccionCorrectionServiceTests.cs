@@ -33,7 +33,9 @@ public class RedaccionCorrectionServiceTests : IDisposable
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder);
+        var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         // Build a FakeServiceScopeFactory so Task.Run inside CorregirAsync can resolve
         // AppDbContext (backed by the same in-memory store) and the stub Claude client.
@@ -184,8 +186,10 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CorregirAsync_MuyBienWithExplanation_CoercedToNull()
+    public async Task CorregirAsync_MuyBienFromPass1_Dropped()
     {
+        // MuyBien is not a valid Pass 1 output -- the correction prompt must never emit it.
+        // Any MuyBien hallucinated in Pass 1 is dropped before the filter and ScopeAffirmer.
         var text = "El subjuntivo está bien usado.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse(BuildAiJson(new[]
@@ -196,9 +200,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
 
-        row.Tags.Should().HaveCount(1);
-        row.Tags.First().Explanation.Should().BeNull();
-        row.Tags.First().CorrectedForm.Should().BeNull();
+        row.Tags.Should().BeEmpty("Pass-1 MuyBien hallucination must be dropped");
     }
 
     [Fact]

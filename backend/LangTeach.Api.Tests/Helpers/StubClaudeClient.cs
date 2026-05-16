@@ -13,9 +13,17 @@ public class StubClaudeClient : IClaudeClient
 {
     private readonly ConcurrentQueue<string> _responses = new();
     private string _defaultContent = "{\"schemaVersion\":1,\"originalText\":\"\",\"tags\":[]}";
+    private readonly List<ClaudeRequest> _allRequests = new();
+    private readonly object _lock = new();
 
     public ClaudeRequest? LastRequest { get; private set; }
     public int CompleteCallCount { get; private set; }
+
+    /// <summary>
+    /// All requests in call order. Use Requests[n] to inspect a specific call by position
+    /// (e.g. Requests[1] for the filter call when Pass 1 is Requests[0]).
+    /// </summary>
+    public IReadOnlyList<ClaudeRequest> Requests { get { lock (_lock) { return [.. _allRequests]; } } }
 
     /// <summary>
     /// Optional hook that runs INSIDE CompleteAsync, between recording the request
@@ -34,12 +42,14 @@ public class StubClaudeClient : IClaudeClient
         LastRequest = null;
         CompleteCallCount = 0;
         _defaultContent = "{\"schemaVersion\":1,\"originalText\":\"\",\"tags\":[]}";
+        lock (_lock) { _allRequests.Clear(); }
     }
 
     public async Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
     {
         CompleteCallCount++;
         LastRequest = request;
+        lock (_lock) { _allRequests.Add(request); }
         if (DuringCompleteAsync is not null)
             await DuringCompleteAsync();
         var content = _responses.TryDequeue(out var queued) ? queued : _defaultContent;
