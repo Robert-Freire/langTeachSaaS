@@ -549,6 +549,11 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                     </>
                   )}
                 </div>
+                {!studentTextLocked && (
+                  <p className="text-[10px] text-gray-400" data-testid="correction-drawer-upload-hint">
+                    Acepta imagen (JPG, PNG), PDF y Word (.docx)
+                  </p>
+                )}
                 <Textarea
                   id="redaccion-text"
                   value={ocrState === 'loading' ? '' : text}

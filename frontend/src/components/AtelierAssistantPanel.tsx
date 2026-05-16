@@ -304,7 +304,7 @@ export default function AtelierAssistantPanel({
     <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         data-testid="assistant-panel"
-        className="right-0 left-auto w-[380px] max-w-full flex flex-col p-0 backdrop-blur-[12px] bg-white/80 shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] data-open:slide-in-from-right data-closed:slide-out-to-right"
+        className="right-0 left-auto w-[380px] max-w-full flex flex-col p-0 bg-white shadow-[0_8px_40px_0_rgb(26_27_34_/_0.12)] data-open:slide-in-from-right data-closed:slide-out-to-right"
         overlayClassName="bg-transparent supports-backdrop-filter:backdrop-blur-none"
       >
         {/* Header */}
