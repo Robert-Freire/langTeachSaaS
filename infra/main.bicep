@@ -48,6 +48,8 @@ var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
 var acrName = 'crlangteach${env}'
 // Azure OpenAI resource name
 var openaiName = 'oai-langteach-${env}'
+// Azure Computer Vision resource name
+var computerVisionName = 'vision-langteach-${env}'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -121,6 +123,17 @@ module openai 'modules/openai.bicep' = {
   name: 'openai'
   params: {
     name: openaiName
+    location: location
+    keyVaultName: keyVaultName
+    appPrincipalId: containerApp.outputs.principalId
+  }
+  dependsOn: [kv]
+}
+
+module computerVision 'modules/computer-vision.bicep' = {
+  name: 'computervision'
+  params: {
+    name: computerVisionName
     location: location
     keyVaultName: keyVaultName
     appPrincipalId: containerApp.outputs.principalId

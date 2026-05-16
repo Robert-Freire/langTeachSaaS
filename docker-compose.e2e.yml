@@ -66,6 +66,8 @@ services:
       Claude__ApiKey: "${CLAUDE_API_KEY}"
       AllowedOrigins__E2e: "http://frontend:5174"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      AzureAIVision__Endpoint: "${AZURE_AI_VISION_ENDPOINT}"
+      AzureAIVision__Key: "${AZURE_AI_VISION_KEY}"
       E2E_TEST_EMAIL: "${E2E_TEST_EMAIL}"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1
