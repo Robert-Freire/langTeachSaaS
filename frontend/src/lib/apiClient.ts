@@ -1,7 +1,8 @@
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, isAxiosError } from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import type { GetAccessToken, GetAccessTokenOptions } from './authHelpers'
 
+export { isAxiosError }
 export type { GetAccessToken, GetAccessTokenOptions }
 
 export const apiClient = axios.create({

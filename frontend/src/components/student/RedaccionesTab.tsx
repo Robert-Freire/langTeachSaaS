@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -21,6 +20,7 @@ import {
   type CreateCorrectionRequest,
 } from '@/api/corrections'
 import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
+import { isAxiosError } from '@/lib/apiClient'
 
 interface RedaccionesTabProps {
   studentId: string
@@ -349,7 +349,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
       setOcrState('error')
       let backendCode: string | null = null
       let backendMessage: string | null = null
-      if (axios.isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
+      if (isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
         const data = err.response.data as Record<string, unknown>
         backendCode = typeof data.code === 'string' ? data.code : null
         backendMessage = typeof data.message === 'string' ? data.message : null
