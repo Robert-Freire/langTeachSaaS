@@ -387,8 +387,11 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         var tags = new[] { new LevelFilterTagInput("G", "cuando llegues", "Construccion temporal con subjuntivo.") };
         var req = builder.Build("B1", tags);
 
-        req.UserPrompt.ToLowerInvariant().Should().Contain("subjuntivo",
-            because: "B1 full receptive scope includes cuando + subjuntivo; the correction filter must see it as in-scope");
+        var lines = req.UserPrompt.Split('\n');
+        var inScopeLine = lines.FirstOrDefault(l => l.StartsWith("Grammar in scope for B1:", StringComparison.OrdinalIgnoreCase));
+        inScopeLine.Should().NotBeNull("in-scope line must be present for B1");
+        inScopeLine!.ToLowerInvariant().Should().Contain("subjuntivo",
+            because: "B1 full receptive scope includes cuando + subjuntivo; the correction filter must see it as in-scope, not only in the out-of-scope list");
     }
 
     [Fact]
