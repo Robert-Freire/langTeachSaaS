@@ -14,7 +14,7 @@ import {
   updateCorrection,
   deleteCorrection,
   corregirCorrection,
-  uploadForOcr,
+  uploadForExtractText,
   type CorrectionStatus,
   type CorrectionSummary,
   type CreateCorrectionRequest,
@@ -339,7 +339,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
     setOcrError(null)
     setBlobUrl(null)
     try {
-      const result = await uploadForOcr(file)
+      const result = await uploadForExtractText(file)
       setText(result.text)
       setBlobUrl(result.blobUrl)
       setOcrState(result.incomplete ? 'warn' : 'idle')

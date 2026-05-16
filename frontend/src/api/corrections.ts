@@ -121,10 +121,10 @@ export async function submitCorrectionFeedback(
   await apiClient.post(`/api/students/${studentId}/corrections/${correctionId}/feedback`, body)
 }
 
-export async function uploadForOcr(file: File): Promise<OcrResult> {
+export async function uploadForExtractText(file: File): Promise<OcrResult> {
   const form = new FormData()
   form.append('file', file)
-  const res = await apiClient.post<OcrResult>('/api/corrections/ocr', form)
+  const res = await apiClient.post<OcrResult>('/api/corrections/extract-text', form)
   return res.data
 }
 
