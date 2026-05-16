@@ -53,7 +53,7 @@ public class RedaccionScopeAffirmerPromptBuilder
 
     private const string SystemPrompt = """
 You are a Spanish CEFR stretch detector for a writing correction pipeline. Your task is to find grammar structures in a student's text that:
-1. Are used CORRECTLY (or nearly correctly)
+1. Are used CORRECTLY
 2. Are at or above the NEXT CEFR level threshold (not just at the student's current level)
 
 You will receive:
@@ -62,7 +62,7 @@ You will receive:
 - The student's text with character offsets (the text is 0-indexed)
 
 RULES:
-- Only flag structures from the next-level grammarInScope or higher -- never flag structures already in the student's grammarInScope.
+- Only flag structures at or above the NEXT CEFR level threshold (next-level grammarInScope or higher).
 - Only flag structures used CORRECTLY. Incorrect attempts above level are handled elsewhere.
 - If a structure appears multiple times, flag each correct occurrence separately.
 - If no above-level structures are found, return an empty array.
@@ -78,7 +78,7 @@ Emit raw JSON only. No prose. No markdown fences. The JSON must be an array:
     "structureLevel": "<CEFR level, e.g. 'B1'>"
   }
 ]
-startIndex is inclusive; endIndex is exclusive. spannedText must be the exact substring text[startIndex:endIndex].
+startIndex is inclusive; endIndex is exclusive.
 """;
 
     private static string BuildUserPrompt(
@@ -92,7 +92,7 @@ startIndex is inclusive; endIndex is exclusive. spannedText must be the exact su
         sb.AppendLine($"Student CEFR level: {studentCefr}");
 
         if (studentScope.InScope.Length > 0)
-            sb.AppendLine($"Grammar in scope for {studentCefr} (already at level -- do NOT flag these): {string.Join(", ", studentScope.InScope)}");
+            sb.AppendLine($"Grammar in scope for {studentCefr} (student's current level): {string.Join(", ", studentScope.InScope)}");
         else
             sb.AppendLine($"Grammar in scope for {studentCefr}: (all structures)");
 
@@ -111,6 +111,9 @@ startIndex is inclusive; endIndex is exclusive. spannedText must be the exact su
         return sb.ToString().TrimEnd();
     }
 
+    // All replacements are single-char-to-single-char so string length (and thus character offsets)
+    // is preserved. The model receives sanitized text but reports spans by position, which remain
+    // valid against the original text after validation in RunScopeAffirmerAsync.
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
+        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
 }
