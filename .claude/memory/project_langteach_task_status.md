@@ -4,9 +4,16 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-13)
+## In-Flight Tasks (2026-05-16)
 
-No tasks currently in flight. Hardening II sprint complete (all 17 issues closed), sprint close pending.
+Hardening II sprint-close Phases 3b+4 ran. 4 follow-up issues opened in the milestone, must close before sprint advances:
+
+- #1263 (P1:must) -- B1 grammar scope split (load-bearing; sprint trust signal)
+- #1264 (P2:should) -- remove sprint-introduced dead prompt weight (ser/estar RULE 2 + offsets DO NOT)
+- #1265 (P2:should) -- warm-up icebreaker negative bloat hoist
+- #1266 (P3:nice) -- correction-categories.json polish (C description + antiPatternRules guard)
+
+Sprint-close paused after Phase 1. Remaining when these land: review-ui-sprint, smoke-test walkthrough, teacher-qa sprint.
 
 ## Next Sprint: Groups
 
