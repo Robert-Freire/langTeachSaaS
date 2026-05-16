@@ -609,6 +609,15 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("NEVER generate a vocabulary list");
     }
 
+    [Fact]
+    public void LessonPlanPrompt_WarmUp_ContainsSharedGuidance()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("no right or wrong answers",
+            "sharedGuidance from warmup.json must be surfaced in the lesson plan prompt");
+    }
+
     // --- Reading & Comprehension template ---
 
     [Fact]

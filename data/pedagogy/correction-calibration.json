@@ -2,9 +2,12 @@
   "cefrCalibration": {
     "A1": "Be maximally encouraging. Prefer soften over remove for above-scope structures. Use remove only when an above-scope attempt would confuse rather than support learning.",
     "A2": "Be encouraging. Prefer soften for genuine above-scope attempts that show effort. Use remove only for clearly wrong out-of-scope structures that could mislead.",
-    "B1": "Apply balanced calibration. Use soften for intentional above-scope attempts (even if imperfect), remove for clearly wrong out-of-scope errors. Use muybien when a structure at the level ceiling is used correctly. Note: soften applies to correction pipeline output; the B1.1 Grammar Focus ceiling (grammarFocusTargets in b1.json) applies only to lesson generation -- they are separate pipelines.",
+    "B1": "Apply balanced calibration. Use soften for intentional above-scope attempts (even if imperfect), remove for clearly wrong out-of-scope errors. Use muybien when a structure at the level ceiling is used correctly.",
     "B2": "Apply standard calibration. Use muybien generously for well-used advanced structures appropriate to the register. Use remove for clearly wrong out-of-scope errors.",
     "C1": "Rarely soften or remove. Use muybien generously when a student demonstrates strong command of complex structures. Keep most tags.",
     "C2": "Keep or promote to muybien for almost all tags. Removal is almost never appropriate at this level."
+  },
+  "_authoringNotes": {
+    "B1": "soften applies to correction pipeline output; the B1.1 Grammar Focus ceiling (grammarFocusTargets in b1.json) applies only to lesson generation -- they are separate pipelines."
   }
 }

@@ -377,6 +377,21 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     }
 
     [Fact]
+    public void LevelFilterPrompt_B1_DoesNotLeakPipelineDisambiguationNote()
+    {
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+
+        var tags = new[] { new LevelFilterTagInput("G", "hable", "Conjugación incorrecta.") };
+        var req = builder.Build("B1", tags);
+
+        req.UserPrompt.Should().NotContain("separate pipelines",
+            "pipeline-disambiguation note is author-facing and must not reach the model");
+    }
+
+    [Fact]
     public void LevelFilterPrompt_B1_CuandoSubjuntivoIsInScope()
     {
         // Issue #1263: B1 correction filter prompt must include cuando + subjuntivo in the in-scope list
