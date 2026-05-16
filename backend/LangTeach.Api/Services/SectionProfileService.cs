@@ -171,6 +171,9 @@ public class SectionProfileService : ISectionProfileService
         return null;
     }
 
+    public string? GetSharedGuidance(string sectionType) =>
+        GetProfile(sectionType)?.SharedGuidance;
+
     public string[] GetAllScopeValues() =>
         _profiles.Values
             .SelectMany(p => p.Levels.Values)

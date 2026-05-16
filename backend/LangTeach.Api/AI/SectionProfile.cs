@@ -3,7 +3,8 @@ namespace LangTeach.Api.AI;
 public record SectionProfile(
     string SectionType,
     Dictionary<string, SectionLevelProfile> Levels,
-    Dictionary<string, string>? WeaknessTargetingGuidance = null
+    Dictionary<string, string>? WeaknessTargetingGuidance = null,
+    string? SharedGuidance = null
 );
 
 public record SectionLevelProfile(
