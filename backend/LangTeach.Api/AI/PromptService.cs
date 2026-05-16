@@ -224,7 +224,7 @@ public class PromptService : IPromptService
 
     private string BuildGrammarScopeBlock(string level)
     {
-        var scope = _pedagogy.GetGrammarScope(level);
+        var scope = _pedagogy.GetActiveGrammarScope(level);
         if (scope.InScope.Length == 0 && scope.OutOfScope.Length == 0)
             return string.Empty;
 

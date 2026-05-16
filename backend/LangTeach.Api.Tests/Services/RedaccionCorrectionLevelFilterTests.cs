@@ -374,6 +374,43 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             $"calibration cue for {cefr} must be injected into the user prompt");
     }
 
+    [Fact]
+    public void LevelFilterPrompt_B1_CuandoSubjuntivoIsInScope()
+    {
+        // Issue #1263: B1 correction filter prompt must include cuando + subjuntivo in the in-scope list
+        // so the filter LLM knows to validate (not suppress) correct B1 subjunctive usage.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+
+        var tags = new[] { new LevelFilterTagInput("G", "cuando llegues", "Construccion temporal con subjuntivo.") };
+        var req = builder.Build("B1", tags);
+
+        req.UserPrompt.ToLowerInvariant().Should().Contain("subjuntivo",
+            because: "B1 full receptive scope includes cuando + subjuntivo; the correction filter must see it as in-scope");
+    }
+
+    [Fact]
+    public void LevelFilterPrompt_A1_SubjuntivoNotInGrammarInScope()
+    {
+        // A1 does not have subjuntivo in grammarInScope -- it appears only in grammarOutOfScope.
+        // The filter prompt must not list subjuntivo as an in-scope structure for A1.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+
+        var tags = new[] { new LevelFilterTagInput("G", "ojala vengas", "Subjuntivo presente.") };
+        var req = builder.Build("A1", tags);
+
+        var lines = req.UserPrompt.Split('\n');
+        var inScopeLine = lines.FirstOrDefault(l => l.StartsWith("Grammar in scope for A1:", StringComparison.OrdinalIgnoreCase));
+        inScopeLine.Should().NotBeNull("in-scope line must be present for A1");
+        inScopeLine!.ToLowerInvariant().Should().NotContain("subjuntivo",
+            because: "subjuntivo is not in A1 grammarInScope and must not appear in the in-scope part of the prompt");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")

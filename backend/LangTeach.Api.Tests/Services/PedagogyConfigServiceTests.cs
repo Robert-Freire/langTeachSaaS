@@ -189,6 +189,55 @@ public class PedagogyConfigServiceTests
         result.OutOfScope.Should().BeEmpty(because: "C1 grammarOutOfScope is an empty array");
     }
 
+    // --- GetActiveGrammarScope ---
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_ReturnsGrammarFocusTargets_NotFullScope()
+    {
+        // B1 defines grammarFocusTargets (active drill only, not full receptive scope).
+        // Active scope must be a subset of the full receptive scope.
+        var active = _sut.GetActiveGrammarScope("B1");
+        var full = _sut.GetGrammarScope("B1");
+
+        active.InScope.Should().NotBeEmpty();
+        active.InScope.Length.Should().BeLessThan(full.InScope.Length,
+            because: "B1 active drill scope is a subset of the full receptive scope");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_DoesNotIncludeSubjuntivo()
+    {
+        // Active drill targets for B1 exclude subjuntivo (in receptive scope but not active drill scope).
+        var active = _sut.GetActiveGrammarScope("B1");
+
+        active.InScope.Should().NotContain(
+            s => s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase),
+            because: "subjuntivo is in B1 receptive scope but must not appear in the active drill targets used for lesson generation");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_A1_FallsBackToFullInScope()
+    {
+        // A1 does not define grammarFocusTargets -- active scope equals full receptive scope.
+        var active = _sut.GetActiveGrammarScope("A1");
+        var full = _sut.GetGrammarScope("A1");
+
+        active.InScope.Should().BeEquivalentTo(full.InScope,
+            because: "levels without grammarFocusTargets fall back to full grammarInScope");
+    }
+
+    [Fact]
+    public void GetGrammarScope_B1_IncludesSubjuntivoInReceptiveScope()
+    {
+        // Full receptive scope for B1 must include cuando + subjuntivo so the correction
+        // pipeline does not suppress valid B1 structures (issue #1263).
+        var scope = _sut.GetGrammarScope("B1");
+
+        scope.InScope.Should().Contain(
+            s => s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase),
+            because: "cuando + subjuntivo is in B1 receptive scope per PCIC 29.1 and must not be suppressed by the correction filter");
+    }
+
     // --- GetVocabularyGuidance ---
 
     [Theory]

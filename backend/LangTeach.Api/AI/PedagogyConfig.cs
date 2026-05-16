@@ -58,7 +58,8 @@ public record CefrLevelRules(
     string ScaffoldingDefault,
     GuidedWritingConfig? GuidedWriting = null,
     NoticingTaskConfig? NoticingTask = null,
-    string? GrammarFocusCeiling = null
+    string? GrammarFocusCeiling = null,
+    string[]? GrammarFocusTargets = null
 );
 
 public record GuidedWritingConfig(

@@ -239,6 +239,17 @@ public class PedagogyConfigService : IPedagogyConfigService
         return new GrammarScope(rule.GrammarInScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling);
     }
 
+    public GrammarScope GetActiveGrammarScope(string level)
+    {
+        var normalLevel = NormalizeLevel(level);
+        if (!_cefrRules.TryGetValue(normalLevel, out var rule))
+            return new GrammarScope([], []);
+        var inScope = rule.GrammarFocusTargets is { Length: > 0 }
+            ? rule.GrammarFocusTargets
+            : rule.GrammarInScope;
+        return new GrammarScope(inScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling);
+    }
+
     public GuidedWritingGuidance GetGuidedWritingGuidance(string level)
     {
         var normalLevel = NormalizeLevel(level);
