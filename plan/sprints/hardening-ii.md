@@ -102,3 +102,18 @@ Teacher opens Atelier and triggers the session picker (e.g. starting a voice not
 
 **A7: Correction tag placement on repeated words (#1239)**
 Teacher submits a redacción that contains the word "es" or another common Spanish word appearing multiple times. The correction result highlights the tagged errors on the correct occurrences -- not on nearby uses of the same word that are grammatically correct (e.g. a ser/estar fix should not land on "Barcelona es una ciudad" when the actual error is in a different clause).
+
+**A8: B1 scope precision, cuando + subjuntivo not softened (#1263)**
+Teacher submits a 100+ word B1 redacción for a B1 student containing:
+- One correct ``cuando + presente de subjuntivo`` construction (e.g. ``Cuando llegues a casa, dime``).
+- One ser/estar error (e.g. ``Estoy ingeniero`` instead of ``Soy ingeniero``).
+
+After correction completes:
+- The ``cuando llegues`` construction is NOT softened, NOT removed, NOT flagged as "fuera de nivel". It is recognized as in-scope for B1 receptive validation.
+- The ser/estar error IS tagged G.
+
+**A9: A1 scope still softens above-level subjuntivo (#1263)**
+Teacher submits an A1 redacción containing ``ojalá vengas`` or another subjuntivo construction. After correction: the construction IS softened (above A1 scope). The scope split fix is B1-specific and must not widen A1 tolerance.
+
+**A10: B1.1 Grammar Focus ceiling still holds (#1263 + #1227)**
+Teacher generates a new lesson for a B1.1 student with Grammar Focus enabled. After generation: no subjuntivo (any mood), no pluscuamperfecto, no indirect-speech tense shifts appear in the Grammar Focus exercises. The ceiling promise from #1227 is unbroken by the scope split.

@@ -4,16 +4,16 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-16)
+## In-Flight Tasks (2026-05-16, round 2)
 
-Hardening II sprint-close Phases 3b+4 ran. 4 follow-up issues opened in the milestone, must close before sprint advances:
+Hardening II sprint-close round 1 follow-ups (#1263-#1266) merged. Re-run of phases 2 (UI), 3b (prompt-health), 4 (pedagogy) surfaced 4 more follow-up issues. Must close before sprint advances:
 
-- #1263 (P1:must) -- B1 grammar scope split (load-bearing; sprint trust signal)
-- #1264 (P2:should) -- remove sprint-introduced dead prompt weight (ser/estar RULE 2 + offsets DO NOT)
-- #1265 (P2:should) -- warm-up icebreaker negative bloat hoist
-- #1266 (P3:nice) -- correction-categories.json polish (C description + antiPatternRules guard)
+- #1271 (P2:should) -- warmup sharedGuidance coverage gap + correction-calibration note leak (bot debt from #1263/#1265 PRs)
+- #1272 (P1:must) -- silent ceiling gap antes/despues de que + correction-categories author notes (pedagogy load-bearing)
+- #1273 (P1:must) -- Atelier mic-open blur + Nueva redaccion upload label discoverability (sprint-promise regressions on #1234/#1237/#1257)
+- #1274 (P3:nice) -- thumbs touch target + list dividers + textarea resize handle (UI polish)
 
-Sprint-close paused after Phase 1. Remaining when these land: review-ui-sprint, smoke-test walkthrough, teacher-qa sprint.
+Sprint-close paused. Remaining when these land: smoke-test walkthrough (now with A8/A9/A10 B1 ceiling scenarios) + teacher-qa sprint.
 
 ## Next Sprint: Groups
 
