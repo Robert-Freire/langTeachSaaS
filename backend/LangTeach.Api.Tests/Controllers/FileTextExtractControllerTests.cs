@@ -13,14 +13,21 @@ public class FileTextExtractControllerResolveTests
 {
     private static readonly string[] Accepted = new OcrOptions().AcceptedContentTypes;
 
-    private sealed class FakeFormFile(string fileName, string contentType) : IFormFile
+    private sealed class FakeFormFile : IFormFile
     {
-        public string ContentType { get; } = contentType;
-        public string ContentDisposition => $"form-data; name=\"file\"; filename=\"{fileName}\"";
+        private readonly string _fileName;
+        public FakeFormFile(string fileName, string contentType)
+        {
+            _fileName = fileName;
+            FileName = fileName;
+            ContentType = contentType;
+        }
+        public string ContentType { get; }
+        public string ContentDisposition => $"form-data; name=\"file\"; filename=\"{_fileName}\"";
         public IHeaderDictionary Headers => new HeaderDictionary();
         public long Length => 0;
         public string Name => "file";
-        public string FileName { get; } = fileName;
+        public string FileName { get; }
         public void CopyTo(Stream target) { }
         public Task CopyToAsync(Stream target, CancellationToken ct = default) => Task.CompletedTask;
         public Stream OpenReadStream() => Stream.Null;
