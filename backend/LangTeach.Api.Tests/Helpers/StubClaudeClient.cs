@@ -15,13 +15,14 @@ public class StubClaudeClient : IClaudeClient
     private string _defaultContent = "{\"schemaVersion\":1,\"originalText\":\"\",\"tags\":[]}";
     private readonly List<ClaudeRequest> _allRequests = new();
     private readonly object _lock = new();
+    private int _completeCallCount;
 
     public ClaudeRequest? LastRequest { get; private set; }
-    public int CompleteCallCount { get; private set; }
+    public int CompleteCallCount => Volatile.Read(ref _completeCallCount);
 
     /// <summary>
-    /// All requests in call order. Use Requests[n] to inspect a specific call by position
-    /// (e.g. Requests[1] for the filter call when Pass 1 is Requests[0]).
+    /// All CompleteAsync and StreamAsync requests in call order. Use Requests[n] to inspect
+    /// a specific call by position (e.g. Requests[1] for the filter call when Pass 1 is Requests[0]).
     /// </summary>
     public IReadOnlyList<ClaudeRequest> Requests { get { lock (_lock) { return [.. _allRequests]; } } }
 
@@ -39,17 +40,23 @@ public class StubClaudeClient : IClaudeClient
     public void Reset()
     {
         while (_responses.TryDequeue(out _)) { }
-        LastRequest = null;
-        CompleteCallCount = 0;
+        Interlocked.Exchange(ref _completeCallCount, 0);
         _defaultContent = "{\"schemaVersion\":1,\"originalText\":\"\",\"tags\":[]}";
-        lock (_lock) { _allRequests.Clear(); }
+        lock (_lock)
+        {
+            LastRequest = null;
+            _allRequests.Clear();
+        }
     }
 
     public async Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)
     {
-        CompleteCallCount++;
-        LastRequest = request;
-        lock (_lock) { _allRequests.Add(request); }
+        Interlocked.Increment(ref _completeCallCount);
+        lock (_lock)
+        {
+            LastRequest = request;
+            _allRequests.Add(request);
+        }
         if (DuringCompleteAsync is not null)
             await DuringCompleteAsync();
         var content = _responses.TryDequeue(out var queued) ? queued : _defaultContent;
@@ -59,8 +66,12 @@ public class StubClaudeClient : IClaudeClient
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        CompleteCallCount++;
-        LastRequest = request;
+        Interlocked.Increment(ref _completeCallCount);
+        lock (_lock)
+        {
+            LastRequest = request;
+            _allRequests.Add(request);
+        }
         await Task.Yield();
         yield return _responses.TryDequeue(out var queued) ? queued : _defaultContent;
     }

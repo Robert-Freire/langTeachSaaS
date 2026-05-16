@@ -673,30 +673,28 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (affirmerTags.Count == 0)
             return filteredTags;
 
-        // Merge with origin key: 0 = filter (wins ties), 1 = affirmer (loses ties).
-        var combined = filteredTags
-            .Select(t => (tag: t, origin: 0))
-            .Concat(affirmerTags.Select(t => (tag: t, origin: 1)))
-            .OrderBy(x => x.tag.StartIndex)
-            .ThenBy(x => x.origin)
-            .ToList();
+        // Filtered tags are always authoritative. Affirmer tags are additive and lose any overlap.
+        // Start with all filtered tags, then add affirmer tags that don't overlap any existing tag.
+        var result = new List<RedaccionCorrectionTagDto>(filteredTags.Count + affirmerTags.Count);
+        result.AddRange(filteredTags);
 
-        var result = new List<RedaccionCorrectionTagDto>(combined.Count);
-        var lastEnd = 0;
-        foreach (var (tag, _) in combined)
+        foreach (var tag in affirmerTags.OrderBy(t => t.StartIndex))
         {
-            if (tag.StartIndex < lastEnd)
+            var overlaps = result.Any(existing =>
+                tag.StartIndex < existing.EndIndex && existing.StartIndex < tag.EndIndex);
+
+            if (overlaps)
             {
                 logger.LogDebug(
                     "ScopeAffirmer: drop overlapping affirmer span [{Start},{End}). CorrectionId={CorrectionId}",
                     tag.StartIndex, tag.EndIndex, correctionId);
                 continue;
             }
+
             result.Add(tag);
-            lastEnd = tag.EndIndex;
         }
 
-        return result;
+        return result.OrderBy(t => t.StartIndex).ToList();
     }
 
     // Word-boundary regex avoids false positives from words containing "ser" or "estar" as substrings.

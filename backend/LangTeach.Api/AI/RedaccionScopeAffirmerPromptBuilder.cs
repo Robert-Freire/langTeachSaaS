@@ -45,8 +45,8 @@ public class RedaccionScopeAffirmerPromptBuilder
         var user = BuildUserPrompt(studentCefr, studentText, studentScope, nextCefr, nextScope);
 
         _logger.LogDebug(
-            "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel}\n{UserPrompt}",
-            studentCefr, nextCefr, user);
+            "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel} textLength={TextLength}",
+            studentCefr, nextCefr, studentText.Length);
 
         return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 1024, Temperature: 0);
     }
@@ -111,9 +111,10 @@ startIndex is inclusive; endIndex is exclusive.
         return sb.ToString().TrimEnd();
     }
 
-    // All replacements are single-char-to-single-char so string length (and thus character offsets)
-    // is preserved. The model receives sanitized text but reports spans by position, which remain
-    // valid against the original text after validation in RunScopeAffirmerAsync.
+    // Only normalize whitespace: replacing \n/\r with spaces keeps offsets correct (1-to-1 swap)
+    // and prevents newlines from breaking the prompt structure. Do NOT replace " < > or other
+    // characters: the model reports span indices into the text it sees, so any character mutation
+    // would cause RunScopeAffirmerAsync's span validation to incorrectly reject valid spans.
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
+        s.Replace('\n', ' ').Replace('\r', ' ');
 }
