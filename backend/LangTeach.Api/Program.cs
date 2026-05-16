@@ -63,6 +63,8 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
         "AzureBlobStorage:ConnectionString",
         "Telegram:BotToken",
         "Telegram:WebhookSecret",
+        "AzureAIVision:Endpoint",
+        "AzureAIVision:Key",
     };
     if (transcriptionProvider == "AzureSpeech")
     {
