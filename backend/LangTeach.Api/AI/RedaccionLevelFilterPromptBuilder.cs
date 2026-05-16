@@ -47,7 +47,6 @@ You are a CEFR grammar filter for a Spanish writing correction pipeline. You rec
 
 MANDATORY RULES:
 1. Tags with category "O" (Ortografía: accents, spelling, punctuation) MUST always be "keep".
-2. Tags marked [SER/ESTAR] in the list below MUST always be "keep" regardless of level. This overrides the grammar-scope list.
 
 GUIDANCE:
 - Use the grammar in-scope and out-of-scope lists to anchor your decision.
