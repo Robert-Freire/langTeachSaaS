@@ -235,12 +235,15 @@ builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
 builder.Services.AddSingleton<CorrectionsBlobStorage>();
 builder.Services.AddSingleton<ICorrectionsBlobStorage>(sp => sp.GetRequiredService<CorrectionsBlobStorage>());
-if (builder.Environment.IsEnvironment("E2ETesting") || builder.Environment.IsEnvironment("Testing"))
+// StubTextExtractor is only used in unit tests (Testing). Unlike AI service stubs, text
+// extractors have no external API dependency and can run safely in E2ETesting using real
+// implementations -- which is required to verify the extraction pipeline is actually working.
+if (builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
 else
 {
     builder.Services.AddScoped<ITextExtractor, PdfTextExtractor>();        // fast-path: typed PDFs skip Vision
-    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // Vision fallback for scanned/encrypted PDFs and images
+    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // Vision fallback for scanned/encrypted PDFs and images; degrades gracefully when unconfigured
     builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>(); // .docx
 }
 builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));

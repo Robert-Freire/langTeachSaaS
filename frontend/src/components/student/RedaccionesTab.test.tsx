@@ -350,12 +350,12 @@ describe('RedaccionesTab', () => {
     expect(await screen.findByTestId('correction-drawer-ocr-error')).toHaveTextContent(
       'El formato HEIC no es compatible',
     )
-    expect(correctionsApi.uploadForOcr).not.toHaveBeenCalled()
+    expect(correctionsApi.uploadForExtractText).not.toHaveBeenCalled()
   })
 
   it('OCR success populates text area and persists blobUrl on save', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
-    vi.mocked(correctionsApi.uploadForOcr).mockResolvedValue({
+    vi.mocked(correctionsApi.uploadForExtractText).mockResolvedValue({
       text: 'Ayer fui al mercado con mi familia.',
       blobUrl: 'https://blob.example.com/corrections/123/source.jpg',
       incomplete: false,
@@ -390,7 +390,7 @@ describe('RedaccionesTab', () => {
 
   it('OCR failure shows error message and leaves textarea enabled', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
-    vi.mocked(correctionsApi.uploadForOcr).mockRejectedValue(new Error('network error'))
+    vi.mocked(correctionsApi.uploadForExtractText).mockRejectedValue(new Error('network error'))
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
 
     fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
@@ -410,7 +410,7 @@ describe('RedaccionesTab', () => {
   it('save button is disabled while OCR is in progress', async () => {
     vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
     let resolveOcr!: (v: { text: string; blobUrl: string; incomplete: boolean }) => void
-    vi.mocked(correctionsApi.uploadForOcr).mockReturnValue(
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(
       new Promise((res) => { resolveOcr = res }),
     )
     wrapper(<RedaccionesTab studentId={STUDENT_ID} />)

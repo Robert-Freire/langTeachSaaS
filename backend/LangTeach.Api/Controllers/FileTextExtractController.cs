@@ -10,22 +10,22 @@ namespace LangTeach.Api.Controllers;
 // Separate controller from CorrectionsController because this endpoint has no studentId --
 // it is a stateless pre-upload step scoped to the teacher, not to a specific correction.
 [ApiController]
-[Route("api/corrections/ocr")]
+[Route("api/corrections/extract-text")]
 [Authorize]
-public class OcrController : ControllerBase
+public class FileTextExtractController : ControllerBase
 {
     private readonly IEnumerable<ITextExtractor> _extractors;
     private readonly ICorrectionsBlobStorage _blob;
     private readonly IProfileService _profileService;
     private readonly OcrOptions _options;
-    private readonly ILogger<OcrController> _logger;
+    private readonly ILogger<FileTextExtractController> _logger;
 
-    public OcrController(
+    public FileTextExtractController(
         IEnumerable<ITextExtractor> extractors,
         ICorrectionsBlobStorage blob,
         IProfileService profileService,
         IOptions<OcrOptions> options,
-        ILogger<OcrController> logger)
+        ILogger<FileTextExtractController> logger)
     {
         _extractors = extractors;
         _blob = blob;
@@ -81,7 +81,7 @@ public class OcrController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload OCR source image. BlobPath={BlobPath}", blobPath);
+            _logger.LogError(ex, "Failed to upload source file. BlobPath={BlobPath}", blobPath);
             return StatusCode(500, new { code = "OCR_UPLOAD_FAILED", message = "No se pudo almacenar el archivo. Inténtalo de nuevo." });
         }
 
