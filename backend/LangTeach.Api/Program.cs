@@ -235,6 +235,9 @@ builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
 builder.Services.AddSingleton<CorrectionsBlobStorage>();
 builder.Services.AddSingleton<ICorrectionsBlobStorage>(sp => sp.GetRequiredService<CorrectionsBlobStorage>());
+// StubTextExtractor is only used in unit tests (Testing). Unlike AI service stubs, text
+// extractors have no external API dependency and can run safely in E2ETesting using real
+// implementations -- which is required to verify the extraction pipeline is actually working.
 if (builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
 else
