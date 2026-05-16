@@ -331,6 +331,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
   }, [isEdit, detail, hydrated])
 
   async function handleFileUpload(file: File) {
+    setOcrErrorCode(null)
     const lower = file.name.toLowerCase()
     if (HEIC_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
       setOcrError('El formato HEIC no es compatible. Usa JPG, PNG, WEBP o PDF.')
