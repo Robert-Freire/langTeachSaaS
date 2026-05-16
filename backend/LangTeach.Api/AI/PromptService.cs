@@ -1134,9 +1134,13 @@ public class PromptService : IPromptService
         var sbSections = new StringBuilder();
         foreach (var sectionName in SectionOrder)
         {
+            var sharedGuidance = _profiles.GetSharedGuidance(sectionName);
             var baseGuidance = _profiles.GetGuidance(sectionName, cefrLevel);
             if (string.IsNullOrEmpty(baseGuidance))
                 baseGuidance = GetSectionFallbackGuidance(sectionName);
+            var fullGuidance = !string.IsNullOrEmpty(sharedGuidance)
+                ? $"{sharedGuidance} {baseGuidance}"
+                : baseGuidance;
 
             var duration = _profiles.GetDuration(sectionName, cefrLevel);
             var scope = _pedagogy.GetResolvedScope(sectionName, cefrLevel, string.IsNullOrEmpty(templateName) ? null : templateName);
@@ -1145,7 +1149,7 @@ public class PromptService : IPromptService
                 ? $" ({duration.Min}-{duration.Max} min{scopeLabel})"
                 : (scope == "brief" ? " (scope: brief)" : "");
 
-            sbSections.AppendLine($"- {sectionName}{durationStr}: {baseGuidance}");
+            sbSections.AppendLine($"- {sectionName}{durationStr}: {fullGuidance}");
 
             if (templateEntry?.Sections.TryGetValue(sectionName, out var secOverride) == true
                 && !string.IsNullOrWhiteSpace(secOverride.OverrideGuidance))
