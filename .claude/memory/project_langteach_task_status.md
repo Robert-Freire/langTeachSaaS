@@ -9,10 +9,10 @@ originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 Hardening II rounds 1-3 follow-ups all merged. Teacher-qa PASS. Smoke-test corrections promise PASS. Smoke also surfaced infra wiring gaps + A9 missing feature + A10 ceiling drift.
 
 In-flight in Hardening II:
-- #1279 (P1:must) -- file upload code: AzureVisionTextExtractor graceful degradation + drop e2e stub + real extractor tests + endpoint rename
+- #1279, #1286 -- MERGED
 - #1280 (P1:must) -- Vision infra: provision Azure Computer Vision resource + wire through Bicep / Key Vault / env / docker-compose / CI
 - #1281 (P1:must) -- transcription + Telegram wiring: declared secrets present in .env.qa but never passed to QA / e2e api containers
-- #1286 (P1:must) -- A9 feature: emit MuyBien tag for correct above-level structures (new ScopeAffirmer pass in correction pipeline)
+- #1290 (P1:must) -- JPG rejected as OCR_FORMAT_UNSUPPORTED + frontend swallows backend error code/message (post-#1279 user-reported)
 
 Deferred to Groups milestone:
 - #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
