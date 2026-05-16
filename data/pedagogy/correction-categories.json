@@ -3,7 +3,7 @@
     {
       "code": "C",
       "name": "Cohesión y Coherencia",
-      "description": "connector-level or discourse-organization error.",
+      "description": "cohesion or discourse-organization error (includes connector misuse, paragraph structure, logical sequencing).",
       "subTypes": [
         "Connector-level: missing connector, wrong connector, missing temporal marker, repetitive linking structure.",
         "Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered."
@@ -109,6 +109,7 @@
     }
   ],
   "antiPatternRules": [
+    "_note: Do not add ser/estar entries here -- it is covered fully in criticalRules above. Adding it would cause duplicate emission in the system prompt.",
     "A wrong preposition is G, NEVER L.",
     "A literal translation from the student's L1 is L, NEVER G.",
     "A missing or wrong connector is C, NEVER G.",
