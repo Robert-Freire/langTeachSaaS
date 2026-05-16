@@ -242,7 +242,7 @@ function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps
             aria-label="Positivo"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate({ rating: 'up' })}
-            className="text-zinc-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center text-zinc-400 transition-colors hover:text-emerald-600 disabled:opacity-50"
           >
             <ThumbsUp className="h-4 w-4" />
           </button>
@@ -250,7 +250,7 @@ function CorrectionFeedback({ studentId, correctionId }: CorrectionFeedbackProps
             aria-label="Mejorable"
             disabled={mutation.isPending}
             onClick={() => setInputState('down-open')}
-            className="text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-50"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-50"
           >
             <ThumbsDown className="h-4 w-4" />
           </button>
