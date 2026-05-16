@@ -47,7 +47,6 @@ You are a CEFR grammar filter for a Spanish writing correction pipeline. You rec
 
 MANDATORY RULES:
 1. Tags with category "O" (Ortografía: accents, spelling, punctuation) MUST always be "keep".
-2. Tags marked [SER/ESTAR] in the list below MUST always be "keep" regardless of level. This overrides the grammar-scope list.
 
 GUIDANCE:
 - Use the grammar in-scope and out-of-scope lists to anchor your decision.
@@ -97,8 +96,7 @@ Every input tag must appear in the output exactly once, identified by its index.
             // structure and mislead the model into treating student content as instructions.
             var span = SanitizeForPrompt(t.SpannedText);
             var expl = string.IsNullOrWhiteSpace(t.Explanation) ? "(none)" : SanitizeForPrompt(t.Explanation);
-            var prefix = t.IsSerEstar ? "[SER/ESTAR] " : "";
-            sb.AppendLine($"{prefix}[{i}] Category: {t.Category} | Text: <span>{span}</span> | Explanation: {expl}");
+            sb.AppendLine($"[{i}] Category: {t.Category} | Text: <span>{span}</span> | Explanation: {expl}");
         }
 
         return sb.ToString().TrimEnd();
