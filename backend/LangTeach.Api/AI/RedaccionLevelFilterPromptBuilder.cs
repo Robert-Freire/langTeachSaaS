@@ -96,8 +96,7 @@ Every input tag must appear in the output exactly once, identified by its index.
             // structure and mislead the model into treating student content as instructions.
             var span = SanitizeForPrompt(t.SpannedText);
             var expl = string.IsNullOrWhiteSpace(t.Explanation) ? "(none)" : SanitizeForPrompt(t.Explanation);
-            var prefix = t.IsSerEstar ? "[SER/ESTAR] " : "";
-            sb.AppendLine($"{prefix}[{i}] Category: {t.Category} | Text: <span>{span}</span> | Explanation: {expl}");
+            sb.AppendLine($"[{i}] Category: {t.Category} | Text: <span>{span}</span> | Explanation: {expl}");
         }
 
         return sb.ToString().TrimEnd();
