@@ -113,11 +113,11 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
       )}
 
       {isLoading && (
-        <div className="space-y-3" data-testid="redacciones-loading">
+        <div className="space-y-4" data-testid="redacciones-loading">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl p-4 space-y-2 ring-1 ring-[#C7C4D8]/10"
+              className="bg-white rounded-2xl p-4 space-y-2"
             >
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-full" />
@@ -157,7 +157,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
-        <div className="space-y-3" data-testid="redacciones-list">
+        <div className="space-y-4" data-testid="redacciones-list">
           {data.map((c) => (
             <CorrectionCard
               key={c.id}
@@ -215,7 +215,7 @@ function CorrectionCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl p-4 ring-1 ring-[#C7C4D8]/10 ${
+      className={`bg-white rounded-2xl p-4 ${
         isCorregida ? 'cursor-pointer hover:bg-[#F4F2FD] transition-colors' : ''
       }`}
       onClick={isCorregida ? openDetail : undefined}
@@ -507,6 +507,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                   onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_MAX))}
                   placeholder="Notas sobre el ejercicio"
                   rows={3}
+                  className="resize-none"
                   data-testid="correction-drawer-prompt"
                 />
               </div>
