@@ -78,6 +78,16 @@ These replace the qa-ready agent's specialist checks. Only apply when the trigge
 - Check: does `DemoSeeder.cs` create the data needed for that screen to render?
 - If gaps exist, note them in the issue body under "Notes for implementation" so the implementer adds the spec. These are non-blocking for `qa:ready` but must be flagged.
 
+**External infrastructure gate (trigger: issue introduces or uses a new Azure resource, third-party API, secret, config key in appsettings.json, or any runtime dependency on external infrastructure)**
+- The issue body MUST include an "Infrastructure wiring" subsection answering, for every new external dependency it introduces:
+  - (a) Is the resource provisioned in production (Azure / third-party)? If no, link the infra issue that provisions it (open one if needed).
+  - (b) Is the secret added to `infra/required-secrets.json` and to `StartupConfigValidator` enforcement in `Program.cs`?
+  - (c) Is the env var passed to the `api` service environment block in `docker-compose.qa.yml` AND `docker-compose.e2e.yml`?
+  - (d) Is the placeholder added to `.env.qa.example` (and `.env.e2e.example` if it exists)?
+  - (e) Does the code register a real implementation in dev/QA/e2e -- not a stub-as-only-implementation? Stubs may be a fallback when credentials are absent, but they MUST NOT be the only registered implementation in any environment that claims to test the feature.
+- If any answer is incomplete, mark the issue `infra-pending` and add ACs covering the missing wiring. Do not add `qa:ready` until either (a) all five answers are concrete and verifiable, or (b) the infra work is explicitly scoped to a linked sibling issue that is also `qa:ready`.
+- Rationale: features can ship passing tests while broken at runtime when the wiring contract is incomplete and a stub silently absorbs the gap. Examples that hit this pattern: #1237 (image upload, never had Vision provisioned -- #1280), #1257 (.docx upload, same Vision dependency), Whisper / Speech / Telegram (declared, validated in production, never wired to QA/e2e containers -- #1281). All were caught at sprint close by manual testing rather than by any automated check. This gate moves the catch to issue creation.
+
 **XL size gate**
 - Any issue sized XL must be explicitly approved by the user before adding `qa:ready`. Present the scope breakdown and ask: "This is XL. Should we split it, or is it good to go as one issue?" Do not proceed without confirmation.
 
