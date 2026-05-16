@@ -8,3 +8,4 @@ The sprint-close procedure (Stage 1) audits this log and clears it after each sp
 
 | Issue | Date | PR | What changed and why review-ui was skipped |
 |-------|------|----|-------------------------------------------|
+| #1257 | 2026-05-13 | pending | Added `.docx` to OCR_ACCEPTED constant in RedaccionesTab.tsx (1 line, single file, attribute value only, no components/state/layout change) |

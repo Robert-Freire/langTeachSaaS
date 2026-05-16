@@ -4,9 +4,15 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-11)
+## In-Flight Tasks (2026-05-13)
 
-No tasks currently in flight. Hardening II sprint open, no tasks picked yet.
+No tasks currently in flight. Hardening II sprint complete (all 17 issues closed), sprint close pending.
+
+## Next Sprint: Groups
+
+Epic: #1238 "EPIC: Groups -- teacher creates and manages student groups for academy classes"
+Milestone: Groups (milestone already created on GitHub)
+Status: Epic created, tasks NOT yet broken out. Isaac review required before task creation (4 open pedagogical questions in the epic). Work begins after Hardening II sprint close.
 
 ## Live Tracker: GitHub Issues
 

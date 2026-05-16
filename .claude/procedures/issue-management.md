@@ -60,8 +60,10 @@ Anti-patterns to avoid:
 
 These replace the qa-ready agent's specialist checks. Only apply when the trigger matches.
 
-**Data model gate (trigger: issue mentions new table, entity, schema, migration, DTO, foreign key, content type)**
-- Ask yourself: does this change the data model? If yes, flag it to the user and recommend a Sophy review before implementation starts. A bot building on a wrong data model wastes an entire PR cycle.
+**Data model and endpoint gate (trigger: issue adds or changes any of: API endpoint, DTO, entity, DB table/column, EF migration, foreign key, service interface, content type schema)**
+- **Mandatory Sophy review before adding `qa:ready`.** Run the Sophy agent (`subagent_type: "sophy"`, model `opus`) on the full issue body plus the existing code the issue extends. Ask: "Is this issue well-specified enough for a bot to implement without producing sloppy code? Is it clear where new logic belongs and what the service/class boundaries are?"
+- If Sophy returns NEEDS CLARIFICATION: rewrite the issue to address her findings, then re-run. Do not add `qa:ready` until she approves.
+- Rationale: a sloppy issue (missing dispatcher pattern, wrong class named in the spec, ambiguous DI strategy) produces sloppy code that passes all ACs but creates debt. This is cheaper to fix in the issue than in a PR review. Example: #1257 was initially missing the `ITextExtractor` dispatcher spec -- a bot would have added an if/else inside the Azure Vision class.
 
 **AI traceability gate (trigger: issue changes PromptService, prompt templates, exercise/content types, pedagogy config)**
 - The ACs must include: `- [ ] After PR merge, update .claude/skills/teacher-qa/output/prior-findings.md with what changed`

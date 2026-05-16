@@ -73,3 +73,32 @@ After: the system's pedagogical decisions match Jordi's instincts. What it calls
 ## How to use this document
 
 The quality criterion for this sprint is: **does Jordi trust what the tool calls a correction?** Not just "does it work technically" but "does the category label match what he would label it, and does the level calibration match his professional instinct?" If the answer is "mostly" rather than "yes", the prompt work is not done.
+
+---
+
+## Smoke Test Appendix
+
+*Added 2026-05-13 during sprint close Stage 0A. Five mid-sprint issues (#1225, #1231, #1234, #1237, #1239) and one explicit pass on #1222 are not exercised by the main story walkthrough. Scenarios below close that gap.*
+
+*Issues with no browser-testable surface (#1224 prompt-builder refactor, #1228 DB hardening, #1229 prompt externalization, #1230 Atelier DTO cleanup, #1232 test infra, #1233 prompt-health sweep, #1235 Telegram dedup, #1236 voice recording audit) are internal changes with no UI change; they are not smoke-testable via browser walkthrough.*
+
+**A1: File / photo upload into Redacciones (#1237)**
+Teacher opens a student's Redacciones tab and clicks Nueva redacción. An upload button is visible next to the student text area. Teacher uploads an image of handwritten text (JPG or PNG). The OCR result populates the student text field as editable text. The text is NOT automatically submitted for correction -- teacher can review and edit before hitting Corregir.
+
+**A2: Atelier overlay does not blur background content (#1234)**
+Teacher navigates to a screen with visible content (e.g. student profile or session detail). Teacher opens Atelier via the FAB. The background content behind the Atelier panel remains fully readable -- no blur effect applied.
+
+**A3: Correction detail -- chip legend and breadcrumb (#1225)**
+Teacher opens a completed correction from the Redacciones list. The correction detail header shows a static chip legend with C, G, L, O labels. The breadcrumb trail includes the student's name (e.g. "Gavin > Redacciones > [title]").
+
+**A4: Correction list -- status badges (#1225)**
+Teacher opens the Redacciones list for any student. Each correction entry shows a status badge (Pendiente, Corregida, Fallida, etc.) that matches the correction's actual state. Badges are consistent with the detail view status.
+
+**A5: Thumbs feedback label (#1231)**
+Teacher views a completed correction. The thumbs up/down feedback component shows the label "¿Fue útil esta corrección?" adjacent to the thumbs icons.
+
+**A6: Atelier session picker row contrast (#1231)**
+Teacher opens Atelier and triggers the session picker (e.g. starting a voice note or selecting a session to associate). Session rows in the picker are legible -- text contrast is sufficient against the background (visually readable, not washed out).
+
+**A7: Correction tag placement on repeated words (#1239)**
+Teacher submits a redacción that contains the word "es" or another common Spanish word appearing multiple times. The correction result highlights the tagged errors on the correct occurrences -- not on nearby uses of the same word that are grammatically correct (e.g. a ser/estar fix should not land on "Barcelona es una ciudad" when the actual error is in a different clause).
