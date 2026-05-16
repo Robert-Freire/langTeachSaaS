@@ -9,3 +9,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 *Cleared 2026-04-27 during Student Profile Voice Input sprint close. Actionable entries batched into #989 (DS component polish), #990 (code hardening), #992 (navigation UX). Dismissed and cosmetic entries deleted (#927 dismissed, #947 rename too cosmetic).*
 
 *Cleared 2026-05-11 during Text Correction sprint close. All actionable entries batched into: #1222 (Pass 2 ser/estar enforcement), #1223 (rate limit /corregir), #1224 (arch: prompt builders + stale-recovery), #1225 (frontend: status badge map + chip legend + breadcrumb), #1226 (pedagogy: C category), #1227 (generation grammar scope), #1228 (DB hardening), #1229 (prompt externalization), #1230 (Atelier hardening), #1231 (UI polish), #1232 (test helpers), #1233 (prompt-health sweep). Deleted: cosmetic entries (eslint-disable style, timer pattern, FAB doc placement, readme-only concerns). Dismissed: intentional accessibility trade-offs (aria-disabled FAB), intentional model clarity choices (ser/estar duplication), code patterns with no current bug.*
+
+## Hardening II (2026-05-16)
+
+| PR | Reviewer | Finding | Action |
+|---|---|---|---|
+| #1263 | Prompt-health | `grammarOutOfScope` adds noise to generation prompts when `grammarFocusTargets` is populated -- exclusions redundant for generation since positive list suffices. Could omit OutOfScope from BuildGrammarScopeBlock when GrammarFocusTargets is populated. | Deferred: minor; generation prompts benefit from explicit exclusions as safety net for over-eager models |
+| #1263 | Sophy | Add startup validation that `grammarFocusTargets` entries are a subset of `grammarInScope`. Prevents future authors from adding active targets outside the receptive scope. | Deferred: low risk currently (single level defines this field); track for next pedagogy hardening sprint |
