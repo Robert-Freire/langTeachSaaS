@@ -334,7 +334,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     }
 
     [Fact]
-    public void LevelFilterPrompt_SerEstarTag_EmitsMarkerInUserPrompt()
+    public void LevelFilterPrompt_SerEstarTag_NoLongerEmitsMarkerInUserPrompt()
     {
         var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
         var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
@@ -350,10 +350,12 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         var req = builder.Build("A2", tags);
         var userPrompt = req.UserPrompt;
 
-        userPrompt.Should().Contain("[SER/ESTAR]", "ser/estar tag must be marked in user prompt");
-        userPrompt.Should().ContainEquivalentOf("[0]", "first tag index must appear");
-        // Non-ser/estar tag must not be marked.
-        userPrompt.Should().NotMatchRegex(@"\[SER/ESTAR\].*\[1\]", "only the ser/estar tag gets the marker");
+        // The [SER/ESTAR] prefix is no longer injected into the user prompt.
+        // The structural guard in RedaccionCorrectionService bypasses the filter result
+        // unconditionally for IsSerEstar tags -- the model's decision is irrelevant.
+        userPrompt.Should().NotContain("[SER/ESTAR]", "prefix was removed as dead prompt weight; structural guard handles it in code");
+        userPrompt.Should().ContainEquivalentOf("[0]", "first tag index must still appear");
+        userPrompt.Should().ContainEquivalentOf("[1]", "second tag index must still appear");
     }
 
     [Theory]
