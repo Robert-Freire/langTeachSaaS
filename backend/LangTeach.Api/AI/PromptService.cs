@@ -847,13 +847,13 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(interactionPattern))
             sb.AppendLine($"Interaction pattern: {interactionPattern}.");
 
-        sb.AppendLine($"{mainInstruction} Return JSON:");
-        sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
-
         if (!string.IsNullOrEmpty(sharedGuidance))
             sb.AppendLine(sharedGuidance);
         if (!string.IsNullOrEmpty(effectiveGuidance))
             sb.AppendLine(effectiveGuidance);
+
+        sb.AppendLine($"{mainInstruction} Return JSON:");
+        sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
 
         // Normalize sectionKey ("warmup") to canonical camelCase ("warmUp") for template lookups
         var canonicalKey = SectionKeys.CanonicalOrder
