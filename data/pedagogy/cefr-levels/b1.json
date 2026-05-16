@@ -30,7 +30,7 @@
     "Expresar condiciones reales (si + presente, futuro)"
   ],
   "grammarOutOfScope": [
-    "Subjuntivo imperfecto en todos sus usos excepto la condicional irreal (B1.2)",
+    "Subjuntivo imperfecto en todos sus usos excepto la condicional irreal -- la condicional irreal (si + imperfecto de subjuntivo, condicional) esta incluida en grammarInScope",
     "Subjuntivo perfecto y pluscuamperfecto",
     "Oraciones concesivas complejas (aunque + subjuntivo, se ve al final de B1.2/inicio de B2)",
     "Voz pasiva con ser (B2)",
@@ -38,7 +38,7 @@
     "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)",
     "Subjuntivo imperfecto en estilo indirecto (dijo que enviara) -- B2, not B1"
   ],
-  "grammarFocusCeiling": "Grammar Focus targets for B1.1 students are restricted to: imperfecto/indefinido contrast, futuro simple, condicional simple, imperativo negativo, real conditions (si + presente), oraciones temporales/causales, conectores, and perifrasis verbales. Pluscuamperfecto, subjuntivo (any mood), and indirect-speech tense shifts are B1.2 structures; they become available as Grammar Focus targets only when teacher notes confirm prior mastery.",
+  "grammarFocusCeiling": "Pluscuamperfecto, subjuntivo (any mood), and indirect-speech tense shifts become available as Grammar Focus targets only when teacher notes confirm prior mastery of core B1 tenses.",
   "appropriateExerciseTypes": [
     "GR-01",
     "GR-02",
