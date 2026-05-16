@@ -1456,14 +1456,37 @@ public class PromptServiceTests
     }
 
     [Fact]
-    public void WarmUpPrompt_ContainsNoCorrectionAnswerConstraint()
+    public void WarmUpPrompt_ContainsIcebreakerRuleFromSharedGuidance()
     {
         var ctx = BaseCtx() with { SectionType = "WarmUp" };
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Warm-up is icebreaker activation only");
-        req.UserPrompt.Should().Contain("Never frame it as grammar elicitation");
-        req.UserPrompt.Should().Contain("right or wrong answers");
+        req.UserPrompt.Should().Contain("Icebreaker activation only");
+        req.UserPrompt.Should().Contain("no right or wrong answers");
+        req.UserPrompt.Should().NotContain("Never frame it as grammar elicitation",
+            because: "negative sentence was hoisted to sharedGuidance as a positive rewrite");
+    }
+
+    [Fact]
+    public void WarmUpPrompt_B1_IcebreakerRuleAppearsExactlyOnce()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp", CefrLevel = "B1" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        var occurrences = CountOccurrences(req.UserPrompt, "no right or wrong answers");
+        occurrences.Should().Be(1,
+            because: "icebreaker rule lives in sharedGuidance only; per-level guidance must not repeat it");
+    }
+
+    private static int CountOccurrences(string text, string pattern)
+    {
+        int count = 0, index = 0;
+        while ((index = text.IndexOf(pattern, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            count++;
+            index += pattern.Length;
+        }
+        return count;
     }
 
     // --- Vocabulary prompt: vocabulary constraints injection ---

@@ -829,6 +829,7 @@ public class PromptService : IPromptService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(5)
             .ToArray();
+        var sharedGuidance = _profiles.GetSharedGuidance(sectionKey);
         var guidance = _profiles.GetGuidance(sectionKey, level);
         var effectiveGuidance = forbiddenReasons.Length > 0
             ? (string.IsNullOrEmpty(guidance) ? "" : guidance + " ")
@@ -849,6 +850,8 @@ public class PromptService : IPromptService
         sb.AppendLine($"{mainInstruction} Return JSON:");
         sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
 
+        if (!string.IsNullOrEmpty(sharedGuidance))
+            sb.AppendLine(sharedGuidance);
         if (!string.IsNullOrEmpty(effectiveGuidance))
             sb.AppendLine(effectiveGuidance);
 
