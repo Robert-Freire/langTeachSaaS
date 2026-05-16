@@ -21,9 +21,17 @@ public interface IPedagogyConfigService
 
     /// <summary>
     /// Returns in-scope and out-of-scope grammar lists for the CEFR level.
+    /// Returns the full receptive scope -- used by the correction pipeline.
     /// Returns empty arrays if the level is not found.
     /// </summary>
     GrammarScope GetGrammarScope(string level);
+
+    /// <summary>
+    /// Returns the active drill grammar scope for lesson generation.
+    /// For levels that define grammarFocusTargets (currently B1), returns the focused active-drill targets.
+    /// For other levels, falls back to the full grammarInScope.
+    /// </summary>
+    GrammarScope GetActiveGrammarScope(string level);
 
     /// <summary>
     /// Returns guided writing parameters (word counts, complexity, structure expectations) for the CEFR level.

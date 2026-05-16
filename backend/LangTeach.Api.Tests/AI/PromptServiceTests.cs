@@ -1451,7 +1451,6 @@ public class PromptServiceTests
         var req = _sut.BuildGrammarPrompt(BaseCtx()); // B1
 
         req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING");
-        req.UserPrompt.Should().Contain("B1.1");
         req.UserPrompt.Should().Contain("pluscuamperfecto");
         req.UserPrompt.Should().Contain("subjuntivo");
     }
