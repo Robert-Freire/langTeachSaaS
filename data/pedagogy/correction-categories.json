@@ -55,6 +55,7 @@
         {
           "text": "Si te invitaran",
           "note": "over-formal for a casual informal letter register when the task rubric penalises register mismatch",
+          "rationale": "tagged L not G because the register mismatch is the pedagogically salient correction at this level; grammar scope ceiling is enforced separately in the generation pipeline",
           "label": "L"
         }
       ]
@@ -108,9 +109,7 @@
       ]
     }
   ],
-  "_authoringNotes": {
-    "antiPatternRules": "Do not add ser/estar entries here -- it is covered fully in criticalRules above. Adding it would cause duplicate emission in the system prompt."
-  },
+  "antiPatternRules_GUARD": "Do not add ser/estar entries here -- it is covered fully in criticalRules above. Adding it would cause duplicate emission in the system prompt.",
   "antiPatternRules": [
     "A wrong preposition is G, NEVER L.",
     "A literal translation from the student's L1 is L, NEVER G.",

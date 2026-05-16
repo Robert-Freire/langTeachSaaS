@@ -205,14 +205,36 @@ public class PedagogyConfigServiceTests
     }
 
     [Fact]
-    public void GetActiveGrammarScope_B1_DoesNotIncludeSubjuntivo()
+    public void GetActiveGrammarScope_B1_DoesNotIncludeSubjuntivoAsStandaloneTarget()
     {
-        // Active drill targets for B1 exclude subjuntivo (in receptive scope but not active drill scope).
+        // Active drill targets for B1 must not list subjuntivo as a drill goal.
+        // Qualifier notes on other entries may mention subjuntivo in a restriction context
+        // (e.g. "antes de que: solo indicativo; el subjuntivo es receptivo").
         var active = _sut.GetActiveGrammarScope("B1");
 
         active.InScope.Should().NotContain(
-            s => s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase),
-            because: "subjuntivo is in B1 receptive scope but must not appear in the active drill targets used for lesson generation");
+            s => s.StartsWith("Subjuntivo", StringComparison.OrdinalIgnoreCase)
+                 || (s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase)
+                     && !s.Contains("receptivo", StringComparison.OrdinalIgnoreCase)),
+            because: "subjuntivo must not appear in B1 active drill targets except inside a restriction qualifier that labels it receptive-only");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_TemporalConjunctionsHaveSubjuntivoRestrictionQualifier()
+    {
+        // The temporal conjunctions entry must carry a qualifier making clear that
+        // antes/despues de que drills stay in indicative or infinitive at B1.1.
+        var active = _sut.GetActiveGrammarScope("B1");
+
+        var temporalEntry = active.InScope.FirstOrDefault(
+            s => s.Contains("antes de que", StringComparison.OrdinalIgnoreCase));
+
+        temporalEntry.Should().NotBeNull(
+            because: "B1 active drill scope must include temporal conjunctions (antes de que / despues de que)");
+        temporalEntry!.Should().Contain("indicativo",
+            because: "the qualifier must restrict antes/despues de que drills to indicative or infinitive only");
+        temporalEntry.Should().Contain("receptivo",
+            because: "the qualifier must clarify that subjuntivo usage of these conjunctions is receptive-only at B1.1");
     }
 
     [Fact]
