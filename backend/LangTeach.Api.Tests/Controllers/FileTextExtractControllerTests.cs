@@ -7,11 +7,11 @@ using LangTeach.Api.Tests.Fixtures;
 namespace LangTeach.Api.Tests.Controllers;
 
 [Collection("ApiTests")]
-public class OcrControllerTests
+public class FileTextExtractControllerTests
 {
     private readonly AuthenticatedWebAppFactory _factory;
 
-    public OcrControllerTests(AuthenticatedWebAppFactory factory)
+    public FileTextExtractControllerTests(AuthenticatedWebAppFactory factory)
     {
         _factory = factory;
     }
@@ -32,7 +32,7 @@ public class OcrControllerTests
         var client = _factory.CreateAuthenticatedClient("auth0|ocr-valid", "ocr-valid@example.com");
         var form = CreateFileContent("handwriting.jpg", "image/jpeg");
 
-        var res = await client.PostAsync("/api/corrections/ocr", form);
+        var res = await client.PostAsync("/api/corrections/extract-text", form);
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
@@ -47,7 +47,7 @@ public class OcrControllerTests
         var client = _factory.CreateAuthenticatedClient("auth0|ocr-type", "ocr-type@example.com");
         var form = CreateFileContent("document.gif", "image/gif");
 
-        var res = await client.PostAsync("/api/corrections/ocr", form);
+        var res = await client.PostAsync("/api/corrections/extract-text", form);
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await res.Content.ReadAsStringAsync();
@@ -63,7 +63,7 @@ public class OcrControllerTests
             "homework.docx",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
-        var res = await client.PostAsync("/api/corrections/ocr", form);
+        var res = await client.PostAsync("/api/corrections/extract-text", form);
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
@@ -79,7 +79,7 @@ public class OcrControllerTests
         var largeContent = new byte[11 * 1024 * 1024];
         var form = CreateFileContent("big.jpg", "image/jpeg", largeContent);
 
-        var res = await client.PostAsync("/api/corrections/ocr", form);
+        var res = await client.PostAsync("/api/corrections/extract-text", form);
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await res.Content.ReadAsStringAsync();
@@ -93,7 +93,7 @@ public class OcrControllerTests
         var client = _factory.CreateAuthenticatedClient("auth0|ocr-incomplete", "ocr-incomplete@example.com");
         var form = CreateFileContent("handwriting.jpg", "image/jpeg");
 
-        var res = await client.PostAsync("/api/corrections/ocr", form);
+        var res = await client.PostAsync("/api/corrections/extract-text", form);
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
@@ -104,7 +104,7 @@ public class OcrControllerTests
     public async Task Extract_NoFile_ReturnsBadRequest()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|ocr-nofile", "ocr-nofile@example.com");
-        var res = await client.PostAsync("/api/corrections/ocr", new MultipartFormDataContent());
+        var res = await client.PostAsync("/api/corrections/extract-text", new MultipartFormDataContent());
 
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
