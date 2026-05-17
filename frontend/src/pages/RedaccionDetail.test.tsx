@@ -1,5 +1,5 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import RedaccionDetail from './RedaccionDetail'
@@ -117,5 +117,40 @@ describe('RedaccionDetail', () => {
     renderAt('/students/stu-1/redacciones/cor-1')
     fireEvent.click(await screen.findByRole('button', { name: /Descargar .docx/ }))
     expect(await screen.findByText(/Descarga aún no disponible/i)).toBeInTheDocument()
+  })
+
+  describe('slow-correction UX hints', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    async function renderGenerating() {
+      mockGet.mockResolvedValue({ ...corregida(), status: 'Entregada', tags: [] })
+      mockCorregir.mockImplementation(() => new Promise(() => {}))
+      renderAt('/students/stu-1/redacciones/cor-1')
+      // react-query may schedule state updates via setTimeout(0); runAllTimersAsync
+      // fires those timers AND flushes the resulting promise chain.
+      await act(async () => { await vi.runAllTimersAsync() })
+      fireEvent.click(screen.getByRole('button', { name: 'Corregir' }))
+      await act(async () => {})  // flush onMutate state update + useEffect timer registration
+    }
+
+    it('shows slow hint after 60 seconds in generating state', async () => {
+      await renderGenerating()
+
+      expect(screen.queryByTestId('hint-slow')).not.toBeInTheDocument()
+
+      act(() => vi.advanceTimersByTime(60_001))
+
+      expect(screen.getByTestId('hint-slow')).toBeInTheDocument()
+      expect(screen.queryByTestId('hint-very-slow')).not.toBeInTheDocument()
+    })
+
+    it('shows very-slow hint after 4 minutes in generating state', async () => {
+      await renderGenerating()
+
+      act(() => vi.advanceTimersByTime(4 * 60_000 + 1))
+
+      expect(screen.getByTestId('hint-very-slow')).toBeInTheDocument()
+    })
   })
 })
