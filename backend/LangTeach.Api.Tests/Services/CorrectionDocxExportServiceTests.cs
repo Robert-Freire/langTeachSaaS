@@ -187,6 +187,43 @@ public class CorrectionDocxExportServiceTests
 
     // --- helpers ---
 
+    [Fact]
+    public void Generate_MuyBienWithExplanation_RendersLogrosDestacadosSection()
+    {
+        // ScopeAffirmer-origin MuyBien tags carry an Explanation.
+        // The DOCX must include a "Logros destacados" section listing them.
+        const string text = "Ojalá vengan todos mis amigos a la fiesta.";
+        var idx = text.IndexOf("vengan", StringComparison.Ordinal);
+        var explanation = "¡Bien hecho! Usaste presente de subjuntivo -- una estructura de B1. " +
+                          "Aunque está por encima de tu nivel oficial (A1), lo aplicaste correctamente.";
+        var tag = new CorrectionTagDto("MuyBien", "vengan", idx, idx + "vengan".Length, explanation, null, 0);
+        var detail = MakeDetail(text, [tag]);
+
+        var bytes = _svc.Generate(detail, "Ana");
+        var (texts, _) = ReadAllRuns(bytes);
+        var combined = string.Concat(texts);
+
+        combined.Should().Contain("Logros destacados", "ScopeAffirmer MuyBien must trigger the Logros section");
+        combined.Should().Contain("vengan", "the spanned text must appear in the Logros entry");
+        combined.Should().Contain("presente de subjuntivo", "the explanation must appear in the Logros entry");
+    }
+
+    [Fact]
+    public void Generate_MuyBienWithNullExplanation_NoLogrosSection()
+    {
+        // Filter-path MuyBien (Explanation = null) must NOT trigger a Logros section.
+        const string text = "Eso está muy bien escrito aquí.";
+        var idx = text.IndexOf("muy bien", StringComparison.Ordinal);
+        var tag = new CorrectionTagDto("MuyBien", "muy bien", idx, idx + "muy bien".Length, null, null, 0);
+        var detail = MakeDetail(text, [tag]);
+
+        var bytes = _svc.Generate(detail, "Test");
+        var (texts, _) = ReadAllRuns(bytes);
+        var combined = string.Concat(texts);
+
+        combined.Should().NotContain("Logros destacados", "filter-path MuyBien (null Explanation) must not produce a Logros section");
+    }
+
     private static CorrectionDetailDto MakeDetail(
         string text,
         IReadOnlyList<CorrectionTagDto> tags,

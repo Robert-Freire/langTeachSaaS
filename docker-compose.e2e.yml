@@ -66,6 +66,15 @@ services:
       Claude__ApiKey: "${CLAUDE_API_KEY}"
       AllowedOrigins__E2e: "http://frontend:5174"
       AzureBlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      AzureAIVision__Endpoint: "${AZURE_AI_VISION_ENDPOINT}"
+      AzureAIVision__Key: "${AZURE_AI_VISION_KEY}"
+      AzureSpeech__ApiKey: "${AZURE_SPEECH_API_KEY}"
+      AzureSpeech__Region: "${AZURE_SPEECH_REGION}"
+      AzureOpenAIWhisper__ApiKey: "${AZURE_OPENAI_WHISPER_API_KEY}"
+      AzureOpenAIWhisper__Endpoint: "${AZURE_OPENAI_WHISPER_ENDPOINT}"
+      AzureOpenAIWhisper__DeploymentName: "${AZURE_OPENAI_WHISPER_DEPLOYMENT_NAME}"
+      Telegram__BotToken: "${TELEGRAM_BOT_TOKEN}"
+      Telegram__WebhookSecret: "${TELEGRAM_WEBHOOK_SECRET}"
       E2E_TEST_EMAIL: "${E2E_TEST_EMAIL}"
     healthcheck:
       test: curl -sf http://localhost:5000/health || exit 1

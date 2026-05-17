@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getStudent, updateStudent } from '../api/students'
+import { getStudent, updateStudent, patchStudentVoice } from '../api/students'
 import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
@@ -235,7 +235,7 @@ export default function StudentDetail() {
     if (!student) return
     setVoiceFlow('saving')
     try {
-      await updateStudent(id!, { ...buildStudentPayload(), ...patch })
+      await patchStudentVoice(id!, patch)
       queryClient.invalidateQueries({ queryKey: ['student', id] })
       setVoiceFlow('idle')
       setExtractedProfile(null)

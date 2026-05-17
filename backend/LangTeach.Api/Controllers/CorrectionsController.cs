@@ -7,6 +7,7 @@ using LangTeach.Api.Services;
 using LangTeach.Api.Services.CorrectionDocxExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LangTeach.Api.Controllers;
 
@@ -100,6 +101,7 @@ public class CorrectionsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/corregir")]
+    [EnableRateLimiting("corregir")]
     public async Task<IActionResult> Corregir(Guid studentId, Guid id, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();

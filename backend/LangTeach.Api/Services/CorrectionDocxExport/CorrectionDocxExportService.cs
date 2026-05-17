@@ -70,6 +70,11 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             .OrderBy(t => t.StartIndex)
             .ToList();
 
+        // Pre-pass: collect ScopeAffirmer-origin MuyBien tags (they carry an Explanation).
+        var achievementTags = tags
+            .Where(t => t.Category == CorrectionTagCategory.MuyBien && !string.IsNullOrWhiteSpace(t.Explanation))
+            .ToList();
+
         var renderedErrorTags = new List<CorrectionTagDto>();
 
         var currentParagraph = new Paragraph();
@@ -110,6 +115,9 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
                 .ToDictionary(x => x.tag, x => x.refNum);
             AppendCorrectionsSection(body, renderedErrorTags, refNumbers);
         }
+
+        if (achievementTags.Count > 0)
+            AppendAchievementsSection(body, achievementTags);
     }
 
     private static void AppendTaggedSpan(Paragraph paragraph, CorrectionTagDto tag, int? refNum)
@@ -152,6 +160,20 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             var correctedForm = tag.CorrectedForm ?? string.Empty;
             var explanation = tag.Explanation ?? string.Empty;
             var entry = $"{num}. [{tag.Category}] \"{tag.SpannedText}\" → \"{correctedForm}\" — {explanation}";
+            body.AppendChild(BuildParagraph(runs: new[] { PlainRun(entry) }));
+        }
+    }
+
+    private static void AppendAchievementsSection(Body body, List<CorrectionTagDto> achievementTags)
+    {
+        AppendSeparator(body);
+        body.AppendChild(BuildParagraph(runs: new[] { BoldRun("Logros destacados", sizeHalfPoints: 26) }));
+        body.AppendChild(new Paragraph());
+
+        for (var i = 0; i < achievementTags.Count; i++)
+        {
+            var tag = achievementTags[i];
+            var entry = $"{i + 1}. \"{tag.SpannedText}\" -- {tag.Explanation}";
             body.AppendChild(BuildParagraph(runs: new[] { PlainRun(entry) }));
         }
     }

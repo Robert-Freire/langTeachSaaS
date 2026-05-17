@@ -224,7 +224,7 @@ public class PromptService : IPromptService
 
     private string BuildGrammarScopeBlock(string level)
     {
-        var scope = _pedagogy.GetGrammarScope(level);
+        var scope = _pedagogy.GetActiveGrammarScope(level);
         if (scope.InScope.Length == 0 && scope.OutOfScope.Length == 0)
             return string.Empty;
 
@@ -234,6 +234,8 @@ public class PromptService : IPromptService
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
         if (scope.OutOfScope.Length > 0)
             sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
+        if (!string.IsNullOrWhiteSpace(scope.CeilingNote))
+            sb.AppendLine($"GRAMMAR FOCUS CEILING: {scope.CeilingNote}");
         return sb.ToString().TrimEnd();
     }
 
@@ -604,7 +606,7 @@ public class PromptService : IPromptService
         else
         {
             sb.AppendLine();
-            sb.AppendLine("All content must be text-only and self-contained. Every exercise, example, and activity must be completable using only the text provided.");
+            sb.AppendLine("All content must be self-contained: every exercise, example, and activity must be completable using only the text provided.");
         }
 
         sb.AppendLine();
@@ -808,6 +810,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             generalPrompt += "\n\n" + templateGuidance;
 
+        var grammarScope = BuildGrammarScopeBlock(level);
+        if (!string.IsNullOrEmpty(grammarScope))
+            generalPrompt += "\n\n" + grammarScope;
+
         var convWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
         if (!string.IsNullOrEmpty(convWeaknessBlock))
             generalPrompt += "\n\n" + convWeaknessBlock;
@@ -827,7 +833,12 @@ public class PromptService : IPromptService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(5)
             .ToArray();
+        var sharedGuidance = _profiles.GetSharedGuidance(sectionKey);
         var guidance = _profiles.GetGuidance(sectionKey, level);
+        var effectiveGuidance = forbiddenReasons.Length > 0
+            ? (string.IsNullOrEmpty(guidance) ? "" : guidance + " ")
+              + "Avoid: " + string.Join("; ", forbiddenReasons) + "."
+            : guidance;
 
         var sb = new StringBuilder();
 
@@ -839,18 +850,14 @@ public class PromptService : IPromptService
             sb.AppendLine($"Duration: {duration.Min}-{duration.Max} minutes.");
         if (!string.IsNullOrEmpty(interactionPattern))
             sb.AppendLine($"Interaction pattern: {interactionPattern}.");
-        if (forbiddenReasons.Length > 0)
-        {
-            sb.AppendLine("Do not generate activities that:");
-            foreach (var reason in forbiddenReasons)
-                sb.AppendLine($"- {reason}");
-        }
+
+        if (!string.IsNullOrEmpty(sharedGuidance))
+            sb.AppendLine(sharedGuidance);
+        if (!string.IsNullOrEmpty(effectiveGuidance))
+            sb.AppendLine(effectiveGuidance);
 
         sb.AppendLine($"{mainInstruction} Return JSON:");
         sb.AppendLine("{\"scenarios\":[{\"setup\":\"\",\"roleA\":\"Teacher\",\"roleB\":\"Student\",\"roleAPhrases\":[\"\"],\"roleBPhrases\":[\"\"]}]}");
-
-        if (!string.IsNullOrEmpty(guidance))
-            sb.AppendLine(guidance);
 
         // Normalize sectionKey ("warmup") to canonical camelCase ("warmUp") for template lookups
         var canonicalKey = SectionKeys.CanonicalOrder
@@ -1131,9 +1138,13 @@ public class PromptService : IPromptService
         var sbSections = new StringBuilder();
         foreach (var sectionName in SectionOrder)
         {
+            var sharedGuidance = _profiles.GetSharedGuidance(sectionName);
             var baseGuidance = _profiles.GetGuidance(sectionName, cefrLevel);
             if (string.IsNullOrEmpty(baseGuidance))
                 baseGuidance = GetSectionFallbackGuidance(sectionName);
+            var fullGuidance = !string.IsNullOrEmpty(sharedGuidance)
+                ? $"{sharedGuidance} {baseGuidance}"
+                : baseGuidance;
 
             var duration = _profiles.GetDuration(sectionName, cefrLevel);
             var scope = _pedagogy.GetResolvedScope(sectionName, cefrLevel, string.IsNullOrEmpty(templateName) ? null : templateName);
@@ -1142,7 +1153,7 @@ public class PromptService : IPromptService
                 ? $" ({duration.Min}-{duration.Max} min{scopeLabel})"
                 : (scope == "brief" ? " (scope: brief)" : "");
 
-            sbSections.AppendLine($"- {sectionName}{durationStr}: {baseGuidance}");
+            sbSections.AppendLine($"- {sectionName}{durationStr}: {fullGuidance}");
 
             if (templateEntry?.Sections.TryGetValue(sectionName, out var secOverride) == true
                 && !string.IsNullOrWhiteSpace(secOverride.OverrideGuidance))
@@ -1545,7 +1556,7 @@ public class PromptService : IPromptService
 
             IMPORTANT CONTEXT: There is no open session in scope.
             Exception — present-day anchor: if the teacher's statement opens with a present-day anchor ("hoy", "en la clase de hoy", "esta mañana", "este mediodía", "today", "this morning", or an explicit time for today such as "de las 10:00"), treat this as a live post-class reflection for TODAY's session. Set sessionDate=today and populate sessionTitle and whatWasCovered as normal. See the newSessionTitle field rule for the null-when-today constraint. Past-tense verbs ("hemos trabajado", "hicimos") in a reflection that opens with a present-day anchor do NOT indicate retrospective registration.
-            Otherwise: if the teacher describes a class that already happened without a present-day anchor (cues: "le di clase", "ayer trabajamos", "la semana pasada hicimos"), treat it as retrospective session registration: populate newSessionTitle and newSessionDate; leave sessionTitle and whatWasCovered null.
+            Otherwise: if the teacher describes a class that already happened without a present-day anchor (cues: "le di clase", "ayer trabajamos", "la semana pasada hicimos"), treat it as retrospective session registration: populate newSessionTitle and newSessionDate.
             """;
 
         var system = $"""
@@ -1555,6 +1566,8 @@ public class PromptService : IPromptService
             IMPORTANT: All text values in your response MUST be written in the same language as the teacher's input text. If the teacher writes in Spanish, every string value — including sessionTitle, topicTags, teachingTodos, teacherFollowups, and all summaries — must be in Spanish. Never translate or switch to English.
 
             Today is {today.DayOfWeek}, {today:yyyy-MM-dd}.{weekdayFactsSection}
+
+            Weekday resolution rules: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday. For past weekday references (e.g. "el lunes pasado", "el pasado martes"): {weekdayBackwardRule} For future weekday references (e.g. "el lunes", "next Monday"): count forward to the first occurrence of that weekday strictly after today (if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. These rules apply to both sessionDate and newSessionDate.
             {difficultiesSection}
             Respond ONLY with a valid JSON object using these exact keys:
             - whatWasCovered: object or null. When present, the object has two keys: "value" (string) and "mode" (one of "append", "replace", or "skip").
@@ -1578,7 +1591,7 @@ public class PromptService : IPromptService
                 Set mode to "replace" if teacher corrects prior plans (signal words: "me equivoqué", "en realidad", "no, mejor", corrections).
                 Set mode to "skip" if this field should not be updated.
                 Return null if no next-session ideas are mentioned.
-            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. When a clock time is mentioned, capture it in `sessionStartTime` and keep `sessionDate` as YYYY-MM-DD only. Resolve date references using today's date and day of week: "hoy"/"today" = today, "ayer"/"yesterday" = yesterday, {weekdayBackwardRule} Null if no date is mentioned. The opening clause is the primary temporal anchor: it wins over any date mentioned later in the body (past-date references inside the body, e.g. "la pizarra del 30 de abril", are content references, not session date anchors).
+            - sessionDate: string or null — ISO 8601 date (YYYY-MM-DD) of the session being described. When a clock time is mentioned, capture it in `sessionStartTime` and keep `sessionDate` as YYYY-MM-DD only. Apply the weekday resolution rules above. Null if no date is mentioned. The opening clause is the primary temporal anchor: it wins over any date mentioned later in the body (past-date references inside the body, e.g. "la pizarra del 30 de abril", are content references, not session date anchors).
             - sessionStartTime: string or null — 24-hour time (HH:MM) when the session started (e.g. "09:00", "18:30"). Extract from any clock time mentioned, including present-day anchors ("la clase de hoy de las 13:00" → "13:00"). Null if not mentioned.
             - sessionTitle: string or null — a concise title (under 60 chars) for this session derived from what was covered, written in the same language as the teacher's input. Examples (Spanish input): "Subjuntivo en cláusulas temporales", "Pasado compuesto — revisión". Null if no content is mentioned. Null when there is no active session (use newSessionTitle instead).
             - suggestedDifficulties: array of objects (can be empty []) — structured breakdown of the same difficulties mentioned in areasToImprove
@@ -1595,7 +1608,7 @@ public class PromptService : IPromptService
             - difficultiesWorkedOn: array of strings — copy verbatim from the student's known difficulties list any difficulty that was explicitly worked on in this session. Empty array if none or if no known difficulties were provided.
             - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set to null when the transcript is a post-class reflection for today's session (i.e. the opening contains a present-day anchor such as "hoy", "en la clase de hoy", or a specific time). Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Past-date mentions inside the body of a reflection (e.g. "la pizarra del 30 de abril") are content references, not triggers for a new session record. Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
                 When the teacher uses a todo-creation trigger phrase ({todoTriggersList}), produce a todo object and leave newSessionTitle null — the idea belongs to the todo, not a new session.
-            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. For future dates: resolve forward from today — "el lunes" or "next Monday" = the next Monday strictly after today (count forward to the first occurrence of that weekday; if today is Saturday, the next Monday is exactly 2 days away, NOT 3). "la semana que viene" = same day next week. For retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar"): resolve backward — {weekdayBackwardRule} Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
+            - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. Apply the weekday resolution rules above: for future dates resolve forward; for retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar") resolve backward. "la semana que viene" = same day next week. Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language

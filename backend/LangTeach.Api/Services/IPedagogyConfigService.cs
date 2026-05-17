@@ -21,9 +21,17 @@ public interface IPedagogyConfigService
 
     /// <summary>
     /// Returns in-scope and out-of-scope grammar lists for the CEFR level.
+    /// Returns the full receptive scope -- used by the correction pipeline.
     /// Returns empty arrays if the level is not found.
     /// </summary>
     GrammarScope GetGrammarScope(string level);
+
+    /// <summary>
+    /// Returns the active drill grammar scope for lesson generation.
+    /// For levels that define grammarFocusTargets (currently B1), returns the focused active-drill targets.
+    /// For other levels, falls back to the full grammarInScope.
+    /// </summary>
+    GrammarScope GetActiveGrammarScope(string level);
 
     /// <summary>
     /// Returns guided writing parameters (word counts, complexity, structure expectations) for the CEFR level.
@@ -190,4 +198,15 @@ public interface IPedagogyConfigService
     /// (teaching-todo and teacher-followup detection cues for the Atelier prompt).
     /// </summary>
     IntentTriggersConfig IntentTriggers { get; }
+
+    /// <summary>
+    /// Returns the C/G/L/O correction category definitions, anti-pattern rules, and critical rules
+    /// loaded from correction-categories.json. Used to build the system prompt dynamically.
+    /// </summary>
+    CorrectionCategoriesFile GetCorrectionCategories();
+
+    /// <summary>
+    /// Returns the CEFR-specific calibration cue for the level filter prompt, or null if not defined.
+    /// </summary>
+    string? GetCorrectionCalibrationCue(string level);
 }

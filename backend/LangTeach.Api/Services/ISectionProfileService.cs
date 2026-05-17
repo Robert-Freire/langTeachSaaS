@@ -80,4 +80,10 @@ public interface ISectionProfileService
     /// Used to inject section-specific closing instructions into the conversation prompt (e.g. "no new material").
     /// </summary>
     string? GetClosingConstraint(string sectionType, string cefrLevel);
+
+    /// <summary>
+    /// Returns the shared guidance for a section, or null if not set.
+    /// Shared guidance applies to all CEFR levels and is emitted before per-level guidance.
+    /// </summary>
+    string? GetSharedGuidance(string sectionType);
 }

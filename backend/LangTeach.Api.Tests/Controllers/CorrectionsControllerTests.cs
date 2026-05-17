@@ -226,10 +226,11 @@ public class CorrectionsControllerTests
     }
 
     [Fact]
-    public async Task List_StaleCorrigiendo_RevetsToEntregada()
+    public async Task List_StaleCorrigiendo_ReturnedAsIs()
     {
-        // When a Corrigiendo record is older than StaleCorrigiendoSeconds (background task failed silently),
-        // the next GET /corrections resets it to Entregada so the teacher can retry.
+        // ListAsync is a pure read -- stale-recovery is now handled by CorrectionStaleRecoveryService
+        // (see CorrectionStaleRecoveryServiceTests). The list endpoint returns the current status
+        // without mutating it.
         var (client, studentId) = await SetupAsync("auth0|corr-staleness");
         var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
         {
@@ -250,7 +251,7 @@ public class CorrectionsControllerTests
         var listResp = await client.GetAsync($"/api/students/{studentId}/corrections");
         listResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var list = await listResp.Content.ReadFromJsonAsync<List<CorrectionSummaryDto>>();
-        list!.Should().ContainSingle(c => c.Id == created.Id && c.Status == "Entregada");
+        list!.Should().ContainSingle(c => c.Id == created.Id && c.Status == "Corrigiendo");
     }
 
     [Fact]
@@ -628,6 +629,26 @@ public class CorrectionsControllerTests
             $"/api/students/{studentA}/corrections/{correction.Id}/feedback",
             new { rating = "up" });
         resp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Create_WithSourceImageUrl_PersistsBlobUrl()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-source-img");
+        const string blobUrl = "https://example.blob.core.windows.net/corrections/123/source.jpg";
+
+        var resp = await client.PostAsJsonAsync(
+            $"/api/students/{studentId}/corrections",
+            new CreateCorrectionRequest
+            {
+                AssignmentTitle = "Foto de redacción",
+                StudentText = "Texto extraído por OCR.",
+                SourceImageUrl = blobUrl,
+            });
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
+        detail!.SourceImageUrl.Should().Be(blobUrl);
     }
 
     private async Task<CorrectionDetailDto> WaitForCorrectionStatusAsync(

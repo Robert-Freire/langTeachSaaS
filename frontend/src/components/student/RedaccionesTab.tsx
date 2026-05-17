@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Loader2, X } from 'lucide-react'
+import { ChevronRight, FileUp, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,29 +14,16 @@ import {
   updateCorrection,
   deleteCorrection,
   corregirCorrection,
+  uploadForExtractText,
   type CorrectionStatus,
   type CorrectionSummary,
   type CreateCorrectionRequest,
 } from '@/api/corrections'
+import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
+import { isAxiosError } from '@/lib/apiClient'
 
 interface RedaccionesTabProps {
   studentId: string
-}
-
-const STATUS_BADGE: Record<CorrectionStatus, string> = {
-  Pendiente: 'bg-zinc-100 text-zinc-700',
-  Entregada: 'bg-indigo-50 text-indigo-700',
-  Corrigiendo: 'bg-amber-50 text-amber-800',
-  Corregida: 'bg-emerald-50 text-emerald-800',
-  CorreccionFallida: 'bg-red-50 text-red-700',
-}
-
-const STATUS_LABEL: Record<CorrectionStatus, string> = {
-  Pendiente: 'Pendiente',
-  Entregada: 'Entregada',
-  Corrigiendo: 'Corrigiendo',
-  Corregida: 'Corregida',
-  CorreccionFallida: 'Error al corregir',
 }
 
 const TITLE_MAX = 200
@@ -127,11 +114,11 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
       )}
 
       {isLoading && (
-        <div className="space-y-3" data-testid="redacciones-loading">
+        <div className="space-y-4" data-testid="redacciones-loading">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl p-4 space-y-2 ring-1 ring-[#C7C4D8]/10"
+              className="bg-white rounded-2xl p-4 space-y-2"
             >
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-full" />
@@ -171,7 +158,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
-        <div className="space-y-3" data-testid="redacciones-list">
+        <div className="space-y-4" data-testid="redacciones-list">
           {data.map((c) => (
             <CorrectionCard
               key={c.id}
@@ -229,7 +216,7 @@ function CorrectionCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl p-4 ring-1 ring-[#C7C4D8]/10 ${
+      className={`bg-white rounded-2xl p-4 ${
         isCorregida ? 'cursor-pointer hover:bg-[#F4F2FD] transition-colors' : ''
       }`}
       onClick={isCorregida ? openDetail : undefined}
@@ -306,6 +293,9 @@ interface CorrectionDrawerProps {
   onCorregirError: (msg: string) => void
 }
 
+const OCR_ACCEPTED = '.jpg,.jpeg,.png,.webp,.pdf,.docx'
+const HEIC_EXTENSIONS = ['.heic', '.heif']
+
 function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError }: CorrectionDrawerProps) {
   const queryClient = useQueryClient()
   const isEdit = editId != null
@@ -316,6 +306,11 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
   const [textLockedError, setTextLockedError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [statusFromLoad, setStatusFromLoad] = useState<CorrectionStatus | null>(null)
+  const [ocrState, setOcrState] = useState<'idle' | 'loading' | 'warn' | 'error'>('idle')
+  const [ocrError, setOcrError] = useState<string | null>(null)
+  const [ocrErrorCode, setOcrErrorCode] = useState<string | null>(null)
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const detailQuery = useQuery({
     queryKey: ['corrections', studentId, editId],
@@ -335,11 +330,41 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
     }
   }, [isEdit, detail, hydrated])
 
+  async function handleFileUpload(file: File) {
+    setOcrErrorCode(null)
+    const lower = file.name.toLowerCase()
+    if (HEIC_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+      setOcrError('El formato HEIC no es compatible. Usa JPG, PNG, WEBP o PDF.')
+      setOcrState('error')
+      return
+    }
+    setOcrState('loading')
+    setOcrError(null)
+    setBlobUrl(null)
+    try {
+      const result = await uploadForExtractText(file)
+      setText(result.text)
+      setBlobUrl(result.blobUrl)
+      setOcrState(result.incomplete ? 'warn' : 'idle')
+    } catch (err) {
+      setOcrState('error')
+      let backendCode: string | null = null
+      let backendMessage: string | null = null
+      if (isAxiosError(err) && err.response?.data && typeof err.response.data === 'object') {
+        const data = err.response.data as Record<string, unknown>
+        backendCode = typeof data.code === 'string' ? data.code : null
+        backendMessage = typeof data.message === 'string' ? data.message : null
+      }
+      setOcrErrorCode(backendCode)
+      setOcrError(backendMessage ?? 'No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')
+    }
+  }
+
   const trimmedTitle = title.trim()
   const titleValid = trimmedTitle.length > 0 && trimmedTitle.length <= TITLE_MAX
   const studentTextLocked = isEdit && statusFromLoad === 'Corregida'
   const titleOk = isEdit ? titleValid : trimmedTitle.length <= TITLE_MAX
-  const canSave = titleOk && !isSaving && (!isEdit || hydrated)
+  const canSave = titleOk && !isSaving && (!isEdit || hydrated) && ocrState !== 'loading'
 
   const isPendienteEdit = isEdit && statusFromLoad === 'Pendiente'
   const hasText = text.trim().length > 0
@@ -378,6 +403,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
           assignmentTitle: effectiveTitle,
           assignmentPrompt: prompt.length > 0 ? prompt : null,
           studentText: text.length > 0 ? text : null,
+          sourceImageUrl: blobUrl ?? undefined,
         })
         if (text.trim().length > 0) {
           try {
@@ -492,31 +518,78 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
                   onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_MAX))}
                   placeholder="Notas sobre el ejercicio"
                   rows={3}
+                  className="resize-none"
                   data-testid="correction-drawer-prompt"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
-                  htmlFor="redaccion-text"
-                  className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
-                >
-                  Texto del alumno (opcional)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="redaccion-text"
+                    className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
+                  >
+                    Texto del alumno (opcional)
+                  </label>
+                  {!studentTextLocked && (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={OCR_ACCEPTED}
+                        className="sr-only"
+                        data-testid="correction-drawer-file-input"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) void handleFileUpload(file)
+                          e.target.value = ''
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={ocrState === 'loading'}
+                        className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-indigo-600 hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Subir archivo: foto, PDF o documento Word"
+                        data-testid="correction-drawer-upload-btn"
+                      >
+                        {ocrState === 'loading'
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <FileUp className="h-3.5 w-3.5" />}
+                        Subir archivo
+                      </button>
+                    </>
+                  )}
+                </div>
+                {!studentTextLocked && (
+                  <p className="text-[10px] text-zinc-400" data-testid="correction-drawer-upload-hint">
+                    Acepta imagen (JPG, PNG, WEBP), PDF y Word (.docx)
+                  </p>
+                )}
                 <Textarea
                   id="redaccion-text"
-                  value={text}
+                  value={ocrState === 'loading' ? '' : text}
                   onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
-                  placeholder="Pega el texto del alumno aquí"
+                  placeholder={ocrState === 'loading' ? 'Extrayendo texto...' : 'Pega el texto del alumno aquí'}
                   rows={10}
-                  className="resize-y max-h-[50vh]"
-                  disabled={studentTextLocked}
+                  className="resize-y max-h-[50vh] min-h-[12rem]"
+                  disabled={studentTextLocked || ocrState === 'loading'}
                   data-testid="correction-drawer-text"
                 />
+                {ocrState === 'warn' && (
+                  <p className="text-xs text-amber-600" data-testid="correction-drawer-ocr-warn">
+                    El texto extraído parece incompleto. Puedes editarlo antes de corregir.
+                  </p>
+                )}
+                {ocrState === 'error' && ocrError && (
+                  <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error" data-error-code={ocrErrorCode ?? undefined}>
+                    {ocrError}
+                  </p>
+                )}
                 <p className="text-xs text-zinc-500">
                   {studentTextLocked
                     ? 'El texto no se puede modificar una vez generada la corrección.'
-                    : 'Si ya tienes el texto del alumno, pégalo aquí. Lo puedes añadir más tarde.'}
+                    : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto, PDF o documento Word. Lo puedes añadir más tarde.'}
                 </p>
                 {textLockedError && (
                   <p className="text-xs text-red-600" data-testid="correction-drawer-text-error">

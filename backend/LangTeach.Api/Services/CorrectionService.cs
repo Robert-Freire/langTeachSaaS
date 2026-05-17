@@ -1,4 +1,3 @@
-using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
@@ -24,30 +23,8 @@ public class CorrectionService : ICorrectionService
         if (!await StudentBelongsToTeacherAsync(teacherId, studentId, cancellationToken))
             return null;
 
-        // Staleness recovery: a background AI task that failed silently leaves the
-        // correction stuck in Corrigiendo. After StaleCorrigiendoSeconds we revert to
-        // Entregada so the teacher can retry. Derived from RedaccionCorrectionTimeouts so
-        // the two values stay in sync -- see ClaudeClientOptions.cs.
-        var staleThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleCorrigiendoSeconds);
-        var stale = await _db.Corrections
-            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId
-                     && c.DeletedAt == null
-                     && c.Status == CorrectionStatus.Corrigiendo
-                     && c.UpdatedAt < staleThreshold)
-            .ToListAsync(cancellationToken);
-        if (stale.Count > 0)
-        {
-            var now = DateTime.UtcNow;
-            foreach (var s in stale)
-            {
-                s.Status = CorrectionStatus.Entregada;
-                s.UpdatedAt = now;
-            }
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-
         var rows = await _db.Corrections
-            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && c.DeletedAt == null)
+            .Where(c => c.TeacherId == teacherId && c.StudentId == studentId && !c.IsDeleted)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new CorrectionSummaryDto(c.Id, c.AssignmentTitle, c.Status, c.CreatedAt, c.CorrectedAt))
             .ToListAsync(cancellationToken);
@@ -73,6 +50,7 @@ public class CorrectionService : ICorrectionService
             AssignmentTitle = DefaultIfBlank(request.AssignmentTitle, now),
             AssignmentPrompt = NullIfBlank(request.AssignmentPrompt),
             StudentText = hasText ? request.StudentText : null,
+            SourceImageUrl = ToValidImageUrl(request.SourceImageUrl),
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -96,7 +74,7 @@ public class CorrectionService : ICorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         return correction is null ? null : ToDetail(correction, correction.Tags);
@@ -111,7 +89,7 @@ public class CorrectionService : ICorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         if (correction is null) return null;
@@ -153,13 +131,13 @@ public class CorrectionService : ICorrectionService
             c => c.Id == correctionId
               && c.TeacherId == teacherId
               && c.StudentId == studentId
-              && c.DeletedAt == null,
+              && !c.IsDeleted,
             cancellationToken);
 
         if (correction is null) return false;
 
-        correction.DeletedAt = DateTime.UtcNow;
-        correction.UpdatedAt = correction.DeletedAt.Value;
+        correction.IsDeleted = true;
+        correction.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -173,7 +151,7 @@ public class CorrectionService : ICorrectionService
             where c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null
+                  && !c.IsDeleted
                   && s.TeacherId == teacherId
                   && !s.IsDeleted
             select new { Correction = c, StudentName = s.Name }
@@ -199,6 +177,15 @@ public class CorrectionService : ICorrectionService
 
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? ToValidImageUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+               && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? value.Trim()
+            : null;
+    }
 
     private static CorrectionDetailDto ToDetail(Correction c, IEnumerable<CorrectionTag> tags) =>
         CorrectionDtoMapper.ToDetail(c, tags);

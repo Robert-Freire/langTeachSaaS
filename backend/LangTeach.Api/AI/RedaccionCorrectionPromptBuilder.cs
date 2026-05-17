@@ -25,7 +25,7 @@ public class RedaccionCorrectionPromptBuilder
 
     public ClaudeRequest Build(RedaccionCorrectionPromptContext ctx)
     {
-        var system = SystemPrompt;
+        var system = BuildSystemPrompt(_pedagogy.GetCorrectionCategories());
         var user = BuildUserPrompt(ctx);
 
         _logger.LogDebug("PromptSystem | blockType=redaccion-correction chars={Chars}", system.Length);
@@ -36,40 +36,63 @@ public class RedaccionCorrectionPromptBuilder
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
         // spannedText, breaking the rescue logic in ValidateAndOrderTags.
-        // MaxTokens 16384: accumulated prompt rules (#1210-#1215) make Sonnet more verbose;
-        // 150-word texts with many errors can exceed 8192 output tokens (#1219).
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 16384, Temperature: 0);
+        // MaxTokens 32768: A1 students produce 30+ errors/150 words (~50-100 tokens/tag);
+        // Hardening II prompt additions (#1222/#1226/#1227) increased output verbosity further.
+        // 16384 was no longer sufficient for real A1 content (#1293).
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0);
     }
 
-    private const string SystemPrompt = """
-You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories.
+    private static string BuildSystemPrompt(CorrectionCategoriesFile config)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("You are an experienced Spanish language teacher (EOI / private tutoring context) marking a student's redacción. You categorize errors using exactly four single-letter categories.");
+        sb.AppendLine();
+        sb.AppendLine("CATEGORIES (use the exact code letter):");
+        sb.AppendLine();
 
-CATEGORIES (use the exact code letter):
+        foreach (var cat in config.Categories)
+        {
+            sb.Append($"- {cat.Code} ({cat.Name}): {cat.Description}");
+            if (cat.SubTypes.Length > 0)
+            {
+                sb.AppendLine();
+                foreach (var sub in cat.SubTypes)
+                    sb.AppendLine($"  {sub}");
+            }
+            else
+            {
+                sb.AppendLine();
+            }
+            foreach (var ex in cat.Examples)
+                sb.AppendLine($"  Example: \"{ex.Text}\" → {ex.Note} → {ex.Label}.");
+        }
 
-- C (Cohesión): missing connector, missing temporal marker, wrong connector, repetitive structure.
-  Example: "Fui al cine. Vi una película." → missing connector → C.
-- G (Gramática): verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles.
-  Example: "*el problema es muy grande*" → if "el" is wrong gender for the noun, G.
-- L (Léxico): wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).
-  Example: "*hago una foto*" (calque from English/French) → L. "Si te invitaran" in a casual informal letter → L (over-formal for the register).
-  register mismatch: flag when the structure would be penalised in a written EOI task for that register (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures.
-- O (Ortografía): accents (tildes), misspelled words, punctuation.
-  Example: "*musica*" instead of "música" → O. "*ablar*" instead of "hablar" → O.
+        sb.AppendLine();
+        sb.AppendLine("CRITICAL RULES:");
+        sb.AppendLine();
 
-CRITICAL RULES:
+        foreach (var rule in config.CriticalRules)
+        {
+            sb.AppendLine($"- {rule.Preamble}");
+            foreach (var g in rule.Guidance)
+                sb.AppendLine($"  {g}");
+            foreach (var ex in rule.Examples)
+            {
+                sb.AppendLine($"  Example: \"{ex.Text}\" → this is a {ex.Situation}.");
+                sb.AppendLine($"  spannedText = \"{ex.SpannedText}\", category {ex.Category}, correctedForm = \"{ex.CorrectedForm}\". {ex.Note}");
+            }
+        }
 
-- ser/estar (never omit): a verb that violates the ser/estar distinction is always G at every level.
-  Use ser for general characteristics, classifications, and cultural norms
-  (es común, es importante, es normal, es difícil).
-  Use estar for temporary states and ongoing conditions.
-  If the correct form is a different word (e.g. "esta" corrected to "es"): tag G; spannedText is the verb only; correctedForm is the correct verb.
-  If only a tilde is missing (e.g. "esta" corrected to "está"): tag O; spannedText is the word only; correctedForm is the accented form.
-  Example: "Aquí esta bastante común" → this is a wrong-word error, not a tilde case.
-  spannedText = "esta", category G, correctedForm = "es". Never span the surrounding phrase.
-- A wrong preposition is G, NEVER L.
-- A literal translation from the student's L1 is L, NEVER G.
-- A missing or wrong connector is C, NEVER G.
+        foreach (var rule in config.AntiPatternRules)
+            sb.AppendLine($"- {rule}");
 
+        sb.AppendLine();
+        sb.AppendLine(OutputContract);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private const string OutputContract = """
 OUTPUT CONTRACT:
 
 Emit raw JSON only. Start directly with {. No prose before or after. No markdown fences. The JSON must match exactly:
@@ -82,6 +105,7 @@ Emit raw JSON only. Start directly with {. No prose before or after. No markdown
       "startIndex": <int>,
       "endIndex": <int>,
       "spannedText": "<exact substring of the student text at [startIndex..endIndex]>",
+      "contextBefore": "<the substring of the student text immediately before spannedText, up to 20 characters; use empty string if spannedText starts at position 0>",
       "explanation": "<short, in Spanish>",
       "correctedForm": "<the corrected form>"
     }
@@ -92,14 +116,14 @@ Emit raw JSON only. Start directly with {. No prose before or after. No markdown
 
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
 - startIndex and endIndex are Unicode character offsets into the student text between the markers (0-based, end-exclusive).
-- DO NOT derive offsets by counting characters forward from the start of the text. Counting is unreliable near accented characters (é, ó, á, ñ, ü, etc.) because your internal position tracking may not match the host's character indices.
-- CORRECT procedure for every tag:
+- CORRECT procedure for every tag (internal reasoning only -- output nothing for these steps):
   1. Decide which substring of the student text to mark; that substring is spannedText.
   2. Write the explanation.
   3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
   4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
 - spannedText MUST equal the student text at [startIndex, endIndex).
-- If spannedText would appear more than once in the student text, choose a longer or more specific span that is unique. Tags whose spannedText cannot be located unambiguously will be dropped.
+- contextBefore MUST always be emitted: it is the exact characters immediately preceding spannedText in the student text (up to 20 chars, or an empty string if spannedText starts at position 0). It is used server-side to locate the correct occurrence when spannedText appears more than once.
+- If spannedText is still ambiguous after contextBefore (i.e. the same contextBefore + spannedText sequence appears more than once), choose a longer or more specific span for spannedText that is unique. Tags that cannot be located will be dropped.
 - spannedText MUST be the minimum substring that is itself erroneous: the specific word or
   morpheme to replace, not its surrounding context. For a verb error, span the verb only.
   For a missing accent, span the word only. Never span a surrounding phrase (unless a wider
@@ -107,7 +131,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
   Example: in "Los libros son interesante", spannedText must be "interesante" (the wrong
   adjective) and correctedForm must be "interesantes", not "Los libros son interesante"
   or any larger span.
-- Tags MUST NOT overlap. Sort tags by startIndex.
+- Sort tags by startIndex.
 """;
 
     private string BuildUserPrompt(RedaccionCorrectionPromptContext ctx)
@@ -135,7 +159,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 
         if (!string.IsNullOrWhiteSpace(ctx.AssignmentPrompt))
         {
-            sb.AppendLine($"ASSIGNMENT CONTEXT: {InputSanitizer.Sanitize(ctx.AssignmentPrompt)}");
+            sb.AppendLine($"ASSIGNMENT CONTEXT: {ctx.AssignmentPrompt}");
             sb.AppendLine();
         }
 

@@ -189,6 +189,77 @@ public class PedagogyConfigServiceTests
         result.OutOfScope.Should().BeEmpty(because: "C1 grammarOutOfScope is an empty array");
     }
 
+    // --- GetActiveGrammarScope ---
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_ReturnsGrammarFocusTargets_NotFullScope()
+    {
+        // B1 defines grammarFocusTargets (active drill only, not full receptive scope).
+        // Active scope must be a subset of the full receptive scope.
+        var active = _sut.GetActiveGrammarScope("B1");
+        var full = _sut.GetGrammarScope("B1");
+
+        active.InScope.Should().NotBeEmpty();
+        active.InScope.Length.Should().BeLessThan(full.InScope.Length,
+            because: "B1 active drill scope is a subset of the full receptive scope");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_DoesNotIncludeSubjuntivoAsStandaloneTarget()
+    {
+        // Active drill targets for B1 must not list subjuntivo as a drill goal.
+        // Qualifier notes on other entries may mention subjuntivo in a restriction context
+        // (e.g. "antes de que: solo indicativo; el subjuntivo es receptivo").
+        var active = _sut.GetActiveGrammarScope("B1");
+
+        active.InScope.Should().NotContain(
+            s => s.StartsWith("Subjuntivo", StringComparison.OrdinalIgnoreCase)
+                 || (s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase)
+                     && !s.Contains("receptivo", StringComparison.OrdinalIgnoreCase)),
+            because: "subjuntivo must not appear in B1 active drill targets except inside a restriction qualifier that labels it receptive-only");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_B1_TemporalConjunctionsHaveSubjuntivoRestrictionQualifier()
+    {
+        // The temporal conjunctions entry must carry a qualifier making clear that
+        // antes/despues de que drills stay in indicative or infinitive at B1.1.
+        var active = _sut.GetActiveGrammarScope("B1");
+
+        var temporalEntry = active.InScope.FirstOrDefault(
+            s => s.Contains("antes de que", StringComparison.OrdinalIgnoreCase));
+
+        temporalEntry.Should().NotBeNull(
+            because: "B1 active drill scope must include temporal conjunctions (antes de que / despues de que)");
+        temporalEntry!.Should().Contain("indicativo",
+            because: "the qualifier must restrict antes/despues de que drills to indicative or infinitive only");
+        temporalEntry.Should().Contain("receptivo",
+            because: "the qualifier must clarify that subjuntivo usage of these conjunctions is receptive-only at B1.1");
+    }
+
+    [Fact]
+    public void GetActiveGrammarScope_A1_FallsBackToFullInScope()
+    {
+        // A1 does not define grammarFocusTargets -- active scope equals full receptive scope.
+        var active = _sut.GetActiveGrammarScope("A1");
+        var full = _sut.GetGrammarScope("A1");
+
+        active.InScope.Should().BeEquivalentTo(full.InScope,
+            because: "levels without grammarFocusTargets fall back to full grammarInScope");
+    }
+
+    [Fact]
+    public void GetGrammarScope_B1_IncludesSubjuntivoInReceptiveScope()
+    {
+        // Full receptive scope for B1 must include cuando + subjuntivo so the correction
+        // pipeline does not suppress valid B1 structures (issue #1263).
+        var scope = _sut.GetGrammarScope("B1");
+
+        scope.InScope.Should().Contain(
+            s => s.Contains("subjuntivo", StringComparison.OrdinalIgnoreCase),
+            because: "cuando + subjuntivo is in B1 receptive scope per PCIC 29.1 and must not be suppressed by the correction filter");
+    }
+
     // --- GetVocabularyGuidance ---
 
     [Theory]

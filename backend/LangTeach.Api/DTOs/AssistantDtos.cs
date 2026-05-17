@@ -10,7 +10,7 @@ public class AssistantProposeRequest
     public string Text { get; set; } = "";
 
     public Guid? StudentId { get; set; }
-    public Guid? SessionId { get; set; }
+    public Guid? SessionLogId { get; set; }
     public Guid? VoiceNoteId { get; set; }
 }
 
@@ -69,6 +69,25 @@ public class PatchStudentRequest
 
     [MaxLength(10)]
     public string? SkillLevelListening { get; set; }
+
+    // Voice-update path fields (replace semantics when non-null)
+    [RegularExpression(CefrConstants.ValidationPattern, ErrorMessage = "OfficialCefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]
+    public string? OfficialCefrLevel { get; set; }
+
+    [MaxLength(500)]
+    public string? ReasonForStudying { get; set; }
+
+    public int? BirthYear { get; set; }
+
+    [MaxLength(64)]
+    public string? CityOfResidence { get; set; }
+
+    public List<string>? NativeLanguages { get; set; }
+    public List<string>? SpokenLanguages { get; set; }
+    public List<string>? Interests { get; set; }
+    public List<ShortTermObjectiveDto>? ShortTermObjectives { get; set; }
+    public List<DifficultyDto>? Difficulties { get; set; }
+    public List<TeachingTodoDto>? TeachingTodos { get; set; }
 }
 
 public class PatchSessionRequest

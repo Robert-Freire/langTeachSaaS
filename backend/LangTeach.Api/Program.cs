@@ -14,10 +14,13 @@ using QuestPDF.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -60,6 +63,8 @@ if (!builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("
         "AzureBlobStorage:ConnectionString",
         "Telegram:BotToken",
         "Telegram:WebhookSecret",
+        "AzureAIVision:Endpoint",
+        "AzureAIVision:Key",
     };
     if (transcriptionProvider == "AzureSpeech")
     {
@@ -114,6 +119,28 @@ else
 }
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("corregir", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0,
+            }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync("{\"message\":\"Rate limit exceeded.\"}", cancellationToken);
+    };
+});
 
 // Require auth on all endpoints by default
 builder.Services.AddControllers(options =>
@@ -170,7 +197,10 @@ builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>(
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
 builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
+builder.Services.AddSingleton<RedaccionScopeAffirmerPromptBuilder>();
+builder.Services.AddSingleton<ICorrectionPromptService, CorrectionPromptService>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
+builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>
@@ -204,6 +234,20 @@ else
 
 builder.Services.AddSingleton<VoiceNoteBlobStorage>();
 builder.Services.AddSingleton<IVoiceNoteBlobStorage>(sp => sp.GetRequiredService<VoiceNoteBlobStorage>());
+builder.Services.AddSingleton<CorrectionsBlobStorage>();
+builder.Services.AddSingleton<ICorrectionsBlobStorage>(sp => sp.GetRequiredService<CorrectionsBlobStorage>());
+// StubTextExtractor is only used in unit tests (Testing). Unlike AI service stubs, text
+// extractors have no external API dependency and can run safely in E2ETesting using real
+// implementations -- which is required to verify the extraction pipeline is actually working.
+if (builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
+else
+{
+    builder.Services.AddScoped<ITextExtractor, PdfTextExtractor>();        // fast-path: typed PDFs skip Vision
+    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // Vision fallback for scanned/encrypted PDFs and images; degrades gracefully when unconfigured
+    builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>(); // .docx
+}
+builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.AddScoped<IVoiceNoteService, VoiceNoteService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<ILessonNoteService, LessonNoteService>();
@@ -276,6 +320,10 @@ using (var scope = app.Services.CreateScope())
     var voiceNoteBlobStorage = scope.ServiceProvider.GetService<VoiceNoteBlobStorage>();
     if (voiceNoteBlobStorage is not null)
         await voiceNoteBlobStorage.InitializeAsync();
+
+    var correctionsBlobStorage = scope.ServiceProvider.GetService<ICorrectionsBlobStorage>();
+    if (correctionsBlobStorage is not null)
+        await correctionsBlobStorage.InitializeAsync();
 }
 
 // Demo seeder: dotnet run -- --seed <auth0-user-id|email>
@@ -380,6 +428,7 @@ app.UseSerilogRequestLogging(options =>
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));

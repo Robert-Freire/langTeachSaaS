@@ -46,7 +46,7 @@ export async function proposeAssistant(
   const res = await apiClient.post<ProposeResponse>('/api/assistant/propose', {
     text,
     studentId: studentId ?? null,
-    sessionId: sessionId ?? null,
+    sessionLogId: sessionId ?? null,
     voiceNoteId: voiceNoteId ?? null,
   })
   return res.data

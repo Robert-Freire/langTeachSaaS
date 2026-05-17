@@ -1,0 +1,119 @@
+{
+  "categories": [
+    {
+      "code": "C",
+      "name": "Cohesión y Coherencia",
+      "description": "cohesion or discourse-organization error (includes connector misuse, paragraph structure, logical sequencing).",
+      "subTypes": [
+        "Connector-level: missing connector, wrong connector, missing temporal marker, repetitive linking structure.",
+        "Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered."
+      ],
+      "examples": [
+        {
+          "text": "Fui al cine. Vi una película.",
+          "note": "missing connector",
+          "label": "C"
+        },
+        {
+          "text": "Fui al mercado y compré fruta. Comí en casa. Después estudié.",
+          "note": "three clauses juxtaposed without connectors showing sequence or contrast at B1",
+          "label": "C"
+        },
+        {
+          "text": "Hay muchos plásticos en el océano. El reciclaje es costoso. Por eso debemos reciclar más.",
+          "note": "the paragraph lists facts before stating the main claim, leaving the reader uncertain what point is being made",
+          "label": "C"
+        }
+      ]
+    },
+    {
+      "code": "G",
+      "name": "Gramática",
+      "description": "verb conjugation, prepositions (selection, not spelling), gender/number agreement, word order, articles. See also: ser/estar distinction (criticalRules).",
+      "subTypes": [],
+      "examples": [
+        {
+          "text": "*el problema es muy grande*",
+          "note": "if \"el\" is wrong gender for the noun",
+          "label": "G"
+        }
+      ]
+    },
+    {
+      "code": "L",
+      "name": "Léxico",
+      "description": "wrong vocabulary, literal translations from L1, unnatural usage, register mismatch (a structure or expression grammatically correct but inappropriate for the formality level of the task).",
+      "subTypes": [
+        "register mismatch: only flag when the EOI task rubric specifies a register and the mismatch would cost marks (e.g. imperfect subjunctive in an A2 informal letter, highly formal fixed expressions in a casual email). Do not flag slightly elevated vocabulary or register-neutral structures."
+      ],
+      "examples": [
+        {
+          "text": "*hago una foto*",
+          "note": "calque from English/French",
+          "label": "L"
+        },
+        {
+          "text": "Si te invitaran",
+          "note": "over-formal for a casual informal letter register when the task rubric penalises register mismatch",
+          "rationale": "tagged L not G because the register mismatch is the pedagogically salient correction at this level; grammar scope ceiling is enforced separately in the generation pipeline",
+          "label": "L"
+        }
+      ]
+    },
+    {
+      "code": "O",
+      "name": "Ortografía",
+      "description": "accents (tildes), misspelled words, punctuation.",
+      "subTypes": [],
+      "examples": [
+        {
+          "text": "*musica*",
+          "note": "missing tilde; correct form is música",
+          "label": "O"
+        },
+        {
+          "text": "*ablar*",
+          "note": "misspelled; correct form is hablar",
+          "label": "O"
+        }
+      ]
+    }
+  ],
+  "criticalRules": [
+    {
+      "topic": "ser/estar",
+      "preamble": "ser/estar (never omit): a verb that violates the ser/estar distinction is always G at every level.",
+      "guidance": [
+        "Use ser for general characteristics, classifications, and cultural norms (es común, es importante, es normal, es difícil).",
+        "Use estar for temporary states and ongoing conditions.",
+        "If the correct form is a different word (e.g. \"esta\" corrected to \"es\"): tag G; spannedText is the verb only; correctedForm is the correct verb.",
+        "If only a tilde is missing (e.g. \"esta\" corrected to \"está\"): tag O; spannedText is the word only; correctedForm is the accented form."
+      ],
+      "examples": [
+        {
+          "situation": "wrong-word: general state described with estar instead of ser",
+          "text": "La situación esta complicada",
+          "spannedText": "esta",
+          "category": "G",
+          "correctedForm": "es",
+          "note": "Never span the surrounding phrase."
+        },
+        {
+          "situation": "wrong-word: locative context, estar needed, not a tilde case",
+          "text": "Aquí esta bastante común",
+          "spannedText": "esta",
+          "category": "G",
+          "correctedForm": "es",
+          "note": "Never span the surrounding phrase."
+        }
+      ]
+    }
+  ],
+  "antiPatternRules_GUARD": "Do not add ser/estar entries here -- it is covered fully in criticalRules above. Adding it would cause duplicate emission in the system prompt.",
+  "antiPatternRules": [
+    "A wrong preposition is G, NEVER L.",
+    "A literal translation from the student's L1 is L, NEVER G.",
+    "A missing or wrong connector is C, NEVER G.",
+    "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G."
+  ]
+}

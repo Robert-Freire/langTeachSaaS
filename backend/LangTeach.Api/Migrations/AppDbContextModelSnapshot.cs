@@ -98,14 +98,22 @@ namespace LangTeach.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid?>("LessonId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("MarkedUpOutput")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<int>("SchemaVersion")
                         .ValueGeneratedOnAdd()
@@ -114,6 +122,10 @@ namespace LangTeach.Api.Migrations
 
                     b.Property<Guid?>("SessionLogId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -140,9 +152,9 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("SessionLogId");
 
-                    b.HasIndex("StudentId", "DeletedAt");
+                    b.HasIndex("StudentId", "IsDeleted");
 
-                    b.HasIndex("TeacherId", "DeletedAt");
+                    b.HasIndex("TeacherId", "IsDeleted");
 
                     b.ToTable("Corrections", t =>
                         {

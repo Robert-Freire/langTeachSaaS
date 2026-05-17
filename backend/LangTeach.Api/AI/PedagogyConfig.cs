@@ -1,5 +1,41 @@
 namespace LangTeach.Api.AI;
 
+// Correction categories (correction-categories.json)
+public record CorrectionCategoriesFile(
+    CorrectionCategoryEntry[] Categories,
+    CorrectionCriticalRule[] CriticalRules,
+    string[] AntiPatternRules
+);
+
+public record CorrectionCategoryEntry(
+    string Code,
+    string Name,
+    string Description,
+    string[] SubTypes,
+    CorrectionCategoryExample[] Examples
+);
+
+public record CorrectionCategoryExample(string Text, string Note, string Label);
+
+public record CorrectionCriticalRule(
+    string Topic,
+    string Preamble,
+    string[] Guidance,
+    CorrectionCriticalRuleExample[] Examples
+);
+
+public record CorrectionCriticalRuleExample(
+    string Situation,
+    string Text,
+    string SpannedText,
+    string Category,
+    string CorrectedForm,
+    string Note
+);
+
+// Correction calibration cues (correction-calibration.json)
+public record CorrectionCalibrationFile(Dictionary<string, string> CefrCalibration);
+
 // Exercise catalog (exercise-types.json)
 public record ExerciseCatalog(ExerciseTypeEntry[] ExerciseTypes);
 
@@ -21,7 +57,9 @@ public record CefrLevelRules(
     string ErrorCorrection,
     string ScaffoldingDefault,
     GuidedWritingConfig? GuidedWriting = null,
-    NoticingTaskConfig? NoticingTask = null
+    NoticingTaskConfig? NoticingTask = null,
+    string? GrammarFocusCeiling = null,
+    string[]? GrammarFocusTargets = null
 );
 
 public record GuidedWritingConfig(

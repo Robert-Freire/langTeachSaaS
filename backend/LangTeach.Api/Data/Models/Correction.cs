@@ -15,11 +15,16 @@ public class Correction
     public string? AssignmentPrompt { get; set; }
     public string? StudentText { get; set; }
     public string? MarkedUpOutput { get; set; }
+    [System.ComponentModel.DataAnnotations.MaxLength(2048)]
+    public string? SourceImageUrl { get; set; }
+
+    public bool IsDeleted { get; set; }
+    [System.ComponentModel.DataAnnotations.Timestamp]
+    public byte[] RowVersion { get; set; } = [];
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public DateTime? CorrectedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
 
     public ICollection<CorrectionTag> Tags { get; set; } = new List<CorrectionTag>();
 }

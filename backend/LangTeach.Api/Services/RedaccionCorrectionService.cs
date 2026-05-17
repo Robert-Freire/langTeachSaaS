@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
@@ -14,7 +15,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly RedaccionCorrectionPromptBuilder _promptBuilder;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -26,12 +26,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     public RedaccionCorrectionService(
         AppDbContext db,
         IServiceScopeFactory scopeFactory,
-        RedaccionCorrectionPromptBuilder promptBuilder,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
         _scopeFactory = scopeFactory;
-        _promptBuilder = promptBuilder;
         _logger = logger;
     }
 
@@ -44,7 +42,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 c => c.Id == correctionId
                   && c.TeacherId == teacherId
                   && c.StudentId == studentId
-                  && c.DeletedAt == null,
+                  && !c.IsDeleted,
                 cancellationToken);
 
         if (correction is null)
@@ -64,7 +62,19 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         correction.Status = CorrectionStatus.Corrigiendo;
         correction.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another concurrent request won the race and already set Corrigiendo (or later).
+            // Re-query with Include so Tags are also fresh (ReloadAsync only refreshes scalars).
+            correction = await _db.Corrections
+                .Include(c => c.Tags)
+                .FirstAsync(c => c.Id == correctionId, cancellationToken);
+            return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
+        }
 
         var outerLogger = _logger;
         _ = Task.Run(async () =>
@@ -76,10 +86,37 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 var sp = scope.ServiceProvider;
                 var db = sp.GetRequiredService<AppDbContext>();
                 var claude = sp.GetRequiredService<IClaudeClient>();
-                var promptBuilder = sp.GetRequiredService<RedaccionCorrectionPromptBuilder>();
-                var filterPromptBuilder = sp.GetRequiredService<RedaccionLevelFilterPromptBuilder>();
+                var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
                 scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, promptBuilder, filterPromptBuilder, scopeLogger);
+                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, correctionPromptService, scopeLogger);
+            }
+            catch (ClaudeRateLimitException rle)
+            {
+                var errLogger = scopeLogger ?? outerLogger;
+                errLogger.LogWarning(
+                    "Background correction: Claude rate limit hit; reverting to Entregada for retry. CorrectionId={CorrectionId} TeacherId={TeacherId} RetryAfter={RetryAfter}",
+                    correctionId, teacherId, rle.RetryAfter);
+                try
+                {
+                    using var failScope = _scopeFactory.CreateScope();
+                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var failRow = await failDb.Corrections
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
+                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
+                    {
+                        failRow.Status = CorrectionStatus.Entregada;
+                        failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: if a race occurs the outer
+                        // catch (Exception saveEx) logs it, and CorrectionStaleRecoveryService
+                        // will reset the row on the next timer tick.
+                        await failDb.SaveChangesAsync();
+                    }
+                }
+                catch (Exception saveEx)
+                {
+                    errLogger.LogError(saveEx,
+                        "Failed to revert status to Entregada after Claude rate limit. CorrectionId={CorrectionId}", correctionId);
+                }
             }
             catch (Exception ex)
             {
@@ -92,11 +129,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     using var failScope = _scopeFactory.CreateScope();
                     var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
                     if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
                     {
                         failRow.Status = CorrectionStatus.CorreccionFallida;
                         failRow.UpdatedAt = DateTime.UtcNow;
+                        // No DbUpdateConcurrencyException guard here: outer catch logs it,
+                        // and CorrectionStaleRecoveryService resets the row on the next tick.
                         await failDb.SaveChangesAsync();
                     }
                 }
@@ -114,13 +153,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private static async Task RunCorrectionInScopeAsync(
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
-        RedaccionCorrectionPromptBuilder promptBuilder,
-        RedaccionLevelFilterPromptBuilder filterPromptBuilder,
+        ICorrectionPromptService correctionPromptService,
         ILogger logger)
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && c.DeletedAt == null);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
 
         if (correction is null)
         {
@@ -150,7 +188,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
-        var request = promptBuilder.Build(ctx);
+        var request = correctionPromptService.BuildCorrectionPrompt(ctx);
         var sentText = ctx.StudentText.TrimEnd();
 
         var response = await claude.CompleteAsync(request, CancellationToken.None);
@@ -197,7 +235,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, filterPromptBuilder, correctionId, logger);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
+
+        var affirmerTags = await RunScopeAffirmerAsync(
+            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger);
+
+        var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = stripped!;
@@ -206,9 +249,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = now;
         correction.SchemaVersion = 1;
 
-        for (var i = 0; i < filteredTags.Count; i++)
+        for (var i = 0; i < mergedTags.Count; i++)
         {
-            var t = filteredTags[i];
+            var t = mergedTags[i];
             db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
@@ -226,9 +269,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         await db.SaveChangesAsync(CancellationToken.None);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} ModelTokens={InputTokens}/{OutputTokens}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded} ModelTokens={InputTokens}/{OutputTokens}",
             correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
-            filteredTags.Count, validatedTags.Count - filteredTags.Count, response.InputTokens, response.OutputTokens);
+            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count,
+            response.InputTokens, response.OutputTokens);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -249,7 +293,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             StudentText: studentText,
             StudentL1: l1,
             StudentDifficulties: difficulties,
-            AssignmentPrompt: correction.AssignmentPrompt);
+            AssignmentPrompt: InputSanitizer.Sanitize(correction.AssignmentPrompt));
     }
 
     private static string? ParseFirstString(string json)
@@ -331,65 +375,88 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                         "Drop tag: spannedText is null or empty. CorrectionId={CorrectionId}", correctionId);
                     continue;
                 }
-                // Collect all occurrences of spannedText in the original text.
-                var occurrences = new List<int>();
-                var searchFrom = 0;
-                while (true)
+
+                // Try contextBefore + spannedText for unambiguous rescue (avoids proximity
+                // heuristic failures when a common word like "es" appears many times).
+                int? contextFoundAt = null;
+                if (!string.IsNullOrEmpty(tag.ContextBefore))
                 {
-                    var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
-                    if (hit < 0) break;
-                    occurrences.Add(hit);
-                    searchFrom = hit + 1;
+                    var combined = tag.ContextBefore + tag.SpannedText;
+                    var combinedHits = new List<int>();
+                    var cf = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(combined, cf, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        combinedHits.Add(hit + tag.ContextBefore.Length);
+                        cf = hit + 1;
+                    }
+                    if (combinedHits.Count == 1)
+                        contextFoundAt = combinedHits[0];
                 }
-                if (occurrences.Count == 0)
+
+                if (contextFoundAt.HasValue)
                 {
+                    tag = tag with { StartIndex = contextFoundAt.Value, EndIndex = contextFoundAt.Value + tag.SpannedText.Length };
+                }
+                else
+                {
+                    // Fall back to proximity-based rescue.
+                    var occurrences = new List<int>();
+                    var searchFrom = 0;
+                    while (true)
+                    {
+                        var hit = originalText.IndexOf(tag.SpannedText, searchFrom, StringComparison.Ordinal);
+                        if (hit < 0) break;
+                        occurrences.Add(hit);
+                        searchFrom = hit + 1;
+                    }
+                    if (occurrences.Count == 0)
+                    {
+                        logger.LogWarning(
+                            "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
+                            tag.SpannedText, correctionId);
+                        continue;
+                    }
+                    // When there are multiple occurrences, use the model's startIndex as a proximity hint:
+                    // the model knows approximately where the error is even if the exact offset drifted due
+                    // to accented characters. Pick the occurrence closest to the reported startIndex.
+                    // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
+                    var foundAt = occurrences.Count == 1
+                        ? occurrences[0]
+                        : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
+                    if (occurrences.Count > 1)
+                    {
+                        logger.LogWarning(
+                            "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
+                            tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
+                    }
                     logger.LogWarning(
-                        "Drop tag: spannedText '{Spanned}' not found in originalText (model hallucinated span). CorrectionId={CorrectionId}",
-                        tag.SpannedText, correctionId);
-                    continue;
+                        "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
+                        tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
+                    tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
                 }
-                // When there are multiple occurrences, use the model's startIndex as a proximity hint:
-                // the model knows approximately where the error is even if the exact offset drifted due
-                // to accented characters. Pick the occurrence closest to the reported startIndex.
-                // On a tie (two occurrences equidistant), MinBy returns the earlier one (stable).
-                var foundAt = occurrences.Count == 1
-                    ? occurrences[0]
-                    : occurrences.MinBy(p => Math.Abs(p - tag.StartIndex));
-                if (occurrences.Count > 1)
-                {
-                    logger.LogWarning(
-                        "Rescue tag: '{Spanned}' found {N} times; chose position {Chosen} nearest model-reported {Reported}. CorrectionId={CorrectionId}",
-                        tag.SpannedText, occurrences.Count, foundAt, tag.StartIndex, correctionId);
-                }
+            }
+
+            // MuyBien is produced by the level filter or ScopeAffirmer -- never by Pass 1.
+            // Drop any MuyBien that the model hallucinated in Pass 1.
+            if (tag.Category == CorrectionTagCategory.MuyBien)
+            {
                 logger.LogWarning(
-                    "Rescue tag: Unicode offset drift; spannedText '{Spanned}' relocated from model-reported [{Start},{End}) to [{Fixed},{FixedEnd}). CorrectionId={CorrectionId}",
-                    tag.SpannedText, tag.StartIndex, tag.EndIndex, foundAt, foundAt + tag.SpannedText.Length, correctionId);
-                tag = tag with { StartIndex = foundAt, EndIndex = foundAt + tag.SpannedText.Length };
+                    "Drop tag: MuyBien from Pass 1 is unexpected (produced by filter/ScopeAffirmer, not by correction prompt). CorrectionId={CorrectionId}",
+                    correctionId);
+                continue;
             }
 
             string? explanation = tag.Explanation;
             string? correctedForm = tag.CorrectedForm;
 
-            if (tag.Category == CorrectionTagCategory.MuyBien)
+            if (string.IsNullOrWhiteSpace(explanation) || string.IsNullOrWhiteSpace(correctedForm))
             {
-                if (!string.IsNullOrWhiteSpace(explanation) || !string.IsNullOrWhiteSpace(correctedForm))
-                {
-                    logger.LogWarning(
-                        "MuyBien tag had non-null explanation/correctedForm; coercing to null. CorrectionId={CorrectionId}",
-                        correctionId);
-                }
-                explanation = null;
-                correctedForm = null;
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(explanation) || string.IsNullOrWhiteSpace(correctedForm))
-                {
-                    logger.LogWarning(
-                        "Drop tag: category {Category} requires non-empty explanation and correctedForm. CorrectionId={CorrectionId}",
-                        tag.Category, correctionId);
-                    continue;
-                }
+                logger.LogWarning(
+                    "Drop tag: category {Category} requires non-empty explanation and correctedForm. CorrectionId={CorrectionId}",
+                    tag.Category, correctionId);
+                continue;
             }
 
             kept.Add(tag with { Explanation = explanation, CorrectedForm = correctedForm });
@@ -420,7 +487,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string cefr,
         string? assignmentPrompt,
         IClaudeClient claude,
-        RedaccionLevelFilterPromptBuilder filterBuilder,
+        ICorrectionPromptService correctionPromptService,
         Guid correctionId,
         ILogger logger)
     {
@@ -428,13 +495,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return tags;
 
         var inputs = tags
-            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation))
+            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
             .ToList();
 
         ClaudeResponse filterResponse;
         try
         {
-            var filterRequest = filterBuilder.Build(cefr, inputs, assignmentPrompt);
+            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt);
             filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
         }
         catch (Exception ex)
@@ -476,8 +543,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var tag = tags[i];
 
-            // O and MuyBien tags always pass through regardless of filter decision.
-            if (tag.Category == CorrectionTagCategory.Ortografia || tag.Category == CorrectionTagCategory.MuyBien)
+            // O, MuyBien, and ser/estar G tags always pass through regardless of filter decision.
+            if (tag.Category == CorrectionTagCategory.Ortografia || tag.Category == CorrectionTagCategory.MuyBien
+                || inputs[i].IsSerEstar)
             {
                 result.Add(tag);
                 continue;
@@ -498,8 +566,6 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 case "soften":
                 case "muybien":
                     // Convert to MuyBien: highlights the attempt without penalising the student.
-                    // decision.Note (the warm Spanish praise) is not persisted to DB in this
-                    // version; CorrectionTag has no note column. Pending schema enhancement.
                     result.Add(tag with
                     {
                         Category = CorrectionTagCategory.MuyBien,
@@ -522,6 +588,126 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return result;
     }
 
+    private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> RunScopeAffirmerAsync(
+        IReadOnlyList<RedaccionCorrectionTagDto> existingTags,
+        string cefr,
+        string originalText,
+        IClaudeClient claude,
+        ICorrectionPromptService correctionPromptService,
+        Guid correctionId,
+        ILogger logger)
+    {
+        // Skip C2 (nothing is above C2).
+        if (!RedaccionScopeAffirmerPromptBuilder.NextLevel.TryGetValue(cefr, out var nextCefr))
+        {
+            logger.LogDebug("ScopeAffirmer: skipping for level {Cefr}. CorrectionId={CorrectionId}", cefr, correctionId);
+            return [];
+        }
+
+        // Skip very long texts to keep cost bounded.
+        var wordCount = originalText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+        if (wordCount > 800)
+        {
+            logger.LogDebug("ScopeAffirmer: skipping -- text too long ({Words} words). CorrectionId={CorrectionId}", wordCount, correctionId);
+            return [];
+        }
+
+        List<ScopeAffirmerSpan>? results;
+        try
+        {
+            var request = correctionPromptService.BuildScopeAffirmerPrompt(cefr, originalText, nextCefr);
+            var response = await claude.CompleteAsync(request, CancellationToken.None);
+            var raw = ContentJsonHelper.StripFences(response.Content);
+            results = JsonSerializer.Deserialize<List<ScopeAffirmerSpan>>(raw ?? string.Empty, JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "ScopeAffirmer: call or parse failed; no affirmations added. CorrectionId={CorrectionId}", correctionId);
+            return [];
+        }
+
+        if (results is null || results.Count == 0)
+            return [];
+
+        var affirmerTags = new List<RedaccionCorrectionTagDto>(results.Count);
+        foreach (var result in results)
+        {
+            // Validate span: reject if offsets are out of range or text doesn't match.
+            if (result.StartIndex < 0 || result.EndIndex <= result.StartIndex || result.EndIndex > originalText.Length)
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop result -- bad offsets [{Start},{End}) for text length {Len}. CorrectionId={CorrectionId}",
+                    result.StartIndex, result.EndIndex, originalText.Length, correctionId);
+                continue;
+            }
+            var actualSpan = originalText.Substring(result.StartIndex, result.EndIndex - result.StartIndex);
+            if (!string.Equals(actualSpan, result.SpannedText, StringComparison.Ordinal))
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop result -- hallucinated span '{Span}' not at [{Start},{End}). CorrectionId={CorrectionId}",
+                    result.SpannedText, result.StartIndex, result.EndIndex, correctionId);
+                continue;
+            }
+
+            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} -- una estructura de {result.StructureLevel}. " +
+                              $"Aunque está por encima de tu nivel oficial ({cefr.ToUpperInvariant()}), lo aplicaste correctamente.";
+
+            affirmerTags.Add(new RedaccionCorrectionTagDto(
+                Category: CorrectionTagCategory.MuyBien,
+                StartIndex: result.StartIndex,
+                EndIndex: result.EndIndex,
+                SpannedText: result.SpannedText,
+                Explanation: explanation,
+                CorrectedForm: null));
+        }
+
+        return affirmerTags;
+    }
+
+    private static IReadOnlyList<RedaccionCorrectionTagDto> MergeAndDedupWithAffirmer(
+        IReadOnlyList<RedaccionCorrectionTagDto> filteredTags,
+        IReadOnlyList<RedaccionCorrectionTagDto> affirmerTags,
+        Guid correctionId,
+        ILogger logger)
+    {
+        if (affirmerTags.Count == 0)
+            return filteredTags;
+
+        // Filtered tags are always authoritative. Affirmer tags are additive and lose any overlap.
+        // Start with all filtered tags, then add affirmer tags that don't overlap any existing tag.
+        var result = new List<RedaccionCorrectionTagDto>(filteredTags.Count + affirmerTags.Count);
+        result.AddRange(filteredTags);
+
+        foreach (var tag in affirmerTags.OrderBy(t => t.StartIndex))
+        {
+            var overlaps = result.Any(existing =>
+                tag.StartIndex < existing.EndIndex && existing.StartIndex < tag.EndIndex);
+
+            if (overlaps)
+            {
+                logger.LogDebug(
+                    "ScopeAffirmer: drop overlapping affirmer span [{Start},{End}). CorrectionId={CorrectionId}",
+                    tag.StartIndex, tag.EndIndex, correctionId);
+                continue;
+            }
+
+            result.Add(tag);
+        }
+
+        return result.OrderBy(t => t.StartIndex).ToList();
+    }
+
+    // Word-boundary regex avoids false positives from words containing "ser" or "estar" as substrings.
+    private static readonly Regex SerRegex = new(@"\bser\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex EstarRegex = new(@"\bestar\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static bool IsSerEstarGTag(RedaccionCorrectionTagDto tag)
+    {
+        if (tag.Category != CorrectionTagCategory.Gramatica) return false;
+        var expl = tag.Explanation ?? "";
+        return SerRegex.IsMatch(expl) && EstarRegex.IsMatch(expl);
+    }
+
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests
     // can construct fixture payloads against the same shape the production code parses.
     public record RedaccionCorrectionDto(
@@ -534,10 +720,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         [property: JsonPropertyName("endIndex")] int EndIndex,
         [property: JsonPropertyName("spannedText")] string SpannedText,
         [property: JsonPropertyName("explanation")] string? Explanation,
-        [property: JsonPropertyName("correctedForm")] string? CorrectedForm);
+        [property: JsonPropertyName("correctedForm")] string? CorrectedForm,
+        [property: JsonPropertyName("contextBefore")] string? ContextBefore = null);
 
     private record FilterDecision(
         [property: JsonPropertyName("index")] int Index,
-        [property: JsonPropertyName("decision")] string Decision,
-        [property: JsonPropertyName("note")] string? Note);
+        [property: JsonPropertyName("decision")] string Decision);
 }

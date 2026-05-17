@@ -1,29 +1,44 @@
 {
   "level": "B1",
+  "_note": "grammarInScope = full B1 receptive scope (correction validation). grammarFocusTargets = B1.1 active drill scope (lesson generation). Never encode sub-level qualifications in grammarInScope -- they confuse the correction LLM.",
   "grammarInScope": [
     "Preterito imperfecto y su contraste con indefinido (habito vs evento, descripcion vs accion)",
-    "Preterito pluscuamperfecto",
     "Futuro simple (irregulares incluidos)",
     "Condicional simple",
-    "Subjuntivo presente (introduccion): ojala, quiero que, cuando + subjuntivo, para que, es necesario que",
     "Imperativo negativo",
     "Oraciones temporales (cuando, mientras, antes de que, despues de que)",
     "Oraciones causales y finales (porque, como, para que, a fin de que)",
-    "Estilo indirecto basico (dijo que + imperfecto)",
     "Conectores avanzados: sin embargo, no obstante, en primer lugar, por un lado/por otro, en conclusion",
     "Perifrasis: llevar + gerundio, dejar de + infinitivo, seguir + gerundio, volver a + infinitivo",
     "Oraciones relativas con indicativo (que, donde, quien)",
     "Expresar condiciones reales (si + presente, futuro)",
-    "Expresar hipotesis (si + imperfecto de subjuntivo, condicional) (B1.2)"
+    "Preterito pluscuamperfecto",
+    "Subjuntivo presente: ojala, quiero que, cuando + subjuntivo, para que, es necesario que",
+    "Estilo indirecto basico con imperfecto indicativo: dijo que + imperfecto",
+    "Expresar hipotesis (si + imperfecto de subjuntivo, condicional)"
+  ],
+  "grammarFocusTargets": [
+    "Preterito imperfecto y su contraste con indefinido",
+    "Futuro simple",
+    "Condicional simple",
+    "Imperativo negativo",
+    "Oraciones temporales (cuando, mientras, antes de que, despues de que) (en ejercicios activos: solo indicativo o infinitivo; el subjuntivo en estas conjunciones es receptivo, no objetivo de drill en B1.1)",
+    "Oraciones causales y finales (porque, como, para que, a fin de que)",
+    "Conectores avanzados: sin embargo, no obstante, en primer lugar, por un lado/por otro, en conclusion",
+    "Perifrasis verbales: llevar + gerundio, dejar de + infinitivo, seguir + gerundio, volver a + infinitivo",
+    "Oraciones relativas con indicativo (que, donde, quien)",
+    "Expresar condiciones reales (si + presente, futuro)"
   ],
   "grammarOutOfScope": [
-    "Subjuntivo imperfecto en todos sus usos (solo la condicional irreal se introduce en B1.2)",
+    "Subjuntivo imperfecto en todos sus usos excepto la condicional irreal -- la condicional irreal (si + imperfecto de subjuntivo, condicional) esta incluida en grammarInScope",
     "Subjuntivo perfecto y pluscuamperfecto",
     "Oraciones concesivas complejas (aunque + subjuntivo, se ve al final de B1.2/inicio de B2)",
     "Voz pasiva con ser (B2)",
     "Construcciones impersonales complejas",
-    "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)"
+    "Perifrasis modales sofisticadas (venir a + infinitivo, dar por + participio)",
+    "Subjuntivo imperfecto en estilo indirecto (dijo que enviara) -- B2, not B1"
   ],
+  "grammarFocusCeiling": "Pluscuamperfecto, subjuntivo (any mood), and indirect-speech tense shifts become available as Grammar Focus targets only when teacher notes confirm prior mastery of core B1 tenses.",
   "appropriateExerciseTypes": [
     "GR-01",
     "GR-02",

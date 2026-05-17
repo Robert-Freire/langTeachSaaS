@@ -609,6 +609,15 @@ public class PromptServiceTests
         req.UserPrompt.Should().NotContain("NEVER generate a vocabulary list");
     }
 
+    [Fact]
+    public void LessonPlanPrompt_WarmUp_ContainsSharedGuidance()
+    {
+        var req = _sut.BuildLessonPlanPrompt(BaseCtx());
+
+        req.UserPrompt.Should().Contain("no right or wrong answers",
+            "sharedGuidance from warmup.json must be surfaced in the lesson plan prompt");
+    }
+
     // --- Reading & Comprehension template ---
 
     [Fact]
@@ -839,7 +848,7 @@ public class PromptServiceTests
     {
         var req = _sut.BuildExercisesPrompt(BaseCtx());
 
-        req.SystemPrompt.Should().Contain("text-only and self-contained");
+        req.SystemPrompt.Should().Contain("self-contained");
         req.SystemPrompt.Should().Contain("completable using only the text provided");
     }
 
@@ -850,7 +859,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().Contain("text-only and self-contained");
+        req.SystemPrompt.Should().Contain("self-contained");
     }
 
     [Fact]
@@ -860,7 +869,7 @@ public class PromptServiceTests
 
         var req = _sut.BuildExercisesPrompt(ctx);
 
-        req.SystemPrompt.Should().NotContain("text-only and self-contained");
+        req.SystemPrompt.Should().NotContain("self-contained:");
     }
 
     // --- Mandatory Production and Practice ordering ---
@@ -1443,6 +1452,85 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("GRAMMAR SCOPE for B1");
         req.UserPrompt.Should().Contain("In scope:");
+    }
+
+    [Fact]
+    public void GrammarPrompt_B1_ContainsGrammarFocusCeiling()
+    {
+        var req = _sut.BuildGrammarPrompt(BaseCtx()); // B1
+
+        req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING");
+        req.UserPrompt.Should().Contain("pluscuamperfecto");
+        req.UserPrompt.Should().Contain("subjuntivo");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_B1_GeneralPath_ContainsGrammarScopeBlock()
+    {
+        var ctx = BaseCtx() with { SectionType = "Production" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "Production conversation must include the CEFR grammar scope block to prevent level overreach");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_B1_GeneralPath_ContainsGrammarFocusCeiling()
+    {
+        var ctx = BaseCtx() with { SectionType = "Production" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING",
+            because: "B1 Production conversation must receive the ceiling constraint to prevent subjuntivo/pluscuamperfecto overreach");
+        req.UserPrompt.Should().Contain("subjuntivo");
+        req.UserPrompt.Should().Contain("pluscuamperfecto");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_NullSectionType_GeneralPath_ContainsGrammarScopeBlock()
+    {
+        var ctx = BaseCtx() with { SectionType = null };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "general path conversation (no section type) must also receive the grammar scope block");
+    }
+
+    [Fact]
+    public void WarmUpPrompt_ContainsIcebreakerRuleFromSharedGuidance()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("Icebreaker activation only");
+        req.UserPrompt.Should().Contain("no right or wrong answers");
+        req.UserPrompt.Should().NotContain("Never frame it as grammar elicitation",
+            because: "negative sentence was hoisted to sharedGuidance as a positive rewrite");
+    }
+
+    [Fact]
+    public void WarmUpPrompt_B1_IcebreakerRuleAppearsExactlyOnce()
+    {
+        var ctx = BaseCtx() with { SectionType = "WarmUp", CefrLevel = "B1" };
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        var occurrences = CountOccurrences(req.UserPrompt, "no right or wrong answers");
+        occurrences.Should().Be(1,
+            because: "icebreaker rule lives in sharedGuidance only; per-level guidance must not repeat it");
+    }
+
+    private static int CountOccurrences(string text, string pattern)
+    {
+        int count = 0, index = 0;
+        while ((index = text.IndexOf(pattern, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            count++;
+            index += pattern.Length;
+        }
+        return count;
     }
 
     // --- Vocabulary prompt: vocabulary constraints injection ---

@@ -12,45 +12,30 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\data\languages.json"
-                      Link="languages.json" />
-    <EmbeddedResource Include="..\..\data\curricula\instituto_educativo\*.json"
-                      Link="Curricula\%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\data\section-profiles\*.json"
-                      Link="SectionProfiles\%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\data\pedagogy\exercise-types.json"
-                      Link="Pedagogy\exercise-types.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\cefr-levels\*.json"
-                      Link="Pedagogy\CefrLevels\%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\data\pedagogy\l1-influence.json"
-                      Link="Pedagogy\l1-influence.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\template-overrides.json"
-                      Link="Pedagogy\template-overrides.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\course-rules.json"
-                      Link="Pedagogy\course-rules.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\style-substitutions.json"
-                      Link="Pedagogy\style-substitutions.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\scope-constraints.json"
-                      Link="Pedagogy\scope-constraints.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\practice-stages.json"
-                      Link="Pedagogy\practice-stages.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\session-gap-policy.json"
-                      Link="Pedagogy\session-gap-policy.json" />
-    <EmbeddedResource Include="..\..\data\content-schemas\*.json"
-                      Link="ContentSchemas\%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\data\pedagogy\grammar-validation-rules.json"
-                      Link="Pedagogy\grammar-validation-rules.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\difficulty-taxonomy.json"
-                      Link="Pedagogy\difficulty-taxonomy.json" />
-    <EmbeddedResource Include="..\..\data\pedagogy\prompt-fragments.json"
-                      Link="Pedagogy\prompt-fragments.json" />
-    <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json"
-                      Link="Assistant\proposal-fields.json" />
-    <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json"
-                      Link="Assistant\intent-triggers.json" />
+    <EmbeddedResource Include="..\..\data\languages.json" Link="languages.json" />
+    <EmbeddedResource Include="..\..\data\curricula\instituto_educativo\*.json" Link="Curricula\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\section-profiles\*.json" Link="SectionProfiles\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\exercise-types.json" Link="Pedagogy\exercise-types.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\cefr-levels\*.json" Link="Pedagogy\CefrLevels\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\l1-influence.json" Link="Pedagogy\l1-influence.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\template-overrides.json" Link="Pedagogy\template-overrides.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\course-rules.json" Link="Pedagogy\course-rules.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\style-substitutions.json" Link="Pedagogy\style-substitutions.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\scope-constraints.json" Link="Pedagogy\scope-constraints.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\practice-stages.json" Link="Pedagogy\practice-stages.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\session-gap-policy.json" Link="Pedagogy\session-gap-policy.json" />
+    <EmbeddedResource Include="..\..\data\content-schemas\*.json" Link="ContentSchemas\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\data\pedagogy\grammar-validation-rules.json" Link="Pedagogy\grammar-validation-rules.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\difficulty-taxonomy.json" Link="Pedagogy\difficulty-taxonomy.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\prompt-fragments.json" Link="Pedagogy\prompt-fragments.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\correction-categories.json" Link="Pedagogy\correction-categories.json" />
+    <EmbeddedResource Include="..\..\data\pedagogy\correction-calibration.json" Link="Pedagogy\correction-calibration.json" />
+    <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json" Link="Assistant\proposal-fields.json" />
+    <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json" Link="Assistant\intent-triggers.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.AI.Vision.ImageAnalysis" Version="1.0.0" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />
     <PackageReference Include="Azure.Identity" Version="1.19.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
@@ -66,6 +51,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="PdfPig" Version="0.1.14" />
     <PackageReference Include="QuestPDF" Version="2026.2.3" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />

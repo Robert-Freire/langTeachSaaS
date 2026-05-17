@@ -4,9 +4,30 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-11)
+## In-Flight Tasks (2026-05-17)
 
-No tasks currently in flight. Text Correction sprint close complete; pending user merge action. Hardening II sprint created (milestone #22) with 12 issues (#1222-#1233). Sprint branch sprint/hardening-ii to be created from main after merge.
+Hardening II rounds 1-5 follow-ups all merged. #1292 (Vision dev compose) closed inline. New bug surfaced by user testing on real A1 content:
+
+- #1293 (P1:must) -- correction main pass hits 16384 max_tokens cap on real-world A1 redaccion content. Two-layer fix: raise cap to 32k + emit token-usage telemetry to logs, plus frontend polling UX hint after 60s in Corrigiendo state. Sprint-promise regression: A1 corrections silently fail.
+
+Deferred to Groups milestone:
+- #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
+- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + ALL docker-compose files (not just QA / e2e). Would have caught #1292 in CI.
+- #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard.
+- #1294 (P2:should) -- daily KQL job against Log Analytics to detect correction max_tokens / latency breaches and auto-create alert issues. Closes the monitoring loop that #1293's telemetry opens.
+
+Procedure updates landed mid-sprint:
+- .claude/procedures/issue-management.md: External Infrastructure gate (qa:ready specialist gates)
+- .claude/skills/smoke-test/SKILL.md: UNVERIFIED result state replaces PASS(partial); blocks sprint close until human-verify or explicit waiver
+
+Sprint-close paused until #1293 lands. After: re-test the Marton K A1 redaccion correction end-to-end. If correction succeeds, sprint can close.
+
+
+## Next Sprint: Groups
+
+Epic: #1238 "EPIC: Groups -- teacher creates and manages student groups for academy classes"
+Milestone: Groups (milestone already created on GitHub)
+Status: Epic created, tasks NOT yet broken out. Isaac review required before task creation (4 open pedagogical questions in the epic). Work begins after Hardening II sprint close.
 
 ## Live Tracker: GitHub Issues
 
@@ -24,8 +45,8 @@ Key queries:
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Hardening II | ACTIVE | sprint/hardening-ii (create from main after merge), milestone #22. 12 issues (#1222-#1233). Correction prompt robustness, security (rate limit), arch cleanup, generation grammar scope, DB hardening, UI polish. Sprint story: plan/sprints/hardening-ii.md |
-| Text Correction | CLOSING | sprint/text-correction, milestone #21. Sprint close complete, pending user merge action. All 40 issues closed. Epic #1085 to close after milestone close. |
+| Hardening II | ACTIVE | sprint/hardening-ii, milestone #22. 12 issues (#1222-#1233). Correction prompt robustness (Pass 2 ser/estar #1222), security rate limit (#1223), arch cleanup (#1224), DB hardening (#1228), prompt externalization (#1229), generation grammar scope (#1227), pedagogy C-category (#1226), UI polish (#1225, #1231), Atelier hardening (#1230), test infra (#1232), prompt-health sweep (#1233). Sprint story: plan/sprints/hardening-ii.md |
+| Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |
 | Unified Voice & Chat | CLOSED 2026-05-03 | milestone #19, merged to main (commit 774961b8), branch deleted. Atelier Assistant shipped: FAB launcher, multi-entity proposals, voice + text input, modify-in-place. Sprint story: plan/sprints/unified-voice-chat.md |
 | Student Profile Voice Input | CLOSED 2026-04-27 | milestone #18, merged to main, branch deleted |

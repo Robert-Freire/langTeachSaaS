@@ -14,6 +14,7 @@ vi.mock('../api/followups', () => ({
 vi.mock('../api/students', () => ({
   getStudent: vi.fn(),
   updateStudent: vi.fn(),
+  patchStudentVoice: vi.fn().mockResolvedValue(undefined),
   appendTeachingTodo: vi.fn(),
   updateTeachingTodo: vi.fn(),
   deleteTeachingTodo: vi.fn(),

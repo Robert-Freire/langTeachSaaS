@@ -60,8 +60,10 @@ Anti-patterns to avoid:
 
 These replace the qa-ready agent's specialist checks. Only apply when the trigger matches.
 
-**Data model gate (trigger: issue mentions new table, entity, schema, migration, DTO, foreign key, content type)**
-- Ask yourself: does this change the data model? If yes, flag it to the user and recommend a Sophy review before implementation starts. A bot building on a wrong data model wastes an entire PR cycle.
+**Data model and endpoint gate (trigger: issue adds or changes any of: API endpoint, DTO, entity, DB table/column, EF migration, foreign key, service interface, content type schema)**
+- **Mandatory Sophy review before adding `qa:ready`.** Run the Sophy agent (`subagent_type: "sophy"`, model `opus`) on the full issue body plus the existing code the issue extends. Ask: "Is this issue well-specified enough for a bot to implement without producing sloppy code? Is it clear where new logic belongs and what the service/class boundaries are?"
+- If Sophy returns NEEDS CLARIFICATION: rewrite the issue to address her findings, then re-run. Do not add `qa:ready` until she approves.
+- Rationale: a sloppy issue (missing dispatcher pattern, wrong class named in the spec, ambiguous DI strategy) produces sloppy code that passes all ACs but creates debt. This is cheaper to fix in the issue than in a PR review. Example: #1257 was initially missing the `ITextExtractor` dispatcher spec -- a bot would have added an if/else inside the Azure Vision class.
 
 **AI traceability gate (trigger: issue changes PromptService, prompt templates, exercise/content types, pedagogy config)**
 - The ACs must include: `- [ ] After PR merge, update .claude/skills/teacher-qa/output/prior-findings.md with what changed`
@@ -75,6 +77,16 @@ These replace the qa-ready agent's specialist checks. Only apply when the trigge
 - Check: does a `@visual` spec exist in `e2e/tests/visual/` for the affected route?
 - Check: does `DemoSeeder.cs` create the data needed for that screen to render?
 - If gaps exist, note them in the issue body under "Notes for implementation" so the implementer adds the spec. These are non-blocking for `qa:ready` but must be flagged.
+
+**External infrastructure gate (trigger: issue introduces or uses a new Azure resource, third-party API, secret, config key in appsettings.json, or any runtime dependency on external infrastructure)**
+- The issue body MUST include an "Infrastructure wiring" subsection answering, for every new external dependency it introduces:
+  - (a) Is the resource provisioned in production (Azure / third-party)? If no, link the infra issue that provisions it (open one if needed).
+  - (b) Is the secret added to `infra/required-secrets.json` and to `StartupConfigValidator` enforcement in `Program.cs`?
+  - (c) Is the env var passed to the `api` service environment block in `docker-compose.qa.yml` AND `docker-compose.e2e.yml`?
+  - (d) Is the placeholder added to `.env.qa.example` (and `.env.e2e.example` if it exists)?
+  - (e) Does the code register a real implementation in dev/QA/e2e -- not a stub-as-only-implementation? Stubs may be a fallback when credentials are absent, but they MUST NOT be the only registered implementation in any environment that claims to test the feature.
+- If any answer is incomplete, mark the issue `infra-pending` and add ACs covering the missing wiring. Do not add `qa:ready` until either (a) all five answers are concrete and verifiable, or (b) the infra work is explicitly scoped to a linked sibling issue that is also `qa:ready`.
+- Rationale: features can ship passing tests while broken at runtime when the wiring contract is incomplete and a stub silently absorbs the gap. Examples that hit this pattern: #1237 (image upload, never had Vision provisioned -- #1280), #1257 (.docx upload, same Vision dependency), Whisper / Speech / Telegram (declared, validated in production, never wired to QA/e2e containers -- #1281). All were caught at sprint close by manual testing rather than by any automated check. This gate moves the catch to issue creation.
 
 **XL size gate**
 - Any issue sized XL must be explicitly approved by the user before adding `qa:ready`. Present the scope breakdown and ask: "This is XL. Should we split it, or is it good to go as one issue?" Do not proceed without confirmation.

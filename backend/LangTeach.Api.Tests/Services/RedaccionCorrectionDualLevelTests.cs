@@ -1,16 +1,6 @@
-using System.Text.Json;
 using FluentAssertions;
-using LangTeach.Api.AI;
-using LangTeach.Api.Data;
-using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
-using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.Services;
 
@@ -41,8 +31,8 @@ public class RedaccionCorrectionDualLevelTests
     {
         var seed = SeedText;
 
-        await using var a2Run = await RunCorregirAsync(seed, "A2", "French");
-        await using var b2Run = await RunCorregirAsync(seed, "B2", "German");
+        await using var a2Run = await CorrectionTestHarness.RunCorregirAsync(seed, "A2", "French", "dual");
+        await using var b2Run = await CorrectionTestHarness.RunCorregirAsync(seed, "B2", "German", "dual");
 
         var a2Tags = a2Run.Result.Tags;
         var b2Tags = b2Run.Result.Tags;
@@ -96,137 +86,23 @@ public class RedaccionCorrectionDualLevelTests
         var accentCount = first100.Count(c => "áéíóúàèìòùäëïöüâêîôûñÁÉÍÓÚÀÈÌÒÙÄËÏÖÜÂÊÎÔÛÑ".Contains(c));
         accentCount.Should().BeGreaterThanOrEqualTo(4, "test text must have 4+ accented chars in first 100 chars");
 
-        await using var run = await RunCorregirAsync(accentedB1Text, "B1", "English");
+        await using var run = await CorrectionTestHarness.RunCorregirAsync(accentedB1Text, "B1", "English", "dual");
 
         run.Result.Tags.Should().HaveCountGreaterThanOrEqualTo(5,
             "a B1 text with multiple clear errors and accented chars must not have tags silently truncated. "
             + $"Tags found: {string.Join(", ", run.Result.Tags.Select(t => $"[{t.Category}] \"{t.SpannedText}\""))}");
     }
 
-    private static IEnumerable<string> CategoryDistribution(IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> tags) =>
+    private static IEnumerable<string> CategoryDistribution(IEnumerable<CorrectionTagDto> tags) =>
         tags.GroupBy(t => t.Category).Select(g => $"{g.Key}:{g.Count()}").OrderBy(s => s);
 
     private static string SideBySide(
-        IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> a2Tags,
-        IEnumerable<LangTeach.Api.DTOs.CorrectionTagDto> b2Tags)
+        IEnumerable<CorrectionTagDto> a2Tags,
+        IEnumerable<CorrectionTagDto> b2Tags)
     {
         var a2Lines = a2Tags.Select(t => $"  [{t.Category}] \"{t.SpannedText}\" — {t.Explanation}").ToList();
         var b2Lines = b2Tags.Select(t => $"  [{t.Category}] \"{t.SpannedText}\" — {t.Explanation}").ToList();
         return $"\n--- A2 tags ({a2Lines.Count}) ---\n{string.Join("\n", a2Lines)}"
              + $"\n--- B2 tags ({b2Lines.Count}) ---\n{string.Join("\n", b2Lines)}";
-    }
-
-    private static async Task<DualLevelRun> RunCorregirAsync(string seedText, string cefr, string l1)
-    {
-        var config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: true)
-            .AddUserSecrets<Program>(optional: true)
-            .AddEnvironmentVariables()
-            .Build();
-
-        var services = new ServiceCollection();
-        services.Configure<ClaudeClientOptions>(config.GetSection(ClaudeClientOptions.SectionName));
-        services.AddHttpClient("Claude", (sp, client) =>
-        {
-            var opts = sp.GetRequiredService<IOptions<ClaudeClientOptions>>().Value;
-            client.BaseAddress = new Uri(opts.BaseUrl);
-            client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
-            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
-        });
-        var sp = services.BuildServiceProvider();
-
-        var dbOptions = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        var db = new AppDbContext(dbOptions);
-
-        var teacherId = Guid.NewGuid();
-        var studentId = Guid.NewGuid();
-        var correctionId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
-
-        db.Teachers.Add(new Teacher
-        {
-            Id = teacherId,
-            Auth0UserId = $"auth0|dual-{cefr}-{l1}",
-            Email = $"dual-{cefr}-{l1}@test.com",
-            DisplayName = "Dual Level",
-            IsApproved = true,
-            CreatedAt = now, UpdatedAt = now,
-        });
-        db.Students.Add(new Student
-        {
-            Id = studentId,
-            TeacherId = teacherId,
-            Name = $"Dual-{cefr}",
-            LearningLanguage = "Spanish",
-            CefrLevel = cefr,
-            NativeLanguages = JsonSerializer.Serialize(new[] { l1 }),
-            Difficulties = "[]",
-            CreatedAt = now, UpdatedAt = now,
-        });
-        db.Corrections.Add(new Correction
-        {
-            Id = correctionId,
-            TeacherId = teacherId,
-            StudentId = studentId,
-            SchemaVersion = 1,
-            Status = CorrectionStatus.Entregada,
-            AssignmentTitle = "Dual-level moat",
-            AssignmentPrompt = "Cuenta tu fin de semana.",
-            StudentText = seedText,
-            CreatedAt = now, UpdatedAt = now,
-        });
-        await db.SaveChangesAsync();
-
-        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
-        var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
-            NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
-        var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
-            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
-        var claude = new ClaudeApiClient(sp.GetRequiredService<IHttpClientFactory>(),
-            NullLogger<ClaudeApiClient>.Instance);
-
-        var scopeServices = new ServiceCollection();
-        scopeServices.AddSingleton<AppDbContext>(_ => new AppDbContext(dbOptions));
-        scopeServices.AddSingleton<IClaudeClient>(claude);
-        scopeServices.AddSingleton(promptBuilder);
-        scopeServices.AddSingleton(filterPromptBuilder);
-        scopeServices.AddLogging();
-        var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
-
-        var service = new RedaccionCorrectionService(db, scopeFactory, promptBuilder,
-            NullLogger<RedaccionCorrectionService>.Instance);
-
-        await service.CorregirAsync(teacherId, studentId, correctionId);
-
-        var deadline = DateTime.UtcNow.AddSeconds(120);
-        CorrectionDetailDto? detail = null;
-        while (DateTime.UtcNow < deadline)
-        {
-            using var check = new AppDbContext(dbOptions);
-            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == correctionId);
-            if (row?.Status == "Corregida")
-            {
-                detail = CorrectionDtoMapper.ToDetail(row, row.Tags);
-                break;
-            }
-            await Task.Delay(500);
-        }
-        if (detail is null) throw new TimeoutException($"Correction {correctionId} never reached Corregida in 120s.");
-        return new DualLevelRun(detail, db, sp);
-    }
-
-    private sealed record DualLevelRun(
-        LangTeach.Api.DTOs.CorrectionDetailDto Result,
-        AppDbContext Db,
-        ServiceProvider ServiceProvider) : IAsyncDisposable
-    {
-        public async ValueTask DisposeAsync()
-        {
-            await Db.DisposeAsync();
-            await ServiceProvider.DisposeAsync();
-        }
     }
 }

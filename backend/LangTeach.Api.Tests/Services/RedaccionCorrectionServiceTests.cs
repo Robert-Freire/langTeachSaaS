@@ -33,6 +33,9 @@ public class RedaccionCorrectionServiceTests : IDisposable
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         // Build a FakeServiceScopeFactory so Task.Run inside CorregirAsync can resolve
         // AppDbContext (backed by the same in-memory store) and the stub Claude client.
@@ -41,13 +44,12 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton(promptBuilder);
-        scopeServices.AddSingleton(filterPromptBuilder);
+        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
         scopeServices.AddLogging();
         var scopeProvider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(scopeProvider);
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory, promptBuilder,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent();
@@ -184,8 +186,10 @@ public class RedaccionCorrectionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CorregirAsync_MuyBienWithExplanation_CoercedToNull()
+    public async Task CorregirAsync_MuyBienFromPass1_Dropped()
     {
+        // MuyBien is not a valid Pass 1 output -- the correction prompt must never emit it.
+        // Any MuyBien hallucinated in Pass 1 is dropped before the filter and ScopeAffirmer.
         var text = "El subjuntivo está bien usado.";
         var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
         _claude.EnqueueResponse(BuildAiJson(new[]
@@ -196,9 +200,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
 
-        row.Tags.Should().HaveCount(1);
-        row.Tags.First().Explanation.Should().BeNull();
-        row.Tags.First().CorrectedForm.Should().BeNull();
+        row.Tags.Should().BeEmpty("Pass-1 MuyBien hallucination must be dropped");
     }
 
     [Fact]
@@ -300,6 +302,65 @@ public class RedaccionCorrectionServiceTests : IDisposable
         _claude.CompleteCallCount.Should().Be(0, "no AI call should be made for idempotent Corrigiendo");
     }
 
+    [Fact]
+    public async Task CorregirAsync_ContextBefore_PicksCorrectOccurrenceOverNearer()
+    {
+        // "es" appears at [10,12) (correct ser use) and [22,24) (actual error).
+        // Model offset drifts to 5, nearer to [10,12) than [22,24).
+        // contextBefore="y " uniquely identifies the second "es" via combined search.
+        var text = "La ciudad es bonita y es en la costa.";
+        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
+
+        _claude.EnqueueResponse(BuildAiJsonWithContext(
+            "G", startIndex: 5, endIndex: 7, spannedText: "es", contextBefore: "y ",
+            explanation: "Ubicación requiere estar.", correctedForm: "está"));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().StartIndex.Should().Be(22, "contextBefore 'y ' uniquely identifies the second 'es'");
+    }
+
+    [Fact]
+    public async Task CorregirAsync_NoContextBefore_MultipleOccurrences_UsesProximity()
+    {
+        // Without contextBefore the rescue heuristic falls back to nearest-by-distance.
+        // Model reports offset 8, nearest to "es" at [10,12) over "es" at [22,24).
+        var text = "La ciudad es bonita y es en la costa.";
+        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
+
+        _claude.EnqueueResponse(BuildAiJson(new[]
+        {
+            ("G", 8, 10, "es", "Usar estar.", "está"),
+        }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().StartIndex.Should().Be(10, "proximity picks the occurrence nearest to reported offset 8");
+    }
+
+    [Fact]
+    public async Task CorregirAsync_ContextBeforeAmbiguous_FallsBackToProximity()
+    {
+        // "y es" appears twice so the combined key does not disambiguate.
+        // Falls back to proximity: model reports offset 12, nearer to "es" at [14,16).
+        var text = "y es bonita y es en la costa.";
+        var id = SeedCorrection(text: text, status: CorrectionStatus.Entregada);
+
+        _claude.EnqueueResponse(BuildAiJsonWithContext(
+            "G", startIndex: 12, endIndex: 14, spannedText: "es", contextBefore: "y ",
+            explanation: "Usar estar.", correctedForm: "está"));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        var row = await WaitForDbStatusAsync(id, CorrectionStatus.Corregida);
+
+        row.Tags.Should().HaveCount(1);
+        row.Tags.First().StartIndex.Should().Be(14, "contextBefore ambiguous so proximity picks nearest to offset 12");
+    }
+
     // ----- helpers -----
 
     private async Task<Correction> WaitForDbStatusAsync(Guid correctionId, string expectedStatus,
@@ -381,5 +442,26 @@ public class RedaccionCorrectionServiceTests : IDisposable
                 explanation = (string?)(string.IsNullOrEmpty(t.explanation) ? null : t.explanation),
                 correctedForm = (string?)(string.IsNullOrEmpty(t.correctedForm) ? null : t.correctedForm),
             }).ToArray(),
+        });
+
+    private static string BuildAiJsonWithContext(
+        string category, int startIndex, int endIndex, string spannedText, string contextBefore,
+        string explanation, string correctedForm) =>
+        JsonSerializer.Serialize(new
+        {
+            schemaVersion = 1,
+            tags = new[]
+            {
+                new
+                {
+                    category,
+                    startIndex,
+                    endIndex,
+                    spannedText,
+                    contextBefore,
+                    explanation,
+                    correctedForm,
+                },
+            },
         });
 }
