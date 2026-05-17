@@ -6,21 +6,26 @@ originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
 ## In-Flight Tasks (2026-05-17)
 
-Hardening II rounds 1-5 follow-ups all merged. #1292 (Vision dev compose) closed inline. New bug surfaced by user testing on real A1 content:
+**Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main. Sprint promise (corrections trust) delivered end-to-end and verified via real-world A1 long-content correction (Marton K) + smoke walkthrough A1-A14 + teacher-qa Sprint Reviewer with adversarial topic. `AzureAIVision--Endpoint` and `AzureAIVision--Key` provisioned in kv-lt-dev-5ba22u prior to merge.
 
-- #1293 (P1:must) -- correction main pass hits 16384 max_tokens cap on real-world A1 redaccion content. Two-layer fix: raise cap to 32k + emit token-usage telemetry to logs, plus frontend polling UX hint after 60s in Corrigiendo state. Sprint-promise regression: A1 corrections silently fail.
+No tasks currently in flight. Next sprint: Groups (epic #1238), Isaac pedagogy review required before tasks broken out.
 
-Deferred to Groups milestone:
+Deferred to Groups milestone (carried from Hardening II sprint close):
 - #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
-- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + ALL docker-compose files (not just QA / e2e). Would have caught #1292 in CI.
-- #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard.
-- #1294 (P2:should) -- daily KQL job against Log Analytics to detect correction max_tokens / latency breaches and auto-create alert issues. Closes the monitoring loop that #1293's telemetry opens.
+- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + ALL docker-compose files
+- #1294 (P2:should) -- daily KQL job for correction max_tokens / latency breach detection (closes #1293 monitoring loop)
+- #1297 (P2:should) -- correction execution to survivable job pipeline (Sophy-approved spec)
+- #1302 (P2:should) -- ScopeAffirmer pedagogical refinements + prompt-health cleanup bundle
+- #1304 (P2:should) -- PM discussion: should we feature-flag off lesson AI generation in production?
 
-Procedure updates landed mid-sprint:
+Bicep cleanup deferred (no issue opened per Robert): computer-vision.bicep was written assuming a separate prod environment that doesn't exist. Today harmless because nobody runs ./infra/deploy.sh. Revisit only if a real prod environment is later added.
+
+Procedure updates landed mid-sprint (now in main):
 - .claude/procedures/issue-management.md: External Infrastructure gate (qa:ready specialist gates)
-- .claude/skills/smoke-test/SKILL.md: UNVERIFIED result state replaces PASS(partial); blocks sprint close until human-verify or explicit waiver
-
-Sprint-close paused until #1293 lands. After: re-test the Marton K A1 redaccion correction end-to-end. If correction succeeds, sprint can close.
+- .claude/skills/smoke-test/SKILL.md: UNVERIFIED result state replaces PASS(partial)
+- feedback_push_after_commit.md memory: push immediately for .claude/* and plan/* commits
+- project_teacher_qa_stack.md memory: teacher-qa runs on its own langteachsaas-qa stack
+- project_azure_environments.md memory: single Azure environment rg-langteach-dev IS production (no rg-langteach-prod)
 
 
 ## Next Sprint: Groups
@@ -39,13 +44,13 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** `sprint/text-correction` (milestone #21, Text Correction)
+**Active sprint branch:** none (Hardening II merged to main 2026-05-17; next sprint = Groups, branch not yet created)
 
 ## Milestone Sequence (newest first)
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| Hardening II | ACTIVE | sprint/hardening-ii, milestone #22. 12 issues (#1222-#1233). Correction prompt robustness (Pass 2 ser/estar #1222), security rate limit (#1223), arch cleanup (#1224), DB hardening (#1228), prompt externalization (#1229), generation grammar scope (#1227), pedagogy C-category (#1226), UI polish (#1225, #1231), Atelier hardening (#1230), test infra (#1232), prompt-health sweep (#1233). Sprint story: plan/sprints/hardening-ii.md |
+| Hardening II | CLOSED 2026-05-17 | sprint/hardening-ii, milestone #22, merged to main. 38 issues total (scope grew from initial 12 as quality gates surfaced late-session bugs). Correction prompt robustness, security rate limit, arch cleanup, DB hardening, prompt externalization, generation grammar scope, pedagogy C-category, UI polish, Atelier hardening, test infra, prompt-health sweep, Vision OCR infra (#1279-#1281), ScopeAffirmer (#1286), max_tokens + timeout raises (#1293/#1296), Corrigiendo render fix (#1299), BuildGrammarScopeBlock injection (#1301). Sprint story: plan/sprints/hardening-ii.md |
 | Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |
 | Unified Voice & Chat | CLOSED 2026-05-03 | milestone #19, merged to main (commit 774961b8), branch deleted. Atelier Assistant shipped: FAB launcher, multi-entity proposals, voice + text input, modify-in-place. Sprint story: plan/sprints/unified-voice-chat.md |
