@@ -119,6 +119,30 @@ describe('RedaccionDetail', () => {
     expect(await screen.findByText(/Descarga aún no disponible/i)).toBeInTheDocument()
   })
 
+  describe('server-driven Corrigiendo (fresh page load mid-correction)', () => {
+    it('renders spinner branch when data.status is Corrigiendo and viewState is idle', async () => {
+      mockGet.mockResolvedValue({ ...corregida(), status: 'Corrigiendo', tags: [] })
+      renderAt('/students/stu-1/redacciones/cor-1')
+      const btn = await screen.findByRole('button', { name: /Corrigiendo/ })
+      expect(btn).toBeDisabled()
+    })
+
+    it('shows slow hint after 60 seconds when arriving mid-correction', async () => {
+      vi.useFakeTimers()
+      try {
+        mockGet.mockResolvedValue({ ...corregida(), status: 'Corrigiendo', tags: [] })
+        renderAt('/students/stu-1/redacciones/cor-1')
+        // advance just enough to flush the initial query resolution without looping the refetch interval
+        await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+        expect(screen.queryByTestId('hint-slow')).not.toBeInTheDocument()
+        act(() => vi.advanceTimersByTime(60_001))
+        expect(screen.getByTestId('hint-slow')).toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   describe('slow-correction UX hints', () => {
     beforeEach(() => vi.useFakeTimers())
     afterEach(() => vi.useRealTimers())
