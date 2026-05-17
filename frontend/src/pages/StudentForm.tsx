@@ -1339,15 +1339,15 @@ export default function StudentForm() {
               </Card>
             </div>
 
-            {/* ── SECTION: Commercial Info (edit only) ── */}
-            {isEdit && (
-              <div id="section-commercial">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Commercial Info</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+            {/* ── SECTION: Commercial Info ── */}
+            <div id="section-commercial">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Commercial Info</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+                    {isEdit && (<>
                       {/* Account Status toggle */}
                       <div className="space-y-1.5">
                         <Label className="text-sm font-medium" htmlFor="toggle-is-active">Status</Label>
@@ -1404,32 +1404,32 @@ export default function StudentForm() {
                           data-testid="student-rate"
                         />
                       </div>
+                    </>)}
 
-                      {/* Teaching channel */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor="teaching-channel">Teaching channel</Label>
-                        <select
-                          id="teaching-channel"
-                          value={teachingChannel ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value || null
-                            setTeachingChannel(val)
-                            if (isEdit) saveNow({ teachingChannel: val })
-                          }}
-                          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-w-[200px]"
-                          data-testid="teaching-channel-select"
-                        >
-                          <option value="">-- none --</option>
-                          {TEACHING_CHANNEL_OPTIONS.map(ch => (
-                            <option key={ch} value={ch}>{ch}</option>
-                          ))}
-                        </select>
-                      </div>
+                    {/* Teaching channel */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="teaching-channel">Teaching channel</Label>
+                      <select
+                        id="teaching-channel"
+                        value={teachingChannel ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value || null
+                          setTeachingChannel(val)
+                          if (isEdit) saveNow({ teachingChannel: val })
+                        }}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-w-[200px]"
+                        data-testid="teaching-channel-select"
+                      >
+                        <option value="">-- none --</option>
+                        {TEACHING_CHANNEL_OPTIONS.map(ch => (
+                          <option key={ch} value={ch}>{ch}</option>
+                        ))}
+                      </select>
                     </div>
-                  </CardContent>
+                  </div>
+                </CardContent>
                 </Card>
               </div>
-            )}
           </form>
 
           {isEdit && id && <StudentCoursesCard studentId={id} />}
