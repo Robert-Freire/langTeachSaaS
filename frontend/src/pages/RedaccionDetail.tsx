@@ -36,6 +36,7 @@ export default function RedaccionDetail() {
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
+    refetchInterval: (q) => q.state.data?.status === 'Corrigiendo' ? 5000 : false,
   })
 
   const { data: student } = useQuery({
@@ -58,7 +59,8 @@ export default function RedaccionDetail() {
   })
 
   useEffect(() => {
-    if (viewState !== 'generating') return
+    const isInProgress = viewState === 'generating' || data?.status === 'Corrigiendo'
+    if (!isInProgress) return
     const slowTimer = setTimeout(() => setElapsedHint('slow'), 60_000)
     const verySlowTimer = setTimeout(() => setElapsedHint('very-slow'), 4 * 60_000)
     return () => {
@@ -66,7 +68,7 @@ export default function RedaccionDetail() {
       clearTimeout(verySlowTimer)
       setElapsedHint('none')
     }
-  }, [viewState])
+  }, [viewState, data?.status])
 
   const onDownload = async () => {
     if (!data) return
@@ -170,7 +172,7 @@ export default function RedaccionDetail() {
         </div>
       )}
 
-      {viewState === 'generating' && data.studentText && (
+      {(viewState === 'generating' || data.status === 'Corrigiendo') && data.studentText && (
         <div className="space-y-4">
           <ReadingColumn text={data.studentText} />
           <Button disabled>
