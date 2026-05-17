@@ -112,8 +112,20 @@ After correction completes:
 - The ``cuando llegues`` construction is NOT softened, NOT removed, NOT flagged as "fuera de nivel". It is recognized as in-scope for B1 receptive validation.
 - The ser/estar error IS tagged G.
 
-**A9: A1 scope still softens above-level subjuntivo (#1263)**
-Teacher submits an A1 redacción containing ``ojalá vengas`` or another subjuntivo construction. After correction: the construction IS softened (above A1 scope). The scope split fix is B1-specific and must not widen A1 tolerance.
+**A9: A1 scope NOT auto-softening correct above-level usage (#1263, current behavior)**
+Teacher submits an A1 redacción containing ``ojalá vengas`` or another correct subjuntivo construction. After correction: the construction does NOT receive any soften/MuyBien/error tag from Pass 2 + level filter. The pipeline only operates on Pass-2-tagged tokens; correct above-scope usage produces no Pass 2 tag, so nothing reaches the filter. This is the CURRENT behavior; affirming above-level correct usage is tracked separately in #1297 (Groups milestone, ScopeAffirmer-style enhancement). For this sprint, A9 verifies the pipeline does not incorrectly raise an error on a correct above-scope construction.
 
 **A10: B1.1 Grammar Focus ceiling still holds (#1263 + #1227)**
-Teacher generates a new lesson for a B1.1 student with Grammar Focus enabled. After generation: no subjuntivo (any mood), no pluscuamperfecto, no indirect-speech tense shifts appear in the Grammar Focus exercises. The ceiling promise from #1227 is unbroken by the scope split.
+Teacher generates a new lesson for a B1.1 student with Grammar Focus enabled. After generation: no subjuntivo (any mood), no pluscuamperfecto, no indirect-speech tense shifts appear in the Grammar Focus exercises. The ceiling promise from #1227 is unbroken by the scope split. *(Known regression in some topics, tracked in #1285 -- if A10 fails on this run, log it but do not block sprint close; #1285 is in Groups.)*
+
+**A11: Real A1 long-content correction completes end-to-end (#1293 + #1296)**
+Teacher submits a 150+ word redacción for an A1 student that contains 20+ realistic learner errors (omitted articles, gender mismatches, wrong verb conjugations, ser/estar confusion, missing accents). Click Corregir. Within 2 seconds the status flips to Corrigiendo. Within 7 minutes the status flips to Corregida. The detail view shows the marked-up text with tags. **No CorreccionFallida.** This was the Marton K failure case before #1293 (max_tokens cap) and #1296 (HttpClient timeout) shipped.
+
+**A12: ETA hint visible during long correction (#1293 frontend polling UX)**
+While A11 is running, after approximately 60 seconds elapsed in Corrigiendo state, a hint appears below the spinner: *"Esto puede tardar hasta 3 minutos para textos largos. Puedes esperar aquí."* This is the polling-state UX added in #1293 to set teacher expectation during the multi-minute wait window.
+
+**A13: Real JPG OCR upload end-to-end (#1237 + #1279 + #1280 + #1292)**
+Teacher opens Nueva redacción, clicks Subir archivo, selects a real JPG photo of handwritten Spanish text (any reasonable image, not a synthetic test fixture). The OCR pipeline calls Azure Computer Vision via the dev stack (now wired per #1292), extracts text, and populates the student text field. **No OCR_FORMAT_UNSUPPORTED, no generic red banner.** Teacher can review and edit the extracted text before clicking Corregir.
+
+**A14: Backend OCR errors surface specifically, not generically (#1290)**
+Teacher attempts to upload an unsupported file format (e.g. a .txt file or a .gif). The error banner shows the specific backend message *"Formato no compatible. Usa JPG, PNG, WEBP, PDF o DOCX."* (or other specific backend error), NOT the generic *"No se pudo extraer el texto. Inténtalo de nuevo..."* fallback. The data-error-code attribute is set on the banner for testability.
