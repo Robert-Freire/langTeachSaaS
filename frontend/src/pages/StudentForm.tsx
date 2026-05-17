@@ -7,6 +7,7 @@ import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
+import { TEACHING_CHANNEL_OPTIONS } from '@/lib/teachingChannelMeta'
 import { newId } from '@/lib/newId'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1419,9 +1420,9 @@ export default function StudentForm() {
                           data-testid="teaching-channel-select"
                         >
                           <option value="">-- none --</option>
-                          <option value="Preply">Preply</option>
-                          <option value="Meet">Meet</option>
-                          <option value="Presencial">Presencial</option>
+                          {TEACHING_CHANNEL_OPTIONS.map(ch => (
+                            <option key={ch} value={ch}>{ch}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
