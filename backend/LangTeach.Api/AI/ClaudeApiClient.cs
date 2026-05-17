@@ -51,7 +51,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         var usedModel    = root.GetProperty("model").GetString() ?? modelId;
         var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
         var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();
-        var usagePct     = outputTokens * 100.0 / request.MaxTokens;
+        var usagePct     = request.MaxTokens > 0 ? outputTokens * 100.0 / request.MaxTokens : 0.0;
 
         logger.LogInformation(
             "Claude complete: model={Model} input={Input} output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason} latency={Latency}ms",
