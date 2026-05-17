@@ -8,12 +8,13 @@ originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 
 Hardening II rounds 1-5 follow-ups all merged. #1292 (Vision dev compose) closed inline. New bug surfaced by user testing on real A1 content:
 
-- #1293 (P1:must) -- correction main pass hits 16384 max_tokens cap on real-world A1 redaccion content. Three-layer fix: raise cap to 32k + telemetry, choose verbosity-trim or chunking based on telemetry, frontend polling UX for the 60-300s wait window. Sprint-promise regression: A1 corrections silently fail.
+- #1293 (P1:must) -- correction main pass hits 16384 max_tokens cap on real-world A1 redaccion content. Two-layer fix: raise cap to 32k + emit token-usage telemetry to logs, plus frontend polling UX hint after 60s in Corrigiendo state. Sprint-promise regression: A1 corrections silently fail.
 
 Deferred to Groups milestone:
 - #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
 - #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + ALL docker-compose files (not just QA / e2e). Would have caught #1292 in CI.
 - #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard.
+- #1294 (P2:should) -- daily KQL job against Log Analytics to detect correction max_tokens / latency breaches and auto-create alert issues. Closes the monitoring loop that #1293's telemetry opens.
 
 Procedure updates landed mid-sprint:
 - .claude/procedures/issue-management.md: External Infrastructure gate (qa:ready specialist gates)
