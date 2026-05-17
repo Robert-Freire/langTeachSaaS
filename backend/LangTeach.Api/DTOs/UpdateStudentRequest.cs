@@ -1,3 +1,4 @@
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.Services;
 using System.ComponentModel.DataAnnotations;
 
@@ -76,6 +77,8 @@ public class UpdateStudentRequest
 
     [MaxLength(32)]
     public string? Rate { get; set; }
+
+    public TeachingChannel? TeachingChannel { get; set; }
 
     // Language fields
     [MaxCollectionCount(20)]

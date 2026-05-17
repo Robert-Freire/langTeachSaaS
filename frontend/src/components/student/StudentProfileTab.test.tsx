@@ -60,6 +60,7 @@ const FULL_STUDENT: Student = {
   commercial: { isActive: true, isCorporate: false, rate: '25 EUR/h' },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  teachingChannel: null,
 }
 
 const EMPTY_STUDENT: Student = {

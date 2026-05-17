@@ -201,6 +201,7 @@ export default function StudentForm() {
   const [isActive, setIsActive] = useState(true)
   const [isCorporate, setIsCorporate] = useState(false)
   const [rate, setRate] = useState('')
+  const [teachingChannel, setTeachingChannel] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -267,6 +268,7 @@ export default function StudentForm() {
       setIsActive(existing.commercial.isActive ?? true)
       setIsCorporate(existing.commercial.isCorporate ?? false)
       setRate(existing.commercial.rate ?? '')
+      setTeachingChannel(existing.teachingChannel ?? null)
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -304,6 +306,7 @@ export default function StudentForm() {
         isActive,
         isCorporate,
         rate: rate.trim() || null,
+        teachingChannel: teachingChannel || null,
       }
     }
   }, [
@@ -311,7 +314,7 @@ export default function StudentForm() {
     spokenLanguages, skillLevelOverrides, learningGoals, weaknesses, difficulties,
     personalNotes, teachingNotes, birthYear, profession, countryOfOrigin, cityOfOrigin,
     countryOfResidence, cityOfResidence, reasonForStudying, shortTermObjectives,
-    isActive, isCorporate, rate,
+    isActive, isCorporate, rate, teachingChannel,
   ])
 
   const { status: saveStatus, scheduleTextSave, saveNow } = useStudentAutosave(
@@ -573,6 +576,7 @@ export default function StudentForm() {
       isActive,
       isCorporate,
       rate: rate.trim() || null,
+      teachingChannel: teachingChannel || null,
     })
   }
 
@@ -1398,6 +1402,27 @@ export default function StudentForm() {
                           className="max-w-[160px]"
                           data-testid="student-rate"
                         />
+                      </div>
+
+                      {/* Teaching channel */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="teaching-channel">Teaching channel</Label>
+                        <select
+                          id="teaching-channel"
+                          value={teachingChannel ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value || null
+                            setTeachingChannel(val)
+                            if (isEdit) saveNow({ teachingChannel: val })
+                          }}
+                          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-w-[200px]"
+                          data-testid="teaching-channel-select"
+                        >
+                          <option value="">-- none --</option>
+                          <option value="Preply">Preply</option>
+                          <option value="Meet">Meet</option>
+                          <option value="Presencial">Presencial</option>
+                        </select>
                       </div>
                     </div>
                   </CardContent>

@@ -34,6 +34,7 @@ public class Student
     public bool IsActive { get; set; } = true;
     public bool IsCorporate { get; set; }
     public string? Rate { get; set; }
+    public TeachingChannel? TeachingChannel { get; set; }
 
     // Language fields
     public string SpokenLanguages { get; set; } = "[]";

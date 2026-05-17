@@ -90,6 +90,7 @@ export interface Student {
   commercial: StudentCommercial
   createdAt: string
   updatedAt: string
+  teachingChannel: string | null
 }
 
 export interface StudentListResponse {
@@ -125,6 +126,7 @@ export interface StudentFormData {
   spokenLanguages?: string[]
   teachingTodos?: TeachingTodo[]
   skillLevelOverrides?: Record<string, string>
+  teachingChannel?: string | null
 }
 
 export async function getStudents(params?: {
