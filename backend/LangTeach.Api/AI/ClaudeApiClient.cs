@@ -48,18 +48,24 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             }
         }
         var stopReason   = root.TryGetProperty("stop_reason", out var sr) ? sr.GetString() : null;
+        var usedModel    = root.GetProperty("model").GetString() ?? modelId;
+        var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
+        var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();
+        var usagePct     = outputTokens * 100.0 / request.MaxTokens;
+
+        logger.LogInformation(
+            "Claude complete: model={Model} input={Input} output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason} latency={Latency}ms",
+            usedModel, inputTokens, outputTokens, request.MaxTokens, usagePct, stopReason ?? "end_turn", sw.ElapsedMilliseconds);
+
+        if (usagePct >= 80.0)
+            logger.LogWarning(
+                "Claude near max_tokens ceiling: output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason}",
+                outputTokens, request.MaxTokens, usagePct, stopReason ?? "end_turn");
+
         if (stopReason == "max_tokens")
             throw new ClaudeApiException(
                 System.Net.HttpStatusCode.OK,
                 $"Response truncated: max_tokens ({request.MaxTokens}) reached before completion.");
-
-        var usedModel    = root.GetProperty("model").GetString() ?? modelId;
-        var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
-        var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();
-
-        logger.LogInformation(
-            "Claude complete: model={Model} input={Input} output={Output} latency={Latency}ms",
-            usedModel, inputTokens, outputTokens, sw.ElapsedMilliseconds);
 
         return new ClaudeResponse(text, usedModel, inputTokens, outputTokens);
     }

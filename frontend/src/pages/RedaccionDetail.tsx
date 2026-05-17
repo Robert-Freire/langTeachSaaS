@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Download, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
@@ -19,12 +19,14 @@ import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
+type ElapsedHint = 'none' | 'slow' | 'very-slow'
 
 export default function RedaccionDetail() {
   const { id, correctionId } = useParams<{ id: string; correctionId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [viewState, setViewState] = useState<ViewState>('idle')
+  const [elapsedHint, setElapsedHint] = useState<ElapsedHint>('none')
   const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const studentId = id
@@ -54,6 +56,17 @@ export default function RedaccionDetail() {
       setViewState('failed')
     },
   })
+
+  useEffect(() => {
+    if (viewState !== 'generating') return
+    const slowTimer = setTimeout(() => setElapsedHint('slow'), 60_000)
+    const verySlowTimer = setTimeout(() => setElapsedHint('very-slow'), 4 * 60_000)
+    return () => {
+      clearTimeout(slowTimer)
+      clearTimeout(verySlowTimer)
+      setElapsedHint('none')
+    }
+  }, [viewState])
 
   const onDownload = async () => {
     if (!data) return
@@ -164,6 +177,23 @@ export default function RedaccionDetail() {
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Corrigiendo
           </Button>
+          {elapsedHint === 'slow' && (
+            <p data-testid="hint-slow" className="text-sm text-zinc-500">
+              Esto puede tardar hasta 3 minutos para textos largos. Puedes esperar aquí.
+            </p>
+          )}
+          {elapsedHint === 'very-slow' && (
+            <p data-testid="hint-very-slow" className="text-sm text-zinc-500">
+              Seguimos procesando.{' '}
+              <Link
+                to={`/students/${studentId}?tab=redacciones`}
+                className="underline hover:text-zinc-800"
+              >
+                Puedes volver a la lista
+              </Link>{' '}
+              y revisar más tarde.
+            </p>
+          )}
         </div>
       )}
 

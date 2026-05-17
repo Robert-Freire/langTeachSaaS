@@ -36,9 +36,10 @@ public class RedaccionCorrectionPromptBuilder
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
         // spannedText, breaking the rescue logic in ValidateAndOrderTags.
-        // MaxTokens 16384: accumulated prompt rules (#1210-#1215) make Sonnet more verbose;
-        // 150-word texts with many errors can exceed 8192 output tokens (#1219).
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 16384, Temperature: 0);
+        // MaxTokens 32768: A1 students produce 30+ errors/150 words (~50-100 tokens/tag);
+        // Hardening II prompt additions (#1222/#1226/#1227) increased output verbosity further.
+        // 16384 was no longer sufficient for real A1 content (#1293).
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0);
     }
 
     private static string BuildSystemPrompt(CorrectionCategoriesFile config)

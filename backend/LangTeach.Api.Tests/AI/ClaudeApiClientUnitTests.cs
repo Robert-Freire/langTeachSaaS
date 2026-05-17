@@ -171,6 +171,63 @@ public class ClaudeApiClientUnitTests
         capturingLogger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
     }
 
+    [Fact]
+    public async Task CompleteAsync_OutputNearMaxTokensCeiling_LogsWarning()
+    {
+        // 85 output tokens out of 100 max = 85% -- above the 80% threshold.
+        var json = """
+            {
+              "model": "claude-haiku-4-5-20251001",
+              "content": [{ "type": "text", "text": "ok" }],
+              "stop_reason": "end_turn",
+              "usage": { "input_tokens": 10, "output_tokens": 85 }
+            }
+            """;
+
+        var capturingLogger = new CapturingLogger<ClaudeApiClient>();
+        var handler    = new FakeHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        });
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.anthropic.com") };
+        var factory    = new FakeHttpClientFactory(httpClient);
+        var client     = new ClaudeApiClient(factory, capturingLogger);
+
+        await client.CompleteAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, MaxTokens: 100));
+
+        capturingLogger.Entries.Should().ContainSingle(e =>
+            e.Level == LogLevel.Warning &&
+            e.Message.Contains("near max_tokens ceiling") &&
+            e.Message.Contains("85.0%"));
+    }
+
+    [Fact]
+    public async Task CompleteAsync_OutputBelowMaxTokensCeiling_DoesNotLogWarning()
+    {
+        // 50 output tokens out of 100 max = 50% -- below the 80% threshold.
+        var json = """
+            {
+              "model": "claude-haiku-4-5-20251001",
+              "content": [{ "type": "text", "text": "ok" }],
+              "stop_reason": "end_turn",
+              "usage": { "input_tokens": 10, "output_tokens": 50 }
+            }
+            """;
+
+        var capturingLogger = new CapturingLogger<ClaudeApiClient>();
+        var handler    = new FakeHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        });
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.anthropic.com") };
+        var factory    = new FakeHttpClientFactory(httpClient);
+        var client     = new ClaudeApiClient(factory, capturingLogger);
+
+        await client.CompleteAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, MaxTokens: 100));
+
+        capturingLogger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
+    }
+
     // Minimal IHttpClientFactory implementation that returns a pre-built client.
     private sealed class FakeHttpClientFactory(HttpClient client) : IHttpClientFactory
     {
