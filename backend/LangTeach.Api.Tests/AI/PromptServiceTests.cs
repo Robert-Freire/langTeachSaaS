@@ -1465,6 +1465,41 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void ConversationUserPrompt_B1_GeneralPath_ContainsGrammarScopeBlock()
+    {
+        var ctx = BaseCtx() with { SectionType = "Production" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "Production conversation must include the CEFR grammar scope block to prevent level overreach");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_B1_GeneralPath_ContainsGrammarFocusCeiling()
+    {
+        var ctx = BaseCtx() with { SectionType = "Production" };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING",
+            because: "B1 Production conversation must receive the ceiling constraint to prevent subjuntivo/pluscuamperfecto overreach");
+        req.UserPrompt.Should().Contain("subjuntivo");
+        req.UserPrompt.Should().Contain("pluscuamperfecto");
+    }
+
+    [Fact]
+    public void ConversationUserPrompt_NullSectionType_GeneralPath_ContainsGrammarScopeBlock()
+    {
+        var ctx = BaseCtx() with { SectionType = null };
+
+        var req = _sut.BuildConversationPrompt(ctx);
+
+        req.UserPrompt.Should().Contain("GRAMMAR SCOPE",
+            because: "general path conversation (no section type) must also receive the grammar scope block");
+    }
+
+    [Fact]
     public void WarmUpPrompt_ContainsIcebreakerRuleFromSharedGuidance()
     {
         var ctx = BaseCtx() with { SectionType = "WarmUp" };

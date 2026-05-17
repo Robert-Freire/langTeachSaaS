@@ -810,6 +810,10 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(templateGuidance))
             generalPrompt += "\n\n" + templateGuidance;
 
+        var grammarScope = BuildGrammarScopeBlock(level);
+        if (!string.IsNullOrEmpty(grammarScope))
+            generalPrompt += "\n\n" + grammarScope;
+
         var convWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
         if (!string.IsNullOrEmpty(convWeaknessBlock))
             generalPrompt += "\n\n" + convWeaknessBlock;
