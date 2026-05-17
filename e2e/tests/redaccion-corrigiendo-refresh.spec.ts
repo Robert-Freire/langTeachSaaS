@@ -1,9 +1,18 @@
 import { test, expect } from '@playwright/test'
 import { createMockAuthContext } from '../helpers/auth-helper'
+import { setupMockTeacher } from '../helpers/mock-teacher-helper'
 import { createStudentViaApi } from '../helpers/students'
 import { NAV_TIMEOUT, UI_TIMEOUT } from '../helpers/timeouts'
 
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+
+test.beforeAll(async ({ browser }) => {
+  const ctx = await createMockAuthContext(browser)
+  const page = await ctx.newPage()
+  await setupMockTeacher(page)
+  await page.close()
+  await ctx.close()
+})
 
 /**
  * Regression test for #1299: detail page shows blank when arriving at a
@@ -15,11 +24,6 @@ test('detail page shows Corrigiendo spinner after F5 refresh (server-driven stat
   // Setup
   const setupCtx = await createMockAuthContext(browser)
   const setupPage = await setupCtx.newPage()
-  await setupPage.request
-    .post(`${API_BASE}/api/teachers/setup`, {
-      headers: { Authorization: 'Bearer test-token' },
-    })
-    .catch(() => {})
 
   const student = await createStudentViaApi(setupPage, {
     name: `Corrigiendo Refresh ${Date.now()}`,

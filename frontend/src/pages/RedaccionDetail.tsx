@@ -36,7 +36,7 @@ export default function RedaccionDetail() {
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
-    refetchInterval: (q) => q.state.data?.status === 'Corrigiendo' ? 5000 : false,
+    refetchInterval: (q) => q.state.data?.status === 'Corrigiendo' ? 3000 : false,
   })
 
   const { data: student } = useQuery({
