@@ -4,26 +4,23 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-16, round 4)
+## In-Flight Tasks (2026-05-17)
 
-Hardening II rounds 1-3 follow-ups all merged. Teacher-qa PASS. Smoke-test corrections promise PASS. Smoke also surfaced infra wiring gaps + A9 missing feature + A10 ceiling drift.
+Hardening II rounds 1-5 follow-ups all merged. #1292 (Vision dev compose) closed inline. New bug surfaced by user testing on real A1 content:
 
-In-flight in Hardening II:
-- #1279, #1286 -- MERGED
-- #1280 (P1:must) -- Vision infra: provision Azure Computer Vision resource + wire through Bicep / Key Vault / env / docker-compose / CI
-- #1281 (P1:must) -- transcription + Telegram wiring: declared secrets present in .env.qa but never passed to QA / e2e api containers
-- #1290 (P1:must) -- JPG rejected as OCR_FORMAT_UNSUPPORTED + frontend swallows backend error code/message (post-#1279 user-reported)
+- #1293 (P1:must) -- correction main pass hits 16384 max_tokens cap on real-world A1 redaccion content. Three-layer fix: raise cap to 32k + telemetry, choose verbosity-trim or chunking based on telemetry, frontend polling UX for the 60-300s wait window. Sprint-promise regression: A1 corrections silently fail.
 
 Deferred to Groups milestone:
 - #1283 (P3:nice) -- pre-commit + CI high-entropy secret scanner
-- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + docker-compose
-- #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard
+- #1284 (P2:should) -- automated audit: appsettings.json keys must reach Key Vault + env + ALL docker-compose files (not just QA / e2e). Would have caught #1292 in CI.
+- #1285 (P1:must) -- A10 ceiling drift: B1.1 exercises generator produces subjuntivo drill despite #1227 guard.
 
-Procedure updates landed in sprint branch (will reach main when sprint merges):
-- .claude/procedures/issue-management.md: External Infrastructure gate added to qa:ready specialist gates
+Procedure updates landed mid-sprint:
+- .claude/procedures/issue-management.md: External Infrastructure gate (qa:ready specialist gates)
 - .claude/skills/smoke-test/SKILL.md: UNVERIFIED result state replaces PASS(partial); blocks sprint close until human-verify or explicit waiver
 
-Sprint-close paused. When #1279/#1280/#1281/#1286 land: re-run smoke A1 (file upload end-to-end) and re-run smoke A9 (MuyBien on Ojala vengas).
+Sprint-close paused until #1293 lands. After: re-test the Marton K A1 redaccion correction end-to-end. If correction succeeds, sprint can close.
+
 
 ## Next Sprint: Groups
 
