@@ -9,7 +9,7 @@ namespace LangTeach.Api.AI;
 public static class RedaccionCorrectionTimeouts
 {
     /// <summary>Max seconds to wait for the Claude API to respond.</summary>
-    public const int HttpClientSeconds = 300;
+    public const int HttpClientSeconds = 600;
 
     /// <summary>
     /// Seconds before a correction stuck in Corrigiendo is considered stale.
