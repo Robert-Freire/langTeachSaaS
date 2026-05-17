@@ -113,6 +113,12 @@ public static class ScenarioSeeder
                 db.Students.Add(student);
                 await db.SaveChangesAsync();
             }
+            else if (student.TeachingChannel != channel)
+            {
+                student.TeachingChannel = channel;
+                student.UpdatedAt = now;
+                await db.SaveChangesAsync();
+            }
 
             result.Add(student);
         }
