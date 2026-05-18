@@ -37,10 +37,10 @@ public class PdfTextExtractor : ITextExtractor
                 _logger.LogInformation("PdfTextExtractor: extracted {Chars} chars via text layer.", text.Length);
                 return Task.FromResult(text);
             }
-            _logger.LogInformation("PdfTextExtractor: text layer too short ({Chars} chars), falling back to Vision.", text.Length);
-            throw new OcrFallbackException(string.Empty);
+            _logger.LogInformation("PdfTextExtractor: text layer too short ({Chars} chars).", text.Length);
+            throw new OcrException("No se pudo extraer texto del PDF. Asegúrate de que el archivo no sea una imagen escaneada.");
         }
-        catch (OcrFallbackException)
+        catch (OcrException)
         {
             throw;
         }
@@ -50,8 +50,8 @@ public class PdfTextExtractor : ITextExtractor
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "PdfTextExtractor: could not read PDF text layer, falling back to Vision.");
-            throw new OcrFallbackException(string.Empty);
+            _logger.LogWarning(ex, "PdfTextExtractor: could not read PDF text layer.");
+            throw new OcrException("El archivo PDF no es válido o no contiene texto extraíble.");
         }
     }
 }

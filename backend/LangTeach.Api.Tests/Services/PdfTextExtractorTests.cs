@@ -56,30 +56,29 @@ public class PdfTextExtractorTests
     }
 
     [Fact]
-    public async Task ExtractTextAsync_TextBelowMinChars_ThrowsOcrFallbackException()
+    public async Task ExtractTextAsync_TextBelowMinChars_ThrowsOcrException()
     {
-        // Create a PDF with text shorter than threshold
         using var stream = CreateTypedPdfStream("Hi");
         var sut = CreateExtractor(minChars: 100);
 
         var act = () => sut.ExtractTextAsync(stream, PdfContentType);
 
-        await act.Should().ThrowAsync<OcrFallbackException>();
+        await act.Should().ThrowAsync<OcrException>();
     }
 
     [Fact]
-    public async Task ExtractTextAsync_EmptyStream_ThrowsOcrFallbackException()
+    public async Task ExtractTextAsync_EmptyStream_ThrowsOcrException()
     {
         using var stream = new MemoryStream();
         var sut = CreateExtractor();
 
         var act = () => sut.ExtractTextAsync(stream, PdfContentType);
 
-        await act.Should().ThrowAsync<OcrFallbackException>();
+        await act.Should().ThrowAsync<OcrException>();
     }
 
     [Fact]
-    public async Task ExtractTextAsync_GarbageBytes_ThrowsOcrFallbackException()
+    public async Task ExtractTextAsync_GarbageBytes_ThrowsOcrException()
     {
         var garbage = new byte[] { 0x00, 0x01, 0x02, 0xFF, 0xFE, 0xAB };
         using var stream = new MemoryStream(garbage);
@@ -87,7 +86,7 @@ public class PdfTextExtractorTests
 
         var act = () => sut.ExtractTextAsync(stream, PdfContentType);
 
-        await act.Should().ThrowAsync<OcrFallbackException>();
+        await act.Should().ThrowAsync<OcrException>();
     }
 
     [Fact]
