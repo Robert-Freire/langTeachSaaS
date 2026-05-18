@@ -158,6 +158,10 @@ export async function patchStudentVoice(id: string, patch: VoiceMergePatch): Pro
   await apiClient.patch(`/api/students/${id}`, patch)
 }
 
+export async function patchStudentChannel(id: string, teachingChannel: string | null): Promise<void> {
+  await apiClient.patch(`/api/students/${id}`, { teachingChannel })
+}
+
 export async function deleteStudent(id: string): Promise<void> {
   await apiClient.delete(`/api/students/${id}`)
 }
