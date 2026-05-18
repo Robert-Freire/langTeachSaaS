@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using LangTeach.Api.AI;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -227,6 +228,25 @@ public class StudentsController : ControllerBase
         IsCorporate = s.Commercial.IsCorporate,
         Rate = s.Commercial.Rate,
     };
+
+    [HttpPatch("{id:guid}/commercial")]
+    public async Task<IActionResult> PatchStudentCommercial(Guid id, [FromBody] PatchStudentCommercialRequest patch, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+
+        TeachingChannel? channel = null;
+        if (patch.TeachingChannel is not null)
+        {
+            if (!Enum.TryParse<TeachingChannel>(patch.TeachingChannel, ignoreCase: true, out var parsed))
+                return BadRequest($"Invalid teachingChannel value '{patch.TeachingChannel}'. Valid values: {string.Join(", ", Enum.GetNames<TeachingChannel>())}.");
+            channel = parsed;
+        }
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var updated = await _studentService.SetTeachingChannelAsync(teacherId, id, channel, cancellationToken);
+        if (updated is null) return NotFound();
+        return Ok(updated);
+    }
 
     [HttpPatch("{id:guid}/profile")]
     public async Task<IActionResult> PatchStudentProfile(Guid id, [FromBody] PatchStudentProfileRequest patch, CancellationToken cancellationToken)
