@@ -14,4 +14,7 @@ public class OcrOptions
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
+
+    // Separate from MaxBytes (upload limit) -- Claude API has its own document size constraints.
+    public long PdfClaudeMaxFileBytes { get; set; } = 10_485_760;
 }

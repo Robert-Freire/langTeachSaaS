@@ -37,6 +37,7 @@ internal sealed class FakePromptService : IPromptService
     public ClaudeRequest BuildStudentProfileExtractionPrompt(string text) => Dummy();
     public ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx) => Dummy();
     public ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx) => Dummy();
+    public ClaudeRequest BuildPdfOcrPrompt(byte[] pdfBytes) => Dummy();
 
     public CurriculumContext? LastCurriculumContext { get; private set; }
 
