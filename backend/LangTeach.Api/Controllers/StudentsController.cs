@@ -237,7 +237,7 @@ public class StudentsController : ControllerBase
         TeachingChannel? channel = null;
         if (patch.TeachingChannel is not null)
         {
-            if (!Enum.TryParse<TeachingChannel>(patch.TeachingChannel, ignoreCase: true, out var parsed))
+            if (!Enum.TryParse<TeachingChannel>(patch.TeachingChannel, ignoreCase: true, out var parsed) || !Enum.IsDefined(parsed))
                 return BadRequest($"Invalid teachingChannel value '{patch.TeachingChannel}'. Valid values: {string.Join(", ", Enum.GetNames<TeachingChannel>())}.");
             channel = parsed;
         }
