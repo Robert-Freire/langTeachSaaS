@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, NotebookPen, Pencil, CalendarClock, Mic } from 'lucide-react'
 import type { Student } from '@/api/students'
-import { TEACHING_CHANNEL_META } from '@/lib/teachingChannelMeta'
+import { TeachingChannelPicker } from '@/components/student/TeachingChannelPicker'
 import type { SessionLog } from '@/api/sessionLogs'
 import { formatDateShort } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
@@ -75,12 +75,13 @@ function HeaderObjective({ student }: { student: Student }) {
 interface StudentDetailHeaderProps {
   onVoiceUpdateClick?: () => void
   voiceFlowActive?: boolean
+  onChannelChange?: (v: string | null) => void
   student: Student
   nextSession: SessionLog | null
   sessionFrequency: string | null
 }
 
-export function StudentDetailHeader({ student, nextSession, sessionFrequency, onVoiceUpdateClick, voiceFlowActive }: StudentDetailHeaderProps) {
+export function StudentDetailHeader({ student, nextSession, sessionFrequency, onVoiceUpdateClick, voiceFlowActive, onChannelChange }: StudentDetailHeaderProps) {
   const navigate = useNavigate()
   const identitySubtitle = buildIdentitySubtitle(student)
 
@@ -157,20 +158,11 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
                   Inactive
                 </span>
               )}
-              {student.teachingChannel && (() => {
-                const meta = TEACHING_CHANNEL_META[student.teachingChannel]
-                if (!meta) return null
-                const Icon = meta.icon
-                return (
-                  <span
-                    className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.05em] bg-zinc-100 text-zinc-600"
-                    data-testid="teaching-channel-badge"
-                  >
-                    <Icon className="h-3 w-3" />
-                    {meta.label}
-                  </span>
-                )
-              })()}
+              <TeachingChannelPicker
+                value={student.teachingChannel}
+                studentId={student.id}
+                onSaved={onChannelChange}
+              />
               {nextSession && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-[#E8E7F1] text-[#464455]"

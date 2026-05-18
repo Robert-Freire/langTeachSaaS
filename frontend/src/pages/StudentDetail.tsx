@@ -289,6 +289,7 @@ export default function StudentDetail() {
         sessionFrequency={sessionFrequency}
         onVoiceUpdateClick={() => setVoiceFlow('recording')}
         voiceFlowActive={voiceFlow !== 'idle'}
+        onChannelChange={() => queryClient.invalidateQueries({ queryKey: ['student', id] })}
       />
 
       {voiceFlow === 'recording' && (
