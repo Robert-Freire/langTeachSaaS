@@ -40,7 +40,7 @@ public class PdfTextExtractor : ITextExtractor
             _logger.LogInformation("PdfTextExtractor: text layer too short ({Chars} chars).", text.Length);
             throw new OcrException("No se pudo extraer texto del PDF. Asegúrate de que el archivo no sea una imagen escaneada.");
         }
-        catch (OcrFallbackException)
+        catch (OcrException)
         {
             throw;
         }
