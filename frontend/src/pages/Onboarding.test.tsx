@@ -154,7 +154,7 @@ describe('Onboarding', () => {
       identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', teachingChannel: null,
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 
@@ -276,7 +276,7 @@ describe('Onboarding', () => {
       identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', teachingChannel: null,
     }
     mockGetStudents.mockResolvedValue({ items: [mockStudent], totalCount: 1, page: 1, pageSize: 1 })
 

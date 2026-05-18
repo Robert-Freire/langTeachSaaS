@@ -7,6 +7,7 @@ import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { COMPETENCY_OPTIONS } from '../lib/studentOptions'
 import { logger } from '../lib/logger'
+import { TEACHING_CHANNEL_OPTIONS } from '@/lib/teachingChannelMeta'
 import { newId } from '@/lib/newId'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -201,6 +202,7 @@ export default function StudentForm() {
   const [isActive, setIsActive] = useState(true)
   const [isCorporate, setIsCorporate] = useState(false)
   const [rate, setRate] = useState('')
+  const [teachingChannel, setTeachingChannel] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -267,6 +269,7 @@ export default function StudentForm() {
       setIsActive(existing.commercial.isActive ?? true)
       setIsCorporate(existing.commercial.isCorporate ?? false)
       setRate(existing.commercial.rate ?? '')
+      setTeachingChannel(existing.teachingChannel ?? null)
     }
   }, [existing])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -304,6 +307,7 @@ export default function StudentForm() {
         isActive,
         isCorporate,
         rate: rate.trim() || null,
+        teachingChannel: teachingChannel || null,
       }
     }
   }, [
@@ -311,7 +315,7 @@ export default function StudentForm() {
     spokenLanguages, skillLevelOverrides, learningGoals, weaknesses, difficulties,
     personalNotes, teachingNotes, birthYear, profession, countryOfOrigin, cityOfOrigin,
     countryOfResidence, cityOfResidence, reasonForStudying, shortTermObjectives,
-    isActive, isCorporate, rate,
+    isActive, isCorporate, rate, teachingChannel,
   ])
 
   const { status: saveStatus, scheduleTextSave, saveNow } = useStudentAutosave(
@@ -573,6 +577,7 @@ export default function StudentForm() {
       isActive,
       isCorporate,
       rate: rate.trim() || null,
+      teachingChannel: teachingChannel || null,
     })
   }
 
@@ -1334,15 +1339,15 @@ export default function StudentForm() {
               </Card>
             </div>
 
-            {/* ── SECTION: Commercial Info (edit only) ── */}
-            {isEdit && (
-              <div id="section-commercial">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Commercial Info</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+            {/* ── SECTION: Commercial Info ── */}
+            <div id="section-commercial">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Commercial Info</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+                    {isEdit && (<>
                       {/* Account Status toggle */}
                       <div className="space-y-1.5">
                         <Label className="text-sm font-medium" htmlFor="toggle-is-active">Status</Label>
@@ -1399,11 +1404,32 @@ export default function StudentForm() {
                           data-testid="student-rate"
                         />
                       </div>
+                    </>)}
+
+                    {/* Teaching channel */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="teaching-channel">Teaching channel</Label>
+                      <select
+                        id="teaching-channel"
+                        value={teachingChannel ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value || null
+                          setTeachingChannel(val)
+                          if (isEdit) saveNow({ teachingChannel: val })
+                        }}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-w-[200px]"
+                        data-testid="teaching-channel-select"
+                      >
+                        <option value="">-- none --</option>
+                        {TEACHING_CHANNEL_OPTIONS.map(ch => (
+                          <option key={ch} value={ch}>{ch}</option>
+                        ))}
+                      </select>
                     </div>
-                  </CardContent>
+                  </div>
+                </CardContent>
                 </Card>
               </div>
-            )}
           </form>
 
           {isEdit && id && <StudentCoursesCard studentId={id} />}

@@ -97,6 +97,7 @@ function makeStudent(overrides: FlatStudentOverrides = {}): studentsApi.Student 
     },
     createdAt: overrides.createdAt ?? DEFAULT_CREATED_AT,
     updatedAt: overrides.updatedAt ?? '',
+    teachingChannel: null,
   }
 }
 
@@ -190,6 +191,21 @@ describe('Students page', () => {
     wrapper(<Students />)
     await screen.findByTestId('native-language-chip')
     expect(screen.getByTestId('native-language-chip')).toHaveTextContent('—')
+  })
+
+  it('shows channel label in CHANNEL cell when teachingChannel is set', async () => {
+    const student = { ...makeStudent(), teachingChannel: 'Meet' }
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([student]))
+    wrapper(<Students />)
+    const cell = await screen.findByTestId('channel-cell')
+    expect(cell).toHaveTextContent('Meet')
+  })
+
+  it('renders empty CHANNEL cell when teachingChannel is null', async () => {
+    vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
+    wrapper(<Students />)
+    const cell = await screen.findByTestId('channel-cell')
+    expect(cell).toBeEmptyDOMElement()
   })
 
   it('renders empty state when no students', async () => {

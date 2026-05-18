@@ -19,6 +19,7 @@ import { extractStudentProfile } from '@/api/studentExtraction'
 import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
 import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
 import { logger } from '@/lib/logger'
+import { TEACHING_CHANNEL_META } from '@/lib/teachingChannelMeta'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
 
@@ -199,8 +200,8 @@ function sortStudents(
 const CEFR_FILTER_OPTIONS = ['All', ...CEFR_LEVELS] as const
 const PAGE_SIZE = 12
 
-const COL_CLASSES = 'grid-cols-[32px_minmax(160px,2fr)_80px_120px_110px_140px_1fr]'
-const TABLE_HEADERS = ['', 'Name', 'CEFR LEVEL', 'LANGUAGE', 'Last Session', 'Next Session', 'SIGNALS'] as const
+const COL_CLASSES = 'grid-cols-[32px_minmax(140px,2fr)_80px_110px_90px_110px_130px_1fr]'
+const TABLE_HEADERS = ['', 'Name', 'CEFR LEVEL', 'LANGUAGE', 'CHANNEL', 'Last Session', 'Next Session', 'SIGNALS'] as const
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -385,6 +386,7 @@ export default function Students() {
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-5 w-10 rounded-md" />
               <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-14" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-12" />
@@ -627,6 +629,16 @@ export default function Students() {
                       {student.languages.nativeLanguages.length > 0
                         ? student.languages.nativeLanguages.join(', ')
                         : <span className="text-zinc-300">—</span>}
+                    </span>
+
+                    {/* Teaching channel */}
+                    <span className="flex items-center gap-1 text-sm text-zinc-500 truncate" data-testid="channel-cell">
+                      {(() => {
+                        const meta = student.teachingChannel ? TEACHING_CHANNEL_META[student.teachingChannel] : null
+                        if (!meta) return null
+                        const Icon = meta.icon
+                        return <><Icon className="h-3.5 w-3.5 shrink-0" />{meta.label}</>
+                      })()}
                     </span>
 
                     {/* Last session */}

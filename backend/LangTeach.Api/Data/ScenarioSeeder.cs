@@ -17,20 +17,20 @@ public static class ScenarioSeeder
     // Ana Visual, Ana Seed, Marco Seed, Clara Seed, Diego Seed already exist after --visual-seed.
     // Marco B1, Carmen C1, Nadia B2, Hans B1 are created on first run.
     // Rui Seed, Sofia Seed, Sonia Seed created on first run (scenario 5 signal coverage).
-    private static readonly (string Name, string Cefr, string NativeLang, string LearningLang)[] ScenarioStudentDefs =
+    private static readonly (string Name, string Cefr, string NativeLang, string LearningLang, TeachingChannel? Channel)[] ScenarioStudentDefs =
     [
-        ("Ana Visual",  "B2", """["Ukrainian"]""",   "English"),
-        ("Marco B1",    "B1", """["Italian"]""",     "English"),
-        ("Carmen C1",   "C1", """["Spanish"]""",     "English"),
-        ("Nadia B2",    "B2", """["French"]""",      "English"),
-        ("Hans B1",     "B1", """["German"]""",      "English"),
-        ("Ana Seed",    "B1", """["Portuguese"]""",  "English"),
-        ("Marco Seed",  "A2", """["Italian"]""",     "English"),
-        ("Clara Seed",  "A1", """["German"]""",      "Spanish"),
-        ("Diego Seed",  "B2", """["Spanish"]""",     "English"),
-        ("Rui Seed",    "A2", """["Romanian"]""",    "English"),
-        ("Sofia Seed",  "B2", """["Portuguese"]""",  "English"),
-        ("Sonia Seed",  "B1", """["Greek"]""",       "English"),
+        ("Ana Visual",  "B2", """["Ukrainian"]""",   "English", TeachingChannel.Preply),
+        ("Marco B1",    "B1", """["Italian"]""",     "English", TeachingChannel.Meet),
+        ("Carmen C1",   "C1", """["Spanish"]""",     "English", TeachingChannel.Presencial),
+        ("Nadia B2",    "B2", """["French"]""",      "English", null),
+        ("Hans B1",     "B1", """["German"]""",      "English", null),
+        ("Ana Seed",    "B1", """["Portuguese"]""",  "English", null),
+        ("Marco Seed",  "A2", """["Italian"]""",     "English", null),
+        ("Clara Seed",  "A1", """["German"]""",      "Spanish", null),
+        ("Diego Seed",  "B2", """["Spanish"]""",     "English", null),
+        ("Rui Seed",    "A2", """["Romanian"]""",    "English", null),
+        ("Sofia Seed",  "B2", """["Portuguese"]""",  "English", null),
+        ("Sonia Seed",  "B1", """["Greek"]""",       "English", null),
     ];
 
     public static async Task<bool> SeedScenarioAsync(AppDbContext db, int scenario, string teacherLookup, ILogger logger)
@@ -89,7 +89,7 @@ public static class ScenarioSeeder
     {
         var result = new List<Student>();
 
-        foreach (var (name, cefr, nativeLang, learningLang) in ScenarioStudentDefs)
+        foreach (var (name, cefr, nativeLang, learningLang, channel) in ScenarioStudentDefs)
         {
             var student = await db.Students.FirstOrDefaultAsync(
                 s => s.TeacherId == teacherId && s.Name == name && !s.IsDeleted);
@@ -106,10 +106,17 @@ public static class ScenarioSeeder
                     NativeLanguages  = nativeLang,
                     PersonalNotes    = ScenarioTag,
                     IsActive         = true,
+                    TeachingChannel  = channel,
                     CreatedAt        = now,
                     UpdatedAt        = now,
                 };
                 db.Students.Add(student);
+                await db.SaveChangesAsync();
+            }
+            else if (student.TeachingChannel != channel)
+            {
+                student.TeachingChannel = channel;
+                student.UpdatedAt = now;
                 await db.SaveChangesAsync();
             }
 

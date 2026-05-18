@@ -139,6 +139,7 @@ public class StudentService : IStudentService
             IsActive = request.IsActive,
             IsCorporate = request.IsCorporate,
             Rate = request.Rate,
+            TeachingChannel = request.TeachingChannel,
             SpokenLanguages = Serialize(request.SpokenLanguages),
             SkillLevelOverrides = JsonStorageHelper.Serialize(normalizedSkillOverrides),
             CreatedAt = DateTime.UtcNow,
@@ -193,6 +194,7 @@ public class StudentService : IStudentService
         student.IsActive = request.IsActive;
         student.IsCorporate = request.IsCorporate;
         student.Rate = request.Rate;
+        student.TeachingChannel = request.TeachingChannel;
         student.SpokenLanguages = Serialize(request.SpokenLanguages);
         student.SkillLevelOverrides = JsonStorageHelper.Serialize(normalizedSkillOverrides);
         student.UpdatedAt = DateTime.UtcNow;
@@ -263,7 +265,8 @@ public class StudentService : IStudentService
             s.Rate
         ),
         s.CreatedAt,
-        s.UpdatedAt
+        s.UpdatedAt,
+        s.TeachingChannel
     );
 
 

@@ -1,3 +1,5 @@
+using LangTeach.Api.Data.Models;
+
 namespace LangTeach.Api.DTOs;
 
 public record StudentLevelDto(
@@ -49,5 +51,6 @@ public record StudentDto(
     StudentProfileDto Profile,
     StudentCommercialDto Commercial,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    TeachingChannel? TeachingChannel
 );

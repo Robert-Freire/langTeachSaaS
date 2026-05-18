@@ -233,6 +233,7 @@ describe('useAtelierAssistant', () => {
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '', updatedAt: '',
+      teachingChannel: null,
     })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -257,6 +258,7 @@ describe('useAtelierAssistant', () => {
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '', updatedAt: '',
+      teachingChannel: null,
     })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -283,6 +285,7 @@ describe('useAtelierAssistant', () => {
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '', updatedAt: '',
+      teachingChannel: null,
     })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -309,6 +312,7 @@ describe('useAtelierAssistant', () => {
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '', updatedAt: '',
+      teachingChannel: null,
     })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })
@@ -335,6 +339,7 @@ describe('useAtelierAssistant', () => {
       profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
       commercial: { isActive: true, isCorporate: false, rate: null },
       createdAt: '', updatedAt: '',
+      teachingChannel: null,
     })
 
     const { result } = renderHook(() => useAtelierAssistant(null, null), { wrapper: makeWrapper() })

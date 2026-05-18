@@ -36,6 +36,7 @@ const BASE_STUDENT: Student = {
   commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
+  teachingChannel: null,
 }
 
 function renderHeader(
@@ -176,6 +177,18 @@ describe('StudentDetailHeader', () => {
     expect(screen.getByTestId('primary-objective-card')).toBeInTheDocument()
     expect(screen.getByTestId('edit-profile-link')).toBeInTheDocument()
     expect(screen.getByTestId('log-session-button')).toBeInTheDocument()
+  })
+
+  it('shows teaching channel badge when teachingChannel is set', () => {
+    renderHeader({ ...BASE_STUDENT, teachingChannel: 'Preply' })
+    const badge = screen.getByTestId('teaching-channel-badge')
+    expect(badge).toBeInTheDocument()
+    expect(badge).toHaveTextContent('Preply')
+  })
+
+  it('does not render teaching channel badge when teachingChannel is null', () => {
+    renderHeader()
+    expect(screen.queryByTestId('teaching-channel-badge')).not.toBeInTheDocument()
   })
 
   it('does not render voice update button when onVoiceUpdateClick is not provided', () => {
