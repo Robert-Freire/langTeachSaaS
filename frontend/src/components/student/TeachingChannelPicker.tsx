@@ -18,6 +18,9 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
 
   useEffect(() => () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current) }, [])
 
+  // Clear optimistic state whenever the server value changes (query refetch confirms or external update)
+  useEffect(() => { setOptimisticValue(undefined) }, [value])
+
   const current = optimisticValue !== undefined ? optimisticValue : value
 
   async function handleSelect(next: string | null) {
@@ -28,7 +31,6 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
     setError(null)
     try {
       await patchStudentChannel(studentId, next)
-      setOptimisticValue(undefined)
       onSaved?.(next)
     } catch {
       setOptimisticValue(prev)
@@ -40,56 +42,61 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
     }
   }
 
-  const trigger = current ? (
-    <button
-      type="button"
-      disabled={isPending}
-      onClick={(e) => e.stopPropagation()}
-      className={[
-        'group inline-flex items-center gap-1 rounded-md px-2 py-0.5',
-        'text-[0.6875rem] font-bold uppercase tracking-[0.05em]',
-        'bg-zinc-100 text-zinc-600',
-        'hover:bg-zinc-200 transition-colors cursor-pointer select-none',
-        isPending ? 'opacity-50 cursor-not-allowed' : '',
-      ].join(' ')}
-      data-testid="teaching-channel-badge"
-    >
-      {(() => {
-        const meta = TEACHING_CHANNEL_META[current]
-        if (!meta) return null
-        const Icon = meta.icon
-        return (
-          <>
-            <Icon className="h-3 w-3" />
-            {meta.label}
-          </>
-        )
-      })()}
-      <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity -ml-0.5" />
-    </button>
-  ) : (
-    <button
-      type="button"
-      disabled={isPending}
-      onClick={(e) => e.stopPropagation()}
-      className={[
-        'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
-        'text-[0.6875rem] font-medium text-zinc-400',
-        'border border-dashed border-zinc-300',
-        'hover:border-zinc-400 hover:text-zinc-500 transition-colors cursor-pointer select-none',
-        isPending ? 'opacity-50 cursor-not-allowed' : '',
-      ].join(' ')}
-      data-testid="teaching-channel-ghost"
-    >
-      <Plus className="h-3 w-3" />
-      channel
-    </button>
-  )
+  const badgeClassName = [
+    'group inline-flex items-center gap-1 rounded-md px-2 py-0.5',
+    'text-[0.6875rem] font-bold uppercase tracking-[0.05em]',
+    'bg-zinc-100 text-zinc-600',
+    'hover:bg-zinc-200 transition-colors cursor-pointer select-none',
+    isPending ? 'opacity-50 cursor-not-allowed' : '',
+  ].join(' ')
+
+  const ghostClassName = [
+    'inline-flex items-center gap-1 rounded-md px-2 py-0.5',
+    'text-[0.6875rem] font-medium text-zinc-400',
+    'border border-dashed border-zinc-300',
+    'hover:border-zinc-400 hover:text-zinc-500 transition-colors cursor-pointer select-none',
+    isPending ? 'opacity-50 cursor-not-allowed' : '',
+  ].join(' ')
 
   return (
-    <div className="inline-flex flex-col items-start gap-0.5">
+    <div
+      className="inline-flex flex-col items-start gap-0.5"
+      onClick={(e) => e.stopPropagation()}
+    >
       <Popover>
-        <PopoverTrigger render={trigger} />
+        <PopoverTrigger
+          render={(props) => {
+            if (current) {
+              const meta = TEACHING_CHANNEL_META[current]
+              const Icon = meta?.icon
+              return (
+                <button
+                  {...props}
+                  type="button"
+                  disabled={isPending}
+                  className={badgeClassName}
+                  data-testid="teaching-channel-badge"
+                >
+                  {Icon && <Icon className="h-3 w-3" />}
+                  {meta?.label}
+                  <ChevronDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity -ml-0.5" />
+                </button>
+              )
+            }
+            return (
+              <button
+                {...props}
+                type="button"
+                disabled={isPending}
+                className={ghostClassName}
+                data-testid="teaching-channel-ghost"
+              >
+                <Plus className="h-3 w-3" />
+                channel
+              </button>
+            )
+          }}
+        />
         <PopoverContent
           className="w-44 p-1 bg-white/80 backdrop-blur-[12px] shadow-lg"
           side="bottom"
@@ -99,7 +106,7 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
           <button
             type="button"
             disabled={isPending}
-            onClick={(e) => { e.stopPropagation(); handleSelect(null) }}
+            onClick={() => handleSelect(null)}
             className={[
               'w-full flex items-center gap-2 rounded px-2 py-1.5 text-xs text-zinc-500',
               'hover:bg-zinc-100 transition-colors text-left disabled:opacity-50',
@@ -117,7 +124,7 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
                 key={opt}
                 type="button"
                 disabled={isPending}
-                onClick={(e) => { e.stopPropagation(); handleSelect(opt) }}
+                onClick={() => handleSelect(opt)}
                 className={[
                   'w-full flex items-center gap-2 rounded px-2 py-1.5 text-xs',
                   'hover:bg-zinc-100 transition-colors text-left disabled:opacity-50',
