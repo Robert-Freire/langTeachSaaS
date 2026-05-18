@@ -19,7 +19,7 @@ import { extractStudentProfile } from '@/api/studentExtraction'
 import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
 import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
 import { logger } from '@/lib/logger'
-import { TeachingChannelPicker } from '@/components/student/TeachingChannelPicker'
+import { TEACHING_CHANNEL_META } from '@/lib/teachingChannelMeta'
 
 // ── Avatar helpers ──────────────────────────────────────────────────────────
 
@@ -632,12 +632,13 @@ export default function Students() {
                     </span>
 
                     {/* Teaching channel */}
-                    <span className="flex items-center" data-testid="channel-cell">
-                      <TeachingChannelPicker
-                        value={student.teachingChannel}
-                        studentId={student.id}
-                        onSaved={() => queryClient.invalidateQueries({ queryKey: ['students'] })}
-                      />
+                    <span className="flex items-center gap-1 text-sm text-zinc-500 truncate" data-testid="channel-cell">
+                      {(() => {
+                        const meta = student.teachingChannel ? TEACHING_CHANNEL_META[student.teachingChannel] : null
+                        if (!meta) return null
+                        const Icon = meta.icon
+                        return <><Icon className="h-3.5 w-3.5 shrink-0" />{meta.label}</>
+                      })()}
                     </span>
 
                     {/* Last session */}

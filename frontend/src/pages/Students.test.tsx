@@ -201,11 +201,11 @@ describe('Students page', () => {
     expect(cell).toHaveTextContent('Meet')
   })
 
-  it('renders ghost pill in CHANNEL cell when teachingChannel is null', async () => {
+  it('renders empty CHANNEL cell when teachingChannel is null', async () => {
     vi.mocked(studentsApi.getStudents).mockResolvedValue(makeListResponse([makeStudent()]))
     wrapper(<Students />)
     const cell = await screen.findByTestId('channel-cell')
-    expect(cell.querySelector('[data-testid="teaching-channel-ghost"]')).toBeInTheDocument()
+    expect(cell).toBeEmptyDOMElement()
   })
 
   it('renders empty state when no students', async () => {
