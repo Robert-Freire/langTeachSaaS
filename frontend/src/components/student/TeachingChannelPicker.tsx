@@ -21,7 +21,7 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
   const current = optimisticValue !== undefined ? optimisticValue : value
 
   async function handleSelect(next: string | null) {
-    if (next === current) return
+    if (isPending || next === current) return
     const prev = current
     setOptimisticValue(next)
     setIsPending(true)
@@ -98,10 +98,11 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
         >
           <button
             type="button"
+            disabled={isPending}
             onClick={(e) => { e.stopPropagation(); handleSelect(null) }}
             className={[
               'w-full flex items-center gap-2 rounded px-2 py-1.5 text-xs text-zinc-500',
-              'hover:bg-zinc-100 transition-colors text-left',
+              'hover:bg-zinc-100 transition-colors text-left disabled:opacity-50',
               current === null ? 'font-semibold text-zinc-700 bg-zinc-50' : '',
             ].join(' ')}
             data-testid="channel-option-none"
@@ -115,10 +116,11 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
               <button
                 key={opt}
                 type="button"
+                disabled={isPending}
                 onClick={(e) => { e.stopPropagation(); handleSelect(opt) }}
                 className={[
                   'w-full flex items-center gap-2 rounded px-2 py-1.5 text-xs',
-                  'hover:bg-zinc-100 transition-colors text-left',
+                  'hover:bg-zinc-100 transition-colors text-left disabled:opacity-50',
                   current === opt ? 'font-semibold text-zinc-700 bg-zinc-50' : 'text-zinc-600',
                 ].join(' ')}
                 data-testid={`channel-option-${opt.toLowerCase()}`}
