@@ -33,8 +33,7 @@ public class AzureVisionTextExtractor : ITextExtractor
         var mime = contentType?.Split(';', 2)[0].Trim() ?? string.Empty;
         return mime.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase)
             || mime.Equals("image/png", StringComparison.OrdinalIgnoreCase)
-            || mime.Equals("image/webp", StringComparison.OrdinalIgnoreCase)
-            || mime.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+            || mime.Equals("image/webp", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
