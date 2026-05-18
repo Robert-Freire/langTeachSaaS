@@ -11,6 +11,7 @@ interface TeachingChannelPickerProps {
 }
 
 export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingChannelPickerProps) {
+  const [open, setOpen] = useState(false)
   const [optimisticValue, setOptimisticValue] = useState<string | null | undefined>(undefined)
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +26,7 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
 
   async function handleSelect(next: string | null) {
     if (isPending || next === current) return
+    setOpen(false)
     const prev = current
     setOptimisticValue(next)
     setIsPending(true)
@@ -63,7 +65,7 @@ export function TeachingChannelPicker({ value, studentId, onSaved }: TeachingCha
       className="inline-flex flex-col items-start gap-0.5"
       onClick={(e) => e.stopPropagation()}
     >
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={(props) => {
             if (current) {

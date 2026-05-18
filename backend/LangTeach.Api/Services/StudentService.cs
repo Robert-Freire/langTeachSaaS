@@ -207,6 +207,24 @@ public class StudentService : IStudentService
         return MapToDto(student, todos);
     }
 
+    public async Task<StudentDto?> SetTeachingChannelAsync(Guid teacherId, Guid studentId, TeachingChannel? channel, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students
+            .FirstOrDefaultAsync(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
+
+        if (student is null)
+            return null;
+
+        student.TeachingChannel = channel;
+        student.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("TeachingChannel updated. TeacherId={TeacherId} StudentId={StudentId} Channel={Channel}",
+            teacherId, student.Id, channel?.ToString() ?? "null");
+
+        var todos = await FetchPedagogicalTodosAsync(studentId, cancellationToken);
+        return MapToDto(student, todos);
+    }
+
     public async Task<bool> DeleteAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
     {
         var student = await _db.Students
