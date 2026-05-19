@@ -228,50 +228,6 @@ public class ClaudeApiClientUnitTests
         capturingLogger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
     }
 
-    [Fact]
-    public async Task CompleteAsync_WithAssistantPrefill_PrependsPrefillToContent()
-    {
-        var json = """
-            {
-              "model": "claude-haiku-4-5-20251001",
-              "content": [{ "type": "text", "text": "\"key\":\"value\"}" }],
-              "usage": { "input_tokens": 10, "output_tokens": 5 }
-            }
-            """;
-
-        var client = BuildClient(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json"),
-        });
-
-        var result = await client.CompleteAsync(
-            new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, AssistantPrefill: "{"));
-
-        result.Content.Should().Be("{\"key\":\"value\"}");
-    }
-
-    [Fact]
-    public async Task StreamAsync_WithAssistantPrefill_YieldsPrefillAsFirstChunk()
-    {
-        var sseBody = string.Join("\n",
-            "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"\\\"key\\\":\\\"value\\\"}\"}}",
-            "data: {\"type\":\"message_stop\"}",
-            "");
-
-        var client = BuildClient(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(sseBody, Encoding.UTF8, "text/event-stream"),
-        });
-
-        var chunks = new List<string>();
-        await foreach (var chunk in client.StreamAsync(
-            new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, AssistantPrefill: "{")))
-            chunks.Add(chunk);
-
-        chunks[0].Should().Be("{");
-        string.Concat(chunks).Should().Be("{\"key\":\"value\"}");
-    }
-
     // Minimal IHttpClientFactory implementation that returns a pre-built client.
     private sealed class FakeHttpClientFactory(HttpClient client) : IHttpClientFactory
     {
