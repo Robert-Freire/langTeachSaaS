@@ -39,7 +39,10 @@ public class RedaccionCorrectionPromptBuilder
         // MaxTokens 32768: A1 students produce 30+ errors/150 words (~50-100 tokens/tag);
         // Hardening II prompt additions (#1222/#1226/#1227) increased output verbosity further.
         // 16384 was no longer sufficient for real A1 content (#1293).
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0);
+        // AssistantPrefill "{": forces JSON-first output on error-dense inputs where Sonnet 4.6
+        // otherwise emits chain-of-thought prose before any JSON, burning the token budget (#1316).
+        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0,
+            AssistantPrefill: "{");
     }
 
     private static string BuildSystemPrompt(CorrectionCategoriesFile config)
@@ -95,7 +98,7 @@ public class RedaccionCorrectionPromptBuilder
     private const string OutputContract = """
 OUTPUT CONTRACT:
 
-Emit raw JSON only. Start directly with {. No prose before or after. No markdown fences. The JSON must match exactly:
+Emit raw JSON only. No markdown fences. No prose after the closing brace. The JSON must match exactly:
 
 {
   "schemaVersion": 1,
