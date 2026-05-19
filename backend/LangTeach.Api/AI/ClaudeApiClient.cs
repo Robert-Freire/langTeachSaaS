@@ -199,6 +199,9 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         long latencyMs,
         string rawResponse)
     {
+        if (request.CallSite == "unknown")
+            logger.LogWarning("ClaudeCall missing CallSite tag: model={Model} promptHash={PromptHash}", model, ComputePromptHash(request.SystemPrompt, request.UserPrompt));
+
         var correlationId = request.CorrelationId ?? Guid.NewGuid();
         var promptHash    = ComputePromptHash(request.SystemPrompt, request.UserPrompt);
 
