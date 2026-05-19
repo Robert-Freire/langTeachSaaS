@@ -48,7 +48,7 @@ public class RedaccionScopeAffirmerPromptBuilder
             "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel} textLength={TextLength}",
             studentCefr, nextCefr, studentText.Length);
 
-        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 1024, Temperature: 0), ToolDefinition);
+        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 2048, Temperature: 0), ToolDefinition);
     }
 
     public static readonly ClaudeToolDefinition ToolDefinition = new(
