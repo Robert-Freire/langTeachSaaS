@@ -44,7 +44,7 @@ public class PdfClaudeExtractor : ITextExtractor
         }
 
         var bytes = ms.ToArray();
-        var request = _prompts.BuildPdfOcrPrompt(bytes);
+        var request = _prompts.BuildPdfOcrPrompt(bytes) with { CallSite = "pdf.extraction" };
 
         try
         {

@@ -188,7 +188,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
-        var request = correctionPromptService.BuildCorrectionPrompt(ctx);
+        var request = correctionPromptService.BuildCorrectionPrompt(ctx) with { CallSite = "correction.pass1", CorrelationId = correctionId };
         var sentText = ctx.StudentText.TrimEnd();
 
         var response = await claude.CompleteAsync(request, CancellationToken.None);
@@ -501,7 +501,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         ClaudeResponse filterResponse;
         try
         {
-            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt);
+            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt) with { CallSite = "correction.filter", CorrelationId = correctionId };
             filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
         }
         catch (Exception ex)
@@ -615,7 +615,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         List<ScopeAffirmerSpan>? results;
         try
         {
-            var request = correctionPromptService.BuildScopeAffirmerPrompt(cefr, originalText, nextCefr);
+            var request = correctionPromptService.BuildScopeAffirmerPrompt(cefr, originalText, nextCefr) with { CallSite = "correction.scopeAffirmer", CorrelationId = correctionId };
             var response = await claude.CompleteAsync(request, CancellationToken.None);
             var raw = ContentJsonHelper.StripFences(response.Content);
             results = JsonSerializer.Deserialize<List<ScopeAffirmerSpan>>(raw ?? string.Empty, JsonOpts);

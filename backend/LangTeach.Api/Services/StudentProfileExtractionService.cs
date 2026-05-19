@@ -33,7 +33,7 @@ public class StudentProfileExtractionService : IStudentProfileExtractionService
 
     public async Task<ExtractedStudentProfileDto> ExtractAsync(string text, CancellationToken ct = default)
     {
-        var request = _prompts.BuildStudentProfileExtractionPrompt(text);
+        var request = _prompts.BuildStudentProfileExtractionPrompt(text) with { CallSite = "student.extraction" };
 
         ClaudeResponse response;
         try

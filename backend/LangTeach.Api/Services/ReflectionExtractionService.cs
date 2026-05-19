@@ -28,7 +28,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
     public async Task<ExtractedReflectionDto> ExtractAsync(string text, IReadOnlyList<string>? knownDifficulties = null, bool hasOpenSession = false, CancellationToken ct = default)
     {
-        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties, hasOpenSession));
+        var request = _prompts.BuildReflectionExtractionPrompt(new ReflectionExtractionContext(DateOnly.FromDateTime(DateTime.UtcNow), text, knownDifficulties, hasOpenSession)) with { CallSite = "reflection.extraction" };
 
         ClaudeResponse response;
         try
@@ -99,7 +99,7 @@ public class ReflectionExtractionService : IReflectionExtractionService
 
         try
         {
-            var resp = await _claude.CompleteAsync(_prompts.BuildWhatWasCoveredFallbackPrompt(ctx), ct);
+            var resp = await _claude.CompleteAsync(_prompts.BuildWhatWasCoveredFallbackPrompt(ctx) with { CallSite = "reflection.covered" }, ct);
             var sentence = resp.Content?.Trim().Trim('"').Trim();
             if (!string.IsNullOrWhiteSpace(sentence)) return sentence;
             _logger.LogInformation("Fallback whatWasCovered synthesis returned empty content; using deterministic join");

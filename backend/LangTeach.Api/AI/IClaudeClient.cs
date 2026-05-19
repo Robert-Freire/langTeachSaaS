@@ -8,13 +8,18 @@ public interface IClaudeClient
 
 public record ContentAttachment(string MediaType, byte[] Data, string FileName);
 
+// ClaudeRequest carries both the wire payload and call context (CallSite, CorrelationId).
+// Full prompts and raw responses are logged unconditionally: PII boundary is already crossed
+// when text is sent to Claude; Azure Log Analytics is inside the same trust boundary.
 public record ClaudeRequest(
     string SystemPrompt,
     string UserPrompt,
     ClaudeModel Model,
     int MaxTokens = 2048,
     IReadOnlyList<ContentAttachment>? Attachments = null,
-    double? Temperature = null
+    double? Temperature = null,
+    string CallSite = "unknown",
+    Guid? CorrelationId = null
 );
 
 public record ClaudeResponse(

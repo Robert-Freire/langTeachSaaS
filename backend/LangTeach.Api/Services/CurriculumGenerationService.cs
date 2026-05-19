@@ -85,7 +85,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
                 var personalizationCtx = ctx with { TemplateUnits = templateUnits };
                 try
                 {
-                    var request = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                    var request = _prompts.BuildCurriculumPrompt(personalizationCtx) with { CallSite = "curriculum.personalization" };
                     var response = await _claude.CompleteAsync(request, ct);
                     ApplyPersonalization(skeletons, response.Content);
                 }
@@ -104,7 +104,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
         }
 
         // Free AI generation path
-        var aiRequest = _prompts.BuildCurriculumPrompt(ctx);
+        var aiRequest = _prompts.BuildCurriculumPrompt(ctx) with { CallSite = "curriculum.generation" };
         var aiResponse = await _claude.CompleteAsync(aiRequest, ct);
 
         var strippedAiContent = ContentJsonHelper.StripFences(aiResponse.Content);
@@ -157,7 +157,7 @@ public class CurriculumGenerationService : ICurriculumGenerationService
             var personalizationCtx = ctx with { TemplateUnits = templateUnits };
             try
             {
-                var personalizationRequest = _prompts.BuildCurriculumPrompt(personalizationCtx);
+                var personalizationRequest = _prompts.BuildCurriculumPrompt(personalizationCtx) with { CallSite = "curriculum.personalization" };
                 var personalizationResponse = await _claude.CompleteAsync(personalizationRequest, ct);
                 ApplyPersonalization(freeEntries, personalizationResponse.Content);
             }

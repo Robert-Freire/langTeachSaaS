@@ -212,6 +212,7 @@ public class GenerateController : ControllerBase
 
         var claudeRequest = buildPrompt(_promptService, ctx);
         claudeRequest = AttachMaterials(claudeRequest, materials);
+        claudeRequest = claudeRequest with { CallSite = "lesson.generation.stream" };
 
         Response.ContentType = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
@@ -383,6 +384,7 @@ public class GenerateController : ControllerBase
 
         var claudeRequest = buildPrompt(ctx);
         claudeRequest = AttachMaterials(claudeRequest, materials);
+        claudeRequest = claudeRequest with { CallSite = "lesson.generation.complete" };
 
         ClaudeResponse response;
         try
