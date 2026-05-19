@@ -164,7 +164,7 @@ public class ClaudeApiClientUnitTests
         var client     = new ClaudeApiClient(factory, capturingLogger);
 
         var chunks = new List<string>();
-        await foreach (var chunk in client.StreamAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku)))
+        await foreach (var chunk in client.StreamAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, CallSite: "test")))
             chunks.Add(chunk);
 
         chunks.Should().Equal("complete");
@@ -223,7 +223,7 @@ public class ClaudeApiClientUnitTests
         var factory    = new FakeHttpClientFactory(httpClient);
         var client     = new ClaudeApiClient(factory, capturingLogger);
 
-        await client.CompleteAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, MaxTokens: 100));
+        await client.CompleteAsync(new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, MaxTokens: 100, CallSite: "test"));
 
         capturingLogger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
     }
