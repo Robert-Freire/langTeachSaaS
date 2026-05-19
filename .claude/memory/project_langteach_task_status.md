@@ -4,9 +4,11 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-17)
+## In-Flight Tasks (2026-05-19)
 
-**Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main. Sprint promise (corrections trust) delivered end-to-end and verified via real-world A1 long-content correction (Marton K) + smoke walkthrough A1-A14 + teacher-qa Sprint Reviewer with adversarial topic. `AzureAIVision--Endpoint` and `AzureAIVision--Key` provisioned in kv-lt-dev-5ba22u prior to merge.
+**Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main.
+
+**#1319 MERGED 2026-05-19 (hotfix).** Correction pipeline migrated from "emit raw JSON" prompting to Anthropic tool calling (pass1: submit_correction_tags, filter: submit_filter_decisions, scopeAffirmer: submit_scope_spans). AssistantPrefill workaround from #1316 removed. ScopeAffirmer MaxTokens raised to 4096.
 
 No tasks currently in flight. Next sprint: Groups (epic #1238), Isaac pedagogy review required before tasks broken out.
 
