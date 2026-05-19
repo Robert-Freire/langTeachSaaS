@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using LangTeach.Api.AI;
 
 namespace LangTeach.Api.Tests.Helpers;
@@ -47,6 +48,23 @@ public class StubClaudeClient : IClaudeClient
             LastRequest = null;
             _allRequests.Clear();
         }
+    }
+
+    private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    public async Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref _completeCallCount);
+        lock (_lock)
+        {
+            LastRequest = request;
+            _allRequests.Add(request);
+        }
+        if (DuringCompleteAsync is not null)
+            await DuringCompleteAsync();
+        var content = _responses.TryDequeue(out var queued) ? queued : _defaultContent;
+        var result = JsonSerializer.Deserialize<T>(content, JsonOpts);
+        return result ?? throw new InvalidOperationException($"StubClaudeClient: failed to deserialize '{content}' as {typeof(T).Name}");
     }
 
     public async Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default)

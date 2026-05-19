@@ -76,6 +76,65 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         return new ClaudeResponse(text, usedModel, inputTokens, outputTokens);
     }
 
+    public async Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default)
+    {
+        var client  = httpClientFactory.CreateClient("Claude");
+        var modelId = ModelIds[request.Model];
+        var body    = BuildToolRequestBody(request, modelId, tool);
+        var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+        var sw = Stopwatch.StartNew();
+        using var response = await client.PostAsync("/v1/messages", content, ct);
+        sw.Stop();
+
+        await EnsureSuccessAsync(response, ct);
+
+        var json = await response.Content.ReadAsStringAsync(ct);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        var stopReason   = root.TryGetProperty("stop_reason", out var sr) ? sr.GetString() : null;
+        var usedModel    = root.GetProperty("model").GetString() ?? modelId;
+        var inputTokens  = root.GetProperty("usage").GetProperty("input_tokens").GetInt32();
+        var outputTokens = root.GetProperty("usage").GetProperty("output_tokens").GetInt32();
+        var usagePct     = request.MaxTokens > 0 ? outputTokens * 100.0 / request.MaxTokens : 0.0;
+
+        logger.LogInformation(
+            "Claude tool-call complete: model={Model} tool={Tool} input={Input} output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason} latency={Latency}ms",
+            usedModel, tool.Name, inputTokens, outputTokens, request.MaxTokens, usagePct, stopReason ?? "tool_use", sw.ElapsedMilliseconds);
+
+        // Find tool_use content block.
+        JsonElement toolInput = default;
+        if (root.TryGetProperty("content", out var contentArray))
+        {
+            foreach (var block in contentArray.EnumerateArray())
+            {
+                if (block.TryGetProperty("type", out var blockType) && blockType.GetString() == "tool_use" &&
+                    block.TryGetProperty("input", out var inputProp))
+                {
+                    toolInput = inputProp.Clone();
+                    break;
+                }
+            }
+        }
+
+        var rawResponse = toolInput.ValueKind != JsonValueKind.Undefined ? toolInput.GetRawText() : string.Empty;
+        EmitCallLog(request, usedModel, inputTokens, outputTokens, stopReason ?? "tool_use", sw.ElapsedMilliseconds, rawResponse);
+
+        if (toolInput.ValueKind == JsonValueKind.Undefined)
+            throw new InvalidOperationException($"Claude tool-call response contained no tool_use block for tool '{tool.Name}'.");
+
+        var result = JsonSerializer.Deserialize<T>(rawResponse, JsonOpts);
+        if (result is null)
+            throw new InvalidOperationException($"Claude tool-call input for '{tool.Name}' deserialized to null.");
+        return result;
+    }
+
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
     public async IAsyncEnumerable<string> StreamAsync(
         ClaudeRequest request,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -248,6 +307,24 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         var input = systemPrompt + userPrompt;
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(bytes).ToLowerInvariant();
+    }
+
+    private static object BuildToolRequestBody(ClaudeRequest request, string modelId, ClaudeToolDefinition tool)
+    {
+        var userMessage = new { role = "user", content = (object)request.UserPrompt };
+        var body = new Dictionary<string, object?>
+        {
+            ["model"]       = modelId,
+            ["max_tokens"]  = request.MaxTokens,
+            ["system"]      = request.SystemPrompt,
+            ["stream"]      = false,
+            ["messages"]    = new object[] { userMessage },
+            ["tools"]       = new[] { new { name = tool.Name, description = tool.Description, input_schema = tool.InputSchema } },
+            ["tool_choice"] = new { type = "tool", name = tool.Name },
+        };
+        if (request.Temperature is not null && request.Model != ClaudeModel.Opus)
+            body["temperature"] = request.Temperature;
+        return body;
     }
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)

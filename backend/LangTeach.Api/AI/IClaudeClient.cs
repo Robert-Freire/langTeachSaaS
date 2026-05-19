@@ -3,8 +3,12 @@ namespace LangTeach.Api.AI;
 public interface IClaudeClient
 {
     Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default);
+    Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default);
     IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, CancellationToken ct = default);
 }
+
+// Tool definition for forced single-tool calls. InputSchema must be a JSON Schema object (type=object).
+public record ClaudeToolDefinition(string Name, string Description, object InputSchema);
 
 public record ContentAttachment(string MediaType, byte[] Data, string FileName);
 

@@ -63,6 +63,9 @@ internal sealed class ConfigurableClaudeClient : IClaudeClient
         return Task.FromResult(new ClaudeResponse(_content, "claude-haiku", 10, 20));
     }
 
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
+
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
@@ -91,6 +94,9 @@ internal sealed class SequentialClaudeClient : IClaudeClient
         var content = _responses.Count > 0 ? _responses.Dequeue() : "[]";
         return Task.FromResult(new ClaudeResponse(content, "claude-haiku", 10, 20));
     }
+
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
 
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)

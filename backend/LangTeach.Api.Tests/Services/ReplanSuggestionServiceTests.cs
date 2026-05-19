@@ -22,6 +22,9 @@ file sealed class FakeReplanClaudeClient : IClaudeClient
         return Task.FromResult(new ClaudeResponse(_response ?? "{}", "claude-haiku", 10, 50));
     }
 
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
+
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {

@@ -272,6 +272,67 @@ public class ClaudeApiClientUnitTests
         string.Concat(chunks).Should().Be("{\"key\":\"value\"}");
     }
 
+    [Fact]
+    public async Task CompleteWithToolAsync_SuccessfulToolUseResponse_ReturnsDeserializedInput()
+    {
+        var json = """
+            {
+              "model": "claude-haiku-4-5-20251001",
+              "stop_reason": "tool_use",
+              "content": [
+                {
+                  "type": "tool_use",
+                  "id": "tu_01",
+                  "name": "submit_tags",
+                  "input": {"schemaVersion": 1, "tags": []}
+                }
+              ],
+              "usage": { "input_tokens": 15, "output_tokens": 8 }
+            }
+            """;
+
+        var client = BuildClient(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        });
+
+        var tool = new ClaudeToolDefinition("submit_tags", "Submit tags.", new { type = "object" });
+        var result = await client.CompleteWithToolAsync<TagsResult>(
+            new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, CallSite: "test"), tool);
+
+        result.SchemaVersion.Should().Be(1);
+        result.Tags.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CompleteWithToolAsync_MissingToolUseBlock_ThrowsInvalidOperationException()
+    {
+        var json = """
+            {
+              "model": "claude-haiku-4-5-20251001",
+              "stop_reason": "end_turn",
+              "content": [{ "type": "text", "text": "some text" }],
+              "usage": { "input_tokens": 10, "output_tokens": 5 }
+            }
+            """;
+
+        var client = BuildClient(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json"),
+        });
+
+        var tool = new ClaudeToolDefinition("submit_tags", "Submit tags.", new { type = "object" });
+        var act = () => client.CompleteWithToolAsync<TagsResult>(
+            new ClaudeRequest("sys", "hi", ClaudeModel.Haiku, CallSite: "test"), tool);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*no tool_use block*");
+    }
+
+    private sealed record TagsResult(
+        [property: System.Text.Json.Serialization.JsonPropertyName("schemaVersion")] int SchemaVersion,
+        [property: System.Text.Json.Serialization.JsonPropertyName("tags")] List<object> Tags);
+
     // Minimal IHttpClientFactory implementation that returns a pre-built client.
     private sealed class FakeHttpClientFactory(HttpClient client) : IHttpClientFactory
     {

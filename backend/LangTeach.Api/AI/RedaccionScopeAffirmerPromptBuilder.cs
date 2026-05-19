@@ -37,8 +37,8 @@ public class RedaccionScopeAffirmerPromptBuilder
     }
 
     // Model: Haiku (enrichment pass; low stakes, grounded by curriculum JSON).
-    // The prompt returns an empty array when no above-level structures are found.
-    public ClaudeRequest Build(string studentCefr, string studentText, string nextCefr)
+    // The tool returns an empty spans array when no above-level structures are found.
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildWithTool(string studentCefr, string studentText, string nextCefr)
     {
         var studentScope = _pedagogy.GetGrammarScope(studentCefr);
         var nextScope = _pedagogy.GetGrammarScope(nextCefr);
@@ -48,8 +48,37 @@ public class RedaccionScopeAffirmerPromptBuilder
             "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel} textLength={TextLength}",
             studentCefr, nextCefr, studentText.Length);
 
-        return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 1024, Temperature: 0);
+        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 1024, Temperature: 0), ToolDefinition);
     }
+
+    public static readonly ClaudeToolDefinition ToolDefinition = new(
+        Name: "submit_scope_spans",
+        Description: "Submit the above-level grammar structures found correctly used in the student's text.",
+        InputSchema: new
+        {
+            type = "object",
+            properties = new
+            {
+                spans = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            startIndex     = new { type = "integer" },
+                            endIndex       = new { type = "integer" },
+                            spannedText    = new { type = "string" },
+                            structureLabel = new { type = "string" },
+                            structureLevel = new { type = "string" },
+                        },
+                        required = new[] { "startIndex", "endIndex", "spannedText", "structureLabel", "structureLevel" },
+                    },
+                },
+            },
+            required = new[] { "spans" },
+        });
 
     private const string SystemPrompt = """
 You are a Spanish CEFR stretch detector for a writing correction pipeline. Your task is to find grammar structures in a student's text that:
@@ -68,16 +97,7 @@ RULES:
 - If no above-level structures are found, return an empty array.
 
 OUTPUT CONTRACT:
-Emit raw JSON only. No prose. No markdown fences. The JSON must be an array:
-[
-  {
-    "startIndex": <int>,
-    "endIndex": <int>,
-    "spannedText": "<exact substring from text>",
-    "structureLabel": "<short label, e.g. 'presente de subjuntivo'>",
-    "structureLevel": "<CEFR level, e.g. 'B1'>"
-  }
-]
+Call the submit_scope_spans tool with a spans array containing all above-level structures found. Use an empty spans array if none are found.
 startIndex is inclusive; endIndex is exclusive.
 """;
 

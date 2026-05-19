@@ -21,7 +21,7 @@ public class RedaccionLevelFilterPromptBuilder
     // Model: Haiku (classification task, grounded by curriculum JSON grammar scope).
     // Escalate to Sonnet if teacher QA misclassification rate exceeds 20% on borderline G/L/C tags
     // (more than 1 wrong call per 5 reviewed); one-line change: ClaudeModel.Sonnet below.
-    public ClaudeRequest Build(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null)
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildWithTool(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null)
     {
         var scope = _pedagogy.GetGrammarScope(cefr);
         var calibrationCue = _pedagogy.GetCorrectionCalibrationCue(cefr);
@@ -35,8 +35,34 @@ public class RedaccionLevelFilterPromptBuilder
         // Scale MaxTokens with tag count: each decision is ~30-40 tokens;
         // 2048 is safe for up to ~50 tags; hard cap avoids truncation on dense texts.
         var maxTokens = Math.Max(1024, Math.Min(2048, 512 + tags.Count * 64));
-        return new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: maxTokens, Temperature: 0);
+        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: maxTokens, Temperature: 0), ToolDefinition);
     }
+
+    public static readonly ClaudeToolDefinition ToolDefinition = new(
+        Name: "submit_filter_decisions",
+        Description: "Submit the classification decision for every input tag.",
+        InputSchema: new
+        {
+            type = "object",
+            properties = new
+            {
+                decisions = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            index    = new { type = "integer" },
+                            decision = new { type = "string", @enum = new[] { "keep", "soften", "remove", "muybien" } },
+                        },
+                        required = new[] { "index", "decision" },
+                    },
+                },
+            },
+            required = new[] { "decisions" },
+        });
 
     private const string SystemPrompt = """
 You are a CEFR grammar filter for a Spanish writing correction pipeline. You receive a numbered list of error tags detected in a student's text, the student's CEFR level, the grammar scope for that level, and the assignment context. For each tag, classify it as one of:
@@ -57,11 +83,7 @@ GUIDANCE:
 - Use "soften" when a student attempts an above-scope structure that shows intentional effort, even if imperfect.
 
 OUTPUT CONTRACT:
-Emit raw JSON only. No prose. No markdown fences. The JSON must be an array:
-[
-  {"index": <int>, "decision": "keep" | "soften" | "remove" | "muybien"}
-]
-Every input tag must appear in the output exactly once, identified by its index.
+Call the submit_filter_decisions tool with a decisions array. Every input tag must appear in the output exactly once, identified by its index.
 """;
 
     private static string BuildUserPrompt(string cefr, GrammarScope scope, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt, string? calibrationCue = null)

@@ -104,7 +104,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
         // Filter softens the G tag to MuyBien
         _claude.EnqueueResponse(FilterJson(new[] { (0, "soften", "") }));
         // ScopeAffirmer: empty result
-        _claude.EnqueueResponse("[]");
+        _claude.EnqueueResponse("{\"spans\":[]}");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
@@ -126,7 +126,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
 
         _claude.EnqueueResponse(Pass1Json(text, []));
         // ScopeAffirmer: hallucinated span (wrong text at those indices)
-        _claude.EnqueueResponse("""[{"startIndex":5,"endIndex":12,"spannedText":"no_existe","structureLabel":"test","structureLevel":"B1"}]""");
+        _claude.EnqueueResponse("""{"spans":[{"startIndex":5,"endIndex":12,"spannedText":"no_existe","structureLabel":"test","structureLevel":"B1"}]}""");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
         var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
@@ -206,7 +206,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
         var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
             NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
 
-        var req = builder.Build("A1", "Ojalá vengas.", "A2");
+        var req = builder.BuildWithTool("A1", "Ojalá vengas.", "A2").Request;
 
         req.Model.Should().Be(ClaudeModel.Haiku, "ScopeAffirmer is an enrichment pass; Haiku is sufficient");
     }
@@ -220,7 +220,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
         var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
             NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
 
-        var req = builder.Build("A1", "Ojalá vengas.", "A2");
+        var req = builder.BuildWithTool("A1", "Ojalá vengas.", "A2").Request;
 
         req.UserPrompt.Should().Contain("A1", "must reference student's level");
         req.UserPrompt.Should().Contain("A2", "must reference next level");
@@ -329,7 +329,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
     {
         var items = string.Join(",", decisions.Select(d =>
             $"{{\"index\":{d.Index},\"decision\":\"{d.Decision}\"}}"));
-        return $"[{items}]";
+        return $"{{\"decisions\":[{items}]}}";
     }
 
     private static string ScopeAffirmerJson(
@@ -338,6 +338,6 @@ public class RedaccionScopeAffirmerTests : IDisposable
         var items = string.Join(",", results.Select(r =>
             $"{{\"startIndex\":{r.Start},\"endIndex\":{r.End}," +
             $"\"spannedText\":\"{r.Span}\",\"structureLabel\":\"{r.Label}\",\"structureLevel\":\"{r.Level}\"}}"));
-        return $"[{items}]";
+        return $"{{\"spans\":[{items}]}}";
     }
 }

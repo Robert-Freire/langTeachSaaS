@@ -23,7 +23,7 @@ public class RedaccionCorrectionPromptBuilder
         _logger = logger;
     }
 
-    public ClaudeRequest Build(RedaccionCorrectionPromptContext ctx)
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildWithTool(RedaccionCorrectionPromptContext ctx)
     {
         var system = BuildSystemPrompt(_pedagogy.GetCorrectionCategories());
         var user = BuildUserPrompt(ctx);
@@ -39,11 +39,43 @@ public class RedaccionCorrectionPromptBuilder
         // MaxTokens 32768: A1 students produce 30+ errors/150 words (~50-100 tokens/tag);
         // Hardening II prompt additions (#1222/#1226/#1227) increased output verbosity further.
         // 16384 was no longer sufficient for real A1 content (#1293).
-        // AssistantPrefill "{": forces JSON-first output on error-dense inputs where Sonnet 4.6
-        // otherwise emits chain-of-thought prose before any JSON, burning the token budget (#1316).
-        return new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0,
-            AssistantPrefill: "{");
+        // AssistantPrefill removed: tool calling separates chain-of-thought from structured output
+        // at the API level, so the "{" prefill workaround (#1316) is no longer needed.
+        var request = new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0);
+        return (request, ToolDefinition);
     }
+
+    public static readonly ClaudeToolDefinition ToolDefinition = new(
+        Name: "submit_correction_tags",
+        Description: "Submit the complete list of correction tags for the student's redacción.",
+        InputSchema: new
+        {
+            type = "object",
+            properties = new
+            {
+                schemaVersion = new { type = "integer" },
+                tags = new
+                {
+                    type = "array",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            category      = new { type = "string", @enum = new[] { "G", "C", "L", "O" } },
+                            startIndex    = new { type = "integer" },
+                            endIndex      = new { type = "integer" },
+                            spannedText   = new { type = "string" },
+                            contextBefore = new { type = "string" },
+                            explanation   = new { type = "string" },
+                            correctedForm = new { type = "string" },
+                        },
+                        required = new[] { "category", "startIndex", "endIndex", "spannedText", "explanation", "correctedForm" },
+                    },
+                },
+            },
+            required = new[] { "schemaVersion", "tags" },
+        });
 
     private static string BuildSystemPrompt(CorrectionCategoriesFile config)
     {
@@ -98,22 +130,7 @@ public class RedaccionCorrectionPromptBuilder
     private const string OutputContract = """
 OUTPUT CONTRACT:
 
-Emit raw JSON only. No markdown fences. No prose after the closing brace. The JSON must match exactly:
-
-{
-  "schemaVersion": 1,
-  "tags": [
-    {
-      "category": "G" | "C" | "L" | "O",
-      "startIndex": <int>,
-      "endIndex": <int>,
-      "spannedText": "<exact substring of the student text at [startIndex..endIndex]>",
-      "contextBefore": "<the substring of the student text immediately before spannedText, up to 20 characters; use empty string if spannedText starts at position 0>",
-      "explanation": "<short, in Spanish>",
-      "correctedForm": "<the corrected form>"
-    }
-  ]
-}
+When you have identified all errors, call the submit_correction_tags tool with schemaVersion=1 and the complete tags array.
 
 "explanation" and "correctedForm" are always non-empty for every tag.
 
