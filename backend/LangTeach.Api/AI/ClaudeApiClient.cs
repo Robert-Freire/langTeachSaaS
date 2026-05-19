@@ -70,6 +70,9 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
                 System.Net.HttpStatusCode.OK,
                 $"Response truncated: max_tokens ({request.MaxTokens}) reached before completion.");
 
+        if (request.AssistantPrefill is not null)
+            text = request.AssistantPrefill + text;
+
         return new ClaudeResponse(text, usedModel, inputTokens, outputTokens);
     }
 
@@ -98,6 +101,14 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         var streamStopReason = "end_turn";
         var accumulated     = new StringBuilder();
         var logEmitted      = false;
+
+        // Yield prefill as first chunk so downstream sees a complete JSON stream from the start.
+        // (prefill is not counted in output_tokens by the API)
+        if (request.AssistantPrefill is not null)
+        {
+            accumulated.Append(request.AssistantPrefill);
+            yield return request.AssistantPrefill;
+        }
 
         try
         {
@@ -214,6 +225,23 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             latencyMs, request.SystemPrompt, request.UserPrompt, rawResponse);
     }
 
+    private static object BuildUserMessageWithAttachments(ClaudeRequest request)
+    {
+        var contentParts = new List<object>();
+        foreach (var att in request.Attachments!)
+        {
+            var isPdf = string.Equals(att.MediaType, "application/pdf", StringComparison.OrdinalIgnoreCase);
+            var blockType = isPdf ? "document" : "image";
+            contentParts.Add(new
+            {
+                type = blockType,
+                source = new { type = "base64", media_type = att.MediaType, data = Convert.ToBase64String(att.Data) }
+            });
+        }
+        contentParts.Add(new { type = "text", text = request.UserPrompt });
+        return new { role = "user", content = (object)contentParts };
+    }
+
     // PromptHash is SHA256(SystemPrompt+UserPrompt) for dedup and lookup in KQL.
     private static string ComputePromptHash(string systemPrompt, string userPrompt)
     {
@@ -224,27 +252,15 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)
     {
-        object messages;
-        if (request.Attachments is { Count: > 0 })
-        {
-            var contentParts = new List<object>();
-            foreach (var att in request.Attachments)
-            {
-                var isPdf = string.Equals(att.MediaType, "application/pdf", StringComparison.OrdinalIgnoreCase);
-                var blockType = isPdf ? "document" : "image";
-                contentParts.Add(new
-                {
-                    type = blockType,
-                    source = new { type = "base64", media_type = att.MediaType, data = Convert.ToBase64String(att.Data) }
-                });
-            }
-            contentParts.Add(new { type = "text", text = request.UserPrompt });
-            messages = new[] { new { role = "user", content = (object)contentParts } };
-        }
-        else
-        {
-            messages = new[] { new { role = "user", content = (object)request.UserPrompt } };
-        }
+        var userMessage = request.Attachments is { Count: > 0 }
+            ? BuildUserMessageWithAttachments(request)
+            : new { role = "user", content = (object)request.UserPrompt };
+
+        // When AssistantPrefill is set, append an assistant turn so the model continues from
+        // that text instead of generating a preamble. See: https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/prefill-claudes-response
+        object messages = request.AssistantPrefill is not null
+            ? new object[] { userMessage, new { role = "assistant", content = (object)request.AssistantPrefill } }
+            : new object[] { userMessage };
 
         var body = new Dictionary<string, object?>
         {

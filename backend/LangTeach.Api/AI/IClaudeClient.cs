@@ -19,7 +19,8 @@ public record ClaudeRequest(
     IReadOnlyList<ContentAttachment>? Attachments = null,
     double? Temperature = null,
     string CallSite = "unknown",
-    Guid? CorrelationId = null
+    Guid? CorrelationId = null,
+    string? AssistantPrefill = null
 );
 
 public record ClaudeResponse(
