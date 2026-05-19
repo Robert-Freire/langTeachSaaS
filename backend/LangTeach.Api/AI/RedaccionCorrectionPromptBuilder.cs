@@ -70,7 +70,7 @@ public class RedaccionCorrectionPromptBuilder
                             explanation   = new { type = "string" },
                             correctedForm = new { type = "string" },
                         },
-                        required = new[] { "category", "startIndex", "endIndex", "spannedText", "explanation", "correctedForm" },
+                        required = new[] { "category", "startIndex", "endIndex", "spannedText", "contextBefore", "explanation", "correctedForm" },
                     },
                 },
             },

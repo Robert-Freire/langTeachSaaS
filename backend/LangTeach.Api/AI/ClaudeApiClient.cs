@@ -311,7 +311,9 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
 
     private static object BuildToolRequestBody(ClaudeRequest request, string modelId, ClaudeToolDefinition tool)
     {
-        var userMessage = new { role = "user", content = (object)request.UserPrompt };
+        var userMessage = request.Attachments is { Count: > 0 }
+            ? BuildUserMessageWithAttachments(request)
+            : new { role = "user", content = (object)request.UserPrompt };
         var body = new Dictionary<string, object?>
         {
             ["model"]       = modelId,
