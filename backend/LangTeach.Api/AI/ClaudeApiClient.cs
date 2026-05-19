@@ -58,6 +58,9 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             "Claude complete: model={Model} input={Input} output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason} latency={Latency}ms",
             usedModel, inputTokens, outputTokens, request.MaxTokens, usagePct, stopReason ?? "end_turn", sw.ElapsedMilliseconds);
 
+        if (request.AssistantPrefill is not null)
+            text = request.AssistantPrefill + text;
+
         EmitCallLog(request, usedModel, inputTokens, outputTokens, stopReason ?? "end_turn", sw.ElapsedMilliseconds, text);
 
         if (usagePct >= 80.0)
@@ -69,9 +72,6 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             throw new ClaudeApiException(
                 System.Net.HttpStatusCode.OK,
                 $"Response truncated: max_tokens ({request.MaxTokens}) reached before completion.");
-
-        if (request.AssistantPrefill is not null)
-            text = request.AssistantPrefill + text;
 
         return new ClaudeResponse(text, usedModel, inputTokens, outputTokens);
     }
@@ -258,6 +258,8 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
 
         // When AssistantPrefill is set, append an assistant turn so the model continues from
         // that text instead of generating a preamble. See: https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/prefill-claudes-response
+        if (request.AssistantPrefill is not null && string.IsNullOrEmpty(request.AssistantPrefill))
+            throw new ArgumentException("AssistantPrefill must be non-empty when set.", nameof(request));
         object messages = request.AssistantPrefill is not null
             ? new object[] { userMessage, new { role = "assistant", content = (object)request.AssistantPrefill } }
             : new object[] { userMessage };

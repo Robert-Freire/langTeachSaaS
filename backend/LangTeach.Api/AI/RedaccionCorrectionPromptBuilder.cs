@@ -98,7 +98,7 @@ public class RedaccionCorrectionPromptBuilder
     private const string OutputContract = """
 OUTPUT CONTRACT:
 
-Emit raw JSON only. Start directly with {. No prose before or after. No markdown fences. The JSON must match exactly:
+Emit raw JSON only. No markdown fences. No prose after the closing brace. The JSON must match exactly:
 
 {
   "schemaVersion": 1,
