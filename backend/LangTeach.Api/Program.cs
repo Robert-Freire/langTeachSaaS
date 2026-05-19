@@ -163,6 +163,15 @@ builder.Services.AddHttpClient("Claude", (sp, client) =>
     client.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
     client.Timeout = TimeSpan.FromSeconds(RedaccionCorrectionTimeouts.HttpClientSeconds);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    // Send HTTP/2 PING frames every 15 s so Docker/WSL2 NAT does not silently drop
+    // the idle TCP connection while Claude is generating a long response (stream=false).
+    KeepAlivePingDelay   = TimeSpan.FromSeconds(15),
+    KeepAlivePingTimeout = TimeSpan.FromSeconds(10),
+    KeepAlivePingPolicy  = HttpKeepAlivePingPolicy.Always,
+    PooledConnectionLifetime = TimeSpan.FromMinutes(5),
 });
 builder.Services.AddHttpClient("AzureSpeech", client =>
 {
