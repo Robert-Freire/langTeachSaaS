@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -57,6 +58,8 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             "Claude complete: model={Model} input={Input} output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason} latency={Latency}ms",
             usedModel, inputTokens, outputTokens, request.MaxTokens, usagePct, stopReason ?? "end_turn", sw.ElapsedMilliseconds);
 
+        EmitCallLog(request, usedModel, inputTokens, outputTokens, stopReason ?? "end_turn", sw.ElapsedMilliseconds, text);
+
         if (usagePct >= 80.0)
             logger.LogWarning(
                 "Claude near max_tokens ceiling: output={Output} maxTokens={MaxTokens} usage={UsagePct:F1}% stopReason={StopReason}",
@@ -89,81 +92,131 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var reader = new StreamReader(stream);
 
-        var usedModel    = modelId;
-        var inputTokens  = 0;
-        var outputTokens = 0;
+        var usedModel       = modelId;
+        var inputTokens     = 0;
+        var outputTokens    = 0;
+        var streamStopReason = "end_turn";
+        var accumulated     = new StringBuilder();
+        var logEmitted      = false;
 
-        while (!reader.EndOfStream && !ct.IsCancellationRequested)
+        try
         {
-            var line = await reader.ReadLineAsync(ct);
-            if (line is null) break;
-            if (!line.StartsWith("data: ")) continue;
-
-            var data = line["data: ".Length..];
-            if (data == "[DONE]") break;
-
-            string? chunk = null;
-            try
+            while (!reader.EndOfStream && !ct.IsCancellationRequested)
             {
-                using var eventDoc = JsonDocument.Parse(data);
-                var eventRoot = eventDoc.RootElement;
+                var line = await reader.ReadLineAsync(ct);
+                if (line is null) break;
+                if (!line.StartsWith("data: ")) continue;
 
-                if (!eventRoot.TryGetProperty("type", out var typeProp)) continue;
-                var type = typeProp.GetString();
+                var data = line["data: ".Length..];
+                if (data == "[DONE]") break;
 
-                if (type == "message_start")
+                string? chunk = null;
+                try
                 {
-                    if (eventRoot.TryGetProperty("message", out var msg))
+                    using var eventDoc = JsonDocument.Parse(data);
+                    var eventRoot = eventDoc.RootElement;
+
+                    if (!eventRoot.TryGetProperty("type", out var typeProp)) continue;
+                    var type = typeProp.GetString();
+
+                    if (type == "message_start")
                     {
-                        if (msg.TryGetProperty("model", out var m))
-                            usedModel = m.GetString() ?? modelId;
-                        if (msg.TryGetProperty("usage", out var startUsage) &&
-                            startUsage.TryGetProperty("input_tokens", out var it))
-                            inputTokens = it.GetInt32();
+                        if (eventRoot.TryGetProperty("message", out var msg))
+                        {
+                            if (msg.TryGetProperty("model", out var m))
+                                usedModel = m.GetString() ?? modelId;
+                            if (msg.TryGetProperty("usage", out var startUsage) &&
+                                startUsage.TryGetProperty("input_tokens", out var it))
+                                inputTokens = it.GetInt32();
+                        }
+                        continue;
                     }
+
+                    if (type == "message_delta")
+                    {
+                        if (eventRoot.TryGetProperty("usage", out var deltaUsage) &&
+                            deltaUsage.TryGetProperty("output_tokens", out var ot))
+                            outputTokens = ot.GetInt32();
+
+                        if (eventRoot.TryGetProperty("delta", out var deltaObj) &&
+                            deltaObj.TryGetProperty("stop_reason", out var sr))
+                            streamStopReason = sr.GetString() ?? "end_turn";
+
+                        if (streamStopReason == "max_tokens")
+                            logger.LogWarning(
+                                "Claude stream truncated: max_tokens ({MaxTokens}) reached. model={Model} input={Input} output={Output}",
+                                request.MaxTokens, usedModel, inputTokens, outputTokens);
+
+                        sw.Stop();
+                        logger.LogInformation(
+                            "Claude stream: model={Model} input={Input} output={Output} latency={Latency}ms stopReason={StopReason}",
+                            usedModel, inputTokens, outputTokens, sw.ElapsedMilliseconds, streamStopReason);
+
+                        EmitCallLog(request, usedModel, inputTokens, outputTokens, streamStopReason, sw.ElapsedMilliseconds, accumulated.ToString());
+                        logEmitted = true;
+                        continue;
+                    }
+
+                    if (type == "message_stop") break;
+                    if (type != "content_block_delta") continue;
+
+                    if (eventRoot.TryGetProperty("delta", out var textDelta) &&
+                        textDelta.TryGetProperty("text", out var textProp))
+                    {
+                        chunk = textProp.GetString();
+                    }
+                }
+                catch (JsonException)
+                {
                     continue;
                 }
 
-                if (type == "message_delta")
+                if (chunk is not null)
                 {
-                    if (eventRoot.TryGetProperty("usage", out var deltaUsage) &&
-                        deltaUsage.TryGetProperty("output_tokens", out var ot))
-                        outputTokens = ot.GetInt32();
-
-                    var stopReason = string.Empty;
-                    if (eventRoot.TryGetProperty("delta", out var deltaObj) &&
-                        deltaObj.TryGetProperty("stop_reason", out var sr))
-                        stopReason = sr.GetString() ?? string.Empty;
-
-                    if (stopReason == "max_tokens")
-                        logger.LogWarning(
-                            "Claude stream truncated: max_tokens ({MaxTokens}) reached. model={Model} input={Input} output={Output}",
-                            request.MaxTokens, usedModel, inputTokens, outputTokens);
-
-                    sw.Stop();
-                    logger.LogInformation(
-                        "Claude stream: model={Model} input={Input} output={Output} latency={Latency}ms stopReason={StopReason}",
-                        usedModel, inputTokens, outputTokens, sw.ElapsedMilliseconds, stopReason);
-                    continue;
-                }
-
-                if (type == "message_stop") break;
-                if (type != "content_block_delta") continue;
-
-                if (eventRoot.TryGetProperty("delta", out var textDelta) &&
-                    textDelta.TryGetProperty("text", out var textProp))
-                {
-                    chunk = textProp.GetString();
+                    accumulated.Append(chunk);
+                    yield return chunk;
                 }
             }
-            catch (JsonException)
-            {
-                continue;
-            }
-
-            if (chunk is not null) yield return chunk;
         }
+        finally
+        {
+            // Emit log for cancellation or unexpected termination cases where message_delta was never received.
+            if (!logEmitted)
+            {
+                if (!sw.IsRunning) sw.Stop();
+                var stopReason = ct.IsCancellationRequested ? "cancelled" : "error";
+                EmitCallLog(request, usedModel, inputTokens, outputTokens, stopReason, sw.ElapsedMilliseconds, accumulated.ToString());
+            }
+        }
+    }
 
+    private void EmitCallLog(
+        ClaudeRequest request,
+        string model,
+        int inputTokens,
+        int outputTokens,
+        string stopReason,
+        long latencyMs,
+        string rawResponse)
+    {
+        var correlationId = request.CorrelationId ?? Guid.NewGuid();
+        var promptHash    = ComputePromptHash(request.SystemPrompt, request.UserPrompt);
+
+        logger.LogInformation(
+            "ClaudeCall callSite={CallSite} correlationId={CorrelationId} model={Model} promptHash={PromptHash} " +
+            "inputTokens={InputTokens} outputTokens={OutputTokens} maxTokens={MaxTokens} stopReason={StopReason} " +
+            "latencyMs={LatencyMs} systemPrompt={SystemPrompt} userPrompt={UserPrompt} rawResponse={RawResponse}",
+            request.CallSite, correlationId, model, promptHash,
+            inputTokens, outputTokens, request.MaxTokens, stopReason,
+            latencyMs, request.SystemPrompt, request.UserPrompt, rawResponse);
+    }
+
+    // PromptHash is SHA256(SystemPrompt+UserPrompt) for dedup and lookup in KQL.
+    private static string ComputePromptHash(string systemPrompt, string userPrompt)
+    {
+        var input = systemPrompt + userPrompt;
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     private static object BuildRequestBody(ClaudeRequest request, string modelId, bool stream)

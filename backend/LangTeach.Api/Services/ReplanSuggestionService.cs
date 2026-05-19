@@ -91,7 +91,7 @@ public class ReplanSuggestionService : IReplanSuggestionService
             course.Name, course.Language, course.TargetCefrLevel, course.Student?.Name,
             taughtEntries, plannedEntries, difficulties, MaxSuggestions);
 
-        var request = _prompts.BuildReplanSuggestionPrompt(promptContext);
+        var request = _prompts.BuildReplanSuggestionPrompt(promptContext) with { CallSite = "replanning" };
 
         ClaudeResponse response;
         try

@@ -40,7 +40,7 @@ public class CurriculumValidationService : ICurriculumValidationService
             allowedGrammar,
             entriesWithGrammar.Select(e => (e.OrderIndex, e.GrammarFocus!)).ToList());
 
-        var request = _prompts.BuildCurriculumValidationPrompt(ctx);
+        var request = _prompts.BuildCurriculumValidationPrompt(ctx) with { CallSite = "curriculum.validation" };
 
         try
         {
