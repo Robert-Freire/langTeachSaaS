@@ -96,7 +96,6 @@ RULES:
 - If a structure appears multiple times, flag each correct occurrence separately.
 - If no above-level structures are found, return an empty array.
 
-OUTPUT CONTRACT:
 Call the submit_scope_spans tool with a spans array containing all above-level structures found. Use an empty spans array if none are found.
 startIndex is inclusive; endIndex is exclusive.
 """;

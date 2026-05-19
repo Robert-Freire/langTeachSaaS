@@ -128,8 +128,6 @@ public class RedaccionCorrectionPromptBuilder
     }
 
     private const string OutputContract = """
-OUTPUT CONTRACT:
-
 When you have identified all errors, call the submit_correction_tags tool with schemaVersion=1 and the complete tags array.
 
 "explanation" and "correctedForm" are always non-empty for every tag.

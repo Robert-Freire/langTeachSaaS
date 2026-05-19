@@ -82,7 +82,6 @@ GUIDANCE:
 - Use "muybien" only when the student demonstrates genuinely strong usage: a structure at or near their level ceiling, used correctly, AND fitting the register of the assignment.
 - Use "soften" when a student attempts an above-scope structure that shows intentional effort, even if imperfect.
 
-OUTPUT CONTRACT:
 Call the submit_filter_decisions tool with a decisions array. Every input tag must appear in the output exactly once, identified by its index.
 """;
 
