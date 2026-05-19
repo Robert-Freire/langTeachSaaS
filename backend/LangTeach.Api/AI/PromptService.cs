@@ -1800,4 +1800,20 @@ public class PromptService : IPromptService
 
         return new ClaudeRequest(SystemPrompt: system, UserPrompt: user, Model: ClaudeModel.Sonnet, MaxTokens: 1000);
     }
+
+    public ClaudeRequest BuildPdfOcrPrompt(byte[] pdfBytes)
+    {
+        const string system =
+            "Transcribe the PDF document exactly as written. " +
+            "Preserve every spelling mistake, grammar error, and accented character exactly as they appear. " +
+            "Output only the raw transcribed text with no commentary.";
+
+        return new ClaudeRequest(
+            SystemPrompt: system,
+            UserPrompt: "Transcribe this document.",
+            Model: ClaudeModel.Haiku,
+            MaxTokens: 3072,
+            Attachments: [new ContentAttachment("application/pdf", pdfBytes, "document.pdf")]
+        );
+    }
 }

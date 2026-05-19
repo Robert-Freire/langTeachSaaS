@@ -56,14 +56,14 @@ public class PdfTextExtractorTests
     }
 
     [Fact]
-    public async Task ExtractTextAsync_TextBelowMinChars_ThrowsOcrException()
+    public async Task ExtractTextAsync_TextBelowMinChars_ThrowsOcrFallbackException()
     {
         using var stream = CreateTypedPdfStream("Hi");
         var sut = CreateExtractor(minChars: 100);
 
         var act = () => sut.ExtractTextAsync(stream, PdfContentType);
 
-        await act.Should().ThrowAsync<OcrException>();
+        await act.Should().ThrowAsync<OcrFallbackException>();
     }
 
     [Fact]

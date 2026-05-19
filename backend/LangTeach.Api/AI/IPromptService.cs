@@ -30,6 +30,7 @@ public interface IPromptService
     ClaudeRequest BuildStudentProfileExtractionPrompt(string text);
     ClaudeRequest BuildReplanSuggestionPrompt(ReplanSuggestionContext ctx);
     ClaudeRequest BuildCurriculumValidationPrompt(CurriculumValidationContext ctx);
+    ClaudeRequest BuildPdfOcrPrompt(byte[] pdfBytes);
 }
 
 public record CurriculumContext(

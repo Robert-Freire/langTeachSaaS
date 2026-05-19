@@ -243,8 +243,9 @@ if (builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddScoped<ITextExtractor, StubTextExtractor>();
 else
 {
-    builder.Services.AddScoped<ITextExtractor, PdfTextExtractor>();        // fast-path: typed PDFs skip Vision
-    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // Vision fallback for scanned/encrypted PDFs and images; degrades gracefully when unconfigured
+    builder.Services.AddScoped<ITextExtractor, PdfTextExtractor>();        // fast-path: typed PDFs via text layer
+    builder.Services.AddScoped<ITextExtractor, PdfClaudeExtractor>();     // fallback: scanned/handwritten PDFs via Claude
+    builder.Services.AddScoped<ITextExtractor, AzureVisionTextExtractor>(); // images (jpeg/png/webp)
     builder.Services.AddScoped<ITextExtractor, OpenXmlDocxTextExtractor>(); // .docx
 }
 builder.Services.Configure<OcrOptions>(builder.Configuration.GetSection(OcrOptions.SectionName));
