@@ -19,6 +19,9 @@ internal sealed class FakeClaudeClient : IClaudeClient
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default) =>
         Task.FromResult(new ClaudeResponse(FixedContent, "claude-haiku", 10, 20));
 
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
+
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
         await Task.Yield();

@@ -5,7 +5,6 @@ using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
-using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -188,34 +187,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         var cefr = CefrLevelNormalizer.Normalize(student.CefrLevel);
         var ctx = BuildPromptContext(correction, student);
-        var request = correctionPromptService.BuildCorrectionPrompt(ctx) with { CallSite = "correction.pass1", CorrelationId = correctionId };
+        var (corrReq, corrTool) = correctionPromptService.BuildCorrectionToolCall(ctx);
+        corrReq = corrReq with { CallSite = "correction.pass1", CorrelationId = correctionId };
         var sentText = ctx.StudentText.TrimEnd();
 
-        var response = await claude.CompleteAsync(request, CancellationToken.None);
-
-        var raw = response.Content;
-        var stripped = ContentJsonHelper.StripFencesAndPreamble(raw);
-        if (string.IsNullOrWhiteSpace(stripped))
-        {
-            logger.LogWarning("Background correction: empty/blank Claude response. CorrectionId={CorrectionId}", correctionId);
-            throw new InvalidOperationException("Claude returned empty content.");
-        }
-
-        RedaccionCorrectionDto dto;
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<RedaccionCorrectionDto>(stripped, JsonOpts);
-            if (parsed is null || parsed.SchemaVersion != 1)
-                throw new InvalidOperationException("Claude response is missing or has an unsupported schemaVersion.");
-            dto = parsed;
-        }
-        catch (JsonException ex)
-        {
-            var excerpt = stripped.Length > 200 ? stripped[..200] + "..." : stripped;
-            logger.LogWarning(ex, "Background correction: failed to parse JSON. CorrectionId={CorrectionId} Excerpt={Excerpt}",
-                correctionId, excerpt);
-            throw new InvalidOperationException("Claude response did not parse as the expected JSON shape.", ex);
-        }
+        var dto = await claude.CompleteWithToolAsync<RedaccionCorrectionDto>(corrReq, corrTool, CancellationToken.None);
+        if (dto.SchemaVersion != 1)
+            throw new InvalidOperationException("Claude tool response is missing or has an unsupported schemaVersion.");
 
         var validatedTags = ValidateAndOrderTags(dto.Tags ?? [], sentText, correctionId, logger);
 
@@ -243,7 +221,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
 
         var now = DateTime.UtcNow;
-        correction.MarkedUpOutput = stripped!;
+        correction.MarkedUpOutput = JsonSerializer.Serialize(dto, JsonOpts);
         correction.Status = CorrectionStatus.Corregida;
         correction.CorrectedAt = now;
         correction.UpdatedAt = now;
@@ -269,10 +247,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         await db.SaveChangesAsync(CancellationToken.None);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded} ModelTokens={InputTokens}/{OutputTokens}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded}",
             correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
-            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count,
-            response.InputTokens, response.OutputTokens);
+            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -498,11 +475,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
             .ToList();
 
-        ClaudeResponse filterResponse;
+        FilterDecisionsWrapper filterResult;
         try
         {
-            var filterRequest = correctionPromptService.BuildLevelFilterPrompt(cefr, inputs, assignmentPrompt) with { CallSite = "correction.filter", CorrelationId = correctionId };
-            filterResponse = await claude.CompleteAsync(filterRequest, CancellationToken.None);
+            var (filterReq, filterTool) = correctionPromptService.BuildLevelFilterToolCall(cefr, inputs, assignmentPrompt);
+            filterReq = filterReq with { CallSite = "correction.filter", CorrelationId = correctionId };
+            filterResult = await claude.CompleteWithToolAsync<FilterDecisionsWrapper>(filterReq, filterTool, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -511,25 +489,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return tags;
         }
 
-        List<FilterDecision>? decisions;
-        try
-        {
-            var raw = ContentJsonHelper.StripFences(filterResponse.Content);
-            decisions = JsonSerializer.Deserialize<List<FilterDecision>>(raw ?? string.Empty, JsonOpts);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex,
-                "Level filter response did not parse; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
-            return tags;
-        }
-
-        if (decisions is null)
-        {
-            logger.LogWarning(
-                "Level filter returned null; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
-            return tags;
-        }
+        var decisions = filterResult.Decisions ?? [];
 
         var decisionMap = new Dictionary<int, FilterDecision>(decisions.Count);
         foreach (var d in decisions)
@@ -612,13 +572,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return [];
         }
 
-        List<ScopeAffirmerSpan>? results;
+        List<ScopeAffirmerSpan> results;
         try
         {
-            var request = correctionPromptService.BuildScopeAffirmerPrompt(cefr, originalText, nextCefr) with { CallSite = "correction.scopeAffirmer", CorrelationId = correctionId };
-            var response = await claude.CompleteAsync(request, CancellationToken.None);
-            var raw = ContentJsonHelper.StripFences(response.Content);
-            results = JsonSerializer.Deserialize<List<ScopeAffirmerSpan>>(raw ?? string.Empty, JsonOpts);
+            var (affirmerReq, affirmerTool) = correctionPromptService.BuildScopeAffirmerToolCall(cefr, originalText, nextCefr);
+            affirmerReq = affirmerReq with { CallSite = "correction.scopeAffirmer", CorrelationId = correctionId };
+            var wrapper = await claude.CompleteWithToolAsync<ScopeSpansWrapper>(affirmerReq, affirmerTool, CancellationToken.None);
+            results = wrapper.Spans ?? [];
         }
         catch (Exception ex)
         {
@@ -626,7 +586,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return [];
         }
 
-        if (results is null || results.Count == 0)
+        if (results.Count == 0)
             return [];
 
         var affirmerTags = new List<RedaccionCorrectionTagDto>(results.Count);
@@ -726,4 +686,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private record FilterDecision(
         [property: JsonPropertyName("index")] int Index,
         [property: JsonPropertyName("decision")] string Decision);
+
+    private record FilterDecisionsWrapper(
+        [property: JsonPropertyName("decisions")] List<FilterDecision>? Decisions);
+
+    private record ScopeSpansWrapper(
+        [property: JsonPropertyName("spans")] List<ScopeAffirmerSpan>? Spans);
 }

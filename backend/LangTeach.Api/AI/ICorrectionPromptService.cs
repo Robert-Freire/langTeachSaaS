@@ -2,7 +2,7 @@ namespace LangTeach.Api.AI;
 
 public interface ICorrectionPromptService
 {
-    ClaudeRequest BuildCorrectionPrompt(RedaccionCorrectionPromptContext ctx);
-    ClaudeRequest BuildLevelFilterPrompt(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null);
-    ClaudeRequest BuildScopeAffirmerPrompt(string studentCefr, string studentText, string nextCefr);
+    (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildCorrectionToolCall(RedaccionCorrectionPromptContext ctx);
+    (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildLevelFilterToolCall(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null);
+    (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildScopeAffirmerToolCall(string studentCefr, string studentText, string nextCefr);
 }

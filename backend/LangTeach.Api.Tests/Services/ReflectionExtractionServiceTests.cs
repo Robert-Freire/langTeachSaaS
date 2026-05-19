@@ -34,6 +34,9 @@ file sealed class ReflectionClaudeClient : IClaudeClient
         return Task.FromResult(_handler!(request));
     }
 
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
+
     public async IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
         await Task.Yield();

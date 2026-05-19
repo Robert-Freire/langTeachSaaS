@@ -353,7 +353,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             new LevelFilterTagInput("G", "pareces", "Subjuntivo requerido.", IsSerEstar: false),
         };
 
-        var req = builder.Build("A2", tags);
+        var req = builder.BuildWithTool("A2", tags).Request;
         var userPrompt = req.UserPrompt;
 
         // The [SER/ESTAR] prefix is no longer injected into the user prompt.
@@ -376,7 +376,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
 
         var tags = new[] { new LevelFilterTagInput("G", "hable", "Conjugación incorrecta.") };
-        var req = builder.Build(cefr, tags);
+        var req = builder.BuildWithTool(cefr, tags).Request;
 
         req.UserPrompt.Should().Contain($"Level calibration for {cefr}:",
             $"calibration cue for {cefr} must be injected into the user prompt");
@@ -391,7 +391,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
 
         var tags = new[] { new LevelFilterTagInput("G", "hable", "Conjugación incorrecta.") };
-        var req = builder.Build("B1", tags);
+        var req = builder.BuildWithTool("B1", tags).Request;
 
         req.UserPrompt.Should().NotContain("separate pipelines",
             "pipeline-disambiguation note is author-facing and must not reach the model");
@@ -408,7 +408,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
 
         var tags = new[] { new LevelFilterTagInput("G", "cuando llegues", "Construccion temporal con subjuntivo.") };
-        var req = builder.Build("B1", tags);
+        var req = builder.BuildWithTool("B1", tags).Request;
 
         var lines = req.UserPrompt.Split('\n');
         var inScopeLine = lines.FirstOrDefault(l => l.StartsWith("Grammar in scope for B1:", StringComparison.OrdinalIgnoreCase));
@@ -428,7 +428,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
 
         var tags = new[] { new LevelFilterTagInput("G", "ojala vengas", "Subjuntivo presente.") };
-        var req = builder.Build("A1", tags);
+        var req = builder.BuildWithTool("A1", tags).Request;
 
         var lines = req.UserPrompt.Split('\n');
         var inScopeLine = lines.FirstOrDefault(l => l.StartsWith("Grammar in scope for A1:", StringComparison.OrdinalIgnoreCase));
@@ -512,7 +512,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
         var tags = new[] { new LevelFilterTagInput("G", "hubiera ido", "Condicional compuesto") };
 
-        var req = builder.Build("A2", tags);
+        var req = builder.BuildWithTool("A2", tags).Request;
 
         req.SystemPrompt.Should().Contain("soften", "level filter must have a soften decision");
         req.SystemPrompt.Should().Contain("intentional effort", "soften trigger must reference intentional effort by the student");
@@ -525,6 +525,6 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             var note = string.IsNullOrEmpty(d.Note) ? "" : $",\"note\":\"{d.Note}\"";
             return $"{{\"index\":{d.Index},\"decision\":\"{d.Decision}\"{note}}}";
         }));
-        return $"[{items}]";
+        return $"{{\"decisions\":[{items}]}}";
     }
 }

@@ -16,12 +16,12 @@ public class CorrectionPromptService : ICorrectionPromptService
         _scopeAffirmerBuilder = scopeAffirmerBuilder;
     }
 
-    public ClaudeRequest BuildCorrectionPrompt(RedaccionCorrectionPromptContext ctx) =>
-        _correctionBuilder.Build(ctx);
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildCorrectionToolCall(RedaccionCorrectionPromptContext ctx) =>
+        _correctionBuilder.BuildWithTool(ctx);
 
-    public ClaudeRequest BuildLevelFilterPrompt(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null) =>
-        _filterBuilder.Build(cefr, tags, assignmentPrompt);
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildLevelFilterToolCall(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null) =>
+        _filterBuilder.BuildWithTool(cefr, tags, assignmentPrompt);
 
-    public ClaudeRequest BuildScopeAffirmerPrompt(string studentCefr, string studentText, string nextCefr) =>
-        _scopeAffirmerBuilder.Build(studentCefr, studentText, nextCefr);
+    public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildScopeAffirmerToolCall(string studentCefr, string studentText, string nextCefr) =>
+        _scopeAffirmerBuilder.BuildWithTool(studentCefr, studentText, nextCefr);
 }

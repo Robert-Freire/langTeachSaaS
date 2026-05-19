@@ -26,6 +26,9 @@ file sealed class FakeClaudeClient : IClaudeClient
         return Task.FromResult(_completeFunc(request));
     }
 
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
+
     public IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, CancellationToken ct = default) =>
         throw new NotImplementedException();
 }
@@ -34,6 +37,9 @@ file sealed class ThrowingClaudeClient(Exception toThrow) : IClaudeClient
 {
     public Task<ClaudeResponse> CompleteAsync(ClaudeRequest request, CancellationToken ct = default) =>
         Task.FromException<ClaudeResponse>(toThrow);
+
+    public Task<T> CompleteWithToolAsync<T>(ClaudeRequest request, ClaudeToolDefinition tool, CancellationToken ct = default) =>
+        throw new NotImplementedException();
 
     public IAsyncEnumerable<string> StreamAsync(ClaudeRequest request, CancellationToken ct = default) =>
         throw new NotImplementedException();
