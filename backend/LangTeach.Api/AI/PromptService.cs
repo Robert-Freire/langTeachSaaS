@@ -1804,15 +1804,18 @@ public class PromptService : IPromptService
     public ClaudeRequest BuildPdfOcrPrompt(byte[] pdfBytes)
     {
         const string system =
-            "Transcribe the PDF document exactly as written. " +
-            "Preserve every spelling mistake, grammar error, and accented character exactly as they appear. " +
-            "Output only the raw transcribed text with no commentary.";
+            "Transcribe the handwritten student text in this document. " +
+            "When text is crossed out and replaced, transcribe only the replacement. Crossed-out words are not part of the final submission. " +
+            "When text is inserted above, below, or beside a line as a correction, place it at the correct reading position. " +
+            "Preserve every spelling mistake, grammar error, and accented character exactly as written. Do not correct the student's language. " +
+            "Output only the transcribed text with no commentary.";
 
         return new ClaudeRequest(
             SystemPrompt: system,
             UserPrompt: "Transcribe this document.",
-            Model: ClaudeModel.Haiku,
+            Model: ClaudeModel.Sonnet,
             MaxTokens: 3072,
+            Temperature: 0,
             Attachments: [new ContentAttachment("application/pdf", pdfBytes, "document.pdf")]
         );
     }
