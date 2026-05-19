@@ -183,7 +183,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
             // Emit log for cancellation or unexpected termination cases where message_delta was never received.
             if (!logEmitted)
             {
-                if (!sw.IsRunning) sw.Stop();
+                sw.Stop();
                 var stopReason = ct.IsCancellationRequested ? "cancelled" : "error";
                 EmitCallLog(request, usedModel, inputTokens, outputTokens, stopReason, sw.ElapsedMilliseconds, accumulated.ToString());
             }
