@@ -2,8 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LangTeach.Api.DTOs;
 
-public record StudentSummaryDto(Guid Id, string Name, string CefrLevel);
-
 public record GroupDto(
     Guid Id,
     Guid TeacherId,

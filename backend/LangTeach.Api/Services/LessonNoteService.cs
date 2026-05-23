@@ -96,6 +96,10 @@ public class LessonNoteService : ILessonNoteService
 
     public async Task<List<LessonHistoryEntryDto>> GetLessonHistoryAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
     {
+        // Groups #1326: pre-build the canonical "sessions for student incl groups" queryable
+        // so the correlated subquery in the projection composes with it instead of duplicating the predicate.
+        var sessionsForStudent = SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId);
+
         var rawEntries = await _db.Lessons
             .AsNoTracking()
             .Include(l => l.Template)
@@ -125,12 +129,8 @@ public class LessonNoteService : ILessonNoteService
                 x.Note.AreasToImprove,
                 x.Note.NextSessionTopics,
                 x.Note.EmotionalSignals,
-                // Groups #1326: include group sessions the student attended.
-                FollowingSessionHomeworkStatus = _db.SessionLogs
-                    .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted
-                        && (sl.StudentId == studentId
-                            || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == studentId)))
-                        && sl.SessionDate > (x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt))
+                FollowingSessionHomeworkStatus = sessionsForStudent
+                    .Where(sl => sl.SessionDate > (x.Lesson.ScheduledAt ?? x.Lesson.CreatedAt))
                     .OrderBy(sl => sl.SessionDate).ThenBy(sl => sl.Id)
                     .Select(sl => (HomeworkStatus?)sl.PreviousHomeworkStatus)
                     .FirstOrDefault(),

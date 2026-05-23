@@ -241,6 +241,10 @@ public class DashboardService : IDashboardService
                     .ToList(),
                 // Groups #1326: per-student stats include sessions targeting groups the student belongs to.
                 // The "session" subquery joins through StudentGroups when GroupId is set.
+                // The predicate is repeated across the five aggregates below because each subquery
+                // correlates with the outer row's s.Id; EF Core projection translation cannot follow
+                // a method call returning IQueryable here. Backlog item to factor via an Expression
+                // tree helper is tracked in plan/code-review-backlog.md.
                 LastSessionDate = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now
                               && (sl.StudentId == s.Id
