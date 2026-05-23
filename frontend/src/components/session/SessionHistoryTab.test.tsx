@@ -854,7 +854,7 @@ describe('SessionHistoryTab', () => {
             lastSavedAt: null,
             scheduleTextSave: vi.fn(),
             saveNow: vi.fn().mockImplementation(async () => {
-              queryClient.setQueryData<sessionLogsApi.SessionLog[]>(['sessions', 'student-1'], [updatedSession])
+              queryClient.setQueryData<sessionLogsApi.SessionLog[]>(['sessions-all', 'student-1'], [updatedSession])
               return 'session-1'
             }),
           }
