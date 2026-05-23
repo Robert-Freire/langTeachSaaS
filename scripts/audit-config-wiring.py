@@ -150,10 +150,12 @@ def main():
     required_set = set(req_secrets_data.get("requiredSecrets", []))
 
     optional_set = set()
+    env_only_set = set()
     if OPTIONAL_SECRETS.exists():
         with open(OPTIONAL_SECRETS) as f:
             opt_data = json.load(f)
         optional_set = {e["key"] for e in opt_data.get("optionalSecrets", [])}
+        env_only_set = {e["key"] for e in opt_data.get("envOnlySecrets", [])}
 
     qa_env = load_compose_api_env(COMPOSE_QA)
     e2e_env = load_compose_api_env(COMPOSE_E2E)
@@ -214,17 +216,17 @@ def main():
                 "env_example": env_example_status,
             })
 
-    # Reverse check: every required-secrets entry must exist in appsettings or a compose block
+    # Reverse check: every required-secrets entry must exist in appsettings.json.
+    # Keys in envOnlySecrets are exempt (set via env var without an appsettings declaration).
+    # This catches stale entries when a config key is removed from appsettings.
     all_appsettings_keys = collect_appsettings_keys()
-    all_compose_env_keys = set(qa_env.keys()) | set(e2e_env.keys())
 
     reverse_failures = []
     for secret in required_set:
         colon_key = double_dash_to_colon(secret)
-        double_under = double_dash_to_double_underscore(secret)
         in_appsettings = colon_key in all_appsettings_keys
-        in_compose = double_under in all_compose_env_keys
-        if not (in_appsettings or in_compose):
+        in_env_only = colon_key in env_only_set
+        if not (in_appsettings or in_env_only):
             reverse_failures.append(secret)
 
     # Report
@@ -247,8 +249,10 @@ def main():
 
     if reverse_failures:
         failed = True
-        print("required-secrets.json entries not found in appsettings.json or docker-compose api environment blocks:")
-        print("(These may be stale entries left over after a config key was removed.)")
+        print("required-secrets.json entries not found in appsettings.json:")
+        print("(These may be stale entries left over after a config key was removed."
+              " If the key is set purely via env var with no appsettings declaration,"
+              " add it to the envOnlySecrets list in infra/optional-secrets.json.)")
         print()
         for s in reverse_failures:
             print(f"  - {s}")
