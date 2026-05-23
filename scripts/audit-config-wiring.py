@@ -65,7 +65,8 @@ def classify(key, value, policy):
     if isinstance(value, list):
         return "CONFIG"
 
-    value_str = str(value) if value is not None else ""
+    # Treat None and empty string as "no default" - potential secret
+    value_str = "" if (value is None or value == "") else str(value)
 
     if not value_str:
         suffix = key.split(":")[-1].lower()
@@ -92,8 +93,9 @@ def load_compose_api_env(compose_path):
 
 
 def extract_env_var(value_str):
-    """Extract the env var name from a compose value like '${SOME_VAR}'. Returns None if not a simple ref."""
-    m = re.fullmatch(r'\$\{([A-Z0-9_]+)\}', value_str.strip())
+    """Extract env var name from a compose value like '${SOME_VAR}' or '${SOME_VAR:-default}'.
+    Returns None if the value is not a ${...} reference (e.g. a hardcoded literal string)."""
+    m = re.fullmatch(r'\$\{([A-Za-z0-9_]+)(?::[+-]?[^}]*)?\}', value_str.strip())
     return m.group(1) if m else None
 
 
@@ -129,7 +131,10 @@ def double_dash_to_double_underscore(key):
 def collect_appsettings_keys():
     """Return set of all colon-notation keys across all appsettings*.json files."""
     keys = set()
-    for path in glob.glob(str(REPO_ROOT / "backend/LangTeach.Api/appsettings*.json")):
+    paths = glob.glob(str(REPO_ROOT / "backend/LangTeach.Api/appsettings*.json"))
+    if not paths:
+        raise FileNotFoundError(f"No appsettings*.json found under {REPO_ROOT}/backend/LangTeach.Api/")
+    for path in paths:
         with open(path) as f:
             obj = json.load(f)
         keys.update(flatten_json(obj).keys())
@@ -229,6 +234,17 @@ def main():
         if not (in_appsettings or in_env_only):
             reverse_failures.append(secret)
 
+    # Also check for stale entries in optional-secrets.json
+    stale_optional = []
+    for key in optional_set:
+        # optionalSecrets keys should still be declared in appsettings.json
+        if key not in all_appsettings_keys:
+            stale_optional.append(f"{key} (optionalSecrets entry no longer in appsettings.json)")
+    for key in env_only_set:
+        # envOnlySecrets keys should still be in required-secrets.json (using double-dash separator)
+        if key_to_double_dash(key) not in required_set:
+            stale_optional.append(f"{key} (envOnlySecrets entry not in required-secrets.json)")
+
     # Report
     failed = False
 
@@ -258,6 +274,15 @@ def main():
             print(f"  - {s}")
         print()
         print("Remove the stale entries from infra/required-secrets.json, or re-add the key to appsettings.json.")
+        print()
+
+    if stale_optional:
+        failed = True
+        print("infra/optional-secrets.json contains stale entries:")
+        for s in stale_optional:
+            print(f"  - {s}")
+        print()
+        print("Remove entries that no longer correspond to keys in appsettings.json or required-secrets.json.")
         print()
 
     if not failed:
