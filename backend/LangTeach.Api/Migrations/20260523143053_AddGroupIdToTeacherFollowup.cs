@@ -29,13 +29,10 @@ namespace LangTeach.Api.Migrations
                 principalTable: "Groups",
                 principalColumn: "Id");
 
-            // Tighten the existing scope constraint from "at least one null" to XOR
-            // (exactly one of StudentId or GroupId must be non-null).
-            migrationBuilder.Sql(
-                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_Scope];");
+            // Add XOR scope constraint: exactly one of StudentId or GroupId must be non-null.
             migrationBuilder.Sql(
                 "ALTER TABLE [TeacherFollowups] ADD CONSTRAINT [CK_TeacherFollowups_Scope] " +
-                "CHECK (([StudentId] IS NULL) <> ([GroupId] IS NULL));");
+                "CHECK (([StudentId] IS NULL AND [GroupId] IS NOT NULL) OR ([StudentId] IS NOT NULL AND [GroupId] IS NULL));");
         }
 
         /// <inheritdoc />
@@ -49,12 +46,8 @@ namespace LangTeach.Api.Migrations
                 name: "IX_TeacherFollowups_GroupId_Kind",
                 table: "TeacherFollowups");
 
-            // Restore original scope constraint (allow both null)
             migrationBuilder.Sql(
-                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_Scope];");
-            migrationBuilder.Sql(
-                "ALTER TABLE [TeacherFollowups] ADD CONSTRAINT [CK_TeacherFollowups_Scope] " +
-                "CHECK ([StudentId] IS NULL OR [GroupId] IS NULL);");
+                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_Scope]");
 
             migrationBuilder.DropColumn(
                 name: "GroupId",
