@@ -313,4 +313,17 @@ public class GroupService : IGroupService
         teachingIdeas,
         g.TeachingNotes
     );
+
+    public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)
+    {
+        return await _db.StudentGroups
+            .Where(sg =>
+                sg.StudentId == studentId &&
+                sg.Student.TeacherId == teacherId &&
+                !sg.Student.IsDeleted &&
+                sg.Group.TeacherId == teacherId &&
+                !sg.Group.IsDeleted)
+            .Select(sg => new GroupSummaryDto(sg.Group.Id, sg.Group.Name, sg.Group.CefrLevel))
+            .ToListAsync(ct);
+    }
 }

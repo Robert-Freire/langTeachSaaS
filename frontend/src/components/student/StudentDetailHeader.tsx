@@ -3,6 +3,7 @@ import { ArrowLeft, NotebookPen, Pencil, CalendarClock, Mic } from 'lucide-react
 import type { Student } from '@/api/students'
 import { TeachingChannelPicker } from '@/components/student/TeachingChannelPicker'
 import type { SessionLog } from '@/api/sessionLogs'
+import type { GroupSummary } from '@/api/groups'
 import { formatDateShort } from '@/utils/formatDate'
 import { getInitials } from '@/utils/nameUtils'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -79,9 +80,10 @@ interface StudentDetailHeaderProps {
   student: Student
   nextSession: SessionLog | null
   sessionFrequency: string | null
+  groups?: GroupSummary[]
 }
 
-export function StudentDetailHeader({ student, nextSession, sessionFrequency, onVoiceUpdateClick, voiceFlowActive, onChannelChange }: StudentDetailHeaderProps) {
+export function StudentDetailHeader({ student, nextSession, sessionFrequency, onVoiceUpdateClick, voiceFlowActive, onChannelChange, groups = [] }: StudentDetailHeaderProps) {
   const navigate = useNavigate()
   const identitySubtitle = buildIdentitySubtitle(student)
 
@@ -158,6 +160,17 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
                   Inactive
                 </span>
               )}
+              {groups.map((group) => (
+                <Link
+                  key={group.id}
+                  to={`/groups/${group.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="group-affiliation-pill"
+                  className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium bg-[#EDE9FE] text-[#5B21B6] hover:bg-[#DDD6FE] transition-colors"
+                >
+                  {group.name}{group.cefrLevel ? ` - ${group.cefrLevel}` : ''}
+                </Link>
+              ))}
               <TeachingChannelPicker
                 value={student.teachingChannel}
                 studentId={student.id}

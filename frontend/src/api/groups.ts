@@ -144,3 +144,14 @@ export async function extractGroupSessionReflection(groupId: string, text: strin
   const res = await apiClient.post<ExtractedReflection>(`/api/groups/${groupId}/sessions/extract`, { text })
   return res.data
 }
+
+export interface GroupSummary {
+  id: string
+  name: string
+  cefrLevel: string | null
+}
+
+export async function getStudentGroups(studentId: string): Promise<GroupSummary[]> {
+  const res = await apiClient.get<GroupSummary[]>(`/api/students/${studentId}/groups`)
+  return res.data
+}

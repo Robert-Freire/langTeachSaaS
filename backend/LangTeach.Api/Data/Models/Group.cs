@@ -18,5 +18,5 @@ public class Group
     public Teacher Teacher { get; set; } = null!;
     public ICollection<StudentGroup> StudentGroups { get; set; } = [];
     public ICollection<SessionLog> SessionLogs { get; set; } = [];
-    public ICollection<TeacherFollowup> Followups { get; set; } = [];
+    public ICollection<TeacherFollowup> TeacherFollowups { get; set; } = [];
 }

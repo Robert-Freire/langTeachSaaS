@@ -66,6 +66,37 @@ public class SessionLogService : ISessionLogService
         return rawSessions.Select(sl => ToDto(sl, "student", studentName, voiceNoteSessionIds.Contains(sl.Id))).ToList();
     }
 
+    public async Task<List<SessionLogDto>> ListForStudentIncludingGroupsAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
+    {
+        var studentName = await _db.Students
+            .Where(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (studentName is null)
+            throw new KeyNotFoundException($"Student {studentId} not found.");
+
+        var rawSessions = await SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId)
+            .Include(sl => sl.Group)
+            .OrderBy(sl => sl.SessionDate.HasValue)
+            .ThenByDescending(sl => sl.SessionDate)
+            .ToListAsync(cancellationToken);
+
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl =>
+        {
+            var isGroup = sl.GroupId.HasValue;
+            var targetType = isGroup ? "group" : "student";
+            var targetName = isGroup ? (sl.Group?.Name ?? "") : studentName;
+            return ToDto(sl, targetType, targetName, voiceNoteSessionIds.Contains(sl.Id));
+        }).ToList();
+    }
+
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
         // Student-route lookup: keeps explicit StudentId match. A group session would be fetched via the group route.
