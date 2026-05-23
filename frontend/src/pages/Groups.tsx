@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Search, UserPlus, UsersRound, ChevronDown } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
@@ -20,6 +20,7 @@ const COL_CLASSES = 'grid-cols-[minmax(140px,2fr)_80px_minmax(180px,1.5fr)_110px
 const TABLE_HEADERS = ['NAME', 'CEFR LEVEL', 'MEMBERS', 'LAST SESSION', 'NEXT SESSION', 'SIGNALS'] as const
 
 export default function Groups() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const cefrFilter = searchParams.get('level') ?? 'All'
@@ -144,10 +145,8 @@ export default function Groups() {
         subtitle={allGroups.length > 0 ? buildSubtitle() : undefined}
         actions={
           <Button
-            disabled
-            variant="outline"
-            title="Group creation ships in a follow-up issue"
-            className="cursor-not-allowed bg-white text-zinc-600 border-zinc-300 disabled:opacity-100"
+            onClick={() => navigate('/groups/new')}
+            className="lt-gradient-primary text-white"
             data-testid="add-group-button"
           >
             <UserPlus className="h-4 w-4 mr-1.5" />
@@ -223,8 +222,12 @@ export default function Groups() {
                 <div
                   key={group.id}
                   data-testid={`group-row-${group.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/groups/${group.id}/edit`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/groups/${group.id}/edit`) }}
                   className={cn(
-                    'grid gap-x-4 items-center px-2 py-2 rounded-lg cursor-default',
+                    'grid gap-x-4 items-center px-2 py-2 rounded-lg cursor-pointer hover:bg-[#F4F2FD] transition-colors',
                     COL_CLASSES,
                   )}
                 >
