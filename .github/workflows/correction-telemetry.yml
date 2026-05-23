@@ -81,6 +81,11 @@ jobs:
             --workspace "${{ steps.ws.outputs.id }}" \
             --analytics-query "$QUERY" \
             -o json > /tmp/trunc.json
+          if ! jq -e 'type == "array"' /tmp/trunc.json > /dev/null; then
+            echo "ERROR: log-analytics query did not return a JSON array; response was:"
+            cat /tmp/trunc.json
+            exit 1
+          fi
           COUNT=$(jq 'length' /tmp/trunc.json)
           echo "count=${COUNT}" >> "$GITHUB_OUTPUT"
           echo "Truncations in last 24h: ${COUNT}"
@@ -106,6 +111,13 @@ jobs:
             --workspace "${{ steps.ws.outputs.id }}" \
             --analytics-query "$QUERY" \
             -o json > /tmp/corr.json
+          # Hard-fail on malformed response so a transient LAW error cannot
+          # silently default to "all zeros" and suppress real alerts.
+          if ! jq -e 'type == "array"' /tmp/corr.json > /dev/null; then
+            echo "ERROR: log-analytics query did not return a JSON array; response was:"
+            cat /tmp/corr.json
+            exit 1
+          fi
           ROW=$(jq '.[0] // {total:0, nearCap:0, p95:0, p99:0}' /tmp/corr.json)
           TOTAL=$(echo   "$ROW" | jq -r '.total   // 0')
           NEARCAP=$(echo "$ROW" | jq -r '.nearCap // 0')
@@ -208,9 +220,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SUMMARY:  ${{ steps.decide.outputs.summary }}
         run: |
+          # Tighten dedupe: also require the P1:must + area:ai labels we set
+          # on the alert issue, so unrelated tickets that happen to mention
+          # this phrase cannot suppress real alerts.
           EXISTING=$(gh issue list \
             --repo "${{ github.repository }}" \
-            --search "correction-telemetry alert in:title state:open" \
+            --search '"correction-telemetry alert" in:title' \
+            --state open \
+            --label "P1:must" \
+            --label "area:ai" \
             --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
             echo "Existing open alert issue #${EXISTING}; appending comment."
