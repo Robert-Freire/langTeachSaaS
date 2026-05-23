@@ -261,7 +261,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
         var req = builder.BuildWithTool("A1", "Ojalá vengas.", "A2").Request;
 
         var count = System.Text.RegularExpressions.Regex.Matches(req.SystemPrompt, "NEXT CEFR level threshold").Count;
-        count.Should().BeLessThanOrEqualTo(2, "the threshold criterion should not be repeated in a RULES bullet");
+        count.Should().Be(1, "the threshold criterion lives in step 2 of the task description only; the duplicated RULES bullet was removed in #1302");
     }
 
     [Fact]
