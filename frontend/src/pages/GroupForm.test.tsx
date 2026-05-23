@@ -63,6 +63,7 @@ function renderEdit(groupId: string, groupData: Partial<groupsApi.Group> = {}) {
     memberPreview: null,
     lastSessionDate: null,
     nextSessionDate: null,
+    teachingNotes: null,
     ...groupData,
   })
   return render(
@@ -112,6 +113,7 @@ describe('GroupForm - create mode', () => {
       memberPreview: null,
       lastSessionDate: null,
       nextSessionDate: null,
+      teachingNotes: null,
     })
     vi.mocked(groupsApi.addGroupMember).mockResolvedValue({} as groupsApi.Group)
 
