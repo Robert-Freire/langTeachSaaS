@@ -11,6 +11,13 @@ public record ScopeAffirmerSpan(
     [property: JsonPropertyName("structureLabel")] string StructureLabel,
     [property: JsonPropertyName("structureLevel")] string StructureLevel);
 
+// This pass affirms CORRECT usage of structures STRICTLY ABOVE the student's CEFR level
+// (next-level grammarInScope or higher) when no Pass 2 tag exists for that span.
+// Compare with RedaccionLevelFilterPromptBuilder, which converts soften/muybien decisions
+// from Pass 2 G-tags into MuyBien for near-ceiling structures.
+// The two paths are intentionally non-overlapping: ScopeAffirmer = no Pass 2 tag exists;
+// LevelFilter = Pass 2 tag exists and gets reframed. Future edits to one path must not
+// silently change the boundary -- update both comments together.
 public class RedaccionScopeAffirmerPromptBuilder
 {
     private readonly IPedagogyConfigService _pedagogy;
@@ -91,10 +98,13 @@ You will receive:
 - The student's text with character offsets (the text is 0-indexed)
 
 RULES:
-- Only flag structures at or above the NEXT CEFR level threshold (next-level grammarInScope or higher).
 - Only flag structures used CORRECTLY. Incorrect attempts above level are handled elsewhere.
 - If a structure appears multiple times, flag each correct occurrence separately.
-- If no above-level structures are found, return an empty array.
+
+DISAMBIGUATION: Before flagging "haya", "hubiera", or "hubiese" as subjuntivo perfecto:
+- These forms qualify ONLY when followed by a past participle (compound subjuntivo tense, e.g. "haya terminado", "hubiera podido") OR when clearly in a subordinate clause requiring subjuntivo.
+- Standalone "haya" used as the present of "haber" in existential or modal constructions (e.g. "no haya problema", "tal vez haya tiempo") does NOT qualify as a subjuntivo perfecto achievement at B2 or above -- do not flag it.
+- Only flag when the construction is unambiguously subjuntivo perfecto or imperfecto.
 
 Call the submit_scope_spans tool with a spans array containing all above-level structures found. Use an empty spans array if none are found.
 startIndex is inclusive; endIndex is exclusive.
