@@ -211,6 +211,33 @@ public class GroupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task List_LastAndNextSession_IgnoreDeletedCancelledAndDraft()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var now = DateTime.UtcNow;
+
+        _db.SessionLogs.AddRange(
+            // Past session that is soft-deleted -- must not count as Last.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-1), IsDeleted = true, Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Older past confirmed session -- this is the real Last.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-5), Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Future cancelled session -- must not count as Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(1), IsCancelled = true, Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Future draft session -- must not count as Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(2), Status = SessionLogStatus.Draft, CreatedAt = now, UpdatedAt = now },
+            // Future confirmed session -- this is the real Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(5), Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now }
+        );
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeCloseTo(now.AddDays(-5), TimeSpan.FromSeconds(1));
+        dto.NextSessionDate.Should().BeCloseTo(now.AddDays(5), TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
     public async Task List_LastAndNextSessionAreNullWhenNoSessions()
     {
         await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "Empty" });

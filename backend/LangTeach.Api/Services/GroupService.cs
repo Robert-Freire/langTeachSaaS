@@ -55,11 +55,18 @@ public class GroupService : IGroupService
                     .Take(4)
                     .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))
                     .ToList(),
+                // Lifecycle filters mirror DashboardService active-students projection
+                // (LastSession excludes soft-deleted; NextSession also excludes cancelled
+                // and unconfirmed drafts).
                 LastSessionDate = (DateTime?)g.SessionLogs
-                    .Where(sl => sl.SessionDate != null && sl.SessionDate < now)
+                    .Where(sl => !sl.IsDeleted && sl.SessionDate != null && sl.SessionDate < now)
                     .Max(sl => sl.SessionDate),
                 NextSessionDate = (DateTime?)g.SessionLogs
-                    .Where(sl => sl.SessionDate != null && sl.SessionDate >= now)
+                    .Where(sl => !sl.IsDeleted
+                              && !sl.IsCancelled
+                              && sl.Status == SessionLogStatus.Confirmed
+                              && sl.SessionDate != null
+                              && sl.SessionDate >= now)
                     .Min(sl => sl.SessionDate),
             })
             .ToListAsync(ct);
