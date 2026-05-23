@@ -1,9 +1,17 @@
 import { apiClient } from '../lib/apiClient'
+import type { CreateSessionLogRequest, SessionLog, ExtractedReflection } from './sessionLogs'
 
 export interface GroupMemberSummary {
   id: string
   name: string
   cefrLevel: string | null
+}
+
+export interface GroupTeachingIdea {
+  id: string
+  text: string
+  status: string
+  createdAt: string
 }
 
 export interface Group {
@@ -20,6 +28,7 @@ export interface Group {
   memberPreview: GroupMemberSummary[] | null
   lastSessionDate: string | null
   nextSessionDate: string | null
+  teachingIdeas?: GroupTeachingIdea[] | null
 }
 
 export interface GroupListResponse {
@@ -73,5 +82,35 @@ export async function addGroupMember(groupId: string, studentId: string): Promis
 
 export async function removeGroupMember(groupId: string, studentId: string): Promise<Group> {
   const res = await apiClient.delete<Group>(`/api/groups/${groupId}/members/${studentId}`)
+  return res.data
+}
+
+export async function appendGroupTeachingIdea(groupId: string, text: string): Promise<GroupTeachingIdea> {
+  const res = await apiClient.post<GroupTeachingIdea>(`/api/groups/${groupId}/teaching-ideas`, { text })
+  return res.data
+}
+
+export async function listGroupSessions(groupId: string): Promise<SessionLog[]> {
+  const res = await apiClient.get<SessionLog[]>(`/api/groups/${groupId}/sessions`)
+  return res.data
+}
+
+export async function getGroupSession(groupId: string, sessionId: string): Promise<SessionLog> {
+  const res = await apiClient.get<SessionLog>(`/api/groups/${groupId}/sessions/${sessionId}`)
+  return res.data
+}
+
+export async function createGroupSession(groupId: string, data: CreateSessionLogRequest): Promise<SessionLog> {
+  const res = await apiClient.post<SessionLog>(`/api/groups/${groupId}/sessions`, data)
+  return res.data
+}
+
+export async function updateGroupSession(groupId: string, sessionId: string, data: CreateSessionLogRequest): Promise<SessionLog> {
+  const res = await apiClient.put<SessionLog>(`/api/groups/${groupId}/sessions/${sessionId}`, data)
+  return res.data
+}
+
+export async function extractGroupSessionReflection(groupId: string, text: string): Promise<ExtractedReflection> {
+  const res = await apiClient.post<ExtractedReflection>(`/api/groups/${groupId}/sessions/extract`, { text })
   return res.data
 }

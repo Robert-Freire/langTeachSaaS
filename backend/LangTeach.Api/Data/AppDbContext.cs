@@ -409,6 +409,12 @@ public class AppDbContext : DbContext
              .HasForeignKey(f => f.CoveredInSessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.Group)
+             .WithMany(g => g.TeacherFollowups)
+             .HasForeignKey(f => f.GroupId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(f => new { f.GroupId, f.Kind });
         });
 
         // Correction — cascade from Teacher; NoAction from Student/Lesson/SessionLog

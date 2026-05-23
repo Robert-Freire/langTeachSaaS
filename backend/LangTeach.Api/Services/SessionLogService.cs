@@ -441,6 +441,63 @@ public class SessionLogService : ISessionLogService
         return ToDto(entity, "group", group.Name);
     }
 
+    public async Task<SessionLogDto?> UpdateGroupSessionAsync(Guid teacherId, Guid groupId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!Enum.IsDefined(request.PreviousHomeworkStatus))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
+        var entity = await _db.SessionLogs
+            .Where(sl => sl.Id == sessionId && sl.GroupId == groupId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Group != null && !sl.Group.IsDeleted)
+            .Include(sl => sl.Group)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (entity is null) return null;
+
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
+
+        var titlePlanned = request.PlannedContent ?? entity.PlannedContent;
+        var titleActual = request.ActualContent ?? entity.ActualContent;
+        var titleDate = request.SessionDate ?? entity.SessionDate;
+
+        entity.SessionDate = request.SessionDate;
+        entity.PlannedContent = request.PlannedContent;
+        entity.ActualContent = request.ActualContent;
+        entity.HomeworkAssigned = request.HomeworkAssigned;
+        entity.PreviousHomeworkStatus = request.PreviousHomeworkStatus;
+        entity.NextSessionTopics = request.NextSessionTopics;
+        entity.GeneralNotes = request.GeneralNotes;
+        // Level reassessment is a student concept; not applied for group sessions
+        entity.LevelReassessmentSkill = null;
+        entity.LevelReassessmentLevel = null;
+        entity.LinkedLessonId = request.LinkedLessonId;
+        entity.TopicTags = request.TopicTags ?? "[]";
+        entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
+        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
+        entity.IsCancelled = request.IsCancelled;
+        entity.Status = request.Status;
+        entity.Duration = request.Duration;
+        entity.Title = request.Title ?? GenerateTitle(titlePlanned, titleActual, titleDate);
+        entity.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated group SessionLog {SessionLogId} for Group {GroupId}", sessionId, groupId);
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
+
+        return ToDto(entity, "group", entity.Group!.Name, hasVoiceNote);
+    }
+
     private static void ValidateReassessment(string? skill, string? level)
     {
         if (skill is not null && !ValidSkills.Contains(skill))

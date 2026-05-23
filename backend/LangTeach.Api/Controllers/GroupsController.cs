@@ -118,4 +118,20 @@ public class GroupsController : ControllerBase
         var group = await _groupService.RemoveMemberAsync(teacherId, id, studentId, ct);
         return group is null ? NotFound() : Ok(group);
     }
+
+    [HttpPost("{id:guid}/teaching-ideas")]
+    public async Task<IActionResult> AppendTeachingIdea(Guid id, [FromBody] CreateGroupTeachingIdeaRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (string.IsNullOrWhiteSpace(request.Text))
+        {
+            ModelState.AddModelError(nameof(request.Text), "Text is required.");
+            return BadRequest(ModelState);
+        }
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var idea = await _groupService.AppendTeachingIdeaAsync(teacherId, id, request.Text, ct);
+        return idea is null ? NotFound() : Ok(idea);
+    }
 }

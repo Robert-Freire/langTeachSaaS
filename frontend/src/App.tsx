@@ -13,6 +13,8 @@ import Settings from './pages/Settings'
 import Students from './pages/Students'
 import Groups from './pages/Groups'
 import GroupForm from './pages/GroupForm'
+import GroupDetail from './pages/GroupDetail'
+import GroupLogSession from './pages/GroupLogSession'
 import StudentForm from './pages/StudentForm'
 import Lessons from './pages/Lessons'
 import LessonNew from './pages/LessonNew'
@@ -77,6 +79,8 @@ export default function App() {
                   <Route path="/groups" element={<Groups />} />
                   <Route path="/groups/new" element={<GroupForm />} />
                   <Route path="/groups/:id/edit" element={<GroupForm />} />
+                  <Route path="/groups/:id" element={<GroupDetail />} />
+                  <Route path="/sessions/new" element={<GroupLogSession />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/students/:id/redacciones/:correctionId" element={<RedaccionDetail />} />

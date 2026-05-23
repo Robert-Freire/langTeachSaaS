@@ -224,8 +224,8 @@ export default function Groups() {
                   data-testid={`group-row-${group.id}`}
                   role="button"
                   tabIndex={0}
-                  onClick={() => navigate(`/groups/${group.id}/edit`)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/groups/${group.id}/edit`) } }}
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/groups/${group.id}`) } }}
                   className={cn(
                     'grid gap-x-4 items-center px-2 py-2 rounded-lg cursor-pointer hover:bg-[#F4F2FD] transition-colors',
                     COL_CLASSES,

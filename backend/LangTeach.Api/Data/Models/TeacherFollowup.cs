@@ -14,8 +14,11 @@ public class TeacherFollowup
     public Guid? SourceSessionLogId { get; set; }
     public Guid? CoveredInSessionLogId { get; set; }
 
+    public Guid? GroupId { get; set; }
+
     public Teacher Teacher { get; set; } = null!;
     public Student? Student { get; set; }
+    public Group? Group { get; set; }
     public SessionLog? SourceSessionLog { get; set; }
     public SessionLog? CoveredInSessionLog { get; set; }
 }
