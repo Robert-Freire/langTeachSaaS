@@ -341,8 +341,8 @@ function SessionEntry({
                 )}
               </div>
               {isGroupSession ? (
-                <p className="text-sm font-bold text-[#1A1B22] px-3 py-2 rounded-xl bg-white ring-1 ring-[#C7C4D8]/20">
-                  {session.title ?? <span className="text-zinc-400 font-normal">No title</span>}
+                <p className="text-sm font-bold text-[#1A1B22]">
+                  {session.title ?? <span className="text-zinc-400 font-normal italic">No title</span>}
                 </p>
               ) : (
                 <Input
