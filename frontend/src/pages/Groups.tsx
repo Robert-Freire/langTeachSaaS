@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, UserPlus, UsersRound, ChevronDown } from 'lucide-react'
+import { Search, UserPlus, UsersRound, ChevronDown, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getGroups, type Group } from '../api/groups'
 import { Button } from '@/components/ui/button'
@@ -260,7 +260,7 @@ export default function Groups() {
                     {formatRelativeDate(group.nextSessionDate, true)}
                   </span>
 
-                  <span className="text-zinc-300 text-sm">—</span>
+                  <ChevronRight className="h-4 w-4 text-zinc-300 justify-self-end" />
                 </div>
               ))}
             </div>

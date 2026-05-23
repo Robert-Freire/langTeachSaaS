@@ -57,7 +57,7 @@ export default function GroupDetail() {
           />
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-zinc-900">{group.name}</h1>
+              <h1 className="text-xl font-semibold text-[#1A1B22]">{group.name}</h1>
               {group.cefrLevel && <CefrBadge level={group.cefrLevel} />}
             </div>
             <p className="text-sm text-zinc-500">
@@ -70,7 +70,7 @@ export default function GroupDetail() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => navigate(`/groups/${id}/edit`)}
           >
