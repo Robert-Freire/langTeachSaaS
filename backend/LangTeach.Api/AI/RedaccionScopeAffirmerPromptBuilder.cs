@@ -100,7 +100,6 @@ You will receive:
 RULES:
 - Only flag structures used CORRECTLY. Incorrect attempts above level are handled elsewhere.
 - If a structure appears multiple times, flag each correct occurrence separately.
-- If no above-level structures are found, return an empty array.
 
 DISAMBIGUATION: Before flagging "haya", "hubiera", or "hubiese" as subjuntivo perfecto:
 - These forms qualify ONLY when followed by a past participle (compound subjuntivo tense, e.g. "haya terminado", "hubiera podido") OR when clearly in a subordinate clause requiring subjuntivo.
