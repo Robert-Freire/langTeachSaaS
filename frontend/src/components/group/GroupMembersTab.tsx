@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { UserPlus, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
@@ -21,6 +21,9 @@ export function GroupMembersTab({ groupId, members, onGroupChange }: Props) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const [removedToast, setRemovedToast] = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }, [])
 
   const removeMutation = useMutation({
     mutationFn: (studentId: string) => removeGroupMember(groupId, studentId),
@@ -29,8 +32,9 @@ export function GroupMembersTab({ groupId, members, onGroupChange }: Props) {
       setRemoveError(null)
       onGroupChange()
       if (removed) {
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
         setRemovedToast(`${removed.name} removed from group`)
-        setTimeout(() => setRemovedToast(null), 3000)
+        toastTimerRef.current = setTimeout(() => setRemovedToast(null), 3000)
       }
     },
     onError: () => {

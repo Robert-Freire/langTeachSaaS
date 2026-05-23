@@ -19,7 +19,7 @@ export function AddMemberModal({ groupId, existingMemberIds, onClose, onMemberAd
   const [search, setSearch] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
 
-  const { data: studentsData } = useQuery({
+  const { data: studentsData, isLoading: studentsLoading, isError: studentsError } = useQuery({
     queryKey: ['students-for-add-member'],
     queryFn: () => getStudents({ pageSize: 100 }),
   })
@@ -81,7 +81,11 @@ export function AddMemberModal({ groupId, existingMemberIds, onClose, onMemberAd
         </div>
 
         <div className="max-h-72 overflow-y-auto px-3 py-2">
-          {filtered.length === 0 ? (
+          {studentsError ? (
+            <p className="text-sm text-red-600 italic py-4 text-center">Could not load students. Please try again.</p>
+          ) : studentsLoading ? (
+            <p className="text-sm text-zinc-400 italic py-4 text-center">Loading...</p>
+          ) : filtered.length === 0 ? (
             <p className="text-sm text-zinc-400 italic py-4 text-center">
               {search ? 'No students match' : 'All your students are already in this group'}
             </p>

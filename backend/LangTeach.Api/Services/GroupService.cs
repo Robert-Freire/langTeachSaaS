@@ -94,7 +94,7 @@ public class GroupService : IGroupService
         if (group is null) return null;
 
         var members = await _db.StudentGroups
-            .Where(sg => sg.GroupId == groupId && !sg.Student.IsDeleted)
+            .Where(sg => sg.GroupId == groupId && !sg.Student.IsDeleted && sg.Student.TeacherId == teacherId)
             .OrderBy(sg => sg.Student.Name)
             .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))
             .ToListAsync(ct);

@@ -35,9 +35,11 @@ export function StudentFollowupsCard({ followups, studentId, groupId, onFollowup
     onSuccess: () => onFollowupChange(),
   })
 
+  const hasValidTarget = (!!studentId) !== (!!groupId)
+
   function handleAdd() {
     const text = newText.trim()
-    if (!text || createMutation.isPending) return
+    if (!text || createMutation.isPending || !hasValidTarget) return
     createMutation.mutate(text)
   }
 

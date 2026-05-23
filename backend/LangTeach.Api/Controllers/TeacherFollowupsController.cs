@@ -35,6 +35,9 @@ public class TeacherFollowupsController : ControllerBase
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
+        if (groupId is not null && studentId is not null)
+            return ValidationProblem("Specify at most one of groupId or studentId, not both.");
+
         List<TeacherFollowupDto> result;
         if (groupId is not null)
         {
