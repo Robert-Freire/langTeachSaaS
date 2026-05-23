@@ -227,12 +227,14 @@ export default function GroupForm() {
 
   useEffect(() => {
     if (!group) return
+    /* eslint-disable react-hooks/set-state-in-effect */
     setName(group.name)
     setCefrLevel(group.cefrLevel ?? '')
     setDescription(group.description ?? '')
     const existingMembers = (group.members ?? []).map((m) => ({ id: m.id, name: m.name }))
     setMembers(existingMembers)
     setOriginalMemberIds(existingMembers.map((m) => m.id))
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [group])
 
   const { mutate: doSave, isPending: saving } = useMutation({
