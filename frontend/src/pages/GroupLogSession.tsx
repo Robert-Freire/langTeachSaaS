@@ -232,6 +232,8 @@ export default function GroupLogSession() {
     getFormDataRef,
   )
 
+  const doneBusy = isDone || saveStatus === 'saving'
+
   useEffect(() => () => {
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current)
   }, [])
@@ -370,7 +372,8 @@ export default function GroupLogSession() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneBusy])
 
   // Scroll gradient
   useEffect(() => {
@@ -423,7 +426,6 @@ export default function GroupLogSession() {
   }
 
   const members = group.members ?? []
-  const doneBusy = isDone || saveStatus === 'saving'
 
   return (
     <div className="flex h-full min-h-0" data-testid="group-log-session-page">

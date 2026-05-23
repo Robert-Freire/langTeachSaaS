@@ -49,7 +49,11 @@ export function useGroupSessionAutosave(
     onSuccess: (updated) => {
       if (groupId) {
         queryClient.setQueryData<SessionLog[]>(['group-sessions', groupId], (list) =>
-          list ? list.map(s => s.id === updated.id ? updated : s) : list,
+          list
+            ? list.some(s => s.id === updated.id)
+              ? list.map(s => s.id === updated.id ? updated : s)
+              : [updated, ...list]
+            : [updated],
         )
       }
       setLastSavedAt(updated.updatedAt)

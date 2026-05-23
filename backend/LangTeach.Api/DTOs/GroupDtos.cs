@@ -10,7 +10,7 @@ public record GroupTeachingIdeaDto(
 );
 
 public record CreateGroupTeachingIdeaRequest(
-    [System.ComponentModel.DataAnnotations.MaxLength(500)] string Text
+    [Required, MinLength(1), MaxLength(500)] string Text
 );
 
 public record GroupDto(

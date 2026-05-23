@@ -234,6 +234,12 @@ public class GroupService : IGroupService
     // There is no separate TeachingIdea entity; GroupTeachingIdeaDto is the UI-facing projection.
     public async Task<GroupTeachingIdeaDto?> AppendTeachingIdeaAsync(Guid teacherId, Guid groupId, string text, CancellationToken ct = default)
     {
+        var normalizedText = text.Trim();
+        if (string.IsNullOrEmpty(normalizedText))
+            throw new ValidationException("Teaching idea text is required.");
+        if (normalizedText.Length > 500)
+            throw new ValidationException("Teaching idea text must be 500 characters or fewer.");
+
         var exists = await _db.Groups
             .AnyAsync(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted, ct);
 
@@ -244,7 +250,7 @@ public class GroupService : IGroupService
             Id = Guid.NewGuid(),
             TeacherId = teacherId,
             GroupId = groupId,
-            Text = text.Trim(),
+            Text = normalizedText,
             Status = TeacherFollowupStatuses.Pending,
             Kind = TeacherFollowupKinds.Pedagogical,
             CreatedAt = DateTime.UtcNow,

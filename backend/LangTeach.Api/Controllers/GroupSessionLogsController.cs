@@ -15,17 +15,20 @@ public class GroupSessionLogsController : ControllerBase
     private readonly ISessionLogService _sessionLogService;
     private readonly IProfileService _profileService;
     private readonly IReflectionExtractionService _extractionService;
+    private readonly IGroupService _groupService;
     private readonly ILogger<GroupSessionLogsController> _logger;
 
     public GroupSessionLogsController(
         ISessionLogService sessionLogService,
         IProfileService profileService,
         IReflectionExtractionService extractionService,
+        IGroupService groupService,
         ILogger<GroupSessionLogsController> logger)
     {
         _sessionLogService = sessionLogService;
         _profileService = profileService;
         _extractionService = extractionService;
+        _groupService = groupService;
         _logger = logger;
     }
 
@@ -89,6 +92,10 @@ public class GroupSessionLogsController : ControllerBase
             var session = await _sessionLogService.UpdateGroupSessionAsync(teacherId, groupId, sessionId, request, ct);
             return session is null ? NotFound() : Ok(session);
         }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
         catch (ValidationException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
@@ -108,6 +115,10 @@ public class GroupSessionLogsController : ControllerBase
         }
 
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var group = await _groupService.GetByIdAsync(teacherId, groupId, ct);
+        if (group is null) return NotFound();
+
         _logger.LogInformation("POST /api/groups/{GroupId}/sessions/extract. TeacherId={TeacherId}", groupId, teacherId);
 
         // Group sessions have no per-student difficulty context; pass empty list
