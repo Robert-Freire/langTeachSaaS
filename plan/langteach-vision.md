@@ -38,54 +38,61 @@ Future                 Marketplace, mobile, analytics, integrations
 
 ---
 
-## Beta Phase — "Show the Magic" (IN PROGRESS)
+## Beta Phase — "Teacher's Working Memory" (IN PROGRESS)
 
-**Goal**: A demo compelling enough that a language teacher watches it and says "I want to use this Monday."
+**Goal**: Be the tool Jordi opens every day to track, correct, and prepare for his students. Not a lesson generator, a teaching memory.
 
 **Audience**: Robert's brother Jordi (language teacher, first customer and pilot user).
 
-### What Beta Delivers
+### Reframe (2026-05-23)
 
-**2A: AI Generation (T10-T15)** — already built or in progress
-- Student profile enrichment (native language, goals, weaknesses)
-- Claude API integration with model routing (Haiku for fast tasks, Sonnet for complex)
-- Prompt service with deep CEFR awareness, L1 interference patterns, personalization
-- Streaming SSE generation with per-section controls
-- Lesson editor AI integration (generate, insert, edit, regenerate per section)
+The original Beta hero was AI lesson generation. After months of usage, Jordi never adopted it. What he actually uses, and what makes the product feel valuable to him, is a different stack: corrections, session logging by voice, the student profile as a living document, and the Atelier assistant for capturing observations. Beta is rescoped around that reality. Lesson generation stays in the code as experimental, hidden from primary nav, not in active development.
 
-**2A.1: Typed Content Model (T15.1-T15.4)** — the foundational shift
-- Content blocks become typed (`vocabulary`, `exercises`, `conversation`, `reading`, `freeText`)
-- Each type has a defined JSON schema, a teacher editor component, and a student renderer
-- The AI generates structured data; the frontend renders it appropriately
-- Core types for demo: vocabulary (table/flashcards), exercises (quiz builder/interactive quiz), conversation (dialogue editor/viewer)
+### What Beta Actually Delivers (the working product)
 
-**2B: Make It Real (T16-T25)**
-- One-click full lesson generation
-- PDF export (teacher copy with answers, student handout without)
-- Student lesson notes and history
-- Dashboard v2 with actionable data
-- Regenerate with direction ("make it easier", "more formal")
-- Adapt lesson for another student (one-click re-personalization)
-- AI-powered "suggest next topic" based on student history
+**Corrections (the magic moment)**
+- Redacción markup pipeline with C/G/L/O categorization
+- Two-pass correction with ScopeAffirmer
+- CEFR-calibrated suggestions, thumbs feedback, .docx export
+- This is the feature Jordi reaches for most.
 
-**Post-Demo (T26)**
-- Section URL attachments (YouTube, articles, online resources) to make each lesson a complete teaching workspace
+**Session logging + voice input**
+- Log a session by typing or recording a voice note (Whisper transcription)
+- Auto-extracts topics covered, observations, next-class ideas
+- Updates student profile and adapts future plans
 
-**2C: Polish (T20, T20.1)**
-- Brand, favicon, consistent visual identity
-- Loading states, empty states, skeleton screens
-- Public landing page with value proposition and sign-up CTA (T20.1, feeds demo first impression)
+**Student profile as living document**
+- CEFR (official + teacher assessment), age, profession, L1, goals, target date
+- *Ideas para próximas clases* free-text teaching to-do list
+- Session history, cancelled sessions, hourly rate
+- Voice-input flow for fast updates
 
-**Demo Prep (T23)**
-- Seed data, demo script, talking points
+**Atelier assistant**
+- FAB launcher, multi-entity proposals, voice + text input
+- Modify-in-place across student, session, course entities
 
-### What Beta Proves
+**Adaptive replanning + post-class tracking**
+- Course progression that adapts to observed student progress
+- Session reflections feed into next-lesson planning
 
-1. **The teacher loop works**: create lesson, generate content, refine, export
-2. **Content types are real**: vocabulary renders as vocabulary, not as JSON
-3. **The student loop works**: same lesson data, different experience (flashcards, quizzes)
-4. **Personalization is the moat**: content adapts to student level, interests, native language, weaknesses
-5. **The platform thinks ahead**: suggest next topic based on student history
+**Groups (in progress, this sprint)**
+- Academy classes as first-class entities (replacing the fake-student workaround Jordi has been using)
+- Group session logging with per-student observations
+- Field set TBD with Isaac
+
+### Deprecated from Beta hero scope
+
+**AI lesson generation** — built (T10-T15), polished (T16-T25), unused. Code remains, primary nav entry to be hidden. Not maintained, not demoed, not extended. Future decision: repurpose the editor surface, fully rip out, or revive with a different framing once we understand why it didn't land.
+
+**Typed content model** — the architectural bet was right (corrections rely on it), but the "vocabulary renders as vocabulary, exercises render as exercises" promise was for lesson content. With lesson generation deprioritized, the typed model now mostly serves corrections. Still load-bearing, just not the headline.
+
+### What Beta Now Proves
+
+1. **The correction loop works**: teacher uploads or types student writing, gets categorized feedback, exports a marked-up copy.
+2. **Voice is the input modality**: Jordi talks to the app between classes, the app extracts structure.
+3. **The student profile is the unit of value**: not the lesson, the student. Everything orbits the student record.
+4. **Personalization is the moat**: corrections and observations adapt to level, L1, and tracked difficulties.
+5. **Groups extend the model**: same teacher loop, scoped to multiple students at once.
 
 ---
 
@@ -207,19 +214,18 @@ These are ideas, not commitments. Each depends on what beta and Phase 2/3 teach 
 
 ```
 Phase 1:   Section -> textarea (free text blob)
-Beta:      Section -> ContentBlock[] -> typed JSON (vocabulary, exercises, ...)
-                                     -> type-specific renderers (teacher + student)
-Phase 2:   Course -> Lesson[] -> ContentBlock[] (course as top-level entity)
-           ContentBlock gains caching, versioning, rating
+Beta:      Student -> Sessions, Corrections, Profile (the unit of value)
+           ContentBlock[] typed model still load-bearing for corrections
            AudioReflection -> transcription -> student progress update
-Phase 3:   ContentBlock becomes shareable, library-storable, student-interactive
-           EvaluationResult -> categorized error analysis
-Future:    ContentBlock ecosystem (marketplace, cross-lesson reuse, analytics)
-           Adaptive style learning across teacher's corpus
+           Group -> Students, GroupSessions (this sprint)
+Phase 2:   Course -> Lesson[] (planning layer)
+           Material uploads, group-aware tooling
+Phase 3:   Student portal, evaluation tools, content library, payments
+Future:    Marketplace, mobile, adaptive style learning, analytics
 ```
 
-The typed content model introduced in Beta is the architectural foundation everything else builds on. The Course entity (Phase 2) adds the planning layer teachers actually think in. Getting both right matters more than any individual feature.
+The student record, not the lesson, is the unit of value. Corrections, sessions, profile, and group membership all hang off it. Lesson generation was the original architectural bet; it remains in the code but is no longer the headline.
 
 ---
 
-*Created: March 2026 | Updated: 2026-03-18 (First PM feedback incorporated) | Living document, updated as phases complete*
+*Created: March 2026 | Updated: 2026-05-23 (Beta reframed around corrections + tracking; lesson generation deprioritized after non-adoption by pilot user) | Living document, updated as phases complete*
