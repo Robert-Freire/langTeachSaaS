@@ -64,7 +64,9 @@ export default function StudentDetail() {
     enabled: !!id,
   })
 
-  const sessionTypeFilter = (searchParams.get('sessionType') ?? 'all') as SessionTypeFilter
+  const rawSessionType = searchParams.get('sessionType')
+  const sessionTypeFilter: SessionTypeFilter =
+    rawSessionType === '1-to-1' || rawSessionType === 'groups' ? rawSessionType : 'all'
   function handleSessionTypeFilterChange(v: SessionTypeFilter) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)

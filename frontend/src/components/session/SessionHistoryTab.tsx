@@ -131,6 +131,7 @@ function SessionEntry({
       setDeleteOpen(false)
       setDeleteError(null)
       queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
     },
     onError: (err) => {
       logger.error('SessionHistoryTab', 'delete session failed', err)
@@ -564,7 +565,7 @@ function SessionEntry({
 
             {/* Action row at bottom of expanded session */}
             <div className="mt-6 pt-4 border-t border-[#C7C4D8]/10 flex items-center gap-3">
-              {isGroupSession ? (
+              {isGroupSession && session.groupId ? (
                 <Link
                   to={`/groups/${session.groupId}`}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5B21B6] bg-transparent hover:bg-[#EDE9FE] transition-colors px-3 py-1.5 rounded"
@@ -573,7 +574,7 @@ function SessionEntry({
                   <ExternalLink className="h-3 w-3" />
                   View in group
                 </Link>
-              ) : (
+              ) : !isGroupSession ? (
                 <Link
                   to={`/students/${studentId}/sessions/${session.id}/edit`}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 bg-transparent hover:bg-[#F4F2FD] transition-colors px-3 py-1.5 rounded"
@@ -582,7 +583,7 @@ function SessionEntry({
                   <Pencil className="h-3 w-3" />
                   Open full session
                 </Link>
-              )}
+              ) : null}
               {!isGroupSession && (
                 <button
                   type="button"
