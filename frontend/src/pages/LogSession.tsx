@@ -527,6 +527,7 @@ export default function LogSession() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['sessions', id] })
+      queryClient.invalidateQueries({ queryKey: ['sessions-all', id] })
       queryClient.invalidateQueries({ queryKey: ['student', id] })
       queryClient.invalidateQueries({ queryKey: ['followups', id] })
 

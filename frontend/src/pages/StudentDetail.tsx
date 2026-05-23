@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
-import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
+import { SessionHistoryTab, type SessionTypeFilter } from '@/components/session/SessionHistoryTab'
 import { RedaccionesTab } from '@/components/student/RedaccionesTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
@@ -64,8 +64,8 @@ export default function StudentDetail() {
     enabled: !!id,
   })
 
-  const sessionTypeFilter = (searchParams.get('sessionType') ?? 'all') as 'all' | '1-to-1' | 'groups'
-  function handleSessionTypeFilterChange(v: 'all' | '1-to-1' | 'groups') {
+  const sessionTypeFilter = (searchParams.get('sessionType') ?? 'all') as SessionTypeFilter
+  function handleSessionTypeFilterChange(v: SessionTypeFilter) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       if (v === 'all') next.delete('sessionType')
