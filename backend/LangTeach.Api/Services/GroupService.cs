@@ -98,8 +98,9 @@ public class GroupService : IGroupService
             .Join(_db.Students.Where(s => !s.IsDeleted),
                   sg => sg.StudentId,
                   s => s.Id,
-                  (_, s) => new StudentSummaryDto(s.Id, s.Name, s.CefrLevel))
+                  (_, s) => new { s.Id, s.Name, s.CefrLevel })
             .OrderBy(s => s.Name)
+            .Select(s => new StudentSummaryDto(s.Id, s.Name, s.CefrLevel))
             .ToListAsync(ct);
 
         return MapToDto(group, members.Count, members);
