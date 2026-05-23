@@ -4,7 +4,21 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-19)
+## In-Flight Tasks (2026-05-23)
+
+**Sprint: Groups (sprint/groups)**
+
+### PR Open
+- #1330 (area:frontend, P1) -- Group session log form. PR #1341 open against sprint/groups. CI pending, CodeRabbit not yet. Worktree: task-t1330-group-session-edit.
+
+### Completed (merged to sprint/groups)
+- #1327 -- GroupAvatarCluster component. PR merged.
+- #1328 -- Groups create/edit form. PR merged.
+- #1329 (area:frontend) -- Group detail screen -- NOT YET STARTED (next task after #1330).
+
+---
+
+## Previous Sprint Status (2026-05-19)
 
 **Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main.
 
