@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
 import { ChipLegend } from '@/components/corrections/ChipLegend'
-import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
+import { STATUS_BADGE, STATUS_LABEL, estimateCorrectionMinutes } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
@@ -71,7 +71,7 @@ export default function RedaccionDetail() {
   }, [viewState, data?.status])
 
   const estimatedMinutes = data?.studentText && student
-    ? estimateMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
+    ? estimateCorrectionMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
     : null
 
   const onDownload = async () => {
@@ -364,18 +364,6 @@ function StatusPill({ status, viewState }: StatusPillProps) {
       {STATUS_LABEL[status]}
     </span>
   )
-}
-
-const BASE_LATENCY_BY_LEVEL: Record<string, number> = {
-  A1: 30, A2: 45, B1: 60, B2: 90, C1: 120, C2: 150,
-}
-const TOKENS_PER_WORD = 1.5
-const MS_PER_TOKEN = 10
-
-function estimateMinutes(wordCount: number, cefrLevel: string): number {
-  const base = BASE_LATENCY_BY_LEVEL[cefrLevel] ?? 60
-  const seconds = base + (wordCount * TOKENS_PER_WORD * MS_PER_TOKEN) / 1000
-  return Math.max(1, Math.ceil(seconds / 60))
 }
 
 function ReadingColumn({ text }: { text: string }) {

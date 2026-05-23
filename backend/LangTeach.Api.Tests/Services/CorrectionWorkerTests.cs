@@ -6,9 +6,9 @@ using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Helpers;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.Services;
 
@@ -142,11 +142,11 @@ public class CorrectionWorkerTests : IDisposable
         var provider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(provider);
 
-        var config = new ConfigurationBuilder().Build();
+        var options = Options.Create(new CorrectionWorkerOptions());
 
         return new CorrectionWorker(
             scopeFactory,
-            config,
+            options,
             NullLogger<CorrectionWorker>.Instance);
     }
 

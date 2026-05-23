@@ -210,6 +210,8 @@ builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
 builder.Services.AddSingleton<RedaccionScopeAffirmerPromptBuilder>();
 builder.Services.AddSingleton<ICorrectionPromptService, CorrectionPromptService>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
+builder.Services.Configure<CorrectionWorkerOptions>(
+    builder.Configuration.GetSection(CorrectionWorkerOptions.SectionName));
 builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
 builder.Services.AddHostedService<CorrectionWorker>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();

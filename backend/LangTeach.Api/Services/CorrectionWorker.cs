@@ -4,6 +4,7 @@ using LangTeach.Api.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Services;
 
@@ -13,16 +14,16 @@ public class CorrectionWorker : BackgroundService
         TimeSpan.FromSeconds(RedaccionCorrectionTimeouts.WorkerPollIntervalSeconds);
 
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IConfiguration _configuration;
+    private readonly IOptions<CorrectionWorkerOptions> _options;
     private readonly ILogger<CorrectionWorker> _logger;
 
     public CorrectionWorker(
         IServiceScopeFactory scopeFactory,
-        IConfiguration configuration,
+        IOptions<CorrectionWorkerOptions> options,
         ILogger<CorrectionWorker> logger)
     {
         _scopeFactory = scopeFactory;
-        _configuration = configuration;
+        _options = options;
         _logger = logger;
     }
 
@@ -51,7 +52,7 @@ public class CorrectionWorker : BackgroundService
 
     private async Task ProcessBatchAsync(CancellationToken stoppingToken)
     {
-        var concurrency = _configuration.GetValue("Correction:WorkerConcurrency", 1);
+        var concurrency = _options.Value.WorkerConcurrency;
 
         using var queryScope = _scopeFactory.CreateScope();
         var db = queryScope.ServiceProvider.GetRequiredService<AppDbContext>();

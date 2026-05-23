@@ -17,3 +17,15 @@ export const STATUS_LABEL: Record<CorrectionStatus, string> = {
   Corregida: 'Corregida',
   CorreccionFallida: 'Error al corregir',
 }
+
+const BASE_LATENCY_BY_LEVEL: Record<string, number> = {
+  A1: 30, A2: 45, B1: 60, B2: 90, C1: 120, C2: 150,
+}
+const TOKENS_PER_WORD = 1.5
+const MS_PER_TOKEN = 10
+
+export function estimateCorrectionMinutes(wordCount: number, cefrLevel: string): number {
+  const base = BASE_LATENCY_BY_LEVEL[cefrLevel] ?? 60
+  const seconds = base + (wordCount * TOKENS_PER_WORD * MS_PER_TOKEN) / 1000
+  return Math.max(1, Math.ceil(seconds / 60))
+}
