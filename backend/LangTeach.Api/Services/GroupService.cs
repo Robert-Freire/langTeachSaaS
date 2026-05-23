@@ -99,7 +99,13 @@ public class GroupService : IGroupService
             .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))
             .ToListAsync(ct);
 
-        return MapToDto(group, members.Count, members);
+        var teachingIdeas = await _db.TeacherFollowups
+            .Where(f => f.GroupId == groupId && f.TeacherId == teacherId && f.Kind == TeacherFollowupKinds.Pedagogical)
+            .OrderByDescending(f => f.CreatedAt)
+            .Select(f => new GroupTeachingIdeaDto(f.Id, f.Text, f.Status, f.CreatedAt))
+            .ToListAsync(ct);
+
+        return MapToDto(group, members.Count, members, teachingIdeas: teachingIdeas);
     }
 
     public async Task<GroupDto> CreateAsync(Guid teacherId, CreateGroupRequest request, CancellationToken ct = default)
@@ -224,6 +230,38 @@ public class GroupService : IGroupService
         return await GetByIdAsync(teacherId, groupId, ct);
     }
 
+    // Teaching ideas are stored as TeacherFollowup rows with Kind=Pedagogical and GroupId set (StudentId=null).
+    // There is no separate TeachingIdea entity; GroupTeachingIdeaDto is the UI-facing projection.
+    public async Task<GroupTeachingIdeaDto?> AppendTeachingIdeaAsync(Guid teacherId, Guid groupId, string text, CancellationToken ct = default)
+    {
+        var normalizedText = text.Trim();
+        if (string.IsNullOrEmpty(normalizedText))
+            throw new ValidationException("Teaching idea text is required.");
+        if (normalizedText.Length > 500)
+            throw new ValidationException("Teaching idea text must be 500 characters or fewer.");
+
+        var exists = await _db.Groups
+            .AnyAsync(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted, ct);
+
+        if (!exists) return null;
+
+        var idea = new TeacherFollowup
+        {
+            Id = Guid.NewGuid(),
+            TeacherId = teacherId,
+            GroupId = groupId,
+            Text = normalizedText,
+            Status = TeacherFollowupStatuses.Pending,
+            Kind = TeacherFollowupKinds.Pedagogical,
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _db.TeacherFollowups.Add(idea);
+        await _db.SaveChangesAsync(ct);
+
+        return new GroupTeachingIdeaDto(idea.Id, idea.Text, idea.Status, idea.CreatedAt);
+    }
+
     // SQL Server unique-key/PK violation error numbers.
     private static bool IsCompositePkViolation(DbUpdateException ex) =>
         ex.InnerException is Microsoft.Data.SqlClient.SqlException sql &&
@@ -257,7 +295,8 @@ public class GroupService : IGroupService
         List<StudentSummaryDto>? members,
         List<StudentSummaryDto>? memberPreview = null,
         DateTime? lastSessionDate = null,
-        DateTime? nextSessionDate = null) => new(
+        DateTime? nextSessionDate = null,
+        List<GroupTeachingIdeaDto>? teachingIdeas = null) => new(
         g.Id,
         g.TeacherId,
         g.Name,
@@ -271,6 +310,7 @@ public class GroupService : IGroupService
         memberPreview,
         lastSessionDate,
         nextSessionDate,
+        teachingIdeas,
         g.TeachingNotes
     );
 }

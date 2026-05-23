@@ -14,4 +14,5 @@ public interface ISessionLogService
     Task<List<SessionLogDto>> ListForGroupAsync(Guid teacherId, Guid groupId, CancellationToken cancellationToken = default);
     Task<SessionLogDto?> GetGroupSessionByIdAsync(Guid teacherId, Guid groupId, Guid sessionId, CancellationToken cancellationToken = default);
     Task<SessionLogDto> CreateForGroupAsync(Guid teacherId, Guid groupId, CreateSessionLogRequest request, CancellationToken cancellationToken = default);
+    Task<SessionLogDto?> UpdateGroupSessionAsync(Guid teacherId, Guid groupId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default);
 }

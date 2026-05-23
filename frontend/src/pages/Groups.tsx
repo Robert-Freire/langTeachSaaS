@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, UserPlus, UsersRound, ChevronDown } from 'lucide-react'
+import { Search, UserPlus, UsersRound, ChevronDown, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { getGroups, type Group } from '../api/groups'
 import { Button } from '@/components/ui/button'
@@ -224,8 +224,8 @@ export default function Groups() {
                   data-testid={`group-row-${group.id}`}
                   role="button"
                   tabIndex={0}
-                  onClick={() => navigate(`/groups/${group.id}/edit`)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/groups/${group.id}/edit`) } }}
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/groups/${group.id}`) } }}
                   className={cn(
                     'grid gap-x-4 items-center px-2 py-2 rounded-lg cursor-pointer hover:bg-[#F4F2FD] transition-colors',
                     COL_CLASSES,
@@ -260,7 +260,7 @@ export default function Groups() {
                     {formatRelativeDate(group.nextSessionDate, true)}
                   </span>
 
-                  <span className="text-zinc-300 text-sm">—</span>
+                  <ChevronRight className="h-4 w-4 text-zinc-300 justify-self-end" />
                 </div>
               ))}
             </div>

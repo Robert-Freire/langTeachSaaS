@@ -2,6 +2,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LangTeach.Api.DTOs;
 
+public record GroupTeachingIdeaDto(
+    Guid Id,
+    string Text,
+    string Status,
+    DateTime CreatedAt
+);
+
+public record CreateGroupTeachingIdeaRequest(
+    [Required, MinLength(1), MaxLength(500)] string Text
+);
+
 public record GroupDto(
     Guid Id,
     Guid TeacherId,
@@ -16,6 +27,7 @@ public record GroupDto(
     List<StudentSummaryDto>? MemberPreview = null,
     DateTime? LastSessionDate = null,
     DateTime? NextSessionDate = null,
+    List<GroupTeachingIdeaDto>? TeachingIdeas = null,
     string? TeachingNotes = null
 );
 

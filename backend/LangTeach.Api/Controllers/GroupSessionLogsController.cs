@@ -14,15 +14,21 @@ public class GroupSessionLogsController : ControllerBase
 {
     private readonly ISessionLogService _sessionLogService;
     private readonly IProfileService _profileService;
+    private readonly IReflectionExtractionService _extractionService;
+    private readonly IGroupService _groupService;
     private readonly ILogger<GroupSessionLogsController> _logger;
 
     public GroupSessionLogsController(
         ISessionLogService sessionLogService,
         IProfileService profileService,
+        IReflectionExtractionService extractionService,
+        IGroupService groupService,
         ILogger<GroupSessionLogsController> logger)
     {
         _sessionLogService = sessionLogService;
         _profileService = profileService;
+        _extractionService = extractionService;
+        _groupService = groupService;
         _logger = logger;
     }
 
@@ -71,5 +77,52 @@ public class GroupSessionLogsController : ControllerBase
             ModelState.AddModelError(string.Empty, ex.Message);
             return BadRequest(ModelState);
         }
+    }
+
+    [HttpPut("{sessionId:guid}")]
+    public async Task<IActionResult> Update(Guid groupId, Guid sessionId, [FromBody] UpdateSessionLogRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        try
+        {
+            var session = await _sessionLogService.UpdateGroupSessionAsync(teacherId, groupId, sessionId, request, ct);
+            return session is null ? NotFound() : Ok(session);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    [HttpPost("extract")]
+    public async Task<IActionResult> Extract(Guid groupId, [FromBody] ExtractReflectionRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (string.IsNullOrWhiteSpace(request.Text))
+        {
+            ModelState.AddModelError(nameof(request.Text), "Text is required.");
+            return BadRequest(ModelState);
+        }
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+
+        var group = await _groupService.GetByIdAsync(teacherId, groupId, ct);
+        if (group is null) return NotFound();
+
+        _logger.LogInformation("POST /api/groups/{GroupId}/sessions/extract. TeacherId={TeacherId}", groupId, teacherId);
+
+        // Group sessions have no per-student difficulty context; pass empty list
+        var extracted = await _extractionService.ExtractAsync(request.Text, [], hasOpenSession: true, ct);
+        return Ok(extracted);
     }
 }

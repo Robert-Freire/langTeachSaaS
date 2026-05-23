@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523143053_AddGroupIdToTeacherFollowup")]
+    partial class AddGroupIdToTeacherFollowup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -441,9 +444,6 @@ namespace LangTeach.Api.Migrations
 
                     b.Property<Guid>("TeacherId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("TeachingNotes")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1016,9 +1016,6 @@ namespace LangTeach.Api.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("operational");
 
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("SourceSessionLogId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1042,9 +1039,6 @@ namespace LangTeach.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CoveredInSessionLogId");
-
-                    b.HasIndex("GroupId", "Status")
-                        .HasFilter("[GroupId] IS NOT NULL");
 
                     b.HasIndex("SourceSessionLogId");
 
@@ -1494,7 +1488,7 @@ namespace LangTeach.Api.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
-                        .WithMany("Followups")
+                        .WithMany("TeacherFollowups")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.NoAction);
 
@@ -1586,8 +1580,6 @@ namespace LangTeach.Api.Migrations
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Group", b =>
                 {
-                    b.Navigation("Followups");
-
                     b.Navigation("SessionLogs");
 
                     b.Navigation("StudentGroups");
