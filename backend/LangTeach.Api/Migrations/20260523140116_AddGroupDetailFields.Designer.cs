@@ -1494,7 +1494,7 @@ namespace LangTeach.Api.Migrations
                     b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
                         .WithMany("Followups")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SourceSessionLog")
                         .WithMany()

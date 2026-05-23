@@ -25,14 +25,14 @@ namespace LangTeach.Api.Migrations
                 type: "uniqueidentifier",
                 nullable: true);
 
-            // FK: TeacherFollowups.GroupId -> Groups.Id (Restrict = no cascade)
+            // FK: TeacherFollowups.GroupId -> Groups.Id (NoAction = no cascade, consistent with student FK)
             migrationBuilder.AddForeignKey(
                 name: "FK_TeacherFollowups_Groups_GroupId",
                 table: "TeacherFollowups",
                 column: "GroupId",
                 principalTable: "Groups",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.NoAction);
 
             // Composite index on (GroupId, Status) filtered to non-null GroupId rows
             migrationBuilder.CreateIndex(

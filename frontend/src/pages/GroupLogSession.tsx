@@ -3,22 +3,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { getGroup, createGroupSession } from '@/api/groups'
+import { todayLocalDateStr } from '@/utils/formatDate'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-function todayLocal(): string {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
 
 export default function GroupLogSession() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const [sessionDate, setSessionDate] = useState<string>(todayLocal())
+  const [sessionDate, setSessionDate] = useState<string>(todayLocalDateStr())
   const [title, setTitle] = useState('')
   const [actualContent, setActualContent] = useState('')
   const [generalNotes, setGeneralNotes] = useState('')

@@ -145,7 +145,7 @@ public class GroupService : IGroupService
 
         await _db.SaveChangesAsync(ct);
 
-        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId, ct);
+        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId && !sg.Student.IsDeleted, ct);
         return MapToDto(group, memberCount, members: null);
     }
 
@@ -247,7 +247,7 @@ public class GroupService : IGroupService
         group.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
-        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId, ct);
+        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId && !sg.Student.IsDeleted, ct);
         return MapToDto(group, memberCount, members: null);
     }
 

@@ -62,9 +62,7 @@ export default function GroupDetail() {
     queryClient.invalidateQueries({ queryKey: ['groups'] })
   }
 
-  const sessionFrequency = sessions.length > 0
-    ? calcSessionFrequency(sessions)
-    : null
+  const sessionFrequency = calcSessionFrequency(sessions)
 
   if (isLoading) {
     return (

@@ -46,7 +46,8 @@ public class TeacherFollowupsController : ControllerBase
             }
             catch (ValidationException ex)
             {
-                return NotFound(ex.Message);
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return ValidationProblem();
             }
         }
         else if (studentId is not null)

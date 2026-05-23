@@ -407,7 +407,7 @@ public class AppDbContext : DbContext
              .WithMany(g => g.Followups)
              .HasForeignKey(f => f.GroupId)
              .IsRequired(false)
-             .OnDelete(DeleteBehavior.Restrict);
+             .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.SourceSessionLog)
              .WithMany()
              .HasForeignKey(f => f.SourceSessionLogId)
