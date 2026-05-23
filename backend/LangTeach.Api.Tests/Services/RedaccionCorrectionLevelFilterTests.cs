@@ -21,6 +21,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     private readonly AppDbContext _db;
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
+    private readonly ICorrectionPromptService _correctionPromptService;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
     private readonly Guid _studentId = Guid.NewGuid();
@@ -40,12 +41,12 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
         var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
             NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
+        _correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
+        scopeServices.AddSingleton<ICorrectionPromptService>(_correctionPromptService);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
@@ -78,7 +79,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", ""), (1, "remove", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "O tag must survive even when filter says remove");
         row.Tags.First().Category.Should().Be("O");
@@ -102,7 +106,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty("above-level G tag must be removed for A2 student");
     }
@@ -127,7 +134,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "softened tag becomes a MuyBien highlight");
         row.Tags.First().Category.Should().Be("MuyBien");
@@ -152,7 +162,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse("THIS IS NOT JSON AT ALL");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "fall-open: all tags kept when filter JSON is invalid");
         _claude.CompleteCallCount.Should().Be(3, "Pass 1 + Pass 2 filter (failed gracefully) + ScopeAffirmer (failed gracefully on default response)");
@@ -168,7 +181,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(Pass1Json(text, Array.Empty<(string, int, int, string, string, string)>()));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty();
         _claude.CompleteCallCount.Should().Be(2, "Pass 1 + ScopeAffirmer (no filter call when tag list is empty; ScopeAffirmer runs on original text)");
@@ -190,7 +206,8 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (0, "keep", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
 
         // Requests: [0] = Pass1 (correction), [1] = Pass2 (filter), [2] = ScopeAffirmer.
         // Use Requests[1] to assert on the filter prompt specifically.
@@ -221,7 +238,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "muybien decision produces a MuyBien tag");
         row.Tags.First().Category.Should().Be("MuyBien");
@@ -249,7 +269,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty("over-formal structure in informal task must be removed, not promoted to MuyBien");
     }
@@ -272,7 +295,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         // ScopeAffirmer uses the default response (fails gracefully -> 0 affirmer tags).
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty("Pass-1 MuyBien hallucination must be dropped");
     }
@@ -299,7 +325,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (1, "remove", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "O tag falls open (always kept), G tag removed by filter");
         row.Tags.First().Category.Should().Be("O");
@@ -332,7 +361,10 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, $"ser/estar G tag must survive at {cefr} even when filter says remove");
         row.Tags.First().Category.Should().Be("G");
@@ -437,6 +469,23 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
             because: "subjuntivo is not in A1 grammarInScope and must not appear in the in-scope part of the prompt");
     }
 
+    [Fact]
+    public void LevelFilterPrompt_ContainsAffirmativeSoftenTrigger()
+    {
+        // Issue #1215: the level filter must include an affirmative soften trigger so the model
+        // acknowledges intentional above-scope attempts rather than silently removing them.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
+            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
+        var tags = new[] { new LevelFilterTagInput("G", "hubiera ido", "Condicional compuesto") };
+
+        var req = builder.BuildWithTool("A2", tags).Request;
+
+        req.SystemPrompt.Should().Contain("soften", "level filter must have a soften decision");
+        req.SystemPrompt.Should().Contain("intentional effort", "soften trigger must reference intentional effort by the student");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")
@@ -472,18 +521,21 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         return id;
     }
 
-    private async Task<Correction> WaitForStatusAsync(Guid id, string expected, int timeoutMs = 5000)
+    private void SetStatusToCorrigiendo(Guid correctionId)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            using var check = new AppDbContext(_dbOptions);
-            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == id);
-            if (row?.Status == expected)
-                return row;
-            await Task.Delay(50);
-        }
-        throw new TimeoutException($"Correction {id} never reached {expected} in {timeoutMs}ms.");
+        var row = _db.Corrections.First(c => c.Id == correctionId);
+        row.Status = CorrectionStatus.Corrigiendo;
+        _db.SaveChanges();
+    }
+
+    private async Task RunExecutionAsync(Guid correctionId)
+    {
+        using var db = new AppDbContext(_dbOptions);
+        var correction = await db.Corrections.FirstAsync(c => c.Id == correctionId);
+        await RedaccionCorrectionService.RunCorrectionInScopeAsync(
+            correctionId, correction.StudentId, correction.TeacherId,
+            db, _claude, _correctionPromptService,
+            NullLogger<RedaccionCorrectionService>.Instance);
     }
 
     private static string Pass1Json(
@@ -499,23 +551,6 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         }));
         var escaped = originalText.Replace("\"", "\\\"").Replace("\n", "\\n");
         return $"{{\"schemaVersion\":1,\"originalText\":\"{escaped}\",\"tags\":[{tagsJson}]}}";
-    }
-
-    [Fact]
-    public void LevelFilterPrompt_ContainsAffirmativeSoftenTrigger()
-    {
-        // Issue #1215: the level filter must include an affirmative soften trigger so the model
-        // acknowledges intentional above-scope attempts rather than silently removing them.
-        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
-        var builder = new RedaccionLevelFilterPromptBuilder(pedagogy,
-            NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
-        var tags = new[] { new LevelFilterTagInput("G", "hubiera ido", "Condicional compuesto") };
-
-        var req = builder.BuildWithTool("A2", tags).Request;
-
-        req.SystemPrompt.Should().Contain("soften", "level filter must have a soften decision");
-        req.SystemPrompt.Should().Contain("intentional effort", "soften trigger must reference intentional effort by the student");
     }
 
     private static string FilterJson(IEnumerable<(int Index, string Decision, string Note)> decisions)

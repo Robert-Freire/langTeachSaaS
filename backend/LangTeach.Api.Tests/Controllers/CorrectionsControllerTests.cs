@@ -105,10 +105,10 @@ public class CorrectionsControllerTests
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
 
-        // Endpoint returns immediately with Corrigiendo; background task fires asynchronously.
+        // Endpoint returns immediately with Encolada; the CorrectionWorker processes it asynchronously.
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var immediate = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        immediate!.Status.Should().Be("Corrigiendo");
+        immediate!.Status.Should().Be("Encolada");
 
         // Background task (stub: synchronous, no network) should complete within a few hundred ms.
         var detail = await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corregida");
@@ -217,9 +217,9 @@ public class CorrectionsControllerTests
             content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        detail!.Status.Should().Be("Corrigiendo");
+        detail!.Status.Should().Be("Encolada");
 
-        // Wait for the background task to consume the stub response (bad JSON).
+        // Wait for the worker to consume the stub response (bad JSON).
         // This prevents the stub queue from racing with the next test in the collection.
         await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corrigiendo",
             maxWaitMs: 2000, stopWhenUpdatedAtAdvances: preCallTime);
@@ -281,7 +281,7 @@ public class CorrectionsControllerTests
             content: null);
         corregirResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var immediate = await corregirResp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        immediate!.Status.Should().Be("Corrigiendo");
+        immediate!.Status.Should().Be("Encolada");
 
         var corrected = await WaitForCorrectionStatusAsync(client, studentId, detail.Id, "Corregida");
         corrected.Status.Should().Be("Corregida");

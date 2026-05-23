@@ -211,6 +211,7 @@ builder.Services.AddSingleton<RedaccionScopeAffirmerPromptBuilder>();
 builder.Services.AddSingleton<ICorrectionPromptService, CorrectionPromptService>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
 builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
+builder.Services.AddHostedService<CorrectionWorker>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>

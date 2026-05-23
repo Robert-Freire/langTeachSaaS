@@ -16,4 +16,13 @@ public static class RedaccionCorrectionTimeouts
     /// Must exceed HttpClientSeconds so a slow-but-live request is not reverted.
     /// </summary>
     public const int StaleCorrigiendoSeconds = HttpClientSeconds + 60;
+
+    /// <summary>How often CorrectionWorker polls for Encolada rows (seconds).</summary>
+    public const int WorkerPollIntervalSeconds = 2;
+
+    /// <summary>
+    /// Seconds before a correction stuck in Encolada is considered stale.
+    /// Two poll cycles plus grace: if the worker is alive it should claim within 2 * pollInterval.
+    /// </summary>
+    public const int StaleEncoladaSeconds = WorkerPollIntervalSeconds * 2 + 60;
 }

@@ -20,6 +20,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
     private readonly AppDbContext _db;
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
+    private readonly ICorrectionPromptService _correctionPromptService;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
     private readonly Guid _studentId = Guid.NewGuid();
@@ -39,12 +40,12 @@ public class RedaccionScopeAffirmerTests : IDisposable
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
         var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
             NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
+        _correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
+        scopeServices.AddSingleton<ICorrectionPromptService>(_correctionPromptService);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
@@ -75,7 +76,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check1 = new AppDbContext(_dbOptions);
+        var row = check1.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "ScopeAffirmer should emit one MuyBien tag");
         var tag = row.Tags.First();
@@ -110,7 +114,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("{\"spans\":[]}");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check2 = new AppDbContext(_dbOptions);
+        var row = check2.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1);
         row.Tags.First().Category.Should().Be("MuyBien");
@@ -132,7 +139,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("""{"spans":[{"startIndex":5,"endIndex":12,"spannedText":"no_existe","structureLabel":"test","structureLevel":"B1"}]}""");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check3 = new AppDbContext(_dbOptions);
+        var row = check3.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty("hallucinated span must be dropped silently");
     }
@@ -159,7 +169,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check4 = new AppDbContext(_dbOptions);
+        var row = check4.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "ScopeAffirmer result overlapping a G tag must be dropped");
         row.Tags.First().Category.Should().Be("G", "the G tag must survive; the affirmer span must lose");
@@ -177,7 +190,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
         // Filter: skipped (no tags). ScopeAffirmer must also be skipped.
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
 
         _claude.CompleteCallCount.Should().Be(1, "C2 student: only Pass 1 call; ScopeAffirmer must be skipped");
     }
@@ -195,7 +209,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
         // Filter: skipped (no tags). ScopeAffirmer: skipped (too long).
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
 
         _claude.CompleteCallCount.Should().Be(1, "long text must skip ScopeAffirmer");
     }
@@ -294,7 +309,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("NOT JSON AT ALL");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check5 = new AppDbContext(_dbOptions);
+        var row = check5.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "pipeline must complete despite ScopeAffirmer parse failure");
         row.Tags.First().Category.Should().Be("O");
@@ -333,18 +351,21 @@ public class RedaccionScopeAffirmerTests : IDisposable
         return id;
     }
 
-    private async Task<Correction> WaitForStatusAsync(Guid id, string expected, int timeoutMs = 5000)
+    private void SetStatusToCorrigiendo(Guid correctionId)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            using var check = new AppDbContext(_dbOptions);
-            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == id);
-            if (row?.Status == expected)
-                return row;
-            await Task.Delay(50);
-        }
-        throw new TimeoutException($"Correction {id} never reached {expected} in {timeoutMs}ms.");
+        var row = _db.Corrections.First(c => c.Id == correctionId);
+        row.Status = CorrectionStatus.Corrigiendo;
+        _db.SaveChanges();
+    }
+
+    private async Task RunExecutionAsync(Guid correctionId)
+    {
+        using var db = new AppDbContext(_dbOptions);
+        var correction = await db.Corrections.FirstAsync(c => c.Id == correctionId);
+        await RedaccionCorrectionService.RunCorrectionInScopeAsync(
+            correctionId, correction.StudentId, correction.TeacherId,
+            db, _claude, _correctionPromptService,
+            NullLogger<RedaccionCorrectionService>.Instance);
     }
 
     private static string Pass1Json(
