@@ -102,11 +102,11 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, then Settings separated at bottom', () => {
+  it('renders nav items in correct order: Dashboard, Students, Groups, Sessions, Courses, then Settings separated at bottom', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
-    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Groups', 'Sessions', 'Courses', 'Settings'])
   })
 
   it('Settings link is outside the main nav element', () => {
@@ -132,6 +132,17 @@ describe('AppShell', () => {
     expect(logoutBtn).toBeInTheDocument()
     await user.click(logoutBtn)
     expect(mockLogout).toHaveBeenCalledWith({ logoutParams: { returnTo: window.location.origin } })
+  })
+
+  it('renders Groups nav item linking to /groups, positioned between Students and Sessions', () => {
+    renderShell()
+    const links = Array.from(document.querySelector('aside')?.querySelectorAll('a') ?? [])
+    const studentsIdx = links.findIndex(a => a.textContent?.trim() === 'Students')
+    const groupsIdx = links.findIndex(a => a.textContent?.trim() === 'Groups')
+    const sessionsIdx = links.findIndex(a => a.textContent?.trim() === 'Sessions')
+    expect(groupsIdx).toBeGreaterThan(studentsIdx)
+    expect(groupsIdx).toBeLessThan(sessionsIdx)
+    expect(links[groupsIdx]).toHaveAttribute('href', '/groups')
   })
 
   it('renders Sessions nav item linking to /sessions', () => {
@@ -164,7 +175,7 @@ describe('AppShell', () => {
 
   it('sidebar renders the same nav items regardless of route', () => {
     const routes = ['/', '/sessions', '/settings']
-    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Settings']
+    const expectedLabels = ['Dashboard', 'Students', 'Groups', 'Sessions', 'Courses', 'Settings']
 
     for (const route of routes) {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })

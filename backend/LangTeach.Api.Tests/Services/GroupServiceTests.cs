@@ -168,4 +168,59 @@ public class GroupServiceTests : IDisposable
         list.Items.Should().HaveCount(1);
         list.Items[0].Name.Should().Be("Mine");
     }
+
+    [Fact]
+    public async Task List_IncludesMemberPreviewCappedAt4()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "Big" });
+        var students = Enumerable.Range(0, 6)
+            .Select(i => SeedStudent(_teacherId, $"Student{i:D2}"))
+            .ToList();
+        foreach (var s in students)
+            await _sut.AddMemberAsync(_teacherId, group.Id, s.Id);
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        list.Items.Should().HaveCount(1);
+        var dto = list.Items[0];
+        dto.MemberCount.Should().Be(6);
+        dto.MemberPreview.Should().NotBeNull();
+        dto.MemberPreview!.Should().HaveCount(4);
+        dto.MemberPreview.Select(m => m.Name).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task List_LastAndNextSessionDateAggregateAroundNow()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var now = DateTime.UtcNow;
+
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-10), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-2), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(3), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(7), CreatedAt = now, UpdatedAt = now }
+        );
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeCloseTo(now.AddDays(-2), TimeSpan.FromSeconds(1));
+        dto.NextSessionDate.Should().BeCloseTo(now.AddDays(3), TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task List_LastAndNextSessionAreNullWhenNoSessions()
+    {
+        await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "Empty" });
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeNull();
+        dto.NextSessionDate.Should().BeNull();
+        dto.MemberPreview.Should().NotBeNull();
+        dto.MemberPreview!.Should().BeEmpty();
+    }
 }

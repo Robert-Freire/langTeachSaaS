@@ -12,7 +12,10 @@ public record GroupDto(
     bool IsActive,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    List<StudentSummaryDto>? Members
+    List<StudentSummaryDto>? Members,
+    List<StudentSummaryDto>? MemberPreview = null,
+    DateTime? LastSessionDate = null,
+    DateTime? NextSessionDate = null
 );
 
 public class CreateGroupRequest
