@@ -2,6 +2,8 @@ using LangTeach.Api.Data.Models;
 
 namespace LangTeach.Api.DTOs;
 
+public record StudentSummaryDto(Guid Id, string Name, string CefrLevel);
+
 public record StudentLevelDto(
     string CefrLevel,
     string? OfficialCefrLevel,

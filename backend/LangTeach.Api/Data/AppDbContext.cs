@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<AssistantTurnFeedback> AssistantTurnFeedbacks => Set<AssistantTurnFeedback>();
     public DbSet<Correction> Corrections => Set<Correction>();
     public DbSet<CorrectionTag> CorrectionTags => Set<CorrectionTag>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<StudentGroup> StudentGroups => Set<StudentGroup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -187,16 +189,27 @@ public class AppDbContext : DbContext
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
         });
 
-        // SessionLog — no-action from Student, Teacher, and Lesson (SQL Server multi-path constraint)
+        // SessionLog — no-action from Student, Group, Teacher, and Lesson (SQL Server multi-path constraint).
+        // StudentId and GroupId are both nullable; CHECK constraint enforces exactly one is non-null.
         modelBuilder.Entity<SessionLog>(e =>
         {
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_SessionLogs_Target",
+                "([StudentId] IS NULL AND [GroupId] IS NOT NULL) OR ([StudentId] IS NOT NULL AND [GroupId] IS NULL)"));
             e.HasKey(sl => sl.Id);
             e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
+            e.HasIndex(sl => new { sl.GroupId, sl.SessionDate });
             e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
             e.HasIndex(sl => sl.Status).HasDatabaseName("IX_SessionLogs_Status");
             e.HasOne(sl => sl.Student)
              .WithMany(s => s.SessionLogs)
              .HasForeignKey(sl => sl.StudentId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.Group)
+             .WithMany(g => g.SessionLogs)
+             .HasForeignKey(sl => sl.GroupId)
+             .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(sl => sl.Teacher)
              .WithMany()
@@ -212,6 +225,37 @@ public class AppDbContext : DbContext
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
             e.Property(sl => sl.Title).HasMaxLength(120);
+        });
+
+        // Group — soft delete + IsActive toggle, mirrors Student commercial semantics.
+        modelBuilder.Entity<Group>(e =>
+        {
+            e.HasKey(g => g.Id);
+            e.HasIndex(g => new { g.TeacherId, g.IsDeleted });
+            e.HasOne(g => g.Teacher)
+             .WithMany()
+             .HasForeignKey(g => g.TeacherId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(g => g.Name).IsRequired().HasMaxLength(100);
+            e.Property(g => g.Description).HasMaxLength(500);
+            e.Property(g => g.CefrLevel).HasMaxLength(10);
+            e.Property(g => g.IsActive).HasDefaultValue(true);
+            e.Property(g => g.IsDeleted).HasDefaultValue(false);
+        });
+
+        // StudentGroup — many-to-many join. Composite PK, NoAction on both FKs, hard-delete.
+        modelBuilder.Entity<StudentGroup>(e =>
+        {
+            e.HasKey(sg => new { sg.StudentId, sg.GroupId });
+            e.HasIndex(sg => sg.GroupId);
+            e.HasOne(sg => sg.Student)
+             .WithMany(s => s.StudentGroups)
+             .HasForeignKey(sg => sg.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sg => sg.Group)
+             .WithMany(g => g.StudentGroups)
+             .HasForeignKey(sg => sg.GroupId)
+             .OnDelete(DeleteBehavior.NoAction);
         });
 
         // VoiceNote — cascade delete from Teacher
