@@ -28,8 +28,8 @@ test('sidebar hides Lessons but /lessons route still renders', async ({ browser 
 
     await page.goto('/lessons')
     await expect(page).toHaveURL(/\/lessons$/, { timeout: NAV_TIMEOUT })
-    await expect(page.locator('body')).toBeVisible({ timeout: UI_TIMEOUT })
-    expect(page.url()).toContain('/lessons')
+    await expect(page.getByRole('heading', { level: 1, name: 'Lessons' })).toBeVisible({ timeout: UI_TIMEOUT })
+    await expect(page.getByTestId('new-lesson-btn')).toBeVisible({ timeout: UI_TIMEOUT })
   } finally {
     await context.close()
   }
