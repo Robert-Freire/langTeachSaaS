@@ -82,9 +82,12 @@ public class RedaccionScopeAffirmerTests : IDisposable
         tag.Category.Should().Be("MuyBien");
         tag.SpannedText.Should().Be("vengan");
         tag.Explanation.Should().NotBeNull("ScopeAffirmer-path MuyBien carries an Explanation");
-        tag.Explanation.Should().Contain("presente de subjuntivo");
-        tag.Explanation.Should().Contain("B1");
-        tag.Explanation.Should().Contain("A1", "must reference the student's official level");
+        tag.Explanation.Should().Contain("presente de subjuntivo", "the structure label must appear in the praise");
+        tag.Explanation.Should().Contain("Sigue así", "the praise must end with positive encouragement");
+        tag.Explanation.Should().NotContain("B1", "praise must not label the structure with its CEFR level");
+        tag.Explanation.Should().NotContain("A1", "praise must not reference the student's official level");
+        tag.Explanation.Should().NotContain("nivel oficial", "praise must not frame the achievement as exceeding the student's box");
+        tag.Explanation.Should().NotContain("una estructura de", "old template phrasing must be gone");
         tag.CorrectedForm.Should().BeNull();
     }
 
@@ -225,6 +228,40 @@ public class RedaccionScopeAffirmerTests : IDisposable
         req.UserPrompt.Should().Contain("A1", "must reference student's level");
         req.UserPrompt.Should().Contain("A2", "must reference next level");
         req.UserPrompt.Should().Contain("in scope", "must include scope lists");
+    }
+
+    [Fact]
+    public void ScopeAffirmer_PromptBuilder_SystemPrompt_ContainsHayaDisambiguation()
+    {
+        // The system prompt must include the disambiguation block that prevents standalone
+        // "haya"/"hubiera"/"hubiese" from being flagged as subjuntivo perfecto achievements.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+
+        var req = builder.BuildWithTool("B1", "No haya problema.", "B2").Request;
+
+        req.SystemPrompt.Should().Contain("DISAMBIGUATION", "the haya rule must be anchored under a labelled section");
+        req.SystemPrompt.Should().Contain("haya", "the rule must name the form it disambiguates");
+        req.SystemPrompt.Should().Contain("past participle", "the rule must spell out the qualifying condition");
+    }
+
+    [Fact]
+    public void ScopeAffirmer_PromptBuilder_SystemPrompt_NoDuplicatedThresholdRule()
+    {
+        // The threshold criterion ("NEXT CEFR level threshold") must appear at most twice in the
+        // assembled system prompt -- once in the task description, once in the call-to-action.
+        // A third occurrence (the old RULES bullet) was removed in #1302 to cut prompt-bloat.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+
+        var req = builder.BuildWithTool("A1", "Ojalá vengas.", "A2").Request;
+
+        var count = System.Text.RegularExpressions.Regex.Matches(req.SystemPrompt, "NEXT CEFR level threshold").Count;
+        count.Should().BeLessThanOrEqualTo(2, "the threshold criterion should not be repeated in a RULES bullet");
     }
 
     [Fact]

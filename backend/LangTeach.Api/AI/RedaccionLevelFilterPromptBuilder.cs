@@ -5,6 +5,13 @@ namespace LangTeach.Api.AI;
 
 public record LevelFilterTagInput(string Category, string SpannedText, string? Explanation, bool IsSerEstar = false);
 
+// This pass converts Pass 2 G-tag soften/muybien decisions into MuyBien for structures at
+// or near the student's level ceiling.
+// Compare with RedaccionScopeAffirmerPromptBuilder, which affirms CORRECT usage of
+// structures STRICTLY ABOVE the student's level when no Pass 2 tag exists for that span.
+// The two paths are intentionally non-overlapping: LevelFilter = Pass 2 tag exists and gets
+// reframed; ScopeAffirmer = no Pass 2 tag exists. Future edits to one path must not silently
+// change the boundary -- update both comments together.
 public class RedaccionLevelFilterPromptBuilder
 {
     private readonly IPedagogyConfigService _pedagogy;
