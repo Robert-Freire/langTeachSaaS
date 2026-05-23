@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import {
+  type Group,
   getGroup, createGroup, updateGroup, deleteGroup,
   addGroupMember, removeGroupMember,
 } from '@/api/groups'
@@ -204,20 +205,12 @@ function StudentMemberPicker({
   )
 }
 
+// Outer shell: handles query loading/error, then mounts the form body with stable initial values.
+// Splitting avoids setState-in-effect: inner component initializes state from props, not from an effect.
 export default function GroupForm() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-
-  const [name, setName] = useState('')
-  const [cefrLevel, setCefrLevel] = useState<string>('')
-  const [description, setDescription] = useState('')
-  const [members, setMembers] = useState<SelectedMember[]>([])
-  const [nameError, setNameError] = useState('')
-  const [submitError, setSubmitError] = useState('')
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [originalMemberIds, setOriginalMemberIds] = useState<string[]>([])
 
   const { data: group, isLoading: loadingGroup, isError: groupError } = useQuery({
     queryKey: ['group', id],
@@ -225,17 +218,50 @@ export default function GroupForm() {
     enabled: isEdit,
   })
 
-  useEffect(() => {
-    if (!group) return
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setName(group.name)
-    setCefrLevel(group.cefrLevel ?? '')
-    setDescription(group.description ?? '')
-    const existingMembers = (group.members ?? []).map((m) => ({ id: m.id, name: m.name }))
-    setMembers(existingMembers)
-    setOriginalMemberIds(existingMembers.map((m) => m.id))
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [group])
+  if (isEdit && loadingGroup) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    )
+  }
+
+  if (isEdit && (groupError || (!loadingGroup && !group))) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm text-red-600 font-medium">
+          Group not found.{' '}
+          <button onClick={() => navigate('/groups')} className="underline hover:text-zinc-700 transition-colors">
+            Go back
+          </button>
+        </span>
+      </div>
+    )
+  }
+
+  // key resets inner state when navigating between create and edit, or between different groups
+  return <GroupFormBody key={group?.id ?? 'new'} group={group} />
+}
+
+function GroupFormBody({ group }: { group?: Group }) {
+  const { id } = useParams<{ id: string }>()
+  const isEdit = Boolean(id)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const existingMembers = (group?.members ?? []).map((m) => ({ id: m.id, name: m.name }))
+
+  const [name, setName] = useState(group?.name ?? '')
+  const [cefrLevel, setCefrLevel] = useState(group?.cefrLevel ?? '')
+  const [description, setDescription] = useState(group?.description ?? '')
+  const [members, setMembers] = useState<SelectedMember[]>(existingMembers)
+  const [nameError, setNameError] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [originalMemberIds] = useState(() => existingMembers.map((m) => m.id))
+  // Tracks a group created mid-save so retries reuse it instead of creating a duplicate
+  const pendingGroupIdRef = useRef<string | null>(null)
 
   const { mutate: doSave, isPending: saving } = useMutation({
     mutationFn: async () => {
@@ -252,13 +278,14 @@ export default function GroupForm() {
         for (const sid of toAdd) await addGroupMember(id, sid)
         for (const oid of toRemove) await removeGroupMember(id, oid)
       } else {
-        const created = await createGroup({
+        const groupId = pendingGroupIdRef.current ?? (await createGroup({
           name: name.trim(),
           cefrLevel: cefrLevel || null,
           description: description.trim() || null,
           isActive: true,
-        })
-        for (const sid of selectedIds) await addGroupMember(created.id, sid)
+        })).id
+        pendingGroupIdRef.current = groupId
+        for (const sid of selectedIds) await addGroupMember(groupId, sid)
       }
     },
     onSuccess: () => {
@@ -295,28 +322,6 @@ export default function GroupForm() {
       return
     }
     doSave()
-  }
-
-  if (isEdit && loadingGroup) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
-      </div>
-    )
-  }
-
-  if (isEdit && (groupError || (!loadingGroup && !group))) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-sm text-red-600 font-medium">
-          Group not found.{' '}
-          <button onClick={() => navigate('/groups')} className="underline hover:text-zinc-700 transition-colors">
-            Go back
-          </button>
-        </span>
-      </div>
-    )
   }
 
   return (
