@@ -387,6 +387,10 @@ public class AppDbContext : DbContext
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
+            e.HasIndex(f => new { f.GroupId, f.Status }).HasFilter("[GroupId] IS NOT NULL");
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_TeacherFollowups_Scope",
+                "[StudentId] IS NULL OR [GroupId] IS NULL"));
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
             e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
@@ -397,6 +401,11 @@ public class AppDbContext : DbContext
             e.HasOne(f => f.Student)
              .WithMany(s => s.TeacherFollowups)
              .HasForeignKey(f => f.StudentId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.Group)
+             .WithMany(g => g.Followups)
+             .HasForeignKey(f => f.GroupId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.SourceSessionLog)

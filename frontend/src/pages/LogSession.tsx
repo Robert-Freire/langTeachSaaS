@@ -233,7 +233,7 @@ export default function LogSession() {
 
   const { data: allFollowups = [] } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: !!id,
   })
 

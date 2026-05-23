@@ -11,4 +11,5 @@ public interface IGroupService
     Task<bool> DeleteAsync(Guid teacherId, Guid groupId, CancellationToken ct = default);
     Task<GroupDto?> AddMemberAsync(Guid teacherId, Guid groupId, Guid studentId, CancellationToken ct = default);
     Task<GroupDto?> RemoveMemberAsync(Guid teacherId, Guid groupId, Guid studentId, CancellationToken ct = default);
+    Task<GroupDto?> PatchTeachingNotesAsync(Guid teacherId, Guid groupId, string? notes, CancellationToken ct = default);
 }

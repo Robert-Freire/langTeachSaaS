@@ -326,7 +326,7 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
   })
 
   it('Followups card has amber background when pending followups exist', () => {
-    const pendingFollowup = { id: 'f1', text: 'Prepare vocabulary list', status: 'pending' as const, studentId: 'student-1', studentName: null, createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null }
+    const pendingFollowup = { id: 'f1', text: 'Prepare vocabulary list', status: 'pending' as const, studentId: 'student-1', studentName: null, groupId: null, kind: 'operational', createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null }
     renderOverview(BASE_STUDENT, [], [pendingFollowup])
     const wrapper = screen.getByTestId('followups-card-wrapper')
     expect(wrapper.className).toContain('FFF9F2')

@@ -118,4 +118,13 @@ public class GroupsController : ControllerBase
         var group = await _groupService.RemoveMemberAsync(teacherId, id, studentId, ct);
         return group is null ? NotFound() : Ok(group);
     }
+
+    [HttpPatch("{id:guid}/teaching-notes")]
+    public async Task<IActionResult> PatchTeachingNotes(Guid id, [FromBody] PatchGroupTeachingNotesRequest request, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var group = await _groupService.PatchTeachingNotesAsync(teacherId, id, request.TeachingNotes, ct);
+        return group is null ? NotFound() : Ok(group);
+    }
 }
