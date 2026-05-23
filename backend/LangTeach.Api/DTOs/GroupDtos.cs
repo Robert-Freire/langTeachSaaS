@@ -27,7 +27,8 @@ public record GroupDto(
     List<StudentSummaryDto>? MemberPreview = null,
     DateTime? LastSessionDate = null,
     DateTime? NextSessionDate = null,
-    List<GroupTeachingIdeaDto>? TeachingIdeas = null
+    List<GroupTeachingIdeaDto>? TeachingIdeas = null,
+    string? TeachingNotes = null
 );
 
 public class CreateGroupRequest
@@ -67,6 +68,11 @@ public class AddGroupMemberRequest
 {
     [Required]
     public Guid StudentId { get; set; }
+}
+
+public class PatchGroupTeachingNotesRequest
+{
+    public string? TeachingNotes { get; set; }
 }
 
 public class GroupListQuery

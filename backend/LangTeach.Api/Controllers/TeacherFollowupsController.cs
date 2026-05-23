@@ -30,13 +30,30 @@ public class TeacherFollowupsController : ControllerBase
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] string? studentId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get([FromQuery] string? studentId, [FromQuery] string? groupId, [FromQuery] string? kind, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
+        if (groupId is not null && studentId is not null)
+            return ValidationProblem("Specify at most one of groupId or studentId, not both.");
+
         List<TeacherFollowupDto> result;
-        if (studentId is not null)
+        if (groupId is not null)
+        {
+            if (!Guid.TryParse(groupId, out var gid))
+                return ValidationProblem("groupId must be a valid GUID.");
+            try
+            {
+                result = await _followupService.GetByGroupAsync(teacherId, gid, kind, cancellationToken);
+            }
+            catch (ValidationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return ValidationProblem();
+            }
+        }
+        else if (studentId is not null)
         {
             if (!Guid.TryParse(studentId, out var sid))
                 return ValidationProblem("studentId must be a valid GUID.");

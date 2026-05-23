@@ -94,13 +94,9 @@ public class GroupService : IGroupService
         if (group is null) return null;
 
         var members = await _db.StudentGroups
-            .Where(sg => sg.GroupId == groupId)
-            .Join(_db.Students.Where(s => !s.IsDeleted),
-                  sg => sg.StudentId,
-                  s => s.Id,
-                  (_, s) => new { s.Id, s.Name, s.CefrLevel })
-            .OrderBy(s => s.Name)
-            .Select(s => new StudentSummaryDto(s.Id, s.Name, s.CefrLevel))
+            .Where(sg => sg.GroupId == groupId && !sg.Student.IsDeleted && sg.Student.TeacherId == teacherId)
+            .OrderBy(sg => sg.Student.Name)
+            .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))
             .ToListAsync(ct);
 
         var teachingIdeas = await _db.TeacherFollowups
@@ -155,7 +151,7 @@ public class GroupService : IGroupService
 
         await _db.SaveChangesAsync(ct);
 
-        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId, ct);
+        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId && !sg.Student.IsDeleted, ct);
         return MapToDto(group, memberCount, members: null);
     }
 
@@ -272,6 +268,21 @@ public class GroupService : IGroupService
                 $"Invalid CefrLevel '{cefr}'. Allowed: {string.Join(", ", CefrConstants.AllLevels)}.");
     }
 
+    public async Task<GroupDto?> PatchTeachingNotesAsync(Guid teacherId, Guid groupId, string? notes, CancellationToken ct = default)
+    {
+        var group = await _db.Groups
+            .FirstOrDefaultAsync(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted, ct);
+
+        if (group is null) return null;
+
+        group.TeachingNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
+        group.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        var memberCount = await _db.StudentGroups.CountAsync(sg => sg.GroupId == groupId && !sg.Student.IsDeleted, ct);
+        return MapToDto(group, memberCount, members: null);
+    }
+
     private static GroupDto MapToDto(
         Group g,
         int memberCount,
@@ -293,6 +304,7 @@ public class GroupService : IGroupService
         memberPreview,
         lastSessionDate,
         nextSessionDate,
-        teachingIdeas
+        teachingIdeas,
+        g.TeachingNotes
     );
 }

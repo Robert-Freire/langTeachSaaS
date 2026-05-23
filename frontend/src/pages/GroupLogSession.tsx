@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Plus, X, ChevronDown,
@@ -112,8 +112,7 @@ function ToggleSwitch({
 
 export default function GroupLogSession() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const groupId = searchParams.get('groupId')
+  const { id: groupId } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
 
   // Form state

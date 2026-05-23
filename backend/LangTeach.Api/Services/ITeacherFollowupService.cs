@@ -7,6 +7,7 @@ public interface ITeacherFollowupService
     Task<List<TeacherFollowupDto>> GetAllAsync(Guid teacherId, CancellationToken cancellationToken);
     Task<List<TeacherFollowupDto>> GetPendingAsync(Guid teacherId, CancellationToken cancellationToken);
     Task<List<TeacherFollowupDto>> GetByStudentAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken);
+    Task<List<TeacherFollowupDto>> GetByGroupAsync(Guid teacherId, Guid groupId, string? kind, CancellationToken cancellationToken);
     Task<TeacherFollowupDto> CreateAsync(Guid teacherId, CreateTeacherFollowupRequest request, CancellationToken cancellationToken);
     Task<TeacherFollowupDto?> UpdateStatusAsync(Guid teacherId, Guid followupId, UpdateTeacherFollowupRequest request, CancellationToken cancellationToken);
     Task<bool> DeleteAsync(Guid teacherId, Guid followupId, CancellationToken cancellationToken);

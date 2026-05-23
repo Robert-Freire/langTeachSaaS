@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523140116_AddGroupDetailFields")]
+    partial class AddGroupDetailFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1000,14 +1003,14 @@ namespace LangTeach.Api.Migrations
                     b.Property<Guid?>("CoveredInSessionLogId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
-
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Kind")
                         .IsRequired()
@@ -1015,9 +1018,6 @@ namespace LangTeach.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("operational");
-
-                    b.Property<Guid?>("GroupId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("SourceSessionLogId")
                         .HasColumnType("uniqueidentifier");
@@ -1049,8 +1049,6 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("SourceSessionLogId");
 
                     b.HasIndex("StudentId");
-
-                    b.HasIndex("GroupId", "Kind");
 
                     b.HasIndex("TeacherId", "Status");
 
@@ -1591,8 +1589,6 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("SessionLogs");
 
                     b.Navigation("StudentGroups");
-
-                    b.Navigation("TeacherFollowups");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Lesson", b =>

@@ -29,6 +29,7 @@ export interface Group {
   lastSessionDate: string | null
   nextSessionDate: string | null
   teachingIdeas?: GroupTeachingIdea[] | null
+  teachingNotes: string | null
 }
 
 export interface GroupListResponse {
@@ -75,6 +76,12 @@ export async function deleteGroup(id: string): Promise<void> {
   await apiClient.delete(`/api/groups/${id}`)
 }
 
+export async function updateGroupTeachingNotes(id: string, teachingNotes: string | null): Promise<Group> {
+  const res = await apiClient.patch<Group>(`/api/groups/${id}/teaching-notes`, { teachingNotes })
+  return res.data
+}
+
+
 export async function addGroupMember(groupId: string, studentId: string): Promise<Group> {
   const res = await apiClient.post<Group>(`/api/groups/${groupId}/members`, { studentId })
   return res.data
@@ -87,6 +94,29 @@ export async function removeGroupMember(groupId: string, studentId: string): Pro
 
 export async function appendGroupTeachingIdea(groupId: string, text: string): Promise<GroupTeachingIdea> {
   const res = await apiClient.post<GroupTeachingIdea>(`/api/groups/${groupId}/teaching-ideas`, { text })
+  return res.data
+}
+
+export interface GroupSession {
+  id: string
+  groupId: string | null
+  sessionDate: string | null
+  title: string | null
+  plannedContent: string | null
+  actualContent: string | null
+  generalNotes: string | null
+  homeworkAssigned: string | null
+  nextSessionTopics: string | null
+  isCancelled: boolean
+  status: number
+  statusName: 'Draft' | 'Confirmed'
+  createdAt: string
+  updatedAt: string
+  duration: number | null
+}
+
+export async function getGroupSessions(groupId: string): Promise<GroupSession[]> {
+  const res = await apiClient.get<GroupSession[]>(`/api/groups/${groupId}/sessions`)
   return res.data
 }
 
