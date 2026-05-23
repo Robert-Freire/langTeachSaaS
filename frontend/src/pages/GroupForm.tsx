@@ -105,7 +105,7 @@ function StudentMemberPicker({
             return (
               <span
                 key={m.id}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium bg-indigo-50 text-indigo-700"
               >
                 <span
                   className={cn(
@@ -420,14 +420,15 @@ export default function GroupForm() {
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <a
-                href="/groups"
-                onClick={(e) => { e.preventDefault(); navigate('/groups') }}
-                className="text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => navigate('/groups')}
+                className="text-zinc-500 hover:text-zinc-700"
                 data-testid="cancel-link"
               >
                 Cancel
-              </a>
+              </Button>
               <Button
                 type="submit"
                 disabled={saving}
