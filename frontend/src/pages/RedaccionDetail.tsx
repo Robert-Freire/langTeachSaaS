@@ -70,6 +70,10 @@ export default function RedaccionDetail() {
     }
   }, [viewState, data?.status])
 
+  const estimatedMinutes = data?.studentText && student
+    ? estimateMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
+    : null
+
   const onDownload = async () => {
     if (!data) return
     setDownloadError(null)
@@ -179,6 +183,12 @@ export default function RedaccionDetail() {
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Corrigiendo
           </Button>
+          {elapsedHint === 'none' && estimatedMinutes !== null && (
+            <p data-testid="hint-estimate" className="text-sm text-zinc-500">
+              Esto tardará aproximadamente {estimatedMinutes} minuto{estimatedMinutes === 1 ? '' : 's'}.
+              {' '}Puedes cerrar esta pestaña o ir a otra parte de Atelier; te avisamos cuando esté listo.
+            </p>
+          )}
           {elapsedHint === 'slow' && (
             <p data-testid="hint-slow" className="text-sm text-zinc-500">
               Esto puede tardar hasta 3 minutos para textos largos. Puedes esperar aquí.
@@ -354,6 +364,18 @@ function StatusPill({ status, viewState }: StatusPillProps) {
       {STATUS_LABEL[status]}
     </span>
   )
+}
+
+const BASE_LATENCY_BY_LEVEL: Record<string, number> = {
+  A1: 30, A2: 45, B1: 60, B2: 90, C1: 120, C2: 150,
+}
+const TOKENS_PER_WORD = 1.5
+const MS_PER_TOKEN = 10
+
+function estimateMinutes(wordCount: number, cefrLevel: string): number {
+  const base = BASE_LATENCY_BY_LEVEL[cefrLevel] ?? 60
+  const seconds = base + (wordCount * TOKENS_PER_WORD * MS_PER_TOKEN) / 1000
+  return Math.max(1, Math.ceil(seconds / 60))
 }
 
 function ReadingColumn({ text }: { text: string }) {

@@ -74,6 +74,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         }
 
+        correction = await _db.Corrections
+            .AsNoTracking()
+            .Include(c => c.Tags)
+            .FirstAsync(c => c.Id == correctionId, cancellationToken);
         return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
     }
 
