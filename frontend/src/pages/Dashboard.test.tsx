@@ -163,7 +163,7 @@ describe('Dashboard', () => {
     it('shows pending followup text when followups exist', async () => {
       mockGetDashboard.mockResolvedValue(makeDashboard({
         pendingFollowups: [
-          { id: 'f1', studentId: 'student-1', studentName: 'Ana García', text: 'Enviar ejercicio de gustar', status: 'pending', createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null },
+          { id: 'f1', studentId: 'student-1', studentName: 'Ana García', groupId: null, text: 'Enviar ejercicio de gustar', status: 'pending', kind: 'operational', createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null },
         ],
       }))
       renderDashboard()

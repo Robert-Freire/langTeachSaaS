@@ -29,6 +29,7 @@ function makeGroup(overrides: Partial<groupsApi.Group> = {}): groupsApi.Group {
     ],
     lastSessionDate: null,
     nextSessionDate: null,
+    teachingNotes: null,
     ...overrides,
   }
 }

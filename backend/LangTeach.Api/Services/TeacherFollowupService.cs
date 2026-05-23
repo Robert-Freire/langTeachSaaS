@@ -37,8 +37,29 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<TeacherFollowupDto>> GetByGroupAsync(Guid teacherId, Guid groupId, string? kind, CancellationToken cancellationToken)
+    {
+        var groupExists = await db.Groups
+            .AnyAsync(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted, cancellationToken);
+        if (!groupExists)
+            throw new ValidationException("Group not found.");
+
+        var q = db.TeacherFollowups
+            .Where(f => f.TeacherId == teacherId && f.GroupId == groupId);
+        if (kind is not null)
+            q = q.Where(f => f.Kind == kind);
+
+        return await q
+            .OrderBy(f => f.CreatedAt)
+            .Select(f => ToDto(f, null))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<TeacherFollowupDto> CreateAsync(Guid teacherId, CreateTeacherFollowupRequest request, CancellationToken cancellationToken)
     {
+        if (request.StudentId.HasValue && request.GroupId.HasValue)
+            throw new ValidationException("A followup cannot be scoped to both a student and a group.");
+
         string? studentName = null;
         if (request.StudentId.HasValue)
         {
@@ -47,6 +68,14 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync(cancellationToken)
                 ?? throw new ValidationException("Student not found.");
+        }
+
+        if (request.GroupId.HasValue)
+        {
+            var groupExists = await db.Groups
+                .AnyAsync(g => g.Id == request.GroupId.Value && g.TeacherId == teacherId && !g.IsDeleted, cancellationToken);
+            if (!groupExists)
+                throw new ValidationException("Group not found.");
         }
 
         if (request.SourceSessionLogId.HasValue)
@@ -62,6 +91,7 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             Id = Guid.NewGuid(),
             TeacherId = teacherId,
             StudentId = request.StudentId,
+            GroupId = request.GroupId,
             Text = request.Text,
             Status = TeacherFollowupStatuses.Pending,
             Kind = request.Kind ?? TeacherFollowupKinds.Operational,
@@ -114,5 +144,6 @@ public class TeacherFollowupService(AppDbContext db) : ITeacherFollowupService
             f.DueDate,
             f.CompletedAt,
             f.SourceSessionLogId?.ToString(),
-            f.Kind);
+            f.Kind,
+            f.GroupId?.ToString());
 }

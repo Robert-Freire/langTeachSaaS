@@ -7,7 +7,6 @@ import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
-import type { SessionLog } from '@/api/sessionLogs'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
@@ -21,22 +20,7 @@ import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
 import type { VoiceMergePatch } from '@/lib/voiceUpdateMerge'
 import { extractStudentProfile } from '@/api/studentExtraction'
 import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
-
-function calcSessionFrequency(sessions: SessionLog[]): string | null {
-  const past = sessions
-    .filter(s => !s.isCancelled && s.sessionDate && s.statusName === 'Confirmed' && new Date(s.sessionDate) <= new Date())
-    .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())
-  if (past.length === 0) return null
-  if (past.length === 1) return '1 session'
-  const first = new Date(past[0].sessionDate!)
-  const last = new Date(past[past.length - 1].sessionDate!)
-  const spanDays = Math.round((last.getTime() - first.getTime()) / 86400000)
-  if (spanDays < 14) return `${past.length} sessions`
-  const weeks = Math.max(1, Math.round(spanDays / 7))
-  const avgDays = Math.round(spanDays / (past.length - 1))
-  const weekLabel = weeks === 1 ? '1 week' : `${weeks} weeks`
-  return `${past.length} sessions in ${weekLabel} · avg. every ${avgDays} days`
-}
+import { calcSessionFrequency } from '@/utils/sessionFrequency'
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -63,7 +47,7 @@ export default function StudentDetail() {
 
   const { data: followups = [], refetch: refetchFollowups } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: !!id,
   })
 

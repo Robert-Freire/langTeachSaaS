@@ -6,7 +6,8 @@ import { createFollowup, updateFollowupStatus } from '@/api/followups'
 
 interface StudentFollowupsCardProps {
   followups: TeacherFollowup[]
-  studentId: string
+  studentId?: string
+  groupId?: string
   onFollowupChange: () => void
   /** Shown in place of the default empty text when there are no followups */
   emptyPrompt?: string
@@ -16,12 +17,12 @@ function daysAgo(createdAt: string): number {
   return Math.floor(Math.max(0, Date.now() - new Date(createdAt).getTime()) / 86400000)
 }
 
-export function StudentFollowupsCard({ followups, studentId, onFollowupChange, emptyPrompt }: StudentFollowupsCardProps) {
+export function StudentFollowupsCard({ followups, studentId, groupId, onFollowupChange, emptyPrompt }: StudentFollowupsCardProps) {
   const [newText, setNewText] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const createMutation = useMutation({
-    mutationFn: (text: string) => createFollowup({ text, studentId }),
+    mutationFn: (text: string) => createFollowup({ text, studentId: studentId ?? null, groupId: groupId ?? null }),
     onSuccess: () => {
       setNewText('')
       onFollowupChange()
