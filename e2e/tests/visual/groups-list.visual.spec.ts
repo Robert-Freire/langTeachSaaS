@@ -21,6 +21,9 @@ test('@visual groups list', async ({ browser }) => {
 
   await page.goto('/groups')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
+  // Wait for fetch + render to settle so the screenshot reflects the final state
+  // (table rows or empty-state card) rather than the loading skeleton.
+  await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT })
   await page.screenshot({ path: 'screenshots/groups-list.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

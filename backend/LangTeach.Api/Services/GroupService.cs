@@ -49,8 +49,9 @@ public class GroupService : IGroupService
             .Select(g => new
             {
                 Group = g,
-                MemberCount = g.StudentGroups.Count(),
+                MemberCount = g.StudentGroups.Count(sg => !sg.Student.IsDeleted),
                 MemberPreview = g.StudentGroups
+                    .Where(sg => !sg.Student.IsDeleted)
                     .OrderBy(sg => sg.Student.Name)
                     .Take(4)
                     .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))

@@ -211,6 +211,28 @@ public class GroupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task List_ExcludesSoftDeletedStudentsFromMemberAggregates()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var s1 = SeedStudent(_teacherId, "Alice");
+        var s2 = SeedStudent(_teacherId, "Bob");
+        var s3 = SeedStudent(_teacherId, "Carol");
+        await _sut.AddMemberAsync(_teacherId, group.Id, s1.Id);
+        await _sut.AddMemberAsync(_teacherId, group.Id, s2.Id);
+        await _sut.AddMemberAsync(_teacherId, group.Id, s3.Id);
+
+        // Soft-delete Bob; he should disappear from MemberCount and MemberPreview.
+        s2.IsDeleted = true;
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.MemberCount.Should().Be(2);
+        dto.MemberPreview!.Select(m => m.Name).Should().BeEquivalentTo(new[] { "Alice", "Carol" });
+    }
+
+    [Fact]
     public async Task List_LastAndNextSession_IgnoreDeletedCancelledAndDraft()
     {
         var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
