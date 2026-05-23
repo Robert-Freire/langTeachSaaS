@@ -185,6 +185,60 @@ describe('SessionHistoryTab', () => {
     expect(screen.queryByTestId('session-entry-detail')).not.toBeInTheDocument()
   })
 
+  it('shows group-session pill for group session', async () => {
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([groupSession])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('group-session-pill')).toHaveTextContent('B1 Conversacion')
+  })
+
+  it('shows "View in group" link and no delete button for group session', async () => {
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([groupSession])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('view-in-group-link')).toBeInTheDocument()
+    expect(screen.queryByTestId('delete-session-btn')).not.toBeInTheDocument()
+  })
+
+  it('filters to group sessions only when sessionType=groups', async () => {
+    const studentSession = { ...SESSION_BASE }
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      id: 'session-2',
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([studentSession, groupSession])
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/?sessionType=groups']}>
+          <SessionHistoryTab studentId="student-1" sessionTypeFilter="groups" />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('session-entry')
+    const entries = screen.getAllByTestId('session-entry')
+    expect(entries).toHaveLength(1)
+    expect(screen.getByTestId('group-session-pill')).toBeInTheDocument()
+  })
+
   it('shows topic tag chips with category colors in expanded view', async () => {
     const session = {
       ...SESSION_BASE,
