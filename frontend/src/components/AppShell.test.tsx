@@ -102,11 +102,11 @@ describe('AppShell', () => {
     expect(allDashboardLinks.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, Lessons, then Settings separated at bottom', () => {
+  it('renders nav items in correct order: Dashboard, Students, Sessions, Courses, then Settings separated at bottom', () => {
     renderShell()
     const links = document.querySelector('aside')?.querySelectorAll('a')
     const labels = Array.from(links ?? []).map(a => a.textContent?.trim())
-    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Settings'])
   })
 
   it('Settings link is outside the main nav element', () => {
@@ -164,7 +164,7 @@ describe('AppShell', () => {
 
   it('sidebar renders the same nav items regardless of route', () => {
     const routes = ['/', '/sessions', '/settings']
-    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Lessons', 'Settings']
+    const expectedLabels = ['Dashboard', 'Students', 'Sessions', 'Courses', 'Settings']
 
     for (const route of routes) {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
