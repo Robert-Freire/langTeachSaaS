@@ -28,6 +28,10 @@ namespace LangTeach.Api.Migrations
                 column: "GroupId",
                 principalTable: "Groups",
                 principalColumn: "Id");
+
+            migrationBuilder.Sql(
+                "ALTER TABLE [TeacherFollowups] ADD CONSTRAINT [CK_TeacherFollowups_StudentId_GroupId_XOR] " +
+                "CHECK ((StudentId IS NULL) <> (GroupId IS NULL));");
         }
 
         /// <inheritdoc />
@@ -40,6 +44,9 @@ namespace LangTeach.Api.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_TeacherFollowups_GroupId_Kind",
                 table: "TeacherFollowups");
+
+            migrationBuilder.Sql(
+                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_StudentId_GroupId_XOR];");
 
             migrationBuilder.DropColumn(
                 name: "GroupId",

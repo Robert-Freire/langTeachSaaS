@@ -234,6 +234,8 @@ public class GroupService : IGroupService
         return await GetByIdAsync(teacherId, groupId, ct);
     }
 
+    // Teaching ideas are stored as TeacherFollowup rows with Kind=Pedagogical and GroupId set (StudentId=null).
+    // There is no separate TeachingIdea entity; GroupTeachingIdeaDto is the UI-facing projection.
     public async Task<GroupTeachingIdeaDto?> AppendTeachingIdeaAsync(Guid teacherId, Guid groupId, string text, CancellationToken ct = default)
     {
         var exists = await _db.Groups

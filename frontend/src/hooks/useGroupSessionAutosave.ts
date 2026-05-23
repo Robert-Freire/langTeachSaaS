@@ -84,12 +84,17 @@ export function useGroupSessionAutosave(
     if (!baseData) return null
     const data = override ? { ...baseData, ...override } : baseData
     try {
+      // Cancel any in-flight GET for this session so a late refetch response
+      // doesn't overwrite the optimistic cache update made in onSuccess.
+      if (sessionIdRef.current) {
+        await queryClient.cancelQueries({ queryKey: ['group-session', groupId, sessionIdRef.current] })
+      }
       const result = await mutateAsync({ reqGroupId: groupId, data })
       return result.id
     } catch {
       return null
     }
-  }, [groupId, getFormData, mutateAsync])
+  }, [groupId, getFormData, mutateAsync, queryClient])
 
   const scheduleTextSave = useCallback(() => {
     if (!groupId) return

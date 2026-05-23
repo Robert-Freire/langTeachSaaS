@@ -462,6 +462,15 @@ public class SessionLogService : ISessionLogService
 
         if (entity is null) return null;
 
+        if (request.LinkedLessonId.HasValue)
+        {
+            var lessonExists = await _db.Lessons.AnyAsync(
+                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId && !l.IsDeleted,
+                cancellationToken);
+            if (!lessonExists)
+                throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
+        }
+
         var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
 
         var titlePlanned = request.PlannedContent ?? entity.PlannedContent;
