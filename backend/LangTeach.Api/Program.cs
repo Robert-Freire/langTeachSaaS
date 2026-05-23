@@ -202,6 +202,7 @@ builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>();
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();

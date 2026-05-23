@@ -1,0 +1,258 @@
+name: Correction telemetry daily check
+
+# Daily KQL probe against the Container App's Log Analytics workspace. Detects
+# correction main-pass (callSite=correction.pass1) max_tokens breaches and
+# latency regressions emitted by ClaudeApiClient.EmitCallLog. On breach, opens
+# a P1 GitHub issue (or comments on the existing one if already open).
+#
+# Prerequisites (one-time):
+#   The OIDC principal used by AZURE_CLIENT_ID needs the "Log Analytics Reader"
+#   role on the workspace `law-app-langteach-api-dev`. Run once if missing:
+#
+#     PRINCIPAL_ID=$(az ad sp show --id <AZURE_CLIENT_ID> --query id -o tsv)
+#     WORKSPACE_ID=$(az monitor log-analytics workspace show \
+#       -g rg-langteach-dev -n law-app-langteach-api-dev --query id -o tsv)
+#     az role assignment create \
+#       --assignee "$PRINCIPAL_ID" \
+#       --role "Log Analytics Reader" \
+#       --scope "$WORKSPACE_ID"
+#
+#   The workflow's `if: failure()` step will create a tracking issue if the LAW
+#   query returns 403, with the exact remediation command above.
+
+on:
+  schedule:
+    - cron: '0 7 * * *'    # 07:00 UTC daily, before Jordi typically starts
+  workflow_dispatch:        # manual trigger for spot checks
+
+concurrency:
+  group: correction-telemetry
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  issues:   write
+
+env:
+  RESOURCE_GROUP:        rg-langteach-dev
+  WORKSPACE_NAME:        law-app-langteach-api-dev
+  P95_LATENCY_MS:        '90000'
+  NEAR_CAP_BREACH_RATIO: '0.05'
+
+jobs:
+  probe:
+    name: Probe correction telemetry
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve Log Analytics workspace GUID
+        id: ws
+        run: |
+          WS_ID=$(az monitor log-analytics workspace show \
+            --resource-group "${RESOURCE_GROUP}" \
+            --workspace-name "${WORKSPACE_NAME}" \
+            --query customerId -o tsv)
+          if [ -z "$WS_ID" ]; then
+            echo "ERROR: Could not resolve workspace ${WORKSPACE_NAME} in ${RESOURCE_GROUP}"
+            exit 1
+          fi
+          echo "id=${WS_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Query truncations (last 24h)
+        id: q_trunc
+        run: |
+          read -r -d '' QUERY <<'EOF' || true
+          ContainerAppConsoleLogs_CL
+          | where TimeGenerated > ago(24h)
+          | where Log_s has "Claude stream truncated" or Log_s has "Response truncated: max_tokens"
+          | project TimeGenerated, Log_s
+          | order by TimeGenerated desc
+          | take 20
+          EOF
+          az monitor log-analytics query \
+            --workspace "${{ steps.ws.outputs.id }}" \
+            --analytics-query "$QUERY" \
+            -o json > /tmp/trunc.json
+          if ! jq -e 'type == "array"' /tmp/trunc.json > /dev/null; then
+            echo "ERROR: log-analytics query did not return a JSON array; response was:"
+            cat /tmp/trunc.json
+            exit 1
+          fi
+          COUNT=$(jq 'length' /tmp/trunc.json)
+          echo "count=${COUNT}" >> "$GITHUB_OUTPUT"
+          echo "Truncations in last 24h: ${COUNT}"
+
+      - name: Query correction.pass1 latency + near-cap ratio (last 24h)
+        id: q_corr
+        run: |
+          read -r -d '' QUERY <<'EOF' || true
+          ContainerAppConsoleLogs_CL
+          | where TimeGenerated > ago(24h)
+          | where Log_s has "ClaudeCall" and Log_s has "callSite=correction.pass1"
+          | extend latencyMs    = toint(extract(@"latencyMs=([0-9]+)", 1, Log_s))
+          | extend outputTokens = toint(extract(@"outputTokens=([0-9]+)", 1, Log_s))
+          | extend maxTokens    = toint(extract(@"maxTokens=([0-9]+)", 1, Log_s))
+          | where isnotnull(latencyMs) and isnotnull(outputTokens) and isnotnull(maxTokens) and maxTokens > 0
+          | extend usage = todouble(outputTokens) / todouble(maxTokens)
+          | summarize total = count(),
+                      nearCap = countif(usage > 0.80),
+                      p95 = percentile(latencyMs, 95),
+                      p99 = percentile(latencyMs, 99)
+          EOF
+          az monitor log-analytics query \
+            --workspace "${{ steps.ws.outputs.id }}" \
+            --analytics-query "$QUERY" \
+            -o json > /tmp/corr.json
+          # Hard-fail on malformed response so a transient LAW error cannot
+          # silently default to "all zeros" and suppress real alerts.
+          if ! jq -e 'type == "array"' /tmp/corr.json > /dev/null; then
+            echo "ERROR: log-analytics query did not return a JSON array; response was:"
+            cat /tmp/corr.json
+            exit 1
+          fi
+          ROW=$(jq '.[0] // {total:0, nearCap:0, p95:0, p99:0}' /tmp/corr.json)
+          TOTAL=$(echo   "$ROW" | jq -r '.total   // 0')
+          NEARCAP=$(echo "$ROW" | jq -r '.nearCap // 0')
+          P95=$(echo     "$ROW" | jq -r '.p95     // 0')
+          P99=$(echo     "$ROW" | jq -r '.p99     // 0')
+          if [ "$TOTAL" -gt 0 ]; then
+            RATIO=$(awk -v n="$NEARCAP" -v t="$TOTAL" 'BEGIN { printf "%.4f", n/t }')
+          else
+            RATIO="0"
+          fi
+          echo "total=${TOTAL}"     >> "$GITHUB_OUTPUT"
+          echo "nearCap=${NEARCAP}" >> "$GITHUB_OUTPUT"
+          echo "ratio=${RATIO}"     >> "$GITHUB_OUTPUT"
+          echo "p95=${P95}"         >> "$GITHUB_OUTPUT"
+          echo "p99=${P99}"         >> "$GITHUB_OUTPUT"
+          echo "correction.pass1 last 24h: total=${TOTAL} nearCap=${NEARCAP} ratio=${RATIO} p95=${P95}ms p99=${P99}ms"
+
+      - name: Decide whether to alert
+        id: decide
+        env:
+          TRUNCATIONS: ${{ steps.q_trunc.outputs.count }}
+          P95:         ${{ steps.q_corr.outputs.p95 }}
+          RATIO:       ${{ steps.q_corr.outputs.ratio }}
+          TOTAL:       ${{ steps.q_corr.outputs.total }}
+        run: |
+          REASONS=()
+          if [ "${TRUNCATIONS:-0}" -gt 0 ]; then
+            REASONS+=("${TRUNCATIONS} truncation(s)")
+          fi
+          # p95 may be float "0" or "104327.5"; compare as float via awk
+          if awk -v a="${P95:-0}" -v b="${P95_LATENCY_MS}" 'BEGIN { exit !(a+0 > b+0) }'; then
+            REASONS+=("p95=$(awk -v p="${P95}" 'BEGIN { printf "%.0f", p }')ms (>${P95_LATENCY_MS}ms)")
+          fi
+          if awk -v a="${RATIO:-0}" -v b="${NEAR_CAP_BREACH_RATIO}" 'BEGIN { exit !(a+0 > b+0) }'; then
+            REASONS+=("near-cap ratio=${RATIO} (>${NEAR_CAP_BREACH_RATIO}, ${TOTAL} calls)")
+          fi
+          if [ "${#REASONS[@]}" -eq 0 ]; then
+            echo "alert=false" >> "$GITHUB_OUTPUT"
+            echo "No triggers fired. truncations=${TRUNCATIONS} p95=${P95}ms ratio=${RATIO} total=${TOTAL}"
+            {
+              echo "## Daily check: no triggers fired"
+              echo ""
+              echo "- truncations: ${TRUNCATIONS}"
+              echo "- correction.pass1 calls: ${TOTAL}"
+              echo "- near-cap ratio: ${RATIO} (threshold ${NEAR_CAP_BREACH_RATIO})"
+              echo "- p95 latency: ${P95}ms (threshold ${P95_LATENCY_MS}ms)"
+              echo "- p99 latency: ${{ steps.q_corr.outputs.p99 }}ms"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            SUMMARY=$(IFS=', '; echo "${REASONS[*]}")
+            echo "summary=${SUMMARY}" >> "$GITHUB_OUTPUT"
+            echo "Triggers fired: ${SUMMARY}"
+          fi
+
+      - name: Build alert issue body
+        if: steps.decide.outputs.alert == 'true'
+        env:
+          SUMMARY:     ${{ steps.decide.outputs.summary }}
+          TRUNCATIONS: ${{ steps.q_trunc.outputs.count }}
+          TOTAL:       ${{ steps.q_corr.outputs.total }}
+          NEARCAP:     ${{ steps.q_corr.outputs.nearCap }}
+          RATIO:       ${{ steps.q_corr.outputs.ratio }}
+          P95:         ${{ steps.q_corr.outputs.p95 }}
+          P99:         ${{ steps.q_corr.outputs.p99 }}
+          RUN_URL:     ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Build body via heredoc + jq to avoid shell-injection from log content.
+          {
+            echo "## Trigger summary"
+            echo ""
+            echo "${SUMMARY}"
+            echo ""
+            echo "## Aggregates (last 24h, correction.pass1)"
+            echo ""
+            echo "- total calls: ${TOTAL}"
+            echo "- near-cap (output > 80% of maxTokens): ${NEARCAP} (ratio ${RATIO}, threshold ${NEAR_CAP_BREACH_RATIO})"
+            echo "- p95 latency: ${P95}ms (threshold ${P95_LATENCY_MS}ms)"
+            echo "- p99 latency: ${P99}ms"
+            echo "- truncation log lines: ${TRUNCATIONS}"
+            echo ""
+            echo "## Sample truncation log lines"
+            echo ""
+            echo '```'
+            # jq extracts Log_s safely; never shell-interpolated.
+            jq -r '.[] | "[\(.TimeGenerated)] \(.Log_s)"' /tmp/trunc.json | head -20
+            echo '```'
+            echo ""
+            echo "## Workflow run"
+            echo ""
+            echo "${RUN_URL}"
+            echo ""
+            echo "_Auto-generated by .github/workflows/correction-telemetry.yml. See #1294 for context._"
+          } > /tmp/alert-body.md
+          echo "Body built: $(wc -l < /tmp/alert-body.md) lines"
+
+      - name: Open or update alert issue
+        if: steps.decide.outputs.alert == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY:  ${{ steps.decide.outputs.summary }}
+        run: |
+          # Tighten dedupe: also require the P1:must + area:ai labels we set
+          # on the alert issue, so unrelated tickets that happen to mention
+          # this phrase cannot suppress real alerts.
+          EXISTING=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --search '"correction-telemetry alert" in:title' \
+            --state open \
+            --label "P1:must" \
+            --label "area:ai" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "Existing open alert issue #${EXISTING}; appending comment."
+            gh issue comment "$EXISTING" \
+              --repo "${{ github.repository }}" \
+              --body-file /tmp/alert-body.md
+          else
+            echo "No open alert issue; creating new one."
+            # Title built from numeric aggregates only -- no log content.
+            gh issue create \
+              --repo "${{ github.repository }}" \
+              --title "correction-telemetry alert: ${SUMMARY}" \
+              --body-file /tmp/alert-body.md \
+              --label "P1:must,area:ai,type:bug" \
+              --assignee "Robert-Freire"
+          fi
+
+      - name: Notify on workflow failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "correction-telemetry workflow failed $(date -u +%Y-%m-%d)" \
+            --body  "The daily correction-telemetry probe workflow failed on $(date -u). Check the [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}). If the failure is a 403 from Log Analytics, the OIDC principal needs the \`Log Analytics Reader\` role on workspace \`${WORKSPACE_NAME}\` (see the workflow file header for the exact \`az role assignment create\` command)." \
+            --label "P1:must,area:infra"
