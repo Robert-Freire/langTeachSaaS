@@ -86,6 +86,15 @@ def insert_followup(cursor, conn, teacher_id, student_id):
     return followup_id
 
 
+def insert_student_group(cursor, conn, student_id, group_id):
+    now = datetime.now(timezone.utc)
+    cursor.execute(
+        "INSERT INTO StudentGroups (StudentId, GroupId, CreatedAt) VALUES (?, ?, ?)",
+        student_id, group_id, now
+    )
+    conn.commit()
+
+
 def cleanup_student(cursor, conn, student_id):
     cursor.execute("DELETE FROM TeacherFollowups WHERE StudentId = ?", student_id)
     cursor.execute("DELETE FROM SessionLogs WHERE StudentId = ?", student_id)
@@ -253,6 +262,43 @@ class TestMigrateFakeGroups:
             ALLOWLIST_PATH.write_text(json.dumps(original))
             cur.execute("DELETE FROM Students WHERE Id = ?", student_id)
             db_conn.commit()
+
+    def test_preflight_student_group_aborts(self, db_conn, test_teacher_id):
+        """If a fake student already has StudentGroup rows, script must abort before any changes."""
+        cur = db_conn.cursor()
+        original = json.loads(ALLOWLIST_PATH.read_text())
+
+        student_id = insert_fake_student(cur, db_conn, test_teacher_id, "B1.1-TEST", "B1")
+        # Create a real group to use as the join target
+        group_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+        cur.execute(
+            """
+            INSERT INTO Groups (Id, TeacherId, Name, CefrLevel, IsActive, IsDeleted, CreatedAt, UpdatedAt)
+            VALUES (?, ?, 'Existing Group', 'B1', 1, 0, ?, ?)
+            """,
+            group_id, test_teacher_id, now, now
+        )
+        db_conn.commit()
+        insert_student_group(cur, db_conn, student_id, group_id)
+
+        test_allowlist = [{"id": student_id, "expected_name": "B1.1-TEST", "expected_cefr": "B1"}]
+        ALLOWLIST_PATH.write_text(json.dumps(test_allowlist))
+
+        try:
+            result = run_migration()
+            assert result.returncode != 0
+            assert "ERROR" in result.stdout
+
+            # Student unchanged
+            cur.execute("SELECT IsDeleted FROM Students WHERE Id = ?", student_id)
+            assert cur.fetchone().IsDeleted == 0
+        finally:
+            ALLOWLIST_PATH.write_text(json.dumps(original))
+            cur.execute("DELETE FROM StudentGroups WHERE StudentId = ?", student_id)
+            cur.execute("DELETE FROM Groups WHERE Id = ?", group_id)
+            db_conn.commit()
+            cleanup_student(cur, db_conn, student_id)
 
     def test_name_mismatch_aborts(self, db_conn, test_teacher_id):
         """If student name doesn't match allowlist, script must exit non-zero."""
