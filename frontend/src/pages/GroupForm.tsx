@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   getGroup, createGroup, updateGroup, deleteGroup,
   addGroupMember, removeGroupMember,
 } from '@/api/groups'
+import { logger } from '@/lib/logger'
 import { getStudents } from '@/api/students'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -215,12 +216,10 @@ export default function GroupForm() {
   const [members, setMembers] = useState<SelectedMember[]>([])
   const [nameError, setNameError] = useState('')
   const [submitError, setSubmitError] = useState('')
-  const [saving, setSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [originalMemberIds, setOriginalMemberIds] = useState<string[]>([])
 
-  const { data: group, isLoading: loadingGroup } = useQuery({
+  const { data: group, isLoading: loadingGroup, isError: groupError } = useQuery({
     queryKey: ['group', id],
     queryFn: () => getGroup(id!),
     enabled: isEdit,
@@ -236,20 +235,9 @@ export default function GroupForm() {
     setOriginalMemberIds(existingMembers.map((m) => m.id))
   }, [group])
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    setNameError('')
-    setSubmitError('')
-
-    if (!name.trim()) {
-      setNameError('Group name is required.')
-      return
-    }
-
-    setSaving(true)
-    try {
+  const { mutate: doSave, isPending: saving } = useMutation({
+    mutationFn: async () => {
       const selectedIds = members.map((m) => m.id)
-
       if (isEdit && id) {
         await updateGroup(id, {
           name: name.trim(),
@@ -257,13 +245,10 @@ export default function GroupForm() {
           description: description.trim() || null,
           isActive: group?.isActive ?? true,
         })
-
         const toAdd = selectedIds.filter((sid) => !originalMemberIds.includes(sid))
         const toRemove = originalMemberIds.filter((oid) => !selectedIds.includes(oid))
-        await Promise.all([
-          ...toAdd.map((sid) => addGroupMember(id, sid)),
-          ...toRemove.map((sid) => removeGroupMember(id, sid)),
-        ])
+        for (const sid of toAdd) await addGroupMember(id, sid)
+        for (const oid of toRemove) await removeGroupMember(id, oid)
       } else {
         const created = await createGroup({
           name: name.trim(),
@@ -271,34 +256,43 @@ export default function GroupForm() {
           description: description.trim() || null,
           isActive: true,
         })
-        await Promise.all(selectedIds.map((sid) => addGroupMember(created.id, sid)))
+        for (const sid of selectedIds) await addGroupMember(created.id, sid)
       }
-
-      await queryClient.invalidateQueries({ queryKey: ['groups'] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] })
       navigate('/groups')
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
-      setSubmitError(msg)
-    } finally {
-      setSaving(false)
-    }
-  }
+    },
+    onError: (err) => {
+      logger.error('GroupForm', 'save failed', err)
+      setSubmitError('Something went wrong. Please try again.')
+    },
+  })
 
-  async function handleDelete() {
-    if (!id) return
-    setDeleting(true)
-    try {
-      await deleteGroup(id)
-      await queryClient.invalidateQueries({ queryKey: ['groups'] })
+  const { mutate: doDelete, isPending: deleting } = useMutation({
+    mutationFn: () => deleteGroup(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] })
       toast.success('Group deleted')
-      navigate('/groups')
-    } catch {
-      toast.error('Could not delete the group. Please try again.')
-    } finally {
-      setDeleting(false)
       setShowDeleteDialog(false)
+      navigate('/groups')
+    },
+    onError: (err) => {
+      logger.error('GroupForm', 'delete failed', err)
+      toast.error('Could not delete the group. Please try again.')
+      setShowDeleteDialog(false)
+    },
+  })
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setNameError('')
+    setSubmitError('')
+    if (!name.trim()) {
+      setNameError('Group name is required.')
+      return
     }
+    doSave()
   }
 
   if (isEdit && loadingGroup) {
@@ -306,6 +300,19 @@ export default function GroupForm() {
       <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    )
+  }
+
+  if (isEdit && (groupError || (!loadingGroup && !group))) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm text-red-600 font-medium">
+          Group not found.{' '}
+          <button onClick={() => navigate('/groups')} className="underline hover:text-zinc-700 transition-colors">
+            Go back
+          </button>
+        </span>
       </div>
     )
   }
@@ -466,7 +473,7 @@ export default function GroupForm() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={() => doDelete()}
               disabled={deleting}
               className="bg-red-600 text-white hover:bg-red-700"
               data-testid="confirm-delete-button"

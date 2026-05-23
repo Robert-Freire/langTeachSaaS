@@ -29,14 +29,7 @@ export interface GroupListResponse {
   pageSize: number
 }
 
-export interface CreateGroupPayload {
-  name: string
-  cefrLevel?: string | null
-  description?: string | null
-  isActive: boolean
-}
-
-export interface UpdateGroupPayload {
+export interface GroupFormData {
   name: string
   cefrLevel?: string | null
   description?: string | null
@@ -59,12 +52,12 @@ export async function getGroup(id: string): Promise<Group> {
   return res.data
 }
 
-export async function createGroup(payload: CreateGroupPayload): Promise<Group> {
+export async function createGroup(payload: GroupFormData): Promise<Group> {
   const res = await apiClient.post<Group>('/api/groups', payload)
   return res.data
 }
 
-export async function updateGroup(id: string, payload: UpdateGroupPayload): Promise<Group> {
+export async function updateGroup(id: string, payload: GroupFormData): Promise<Group> {
   const res = await apiClient.put<Group>(`/api/groups/${id}`, payload)
   return res.data
 }
