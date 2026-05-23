@@ -145,8 +145,9 @@ export default function Groups() {
         actions={
           <Button
             disabled
+            variant="outline"
             title="Group creation ships in a follow-up issue"
-            className="bg-gradient-to-br from-[#3525CD] to-[#4F46E5] text-white border-0"
+            className="cursor-not-allowed bg-white text-zinc-600 border-zinc-300 disabled:opacity-100"
             data-testid="add-group-button"
           >
             <UserPlus className="h-4 w-4 mr-1.5" />
