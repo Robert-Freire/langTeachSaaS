@@ -390,7 +390,7 @@ public class AppDbContext : DbContext
             e.HasIndex(f => new { f.GroupId, f.Status }).HasFilter("[GroupId] IS NOT NULL");
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Scope",
-                "[StudentId] IS NULL OR [GroupId] IS NULL"));
+                "([StudentId] IS NULL) <> ([GroupId] IS NULL)"));
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
             e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
