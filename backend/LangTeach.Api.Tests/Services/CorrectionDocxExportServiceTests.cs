@@ -194,8 +194,7 @@ public class CorrectionDocxExportServiceTests
         // The DOCX must include a "Logros destacados" section listing them.
         const string text = "Ojalá vengan todos mis amigos a la fiesta.";
         var idx = text.IndexOf("vengan", StringComparison.Ordinal);
-        var explanation = "¡Bien hecho! Usaste presente de subjuntivo -- una estructura de B1. " +
-                          "Aunque está por encima de tu nivel oficial (A1), lo aplicaste correctamente.";
+        var explanation = "¡Bien hecho! Usaste presente de subjuntivo correctamente: esta estructura le da un nivel superior a tu escritura. Sigue así.";
         var tag = new CorrectionTagDto("MuyBien", "vengan", idx, idx + "vengan".Length, explanation, null, 0);
         var detail = MakeDetail(text, [tag]);
 

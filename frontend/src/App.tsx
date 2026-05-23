@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
+import { Toaster } from 'sonner'
 import { apiClient, setupAuthInterceptor } from './lib/apiClient'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { OnboardingGuard } from './components/OnboardingGuard'
@@ -13,6 +14,7 @@ import Students from './pages/Students'
 import Groups from './pages/Groups'
 import GroupDetail from './pages/GroupDetail'
 import GroupLogSession from './pages/GroupLogSession'
+import GroupForm from './pages/GroupForm'
 import StudentForm from './pages/StudentForm'
 import Lessons from './pages/Lessons'
 import LessonNew from './pages/LessonNew'
@@ -60,6 +62,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <Toaster position="bottom-right" richColors />
         <AuthSetup>
           <Routes>
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
@@ -74,7 +77,9 @@ export default function App() {
                   <Route path="/students/:id/log-session" element={<LogSession />} />
                   <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
                   <Route path="/groups" element={<Groups />} />
+                  <Route path="/groups/new" element={<GroupForm />} />
                   <Route path="/groups/:id" element={<GroupDetail />} />
+                  <Route path="/groups/:id/edit" element={<GroupForm />} />
                   <Route path="/groups/:id/log-session" element={<GroupLogSession />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />

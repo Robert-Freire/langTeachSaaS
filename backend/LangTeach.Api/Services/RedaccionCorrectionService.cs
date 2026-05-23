@@ -609,8 +609,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 continue;
             }
 
-            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} -- una estructura de {result.StructureLevel}. " +
-                              $"Aunque está por encima de tu nivel oficial ({cefr.ToUpperInvariant()}), lo aplicaste correctamente.";
+            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} correctamente: esta estructura le da un nivel superior a tu escritura. Sigue así.";
 
             affirmerTags.Add(new RedaccionCorrectionTagDto(
                 Category: CorrectionTagCategory.MuyBien,

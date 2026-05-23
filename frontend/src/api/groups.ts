@@ -30,6 +30,13 @@ export interface GroupListResponse {
   pageSize: number
 }
 
+export interface GroupFormData {
+  name: string
+  cefrLevel?: string | null
+  description?: string | null
+  isActive: boolean
+}
+
 export async function getGroups(params?: {
   search?: string
   cefrLevel?: string
@@ -46,10 +53,25 @@ export async function getGroup(id: string): Promise<Group> {
   return res.data
 }
 
+export async function createGroup(payload: GroupFormData): Promise<Group> {
+  const res = await apiClient.post<Group>('/api/groups', payload)
+  return res.data
+}
+
+export async function updateGroup(id: string, payload: GroupFormData): Promise<Group> {
+  const res = await apiClient.put<Group>(`/api/groups/${id}`, payload)
+  return res.data
+}
+
+export async function deleteGroup(id: string): Promise<void> {
+  await apiClient.delete(`/api/groups/${id}`)
+}
+
 export async function updateGroupTeachingNotes(id: string, teachingNotes: string | null): Promise<Group> {
   const res = await apiClient.patch<Group>(`/api/groups/${id}/teaching-notes`, { teachingNotes })
   return res.data
 }
+
 
 export async function addGroupMember(groupId: string, studentId: string): Promise<Group> {
   const res = await apiClient.post<Group>(`/api/groups/${groupId}/members`, { studentId })

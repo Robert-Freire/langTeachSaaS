@@ -112,12 +112,12 @@ describe('Groups page', () => {
     expect(screen.getByText('A2.1 Mondays')).toBeInTheDocument()
   })
 
-  it('Add Group button is rendered disabled (creation deferred)', async () => {
+  it('Add Group button is rendered and enabled', async () => {
     vi.mocked(groupsApi.getGroups).mockResolvedValue({ items: [makeGroup()], totalCount: 1, page: 1, pageSize: 100 })
 
     renderPage()
 
     await waitFor(() => expect(screen.getByTestId('add-group-button')).toBeInTheDocument())
-    expect(screen.getByTestId('add-group-button')).toBeDisabled()
+    expect(screen.getByTestId('add-group-button')).not.toBeDisabled()
   })
 })
