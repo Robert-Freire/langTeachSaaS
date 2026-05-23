@@ -135,7 +135,7 @@ public static class ScenarioSeeder
 
     private static async Task WipeAsync(AppDbContext db, Guid teacherId, Guid[] studentIds, DateTime now, ILogger logger)
     {
-        var sessions = await db.SessionLogs.Where(sl => studentIds.Contains(sl.StudentId)).ToListAsync();
+        var sessions = await db.SessionLogs.Where(sl => sl.StudentId.HasValue && studentIds.Contains(sl.StudentId.Value)).ToListAsync();
         db.SessionLogs.RemoveRange(sessions);
 
         var followups = await db.TeacherFollowups.Where(f => f.TeacherId == teacherId).ToListAsync();
