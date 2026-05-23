@@ -248,16 +248,16 @@ public class DashboardService : IDashboardService
                 LastSessionDate = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now
                               && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id))))
+                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
                     .Max(sl => (DateTime?)sl.SessionDate),
                 NextSessionDate = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now
                               && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id))))
+                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
                     .Min(sl => (DateTime?)sl.SessionDate),
                 TotalSessions = _db.SessionLogs.Count(sl => sl.TeacherId == teacherId && !sl.IsDeleted
                               && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id)))),
+                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted)))),
                 CancelledSessionsLast30Days = _db.SessionLogs
                     .Count(sl => sl.TeacherId == teacherId && !sl.IsDeleted
                               && sl.IsCancelled
@@ -265,14 +265,14 @@ public class DashboardService : IDashboardService
                               && sl.SessionDate.Value >= cutoff30Days
                               && sl.SessionDate.Value <= now
                               && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id)))),
+                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted)))),
                 LastHomeworkStatusRaw = _db.SessionLogs
                     .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted
                               && sl.SessionDate.HasValue
                               && sl.SessionDate.Value < now
                               && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable
                               && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id))))
+                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
                     .OrderByDescending(sl => sl.SessionDate)
                     .Select(sl => (int?)sl.PreviousHomeworkStatus)
                     .FirstOrDefault()

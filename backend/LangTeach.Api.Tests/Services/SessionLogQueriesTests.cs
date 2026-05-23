@@ -106,8 +106,11 @@ public class SessionLogQueriesTests : IDisposable
     [Fact]
     public async Task ForStudentIncludingGroups_ExcludesOtherTeachers()
     {
+        // Hardening: student is also a member of the foreign group so the test
+        // actually exercises the teacher filter rather than the membership filter.
         var s = MakeStudent();
         var foreign = MakeGroup(_otherTeacherId);
+        _db.StudentGroups.Add(new StudentGroup { StudentId = s.Id, GroupId = foreign.Id, CreatedAt = DateTime.UtcNow });
         MakeSession(_otherTeacherId, null, foreign.Id, "foreign");
         MakeSession(_teacherId, s.Id, null, "mine");
         _db.SaveChanges();

@@ -23,7 +23,7 @@ public class GroupService : IGroupService
     public async Task<PagedResult<GroupDto>> ListAsync(Guid teacherId, GroupListQuery query, CancellationToken ct = default)
     {
         var page = Math.Max(query.Page, 1);
-        var pageSize = query.PageSize <= 0 ? 20 : query.PageSize;
+        var pageSize = query.PageSize <= 0 ? 20 : Math.Min(query.PageSize, 100);
 
         var q = _db.Groups.Where(g => g.TeacherId == teacherId && !g.IsDeleted);
 
@@ -163,8 +163,17 @@ public class GroupService : IGroupService
                 GroupId = groupId,
                 CreatedAt = DateTime.UtcNow,
             });
-            await _db.SaveChangesAsync(ct);
-            _logger.LogInformation("Student {StudentId} added to Group {GroupId}", studentId, groupId);
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+                _logger.LogInformation("Student {StudentId} added to Group {GroupId}", studentId, groupId);
+            }
+            catch (DbUpdateException ex) when (IsCompositePkViolation(ex))
+            {
+                // Race: a concurrent AddMember inserted the same (StudentId, GroupId) row.
+                // Composite PK violation -- treat as idempotent success.
+                _logger.LogInformation("Concurrent add-member race for Student {StudentId}/Group {GroupId} resolved as idempotent.", studentId, groupId);
+            }
         }
 
         return await GetByIdAsync(teacherId, groupId, ct);
@@ -189,6 +198,11 @@ public class GroupService : IGroupService
 
         return await GetByIdAsync(teacherId, groupId, ct);
     }
+
+    // SQL Server unique-key/PK violation error numbers.
+    private static bool IsCompositePkViolation(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException sql &&
+        (sql.Number == 2627 || sql.Number == 2601);
 
     private static void ValidateCefr(string? cefr)
     {

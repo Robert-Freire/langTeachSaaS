@@ -19,8 +19,9 @@ public static class SessionLogQueries
     public static IQueryable<SessionLog> ForStudentIncludingGroups(
         AppDbContext db, Guid teacherId, Guid studentId)
     {
+        // Exclude soft-deleted groups: matches the convention applied to soft-deleted students.
         var groupIds = db.StudentGroups
-            .Where(sg => sg.StudentId == studentId)
+            .Where(sg => sg.StudentId == studentId && !sg.Group.IsDeleted)
             .Select(sg => sg.GroupId);
 
         return db.SessionLogs

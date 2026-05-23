@@ -29,6 +29,11 @@ public class CreateGroupRequest
     public bool IsActive { get; set; } = true;
 }
 
+/// <remarks>
+/// Full-replace semantics: every field must be included in the request body.
+/// Omitted nullable fields are set to null; omitted IsActive defaults to false
+/// per .NET model binding (clients must send IsActive explicitly).
+/// </remarks>
 public class UpdateGroupRequest
 {
     [Required, MaxLength(100)]
@@ -54,6 +59,10 @@ public class GroupListQuery
     public string? Search { get; set; }
     public string? CefrLevel { get; set; }
     public bool IncludeInactive { get; set; }
+
+    [Range(1, int.MaxValue)]
     public int Page { get; set; } = 1;
+
+    [Range(1, 100)]
     public int PageSize { get; set; } = 20;
 }

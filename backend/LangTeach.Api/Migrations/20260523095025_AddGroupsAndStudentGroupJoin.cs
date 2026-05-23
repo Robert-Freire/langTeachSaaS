@@ -103,6 +103,17 @@ namespace LangTeach.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Refuse rollback when group-targeted sessions exist. Reverting StudentId to
+            // NOT NULL with defaultValue Guid.Empty would corrupt those rows (and break FK
+            // integrity to Students). Operator must back up + manually delete group sessions
+            // before re-running Down.
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT 1 FROM [SessionLogs] WHERE [GroupId] IS NOT NULL)
+                BEGIN
+                    THROW 50000, 'Cannot revert AddGroupsAndStudentGroupJoin: SessionLogs with non-null GroupId exist. Delete or reassign group-targeted sessions first.', 1;
+                END
+            ");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_SessionLogs_Groups_GroupId",
                 table: "SessionLogs");
