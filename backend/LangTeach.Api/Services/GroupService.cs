@@ -40,6 +40,7 @@ public class GroupService : IGroupService
             q = q.Where(g => g.CefrLevel == query.CefrLevel);
 
         var totalCount = await q.CountAsync(ct);
+        var now = DateTime.UtcNow;
 
         var rows = await q
             .OrderBy(g => g.Name)
@@ -48,11 +49,38 @@ public class GroupService : IGroupService
             .Select(g => new
             {
                 Group = g,
-                MemberCount = g.StudentGroups.Count()
+                MemberCount = g.StudentGroups.Count(sg => !sg.Student.IsDeleted),
+                MemberPreview = g.StudentGroups
+                    .Where(sg => !sg.Student.IsDeleted)
+                    .OrderBy(sg => sg.Student.Name)
+                    .Take(4)
+                    .Select(sg => new StudentSummaryDto(sg.Student.Id, sg.Student.Name, sg.Student.CefrLevel))
+                    .ToList(),
+                // Lifecycle filters mirror DashboardService active-students projection
+                // (LastSession excludes soft-deleted; NextSession also excludes cancelled
+                // and unconfirmed drafts).
+                LastSessionDate = (DateTime?)g.SessionLogs
+                    .Where(sl => !sl.IsDeleted && sl.SessionDate != null && sl.SessionDate < now)
+                    .Max(sl => sl.SessionDate),
+                NextSessionDate = (DateTime?)g.SessionLogs
+                    .Where(sl => !sl.IsDeleted
+                              && !sl.IsCancelled
+                              && sl.Status == SessionLogStatus.Confirmed
+                              && sl.SessionDate != null
+                              && sl.SessionDate >= now)
+                    .Min(sl => sl.SessionDate),
             })
             .ToListAsync(ct);
 
-        var items = rows.Select(r => MapToDto(r.Group, r.MemberCount, members: null)).ToList();
+        var items = rows
+            .Select(r => MapToDto(
+                r.Group,
+                r.MemberCount,
+                members: null,
+                memberPreview: r.MemberPreview,
+                lastSessionDate: r.LastSessionDate,
+                nextSessionDate: r.NextSessionDate))
+            .ToList();
 
         return new PagedResult<GroupDto>(items, totalCount, page, pageSize);
     }
@@ -211,7 +239,13 @@ public class GroupService : IGroupService
                 $"Invalid CefrLevel '{cefr}'. Allowed: {string.Join(", ", CefrConstants.AllLevels)}.");
     }
 
-    private static GroupDto MapToDto(Group g, int memberCount, List<StudentSummaryDto>? members) => new(
+    private static GroupDto MapToDto(
+        Group g,
+        int memberCount,
+        List<StudentSummaryDto>? members,
+        List<StudentSummaryDto>? memberPreview = null,
+        DateTime? lastSessionDate = null,
+        DateTime? nextSessionDate = null) => new(
         g.Id,
         g.TeacherId,
         g.Name,
@@ -221,6 +255,9 @@ public class GroupService : IGroupService
         g.IsActive,
         g.CreatedAt,
         g.UpdatedAt,
-        members
+        members,
+        memberPreview,
+        lastSessionDate,
+        nextSessionDate
     );
 }

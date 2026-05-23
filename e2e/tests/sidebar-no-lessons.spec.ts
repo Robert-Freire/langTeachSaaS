@@ -24,7 +24,7 @@ test('sidebar hides Lessons but /lessons route still renders', async ({ browser 
     const labels = (await navLinks.allTextContents()).map(s => s.trim())
 
     expect(labels).not.toContain('Lessons')
-    expect(labels).toEqual(['Dashboard', 'Students', 'Sessions', 'Courses', 'Settings'])
+    expect(labels).toEqual(['Dashboard', 'Students', 'Groups', 'Sessions', 'Courses', 'Settings'])
 
     await page.goto('/lessons')
     await expect(page).toHaveURL(/\/lessons$/, { timeout: NAV_TIMEOUT })

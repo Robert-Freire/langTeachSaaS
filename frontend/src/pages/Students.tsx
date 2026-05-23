@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CEFR_LEVELS } from '@/lib/cefr-colors'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { cn } from '@/lib/utils'
-import { calendarRelativeDay } from '@/utils/formatDate'
+import { getAvatarColor } from '@/lib/avatarColor'
+import { formatRelativeDate } from '@/utils/formatRelativeDate'
 import { getInitials } from '@/utils/nameUtils'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
@@ -20,64 +21,6 @@ import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
 import { buildCreateRequestFromRows, type DrawerRow } from '@/lib/voiceUpdateMerge'
 import { logger } from '@/lib/logger'
 import { TEACHING_CHANNEL_META } from '@/lib/teachingChannelMeta'
-
-// ── Avatar helpers ──────────────────────────────────────────────────────────
-
-const AVATAR_PALETTES = [
-  'bg-indigo-100 text-indigo-700',
-  'bg-violet-100 text-violet-700',
-  'bg-sky-100 text-sky-700',
-  'bg-teal-100 text-teal-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-orange-100 text-orange-700',
-]
-
-function getAvatarColor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
-  return AVATAR_PALETTES[hash % AVATAR_PALETTES.length]
-}
-
-// ── Date formatting ─────────────────────────────────────────────────────────
-
-function formatRelativeDate(dateStr: string | null | undefined, showTime = false): string {
-  if (!dateStr) return '—'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return '—'
-
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  const diffDays = Math.round((today.getTime() - targetDay.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) {
-    // Future dates — relativeTime returns 'today' for these, so handle locally
-    const futureDays = Math.abs(diffDays)
-    if (showTime) {
-      const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      if (futureDays === 1) return `Tomorrow ${t}`
-      if (futureDays <= 6) return `${date.toLocaleDateString('en-GB', { weekday: 'short' })} ${t}`
-      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-    }
-    if (futureDays === 1) return 'Tomorrow'
-    if (futureDays <= 6) return `in ${futureDays}d`
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  }
-
-  // Past / today — delegate calendar-day bucketing to shared util
-  const base = calendarRelativeDay(dateStr)
-  if (base === 'today') {
-    if (showTime) {
-      const t = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      return `Today ${t}`
-    }
-    return 'Today'
-  }
-  if (base === 'yesterday') return 'Yesterday'
-  return base.charAt(0).toUpperCase() + base.slice(1)
-}
 
 // ── Signal badges ───────────────────────────────────────────────────────────
 

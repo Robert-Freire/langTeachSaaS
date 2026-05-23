@@ -10,6 +10,7 @@ import AppShell from './components/AppShell'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import Students from './pages/Students'
+import Groups from './pages/Groups'
 import StudentForm from './pages/StudentForm'
 import Lessons from './pages/Lessons'
 import LessonNew from './pages/LessonNew'
@@ -70,6 +71,7 @@ export default function App() {
                   <Route path="/students/:id/edit" element={<StudentForm />} />
                   <Route path="/students/:id/log-session" element={<LogSession />} />
                   <Route path="/students/:id/sessions/:sessionId/edit" element={<LogSession />} />
+                  <Route path="/groups" element={<Groups />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/students/:id/redacciones/:correctionId" element={<RedaccionDetail />} />

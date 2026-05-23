@@ -168,4 +168,108 @@ public class GroupServiceTests : IDisposable
         list.Items.Should().HaveCount(1);
         list.Items[0].Name.Should().Be("Mine");
     }
+
+    [Fact]
+    public async Task List_IncludesMemberPreviewCappedAt4()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "Big" });
+        var students = Enumerable.Range(0, 6)
+            .Select(i => SeedStudent(_teacherId, $"Student{i:D2}"))
+            .ToList();
+        foreach (var s in students)
+            await _sut.AddMemberAsync(_teacherId, group.Id, s.Id);
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        list.Items.Should().HaveCount(1);
+        var dto = list.Items[0];
+        dto.MemberCount.Should().Be(6);
+        dto.MemberPreview.Should().NotBeNull();
+        dto.MemberPreview!.Should().HaveCount(4);
+        dto.MemberPreview.Select(m => m.Name).Should().BeInAscendingOrder();
+    }
+
+    [Fact]
+    public async Task List_LastAndNextSessionDateAggregateAroundNow()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var now = DateTime.UtcNow;
+
+        _db.SessionLogs.AddRange(
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-10), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-2), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(3), CreatedAt = now, UpdatedAt = now },
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(7), CreatedAt = now, UpdatedAt = now }
+        );
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeCloseTo(now.AddDays(-2), TimeSpan.FromSeconds(1));
+        dto.NextSessionDate.Should().BeCloseTo(now.AddDays(3), TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task List_ExcludesSoftDeletedStudentsFromMemberAggregates()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var s1 = SeedStudent(_teacherId, "Alice");
+        var s2 = SeedStudent(_teacherId, "Bob");
+        var s3 = SeedStudent(_teacherId, "Carol");
+        await _sut.AddMemberAsync(_teacherId, group.Id, s1.Id);
+        await _sut.AddMemberAsync(_teacherId, group.Id, s2.Id);
+        await _sut.AddMemberAsync(_teacherId, group.Id, s3.Id);
+
+        // Soft-delete Bob; he should disappear from MemberCount and MemberPreview.
+        s2.IsDeleted = true;
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.MemberCount.Should().Be(2);
+        dto.MemberPreview!.Select(m => m.Name).Should().BeEquivalentTo(new[] { "Alice", "Carol" });
+    }
+
+    [Fact]
+    public async Task List_LastAndNextSession_IgnoreDeletedCancelledAndDraft()
+    {
+        var group = await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "G" });
+        var now = DateTime.UtcNow;
+
+        _db.SessionLogs.AddRange(
+            // Past session that is soft-deleted -- must not count as Last.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-1), IsDeleted = true, Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Older past confirmed session -- this is the real Last.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(-5), Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Future cancelled session -- must not count as Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(1), IsCancelled = true, Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now },
+            // Future draft session -- must not count as Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(2), Status = SessionLogStatus.Draft, CreatedAt = now, UpdatedAt = now },
+            // Future confirmed session -- this is the real Next.
+            new SessionLog { Id = Guid.NewGuid(), TeacherId = _teacherId, GroupId = group.Id, SessionDate = now.AddDays(5), Status = SessionLogStatus.Confirmed, CreatedAt = now, UpdatedAt = now }
+        );
+        await _db.SaveChangesAsync();
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeCloseTo(now.AddDays(-5), TimeSpan.FromSeconds(1));
+        dto.NextSessionDate.Should().BeCloseTo(now.AddDays(5), TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task List_LastAndNextSessionAreNullWhenNoSessions()
+    {
+        await _sut.CreateAsync(_teacherId, new CreateGroupRequest { Name = "Empty" });
+
+        var list = await _sut.ListAsync(_teacherId, new GroupListQuery());
+
+        var dto = list.Items.Single();
+        dto.LastSessionDate.Should().BeNull();
+        dto.NextSessionDate.Should().BeNull();
+        dto.MemberPreview.Should().NotBeNull();
+        dto.MemberPreview!.Should().BeEmpty();
+    }
 }
