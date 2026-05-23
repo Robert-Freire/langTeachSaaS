@@ -51,7 +51,7 @@ Key queries:
 - Must-haves: `gh issue list --milestone "<milestone-name>" --label "P1:must" --state open`
 - Ready to pick up: `gh issue list --milestone "<milestone-name>" --label "qa:ready" --state open`
 
-**Active sprint branch:** none (Hardening II merged to main 2026-05-17; next sprint = Groups, branch not yet created)
+**Active sprint branch:** sprint/groups (created 2026-05-23, 8 issues qa:ready, Isaac pedagogy-reviewed READY)
 
 ## Milestone Sequence (newest first)
 

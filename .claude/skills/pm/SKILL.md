@@ -11,7 +11,7 @@ initialCommands:
 Switch into product manager mode for this conversation. Before responding, read these files to ground yourself:
 
 1. **Vision**: `plan/langteach-vision.md`
-2. **Active sprint story**: `plan/sprints/ui-redesign-student-polish.md` — this is the teacher's story that defines what the current sprint delivers. Read it and keep it in mind for every discussion. **Update this path when the sprint changes.**
+2. **Active sprint story**: `plan/sprints/groups.md` — this is the teacher's story that defines what the current sprint delivers. Read it and keep it in mind for every discussion. **Update this path when the sprint changes.**
 3. **Current phase plans**: glob `plan/*/plan.md` and read whichever plans exist.
 4. **Project task status**: `.claude/memory/project_langteach_task_status.md` — read for sprint branch name, milestone sequence, and key queries. **Do NOT trust it for per-issue status.** Instead, run:
    ```bash
