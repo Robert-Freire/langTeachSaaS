@@ -8,47 +8,20 @@ Requires:
   - ODBC Driver 18 for SQL Server
 """
 
+import sys
 import uuid
 from datetime import datetime, timezone, date
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pytest
-import pyodbc
-
-SCRIPTS_DIR = Path(__file__).resolve().parent.parent
-PROJECT_ROOT = SCRIPTS_DIR.parent
-ENV_PATH = PROJECT_ROOT / ".env"
-LOCAL_SERVER = "tcp:127.0.0.1,1434"
-LOCAL_DATABASE = "LangTeach"
-
-
-def get_sa_password():
-    if not ENV_PATH.exists():
-        raise RuntimeError(f".env not found at {ENV_PATH}")
-    for line in ENV_PATH.read_text().splitlines():
-        if line.startswith("SA_PASSWORD="):
-            return line.split("=", 1)[1].strip()
-    raise RuntimeError("SA_PASSWORD not found in .env")
-
-
-def make_connection():
-    pw = get_sa_password()
-    conn_str = (
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-        f"SERVER={LOCAL_SERVER};"
-        f"DATABASE={LOCAL_DATABASE};"
-        f"UID=sa;"
-        f"PWD={pw};"
-        f"TrustServerCertificate=yes;"
-    )
-    conn = pyodbc.connect(conn_str)
-    conn.autocommit = False
-    return conn
+from db_utils import connect_local
 
 
 @pytest.fixture(scope="session")
 def db_conn():
-    conn = make_connection()
+    conn = connect_local()
     yield conn
     conn.close()
 
