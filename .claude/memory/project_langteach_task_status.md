@@ -30,6 +30,11 @@ Procedure updates landed mid-sprint (now in main):
 - project_azure_environments.md memory: single Azure environment rg-langteach-dev IS production (no rg-langteach-prod)
 
 
+## Deferred to sprint AFTER Groups
+
+- #1324 (P2:should) — BirthYear field stores age, not year of birth. Data-integrity time bomb. File from 2026-05-23 PM session on Jordi's production data.
+- #1325 (P2:should) — research spike: analyse Jordi's 132 voice notes + 583 session logs to redesign student profile fields. UI Redesign sprint (#16) fields have near-zero adoption.
+
 ## Next Sprint: Groups
 
 Epic: #1238 "EPIC: Groups -- teacher creates and manages student groups for academy classes"
