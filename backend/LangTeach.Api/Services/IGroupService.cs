@@ -13,4 +13,5 @@ public interface IGroupService
     Task<GroupDto?> RemoveMemberAsync(Guid teacherId, Guid groupId, Guid studentId, CancellationToken ct = default);
     Task<GroupTeachingIdeaDto?> AppendTeachingIdeaAsync(Guid teacherId, Guid groupId, string text, CancellationToken ct = default);
     Task<GroupDto?> PatchTeachingNotesAsync(Guid teacherId, Guid groupId, string? notes, CancellationToken ct = default);
+    Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default);
 }

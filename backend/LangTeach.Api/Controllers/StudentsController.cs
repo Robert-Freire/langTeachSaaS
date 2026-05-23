@@ -23,6 +23,7 @@ public class StudentsController : ControllerBase
     private readonly ILessonNoteService _lessonNoteService;
     private readonly IProfileService _profileService;
     private readonly IStudentProfileExtractionService _extractionService;
+    private readonly IGroupService _groupService;
     private readonly ILogger<StudentsController> _logger;
 
     public StudentsController(
@@ -30,12 +31,14 @@ public class StudentsController : ControllerBase
         ILessonNoteService lessonNoteService,
         IProfileService profileService,
         IStudentProfileExtractionService extractionService,
+        IGroupService groupService,
         ILogger<StudentsController> logger)
     {
         _studentService = studentService;
         _lessonNoteService = lessonNoteService;
         _profileService = profileService;
         _extractionService = extractionService;
+        _groupService = groupService;
         _logger = logger;
     }
 
@@ -426,5 +429,14 @@ public class StudentsController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/groups")]
+    public async Task<IActionResult> GetGroups(Guid id, CancellationToken cancellationToken)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var groups = await _groupService.GetGroupsForStudentAsync(teacherId, id, cancellationToken);
+        return Ok(groups);
     }
 }

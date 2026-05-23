@@ -7,6 +7,7 @@ import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
 import { listSessions } from '@/api/sessionLogs'
+import { getStudentGroups } from '@/api/groups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
@@ -56,6 +57,22 @@ export default function StudentDetail() {
     queryFn: () => listSessions(id!),
     enabled: !!id,
   })
+
+  const { data: studentGroups = [] } = useQuery({
+    queryKey: ['student-groups', id],
+    queryFn: () => getStudentGroups(id!),
+    enabled: !!id,
+  })
+
+  const sessionTypeFilter = (searchParams.get('sessionType') ?? 'all') as 'all' | '1-to-1' | 'groups'
+  function handleSessionTypeFilterChange(v: 'all' | '1-to-1' | 'groups') {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (v === 'all') next.delete('sessionType')
+      else next.set('sessionType', v)
+      return next
+    })
+  }
 
   const nextSession = sessions
     .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled && s.statusName === 'Confirmed')
@@ -274,6 +291,7 @@ export default function StudentDetail() {
         onVoiceUpdateClick={() => setVoiceFlow('recording')}
         voiceFlowActive={voiceFlow !== 'idle'}
         onChannelChange={() => queryClient.invalidateQueries({ queryKey: ['student', id] })}
+        groups={studentGroups}
       />
 
       {voiceFlow === 'recording' && (
@@ -362,7 +380,11 @@ export default function StudentDetail() {
       )}
 
       {activeTab === 'sessions' && (
-        <SessionHistoryTab studentId={student.id} />
+        <SessionHistoryTab
+          studentId={student.id}
+          sessionTypeFilter={sessionTypeFilter}
+          onSessionTypeFilterChange={handleSessionTypeFilterChange}
+        />
       )}
 
       {activeTab === 'redacciones' && (

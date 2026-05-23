@@ -7,7 +7,10 @@ export interface TopicTag {
 
 export interface SessionLog {
   id: string
-  studentId: string
+  studentId: string | null
+  groupId: string | null
+  targetType: 'student' | 'group'
+  targetName: string
   sessionDate: string | null
   plannedContent: string | null
   actualContent: string | null
@@ -123,6 +126,13 @@ export async function getSession(studentId: string, sessionId: string): Promise<
 
 export async function listSessions(studentId: string): Promise<SessionLog[]> {
   const res = await apiClient.get<SessionLog[]>(`/api/students/${studentId}/sessions`)
+  return res.data
+}
+
+export async function listSessionsIncludingGroups(studentId: string): Promise<SessionLog[]> {
+  const res = await apiClient.get<SessionLog[]>(`/api/students/${studentId}/sessions`, {
+    params: { includeGroups: true },
+  })
   return res.data
 }
 

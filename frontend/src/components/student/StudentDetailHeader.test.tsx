@@ -115,6 +115,9 @@ describe('StudentDetailHeader', () => {
     const session: SessionLog = {
       id: 'sess-1',
       studentId: 'student-1',
+      groupId: null,
+      targetType: 'student',
+      targetName: 'Test Student',
       sessionDate: future.toISOString(),
       title: null,
       plannedContent: null,

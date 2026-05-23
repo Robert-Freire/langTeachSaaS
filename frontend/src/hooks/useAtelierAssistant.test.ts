@@ -553,7 +553,7 @@ describe('useAtelierAssistant', () => {
   })
 
   it('apply: session proposal with sessionId "new" creates a session then applies', async () => {
-    const fakeSession = { id: 'created-123', studentId: 'student-1', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    const fakeSession = { id: 'created-123', studentId: 'student-1', groupId: null, targetType: 'student' as const, targetName: 'Test', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
     mockCreateSession.mockResolvedValueOnce(fakeSession)
     mockApplySession.mockResolvedValueOnce(undefined)
     const onAfterSessionApply = vi.fn()
@@ -571,7 +571,7 @@ describe('useAtelierAssistant', () => {
   })
 
   it('apply: uses extractedSessionDate from propose response when creating new session', async () => {
-    const fakeSession = { id: 'created-789', studentId: 'student-1', sessionDate: '2026-05-10T13:00', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    const fakeSession = { id: 'created-789', studentId: 'student-1', groupId: null, targetType: 'student' as const, targetName: 'Test', sessionDate: '2026-05-10T13:00', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
     mockCreateSession.mockResolvedValueOnce(fakeSession)
     mockApplySession.mockResolvedValueOnce(undefined)
 
@@ -586,7 +586,7 @@ describe('useAtelierAssistant', () => {
 
   it('applyAll with sessionId "new" reuses the same created session for all session proposals', async () => {
     const sessionProp2 = { id: 'p4', type: 'session' as const, field: 'generalNotes', label: 'Notes', oldValue: null, newValue: 'Reviewed past perfect' }
-    const fakeSession = { id: 'created-456', studentId: 'student-1', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
+    const fakeSession = { id: 'created-456', studentId: 'student-1', groupId: null, targetType: 'student' as const, targetName: 'Test', sessionDate: '2026-05-09', title: 'Session', isCancelled: false, createdAt: '', updatedAt: '', plannedContent: null, actualContent: null, homeworkAssigned: null, previousHomeworkStatus: 0, previousHomeworkStatusName: 'NotApplicable' as const, nextSessionTopics: null, generalNotes: null, levelReassessmentSkill: null, levelReassessmentLevel: null, linkedLessonId: null, topicTags: '[]', status: 1, statusName: 'Confirmed' as const, mentionedDifficultyPairs: '[]', suggestedDifficulties: '[]', duration: null, hasVoiceNote: false }
     mockCreateSession.mockResolvedValueOnce(fakeSession)
     mockApplySession.mockResolvedValue(undefined)
 
