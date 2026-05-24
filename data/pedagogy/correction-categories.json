@@ -27,7 +27,7 @@
         },
         {
           "text": "Me gusta el verano porque hace calor y podemos ir a la playa con mi familia. Siempre vamos a la costa y comemos paella juntos. Es una tradición que me encanta mucho. Pero hay un problema muy grave en el mundo hoy en día. El cambio climático afecta a todos los países y debemos actuar urgentemente. Los científicos dicen que necesitamos reducir las emisiones.",
-          "note": "two distinct ideas (summer holidays, climate change) run together without a paragraph break; at B1+ this would lose marks in an EOI rubric; spannedText = first words of the climate-change sentence, correctedForm = \"¶\"",
+          "note": "two distinct ideas (summer holidays, climate change) run together without a paragraph break; at B1+ this would lose marks in an EOI rubric; spannedText = \"Pero hay un problema\" (first words of the sentence opening the climate-change topic), correctedForm = \"¶\". Note: \"Pero\" here is also a potential connector-level C issue (abrupt topic change with a contrastive connector rather than a topic-introducing phrase); the paragraph-break tag and any connector-level tag are independent findings, not redundant.",
           "label": "C"
         }
       ]
@@ -121,6 +121,6 @@
     "A literal translation from the student's L1 is L, NEVER G.",
     "A missing or wrong connector is C, NEVER G.",
     "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G.",
-    "Do NOT flag paragraph breaks at A1 level, or when the text is already reasonably paragraphed. Do NOT flag a paragraph break for stylistic preference or slightly dense structure -- only flag when there is a clear, unambiguous thematic shift that would lose EOI marks. (Sentence-count threshold is defined in the Paragraph-break subtype above.)"
+    "Do NOT flag paragraph breaks below B1 (i.e. not at A1 or A2), or when the text is already reasonably paragraphed. Do NOT flag a paragraph break for stylistic preference or slightly dense structure -- only flag when there is a clear, unambiguous thematic shift that would lose EOI marks. (Sentence-count threshold is defined in the Paragraph-break subtype above.)"
   ]
 }
