@@ -236,6 +236,17 @@ public class RedaccionCorrectionPromptBuilderTests
         req.SystemPrompt.Should().Contain("¶", "correctedForm for paragraph-break must be the pilcrow symbol");
     }
 
+    [Fact]
+    public void Build_SystemPromptContainsParagraphBreakOverflagGuard()
+    {
+        // Issue #1350: the anti-pattern rule must prevent the model from flagging A1 texts,
+        // short texts, and already-paragraphed texts -- primary defence against over-flagging.
+        var req = _builder.BuildWithTool(MakeCtx()).Request;
+
+        req.SystemPrompt.Should().Contain("4 sentences or fewer", "paragraph-break anti-pattern must include the sentence-count guard");
+        req.SystemPrompt.Should().Contain("reasonably paragraphed", "paragraph-break anti-pattern must forbid flagging already-paragraphed texts");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx() =>
         new("Texto.", null, Array.Empty<string>(), null);
 }
