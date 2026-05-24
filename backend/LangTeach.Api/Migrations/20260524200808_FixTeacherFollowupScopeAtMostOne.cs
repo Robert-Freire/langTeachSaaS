@@ -27,6 +27,11 @@ namespace LangTeach.Api.Migrations
                 name: "CK_TeacherFollowups_Scope",
                 table: "TeacherFollowups");
 
+            // Reverting to XOR re-forbids teacher-level (unscoped) followups. If any rows
+            // with both StudentId and GroupId NULL exist, this AddCheckConstraint fails
+            // (SQL 547) by design: an "exactly-one" invariant cannot be restored once
+            // "neither" rows legitimately exist. Roll back only against data predating such
+            // rows. See #1356.
             migrationBuilder.AddCheckConstraint(
                 name: "CK_TeacherFollowups_Scope",
                 table: "TeacherFollowups",
