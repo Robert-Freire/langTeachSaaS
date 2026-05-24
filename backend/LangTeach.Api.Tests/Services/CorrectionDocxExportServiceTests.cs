@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FluentAssertions;
+using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services.CorrectionDocxExport;
 
@@ -27,7 +28,7 @@ public class CorrectionDocxExportServiceTests
     {
         // "ablar" missing 'h' at index 4 -> O (Ortografía, emerald-500 10B981, DS §11.16)
         const string text = "Hoy ablar con mi amigo.";
-        var tag = new CorrectionTagDto("O", "ablar", 4, 9, "Falta la 'h'.", "hablar", 0);
+        var tag = new CorrectionTagDto("O", "ablar", 4, 9, "Falta la 'h'.", "hablar", 0, CorrectionTagFilterStatus.Kept);
         var detail = MakeDetail(text, [tag]);
 
         var bytes = _svc.Generate(detail, "Gavin");
@@ -63,7 +64,7 @@ public class CorrectionDocxExportServiceTests
     {
         const string text = "Eso está muy bien escrito.";
         var idx = text.IndexOf("muy bien", StringComparison.Ordinal);
-        var tag = new CorrectionTagDto("MuyBien", "muy bien", idx, idx + "muy bien".Length, null, null, 0);
+        var tag = new CorrectionTagDto("MuyBien", "muy bien", idx, idx + "muy bien".Length, null, null, 0, CorrectionTagFilterStatus.Kept);
         var detail = MakeDetail(text, [tag]);
 
         var bytes = _svc.Generate(detail, "Sofía");
@@ -162,7 +163,8 @@ public class CorrectionDocxExportServiceTests
                 EndIndex: i * 8 + 7,
                 Explanation: "Explicación corta del error.",
                 CorrectedForm: "palabra",
-                OrderIndex: i))
+                OrderIndex: i,
+                FilterStatus: CorrectionTagFilterStatus.Kept))
             .ToList();
         var detail = MakeDetail(words, tags, title: new string('a', 50), prompt: new string('p', 200));
 
@@ -176,7 +178,7 @@ public class CorrectionDocxExportServiceTests
     {
         // Defensive: shouldn't happen post-validation, but the export must not 500.
         const string text = "Texto corto.";
-        var tag = new CorrectionTagDto("G", "fuera", 100, 105, "x", "y", 0);
+        var tag = new CorrectionTagDto("G", "fuera", 100, 105, "x", "y", 0, CorrectionTagFilterStatus.Kept);
         var detail = MakeDetail(text, [tag]);
 
         var bytes = _svc.Generate(detail, "Test");
@@ -195,7 +197,7 @@ public class CorrectionDocxExportServiceTests
         const string text = "Ojalá vengan todos mis amigos a la fiesta.";
         var idx = text.IndexOf("vengan", StringComparison.Ordinal);
         var explanation = "¡Bien hecho! Usaste presente de subjuntivo correctamente: esta estructura le da un nivel superior a tu escritura. Sigue así.";
-        var tag = new CorrectionTagDto("MuyBien", "vengan", idx, idx + "vengan".Length, explanation, null, 0);
+        var tag = new CorrectionTagDto("MuyBien", "vengan", idx, idx + "vengan".Length, explanation, null, 0, CorrectionTagFilterStatus.Kept);
         var detail = MakeDetail(text, [tag]);
 
         var bytes = _svc.Generate(detail, "Ana");
@@ -213,7 +215,7 @@ public class CorrectionDocxExportServiceTests
         // Filter-path MuyBien (Explanation = null) must NOT trigger a Logros section.
         const string text = "Eso está muy bien escrito aquí.";
         var idx = text.IndexOf("muy bien", StringComparison.Ordinal);
-        var tag = new CorrectionTagDto("MuyBien", "muy bien", idx, idx + "muy bien".Length, null, null, 0);
+        var tag = new CorrectionTagDto("MuyBien", "muy bien", idx, idx + "muy bien".Length, null, null, 0, CorrectionTagFilterStatus.Kept);
         var detail = MakeDetail(text, [tag]);
 
         var bytes = _svc.Generate(detail, "Test");
@@ -221,6 +223,50 @@ public class CorrectionDocxExportServiceTests
         var combined = string.Concat(texts);
 
         combined.Should().NotContain("Logros destacados", "filter-path MuyBien (null Explanation) must not produce a Logros section");
+    }
+
+    [Fact]
+    public void Generate_StudentView_OmitsAboveLevelErrors()
+    {
+        // A2 student: "habría" is an above-level (removed) G error; "ablar" is in-level (O).
+        const string text = "Hoy ablar; habría preferido salir.";
+        var aIdx = text.IndexOf("ablar", StringComparison.Ordinal);
+        var hIdx = text.IndexOf("habría", StringComparison.Ordinal);
+        var inLevel = new CorrectionTagDto("O", "ablar", aIdx, aIdx + 5, "Falta la 'h'.", "hablar", 0, CorrectionTagFilterStatus.Kept);
+        var aboveLevel = new CorrectionTagDto("G", "habría", hIdx, hIdx + 6, "Condicional avanzado.", "habria", 1, CorrectionTagFilterStatus.Removed);
+        var detail = MakeDetail(text, [inLevel, aboveLevel]);
+
+        // Default (student) export.
+        var bytes = _svc.Generate(detail, "Ana");
+        var combined = string.Concat(ReadAllRuns(bytes).Texts);
+
+        combined.Should().Contain("[O]", "in-level error stays in the student handout");
+        combined.Should().NotContain("Errores por encima del nivel", "student handout has no above-level section");
+        combined.Should().NotContain("Condicional avanzado.", "above-level explanation must not reach the student");
+    }
+
+    [Fact]
+    public void Generate_TeacherView_IncludesAboveLevelErrorsInDedicatedSection()
+    {
+        const string text = "Hoy ablar; habría preferido salir.";
+        var aIdx = text.IndexOf("ablar", StringComparison.Ordinal);
+        var hIdx = text.IndexOf("habría", StringComparison.Ordinal);
+        var inLevel = new CorrectionTagDto("O", "ablar", aIdx, aIdx + 5, "Falta la 'h'.", "hablar", 0, CorrectionTagFilterStatus.Kept);
+        var aboveLevel = new CorrectionTagDto("G", "habría", hIdx, hIdx + 6, "Condicional avanzado.", "habria", 1, CorrectionTagFilterStatus.Removed);
+        var detail = MakeDetail(text, [inLevel, aboveLevel]);
+
+        var bytes = _svc.Generate(detail, "Ana", includeAboveLevel: true);
+        var (texts, runs) = ReadAllRuns(bytes);
+        var combined = string.Concat(texts);
+
+        combined.Should().Contain("[O]", "in-level error still present");
+        combined.Should().Contain("Errores por encima del nivel", "teacher view has the dedicated above-level section");
+        combined.Should().Contain("Condicional avanzado.", "above-level explanation appears for the teacher");
+        combined.Should().Contain("N1.", "above-level errors are numbered distinctly (N-prefixed)");
+
+        // The above-level span carries a dotted underline (distinct from in-level solid).
+        var habriaRun = runs[texts.FindIndex(t => t == "habría")];
+        habriaRun.RunProperties!.Underline!.Val!.Value.Should().Be(UnderlineValues.Dotted);
     }
 
     private static CorrectionDetailDto MakeDetail(

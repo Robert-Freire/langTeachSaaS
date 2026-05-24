@@ -163,7 +163,8 @@ public class CorrectionStaleRecoveryServiceTests : IDisposable
                 SpannedText TEXT NOT NULL,
                 Explanation TEXT,
                 CorrectedForm TEXT,
-                OrderIndex INTEGER NOT NULL
+                OrderIndex INTEGER NOT NULL,
+                FilterStatus TEXT NOT NULL DEFAULT 'kept'
             );
             """;
         cmd.ExecuteNonQuery();

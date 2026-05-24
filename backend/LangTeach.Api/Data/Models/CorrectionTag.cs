@@ -12,5 +12,10 @@ public class CorrectionTag
     public string? CorrectedForm { get; set; }
     public int OrderIndex { get; set; }
 
+    // Whether the level filter kept this tag in the student-facing view or removed it as
+    // above the student's CEFR level. Removed tags are persisted (not discarded) so the
+    // teacher can opt into an all-errors view. Default "kept" backfills pre-#1351 rows.
+    public string FilterStatus { get; set; } = CorrectionTagFilterStatus.Kept;
+
     public Correction Correction { get; set; } = null!;
 }
