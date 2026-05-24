@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.AI;
 
@@ -23,24 +24,16 @@ public class RedaccionScopeAffirmerPromptBuilder
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<RedaccionScopeAffirmerPromptBuilder> _logger;
 
-    // Maps each CEFR level to the next level whose grammarInScope defines the minimum threshold.
-    // C2 is absent: callers must skip ScopeAffirmer for C2 students.
-    public static readonly IReadOnlyDictionary<string, string> NextLevel =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["A1"] = "A2",
-            ["A2"] = "B1",
-            ["B1"] = "B2",
-            ["B2"] = "C1",
-            ["C1"] = "C2",
-        };
+    private readonly PassConfig _affirmerConfig;
 
     public RedaccionScopeAffirmerPromptBuilder(
         IPedagogyConfigService pedagogy,
-        ILogger<RedaccionScopeAffirmerPromptBuilder> logger)
+        ILogger<RedaccionScopeAffirmerPromptBuilder> logger,
+        IOptions<CorrectionPassOptions>? options = null)
     {
         _pedagogy = pedagogy;
         _logger = logger;
+        _affirmerConfig = options?.Value.ScopeAffirmer ?? new PassConfig { Model = "haiku", MaxTokens = 4096 };
     }
 
     // Model: Haiku (enrichment pass; low stakes, grounded by curriculum JSON).
@@ -55,7 +48,8 @@ public class RedaccionScopeAffirmerPromptBuilder
             "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel} textLength={TextLength}",
             studentCefr, nextCefr, studentText.Length);
 
-        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 4096, Temperature: 0), ToolDefinition);
+        var model = RedaccionCorrectionPromptBuilder.ParseModel(_affirmerConfig.Model);
+        return (new ClaudeRequest(SystemPrompt, user, model, MaxTokens: _affirmerConfig.MaxTokens, Temperature: _affirmerConfig.Temperature), ToolDefinition);
     }
 
     public static readonly ClaudeToolDefinition ToolDefinition = new(

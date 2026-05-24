@@ -166,9 +166,9 @@ public class SectionProfileService : ISectionProfileService
         var profile = GetProfile(sectionType);
         if (profile is null) return null;
         var level = NormalizeLevel(cefrLevel);
-        if (profile.Levels.TryGetValue(level, out var lp))
+        if (profile.Levels.TryGetValue(level, out var lp) && lp.ClosingConstraint is not null)
             return lp.ClosingConstraint;
-        return null;
+        return profile.SharedClosingConstraint;
     }
 
     public string? GetSharedGuidance(string sectionType) =>

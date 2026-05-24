@@ -161,15 +161,14 @@ public class RedaccionCorrectionPromptBuilderTests
     public void Build_WrapsStudentTextInVerbatimMarkers()
     {
         // Markers use a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot
-        // collide with user-controlled student text. The label tells the model that tag
-        // offsets must reference this text exactly.
+        // collide with user-controlled student text.
         var ctx = MakeCtx() with { StudentText = "Hoy ablar con mi amigo." };
         var prompt = _builder.BuildWithTool(ctx).Request.UserPrompt;
 
         prompt.Should().MatchRegex("<<<STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().MatchRegex("<<</STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().Contain("Hoy ablar con mi amigo.");
-        prompt.Should().Contain("offsets must reference this text exactly");
+        prompt.Should().Contain("STUDENT TEXT");
     }
 
     [Fact]

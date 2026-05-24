@@ -205,7 +205,7 @@
         "Grammatical gender",
         "Similar verb system"
       ],
-      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). When a Portuguese student makes a ser/estar error, flag it as a Spanish grammar error and provide a standard correction; do not add an L1 contrastive explanation, as this is not an L1 interference point for Portuguese speakers.",
+      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). When a Portuguese student makes a ser/estar error, flag it normally as a G error with a standard Spanish grammar correction. Do not add an L1 contrastive explanation for ser/estar -- this is not an L1 interference point. Suppress only the contrastive note; never suppress the error flag itself.",
       "contrastivePatterns": [
         {
           "pattern": "false-cognates",

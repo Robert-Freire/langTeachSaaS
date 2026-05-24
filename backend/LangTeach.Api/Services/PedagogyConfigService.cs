@@ -28,6 +28,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly FrozenSet<string> _difficultySeverities;
     private readonly CorrectionCategoriesFile _correctionCategories;
     private readonly Dictionary<string, string> _correctionCalibration;
+    private readonly AlwaysKeepGrammarRulesFile _alwaysKeepRules;
     public PromptFragmentsConfig PromptFragments { get; }
     public ProposalFieldsConfig ProposalFields { get; }
     public IntentTriggersConfig IntentTriggers { get; }
@@ -145,6 +146,7 @@ public class PedagogyConfigService : IPedagogyConfigService
         var calibrationFile = LoadJson<CorrectionCalibrationFile>(assembly, "LangTeach.Api.Pedagogy.correction-calibration.json");
         _correctionCalibration = new Dictionary<string, string>(calibrationFile.CefrCalibration, StringComparer.OrdinalIgnoreCase);
         ValidateCorrectionCalibration(_correctionCalibration);
+        _alwaysKeepRules = LoadJson<AlwaysKeepGrammarRulesFile>(assembly, "LangTeach.Api.Correction.always-keep-grammar-rules.json");
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -244,10 +246,9 @@ public class PedagogyConfigService : IPedagogyConfigService
         var normalLevel = NormalizeLevel(level);
         if (!_cefrRules.TryGetValue(normalLevel, out var rule))
             return new GrammarScope([], []);
-        var inScope = rule.GrammarFocusTargets is { Length: > 0 }
-            ? rule.GrammarFocusTargets
-            : rule.GrammarInScope;
-        return new GrammarScope(inScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling);
+        var hasFocusTargets = rule.GrammarFocusTargets is { Length: > 0 };
+        var inScope = hasFocusTargets ? rule.GrammarFocusTargets! : rule.GrammarInScope;
+        return new GrammarScope(inScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling, hasFocusTargets);
     }
 
     public GuidedWritingGuidance GetGuidedWritingGuidance(string level)
@@ -480,6 +481,18 @@ public class PedagogyConfigService : IPedagogyConfigService
 
     public string? GetCorrectionCalibrationCue(string level) =>
         _correctionCalibration.TryGetValue(NormalizeLevel(level), out var cue) ? cue : null;
+
+    private static readonly string[] CefrOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+    public string? GetNextLevel(string cefrLevel)
+    {
+        var normalized = NormalizeLevel(cefrLevel);
+        var idx = Array.IndexOf(CefrOrder, normalized);
+        return idx >= 0 && idx < CefrOrder.Length - 1 ? CefrOrder[idx + 1] : null;
+    }
+
+    public IReadOnlyList<AlwaysKeepGrammarTopic> GetAlwaysKeepTopics() =>
+        _alwaysKeepRules.AlwaysKeepTopics;
 
     // --- Private helpers ---
 

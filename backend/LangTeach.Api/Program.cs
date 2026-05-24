@@ -214,6 +214,8 @@ builder.Services.AddOptions<CorrectionWorkerOptions>()
     .Bind(builder.Configuration.GetSection(CorrectionWorkerOptions.SectionName))
     .Validate(o => o.WorkerConcurrency >= 1, "Correction:WorkerConcurrency must be at least 1")
     .ValidateOnStart();
+builder.Services.Configure<CorrectionPassOptions>(
+    builder.Configuration.GetSection(CorrectionPassOptions.SectionName));
 builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
 builder.Services.AddHostedService<CorrectionWorker>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
