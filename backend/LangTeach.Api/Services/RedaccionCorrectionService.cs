@@ -50,7 +50,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (correction.Status == CorrectionStatus.Pendiente)
             throw new CorrectionInvalidStateException("no_student_text",
                 "Cannot correct a redacción before student text is provided.");
-        if (correction.Status == CorrectionStatus.Corrigiendo)
+        if (correction.Status == CorrectionStatus.Corrigiendo || correction.Status == CorrectionStatus.Encolada)
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         if (correction.Status == CorrectionStatus.Corregida)
             throw new CorrectionInvalidStateException("already_corrected",
@@ -59,7 +59,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             throw new CorrectionInvalidStateException("invalid_status",
                 $"Unexpected status: {correction.Status}.");
 
-        correction.Status = CorrectionStatus.Corrigiendo;
+        correction.Status = CorrectionStatus.Encolada;
         correction.UpdatedAt = DateTime.UtcNow;
         try
         {
@@ -67,97 +67,30 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Another concurrent request won the race and already set Corrigiendo (or later).
-            // Re-query with Include so Tags are also fresh (ReloadAsync only refreshes scalars).
+            // Another concurrent request won the race. Re-query with Include so Tags are also fresh.
             correction = await _db.Corrections
                 .Include(c => c.Tags)
                 .FirstAsync(c => c.Id == correctionId, cancellationToken);
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         }
 
-        var outerLogger = _logger;
-        _ = Task.Run(async () =>
-        {
-            ILogger<RedaccionCorrectionService>? scopeLogger = null;
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var sp = scope.ServiceProvider;
-                var db = sp.GetRequiredService<AppDbContext>();
-                var claude = sp.GetRequiredService<IClaudeClient>();
-                var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
-                scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, correctionPromptService, scopeLogger);
-            }
-            catch (ClaudeRateLimitException rle)
-            {
-                var errLogger = scopeLogger ?? outerLogger;
-                errLogger.LogWarning(
-                    "Background correction: Claude rate limit hit; reverting to Entregada for retry. CorrectionId={CorrectionId} TeacherId={TeacherId} RetryAfter={RetryAfter}",
-                    correctionId, teacherId, rle.RetryAfter);
-                try
-                {
-                    using var failScope = _scopeFactory.CreateScope();
-                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
-                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
-                    {
-                        failRow.Status = CorrectionStatus.Entregada;
-                        failRow.UpdatedAt = DateTime.UtcNow;
-                        // No DbUpdateConcurrencyException guard here: if a race occurs the outer
-                        // catch (Exception saveEx) logs it, and CorrectionStaleRecoveryService
-                        // will reset the row on the next timer tick.
-                        await failDb.SaveChangesAsync();
-                    }
-                }
-                catch (Exception saveEx)
-                {
-                    errLogger.LogError(saveEx,
-                        "Failed to revert status to Entregada after Claude rate limit. CorrectionId={CorrectionId}", correctionId);
-                }
-            }
-            catch (Exception ex)
-            {
-                var errLogger = scopeLogger ?? outerLogger;
-                errLogger.LogError(ex,
-                    "Background correction failed; setting CorreccionFallida. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
-                    correctionId, teacherId, studentId);
-                try
-                {
-                    using var failScope = _scopeFactory.CreateScope();
-                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
-                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
-                    {
-                        failRow.Status = CorrectionStatus.CorreccionFallida;
-                        failRow.UpdatedAt = DateTime.UtcNow;
-                        // No DbUpdateConcurrencyException guard here: outer catch logs it,
-                        // and CorrectionStaleRecoveryService resets the row on the next tick.
-                        await failDb.SaveChangesAsync();
-                    }
-                }
-                catch (Exception saveEx)
-                {
-                    errLogger.LogError(saveEx,
-                        "Failed to persist CorreccionFallida status. CorrectionId={CorrectionId}", correctionId);
-                }
-            }
-        });
-
+        correction = await _db.Corrections
+            .AsNoTracking()
+            .Include(c => c.Tags)
+            .FirstAsync(c => c.Id == correctionId, cancellationToken);
         return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
     }
 
-    private static async Task RunCorrectionInScopeAsync(
+    internal static async Task RunCorrectionInScopeAsync(
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted, cancellationToken);
 
         if (correction is null)
         {
@@ -175,7 +108,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var student = await db.Students.FirstOrDefaultAsync(
-            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         if (student is null)
         {
@@ -191,7 +124,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         corrReq = corrReq with { CallSite = "correction.pass1", CorrelationId = correctionId };
         var sentText = ctx.StudentText.TrimEnd();
 
-        var dto = await claude.CompleteWithToolAsync<RedaccionCorrectionDto>(corrReq, corrTool, CancellationToken.None);
+        var dto = await claude.CompleteWithToolAsync<RedaccionCorrectionDto>(corrReq, corrTool, cancellationToken);
         if (dto.SchemaVersion != 1)
             throw new InvalidOperationException("Claude tool response is missing or has an unsupported schemaVersion.");
 
@@ -203,7 +136,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             .AsNoTracking()
             .Where(c => c.Id == correctionId)
             .Select(c => c.Status)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
         if (freshStatus != CorrectionStatus.Corrigiendo)
         {
             logger.LogWarning(
@@ -213,10 +146,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger, cancellationToken);
 
         var affirmerTags = await RunScopeAffirmerAsync(
-            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger);
+            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger, cancellationToken);
 
         var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
 
@@ -244,7 +177,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             });
         }
 
-        await db.SaveChangesAsync(CancellationToken.None);
+        await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
             "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded}",
@@ -466,7 +399,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
         Guid correctionId,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         if (tags.Count == 0)
             return tags;
@@ -480,7 +414,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var (filterReq, filterTool) = correctionPromptService.BuildLevelFilterToolCall(cefr, inputs, assignmentPrompt);
             filterReq = filterReq with { CallSite = "correction.filter", CorrelationId = correctionId };
-            filterResult = await claude.CompleteWithToolAsync<FilterDecisionsWrapper>(filterReq, filterTool, CancellationToken.None);
+            filterResult = await claude.CompleteWithToolAsync<FilterDecisionsWrapper>(filterReq, filterTool, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -555,7 +489,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
         Guid correctionId,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         // Skip C2 (nothing is above C2).
         if (!RedaccionScopeAffirmerPromptBuilder.NextLevel.TryGetValue(cefr, out var nextCefr))
@@ -577,7 +512,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var (affirmerReq, affirmerTool) = correctionPromptService.BuildScopeAffirmerToolCall(cefr, originalText, nextCefr);
             affirmerReq = affirmerReq with { CallSite = "correction.scopeAffirmer", CorrelationId = correctionId };
-            var wrapper = await claude.CompleteWithToolAsync<ScopeSpansWrapper>(affirmerReq, affirmerTool, CancellationToken.None);
+            var wrapper = await claude.CompleteWithToolAsync<ScopeSpansWrapper>(affirmerReq, affirmerTool, cancellationToken);
             results = wrapper.Spans ?? [];
         }
         catch (Exception ex)

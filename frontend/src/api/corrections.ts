@@ -1,7 +1,7 @@
 import { apiClient } from '../lib/apiClient'
 import { triggerBlobDownload } from '../lib/downloadBlob'
 
-export type CorrectionStatus = 'Pendiente' | 'Entregada' | 'Corrigiendo' | 'Corregida' | 'CorreccionFallida'
+export type CorrectionStatus = 'Pendiente' | 'Entregada' | 'Encolada' | 'Corrigiendo' | 'Corregida' | 'CorreccionFallida'
 export type CorrectionTagCategory = 'C' | 'G' | 'L' | 'O' | 'MuyBien'
 
 export interface CorrectionSummary {

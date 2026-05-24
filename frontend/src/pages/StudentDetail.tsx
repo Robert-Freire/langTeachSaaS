@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getStudent, updateStudent, patchStudentVoice } from '../api/students'
+import { listCorrections } from '@/api/corrections'
 import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
@@ -79,6 +80,17 @@ export default function StudentDetail() {
   const nextSession = sessions
     .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled && s.statusName === 'Confirmed')
     .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())[0] ?? null
+
+  const { data: corrections } = useQuery({
+    queryKey: ['corrections', id],
+    queryFn: () => listCorrections(id!),
+    enabled: !!id && activeTab !== 'redacciones',
+    refetchInterval: 10_000,
+  })
+
+  const hasActiveCorrections = corrections?.some(
+    c => c.status === 'Encolada' || c.status === 'Corrigiendo'
+  ) ?? false
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
   const onStudentChange = useCallback(() => {
@@ -275,11 +287,11 @@ export default function StudentDetail() {
   }
 
   const tabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'profile', label: 'Profile' },
-    { key: 'sessions', label: 'Sessions' },
-    { key: 'redacciones', label: 'Redacciones' },
-    { key: 'progress', label: 'Progress' },
+    { key: 'overview', label: 'Overview', badge: false },
+    { key: 'profile', label: 'Profile', badge: false },
+    { key: 'sessions', label: 'Sessions', badge: false },
+    { key: 'redacciones', label: 'Redacciones', badge: hasActiveCorrections && activeTab !== 'redacciones' },
+    { key: 'progress', label: 'Progress', badge: false },
   ]
 
   const sessionFrequency = calcSessionFrequency(sessions)
@@ -345,7 +357,12 @@ export default function StudentDetail() {
             style={activeTab === tab.key ? { boxShadow: '0 1px 3px rgba(26, 27, 34, 0.08)' } : undefined}
             data-testid={`tab-${tab.key}`}
           >
-            {tab.label}
+            <span className="relative">
+              {tab.label}
+              {tab.badge && (
+                <span className="absolute -top-1 -right-2 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              )}
+            </span>
           </button>
         ))}
       </div>

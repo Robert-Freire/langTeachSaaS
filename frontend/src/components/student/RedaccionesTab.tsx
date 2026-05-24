@@ -43,7 +43,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
     queryKey: ['corrections', studentId],
     queryFn: () => listCorrections(studentId),
     refetchInterval: (query) =>
-      query.state.data?.some((c) => c.status === 'Corrigiendo') ? 3000 : false,
+      query.state.data?.some((c) => c.status === 'Encolada' || c.status === 'Corrigiendo') ? 3000 : false,
   })
 
   function invalidate() {

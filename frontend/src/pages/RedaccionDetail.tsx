@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
 import { ChipLegend } from '@/components/corrections/ChipLegend'
-import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
+import { STATUS_BADGE, STATUS_LABEL, estimateCorrectionMinutes } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
@@ -36,7 +36,7 @@ export default function RedaccionDetail() {
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
-    refetchInterval: (q) => q.state.data?.status === 'Corrigiendo' ? 3000 : false,
+    refetchInterval: (q) => (q.state.data?.status === 'Encolada' || q.state.data?.status === 'Corrigiendo') ? 3000 : false,
   })
 
   const { data: student } = useQuery({
@@ -59,7 +59,7 @@ export default function RedaccionDetail() {
   })
 
   useEffect(() => {
-    const isInProgress = viewState === 'generating' || data?.status === 'Corrigiendo'
+    const isInProgress = viewState === 'generating' || data?.status === 'Encolada' || data?.status === 'Corrigiendo'
     if (!isInProgress) return
     const slowTimer = setTimeout(() => setElapsedHint('slow'), 60_000)
     const verySlowTimer = setTimeout(() => setElapsedHint('very-slow'), 4 * 60_000)
@@ -69,6 +69,10 @@ export default function RedaccionDetail() {
       setElapsedHint('none')
     }
   }, [viewState, data?.status])
+
+  const estimatedMinutes = data?.studentText && student
+    ? estimateCorrectionMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
+    : null
 
   const onDownload = async () => {
     if (!data) return
@@ -172,13 +176,19 @@ export default function RedaccionDetail() {
         </div>
       )}
 
-      {(viewState === 'generating' || data.status === 'Corrigiendo') && data.studentText && (
+      {(viewState === 'generating' || data.status === 'Encolada' || data.status === 'Corrigiendo') && data.studentText && (
         <div className="space-y-4">
           <ReadingColumn text={data.studentText} />
           <Button disabled>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Corrigiendo
           </Button>
+          {elapsedHint === 'none' && estimatedMinutes !== null && (
+            <p data-testid="hint-estimate" className="text-sm text-zinc-500">
+              Esto tardará aproximadamente {estimatedMinutes} minuto{estimatedMinutes === 1 ? '' : 's'}.
+              {' '}Puedes cerrar esta pestaña o ir a otra parte de Atelier; te avisamos cuando esté listo.
+            </p>
+          )}
           {elapsedHint === 'slow' && (
             <p data-testid="hint-slow" className="text-sm text-zinc-500">
               Esto puede tardar hasta 3 minutos para textos largos. Puedes esperar aquí.
