@@ -14,24 +14,29 @@ test.beforeAll(async ({ browser }) => {
   const page = await ctx.newPage()
   await setupMockTeacher(page)
 
-  // Seed a group with a member so the detail tabs have content to render
+  // Seed a group with a member so the detail tabs have content to render.
+  // Assert each seed call succeeds; a silent seed failure would otherwise
+  // cascade into misleading screenshots.
   const studentRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: AUTH_HEADER,
     data: { name: 'Visual Student', learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
   })
+  expect(studentRes.ok(), 'student seed failed').toBeTruthy()
   const student = await studentRes.json()
 
   const groupRes = await page.request.post(`${API_BASE}/api/groups`, {
     headers: AUTH_HEADER,
     data: { name: 'Visual Review Group', cefrLevel: 'B1', description: 'A sample group for visual review.', isActive: true },
   })
+  expect(groupRes.ok(), 'group seed failed').toBeTruthy()
   const group = await groupRes.json()
   groupId = group.id
 
-  await page.request.post(`${API_BASE}/api/groups/${groupId}/members`, {
+  const memberRes = await page.request.post(`${API_BASE}/api/groups/${groupId}/members`, {
     headers: AUTH_HEADER,
     data: { studentId: student.id },
   })
+  expect(memberRes.ok(), 'group-member seed failed').toBeTruthy()
 
   await page.close()
   await ctx.close()
@@ -47,18 +52,20 @@ test('@visual group detail tabs', async ({ browser }) => {
   await page.goto(`/groups/${groupId}`)
   await expect(page.getByTestId('group-detail-page')).toBeVisible({ timeout: NAV_TIMEOUT })
 
-  // Overview tab (default): hero spine + group-scoped Teacher's Working Memory card
-  await expect(page.getByTestId('tab-overview')).toBeVisible({ timeout: UI_TIMEOUT })
+  // Overview tab (default): assert overview content rendered, not just the tab button.
+  await expect(page.getByTestId('group-profile-card')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/group-detail-overview.png', fullPage: true })
 
-  // Members tab: roster of seeded member
+  // Members tab: assert the members panel actually rendered (proves the tab switched).
   await page.getByTestId('tab-members').click()
-  await expect(page.getByTestId('tab-members')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('group-members-tab')).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/group-detail-members.png', fullPage: true })
 
-  // Sessions tab: group session history
+  // Sessions tab: assert the sessions panel (or its empty state) rendered.
   await page.getByTestId('tab-sessions').click()
-  await expect(page.getByTestId('tab-sessions')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(
+    page.getByTestId('group-sessions-tab').or(page.getByTestId('sessions-empty-state')),
+  ).toBeVisible({ timeout: UI_TIMEOUT })
   await page.screenshot({ path: 'screenshots/group-detail-sessions.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)

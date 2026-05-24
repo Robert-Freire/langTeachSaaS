@@ -14,24 +14,29 @@ test.beforeAll(async ({ browser }) => {
   const page = await ctx.newPage()
   await setupMockTeacher(page)
 
-  // Seed a group with a member so the left-rail identity + members disclosure render
+  // Seed a group with a member so the left-rail identity + members disclosure
+  // render. Assert each seed call succeeds; a silent seed failure would
+  // otherwise cascade into misleading screenshots.
   const studentRes = await page.request.post(`${API_BASE}/api/students`, {
     headers: AUTH_HEADER,
     data: { name: 'Visual Student', learningLanguage: 'Spanish', cefrLevel: 'B1', interests: [], learningGoals: [], weaknesses: [], difficulties: [] },
   })
+  expect(studentRes.ok(), 'student seed failed').toBeTruthy()
   const student = await studentRes.json()
 
   const groupRes = await page.request.post(`${API_BASE}/api/groups`, {
     headers: AUTH_HEADER,
     data: { name: 'Visual Review Group', cefrLevel: 'B1', description: 'A sample group for visual review.', isActive: true },
   })
+  expect(groupRes.ok(), 'group seed failed').toBeTruthy()
   const group = await groupRes.json()
   groupId = group.id
 
-  await page.request.post(`${API_BASE}/api/groups/${groupId}/members`, {
+  const memberRes = await page.request.post(`${API_BASE}/api/groups/${groupId}/members`, {
     headers: AUTH_HEADER,
     data: { studentId: student.id },
   })
+  expect(memberRes.ok(), 'group-member seed failed').toBeTruthy()
 
   await page.close()
   await ctx.close()
@@ -48,9 +53,12 @@ test('@visual group log session form', async ({ browser }) => {
   await expect(page.getByTestId('group-log-session-page')).toBeVisible({ timeout: NAV_TIMEOUT })
   await expect(page.getByTestId('group-log-session-left-panel')).toBeVisible({ timeout: UI_TIMEOUT })
 
-  // Group variant suppresses the editable Previous-Homework tri-state toggle:
-  // it surfaces as a read-only marker, never the interactive control.
-  await expect(page.getByTestId('prev-homework-readonly')).toBeVisible({ timeout: UI_TIMEOUT })
+  // The core group requirement: the editable Previous-Homework tri-state toggle
+  // (data-testid="prev-homework-status" in the 1-to-1 form) must NEVER appear in the
+  // group variant. Homework status is per-student, not a group-level concept. A fresh
+  // group with no prior session shows the "first session" rail instead.
+  await expect(page.getByTestId('first-session-empty')).toBeVisible({ timeout: UI_TIMEOUT })
+  await expect(page.getByTestId('prev-homework-status')).toHaveCount(0)
   await page.screenshot({ path: 'screenshots/group-log-session.png', fullPage: true })
 
   // Expand the members disclosure in the group-identity rail
