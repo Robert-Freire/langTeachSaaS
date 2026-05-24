@@ -239,12 +239,13 @@ public class RedaccionCorrectionPromptBuilderTests
     [Fact]
     public void Build_SystemPromptContainsParagraphBreakOverflagGuard()
     {
-        // Issue #1350: the anti-pattern rule must prevent the model from flagging A1 texts,
-        // short texts, and already-paragraphed texts -- primary defence against over-flagging.
+        // Issue #1350: the anti-pattern rule must prevent the model from flagging A1 texts
+        // and already-paragraphed texts. Sentence-count threshold is stated in the subtype.
         var req = _builder.BuildWithTool(MakeCtx()).Request;
 
-        req.SystemPrompt.Should().Contain("4 sentences or fewer", "paragraph-break anti-pattern must include the sentence-count guard");
+        req.SystemPrompt.Should().Contain("5 or more sentences", "paragraph-break subtype must include the sentence-count threshold");
         req.SystemPrompt.Should().Contain("reasonably paragraphed", "paragraph-break anti-pattern must forbid flagging already-paragraphed texts");
+        req.SystemPrompt.Should().Contain("position marker", "paragraph-break span exception to minimum-span rule must be explicit");
     }
 
     private static RedaccionCorrectionPromptContext MakeCtx() =>
