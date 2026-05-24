@@ -90,7 +90,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted, cancellationToken);
 
         if (correction is null)
         {
@@ -108,7 +108,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var student = await db.Students.FirstOrDefaultAsync(
-            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         if (student is null)
         {
@@ -136,7 +136,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             .AsNoTracking()
             .Where(c => c.Id == correctionId)
             .Select(c => c.Status)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
         if (freshStatus != CorrectionStatus.Corrigiendo)
         {
             logger.LogWarning(
