@@ -6,7 +6,8 @@
       "description": "cohesion or discourse-organization error (includes connector misuse, paragraph structure, logical sequencing).",
       "subTypes": [
         "Connector-level: missing connector, wrong connector, missing temporal marker, repetitive linking structure.",
-        "Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered."
+        "Discourse-level (most significant at B2 and above): paragraph lacks a clear main idea (no topic sentence), ideas within a paragraph are not logically ordered.",
+        "Paragraph-break (B1 and above only): the text clearly shifts main topic or idea but contains no paragraph break, and the absence would cost marks in an EOI written-expression rubric. Only flag when ALL of these hold: (a) the student text has 5 or more sentences, (b) there is an unambiguous change in main idea or topic -- not merely a new example or a supporting detail, (c) the shift is sustained for at least two sentences. spannedText = the first 5-10 words of the sentence that should open the new paragraph (choose a span that is unique in the text; use contextBefore to disambiguate if needed). correctedForm = \"¶\". Explanation in Spanish, e.g. \"Aquí debería empezar un párrafo nuevo: cambias de idea principal.\""
       ],
       "examples": [
         {
@@ -22,6 +23,11 @@
         {
           "text": "Hay muchos plásticos en el océano. El reciclaje es costoso. Por eso debemos reciclar más.",
           "note": "the paragraph lists facts before stating the main claim, leaving the reader uncertain what point is being made",
+          "label": "C"
+        },
+        {
+          "text": "Me gusta el verano porque hace calor y podemos ir a la playa con mi familia. Siempre vamos a la costa y comemos paella juntos. Es una tradición que me encanta mucho. Pero hay un problema muy grave en el mundo hoy en día. El cambio climático afecta a todos los países y debemos actuar urgentemente. Los científicos dicen que necesitamos reducir las emisiones.",
+          "note": "two distinct ideas (summer holidays, climate change) run together without a paragraph break; at B1+ this would lose marks in an EOI rubric; spannedText = first words of the climate-change sentence, correctedForm = \"¶\"",
           "label": "C"
         }
       ]
@@ -114,6 +120,7 @@
     "A wrong preposition is G, NEVER L.",
     "A literal translation from the student's L1 is L, NEVER G.",
     "A missing or wrong connector is C, NEVER G.",
-    "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G."
+    "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G.",
+    "Do NOT flag paragraph breaks at A1 level, for texts of 4 sentences or fewer, or when the text is already reasonably paragraphed. Do NOT flag a paragraph break for stylistic preference or slightly dense structure -- only flag when there is a clear, unambiguous thematic shift that would lose EOI marks."
   ]
 }

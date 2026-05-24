@@ -224,6 +224,18 @@ public class RedaccionCorrectionPromptBuilderTests
         req.SystemPrompt.Should().Contain("logically ordered", "C must include logical ordering as a discourse-level error");
     }
 
+    [Fact]
+    public void Build_SystemPromptContainsParagraphBreakSubtype()
+    {
+        // Issue #1350: C must cover paragraph-break errors (B1+) so the model can flag
+        // a wall of text that should be split into paragraphs per the EOI rubric.
+        var req = _builder.BuildWithTool(MakeCtx()).Request;
+
+        req.SystemPrompt.Should().Contain("Paragraph-break", "C must include paragraph-break as a B1+ subtype");
+        req.SystemPrompt.Should().Contain("B1 and above", "paragraph-break gating must be explicit in the subtype");
+        req.SystemPrompt.Should().Contain("¶", "correctedForm for paragraph-break must be the pilcrow symbol");
+    }
+
     private static RedaccionCorrectionPromptContext MakeCtx() =>
         new("Texto.", null, Array.Empty<string>(), null);
 }
