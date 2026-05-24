@@ -388,9 +388,13 @@ public class AppDbContext : DbContext
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
             e.HasIndex(f => new { f.GroupId, f.Status }).HasFilter("[GroupId] IS NOT NULL");
+            // At-most-one scope: a followup may be scoped to a student, a group, or
+            // neither (teacher-level agenda items). Both at once is rejected. This mirrors
+            // TeacherFollowupService.CreateAsync, which only forbids the both-set case.
+            // (Previously XOR, which wrongly forbade teacher-level followups -- see #1356.)
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Scope",
-                "([StudentId] IS NULL) <> ([GroupId] IS NULL)"));
+                "[StudentId] IS NULL OR [GroupId] IS NULL"));
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
             e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
