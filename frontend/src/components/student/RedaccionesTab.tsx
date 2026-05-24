@@ -345,6 +345,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
     if (HEIC_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
       setLocalPreviewUrl(null)
       setPreviewType(null)
+      setBlobUrl(null)
       setOcrError('El formato HEIC no es compatible. Usa JPG, PNG, WEBP o PDF.')
       setOcrState('error')
       return
