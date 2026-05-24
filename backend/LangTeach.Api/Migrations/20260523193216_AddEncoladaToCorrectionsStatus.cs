@@ -27,6 +27,10 @@ namespace LangTeach.Api.Migrations
                 name: "CK_Corrections_Status",
                 table: "Corrections");
 
+            // Revert any Encolada rows before restoring the constraint that excludes Encolada.
+            migrationBuilder.Sql(
+                "UPDATE [Corrections] SET [Status] = 'Entregada' WHERE [Status] = 'Encolada'");
+
             migrationBuilder.AddCheckConstraint(
                 name: "CK_Corrections_Status",
                 table: "Corrections",

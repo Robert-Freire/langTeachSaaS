@@ -22,7 +22,9 @@ public static class RedaccionCorrectionTimeouts
 
     /// <summary>
     /// Seconds before a correction stuck in Encolada is considered stale.
-    /// Two poll cycles plus grace: if the worker is alive it should claim within 2 * pollInterval.
+    /// Set equal to StaleCorrigiendoSeconds: a queue can grow when the worker is busy processing
+    /// a long correction (up to HttpClientSeconds), so two poll cycles + 60s is too aggressive.
+    /// Encolada stale fires only when the worker has been silent for the full Corrigiendo window.
     /// </summary>
-    public const int StaleEncoladaSeconds = WorkerPollIntervalSeconds * 2 + 60;
+    public const int StaleEncoladaSeconds = StaleCorrigiendoSeconds;
 }
