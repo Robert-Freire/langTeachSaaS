@@ -12,6 +12,8 @@ export interface CorrectionSummary {
   correctedAt: string | null
 }
 
+export type CorrectionTagFilterStatus = 'kept' | 'removed'
+
 export interface CorrectionTag {
   category: CorrectionTagCategory
   spannedText: string
@@ -20,6 +22,9 @@ export interface CorrectionTag {
   explanation: string | null
   correctedForm: string | null
   orderIndex: number
+  // 'kept' = in-level (shown in both views); 'removed' = above the student's level
+  // (hidden from the student default view, shown only in the teacher all-errors view).
+  filterStatus: CorrectionTagFilterStatus
 }
 
 export interface CorrectionDetail {
@@ -99,12 +104,15 @@ export async function downloadCorrectionDocx(
   studentId: string,
   id: string,
   filenameHint: string,
+  view: 'student' | 'teacher' = 'student',
 ): Promise<void> {
+  const query = view === 'teacher' ? '?view=teacher' : ''
   const response = await apiClient.get<Blob>(
-    `/api/students/${studentId}/corrections/${id}/export.docx`,
+    `/api/students/${studentId}/corrections/${id}/export.docx${query}`,
     { responseType: 'blob' },
   )
-  const fallback = `${sanitizeFilename(filenameHint)}.docx`
+  const suffix = view === 'teacher' ? '-completa' : ''
+  const fallback = `${sanitizeFilename(filenameHint)}${suffix}.docx`
   triggerBlobDownload(response, fallback)
 }
 

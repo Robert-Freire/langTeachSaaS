@@ -471,6 +471,9 @@ public class AppDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_CorrectionTags_Span",
                     "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_FilterStatus",
+                    "FilterStatus COLLATE Latin1_General_100_BIN2 IN ('kept', 'removed')");
             });
             e.HasKey(t => t.Id);
             e.HasIndex(t => new { t.CorrectionId, t.Category });
@@ -482,6 +485,8 @@ public class AppDbContext : DbContext
             e.Property(t => t.SpannedText).HasMaxLength(500).IsRequired();
             e.Property(t => t.Explanation).HasMaxLength(1000);
             e.Property(t => t.CorrectedForm).HasMaxLength(500);
+            e.Property(t => t.FilterStatus).HasMaxLength(20)
+             .HasDefaultValue(CorrectionTagFilterStatus.Kept).IsRequired();
         });
     }
 }

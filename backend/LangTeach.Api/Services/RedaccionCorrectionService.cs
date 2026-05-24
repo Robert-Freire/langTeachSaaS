@@ -145,13 +145,25 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return;
         }
 
-        var filteredTags = await ApplyLevelFilterAsync(
+        var (visibleTags, removedTags) = await ApplyLevelFilterAsync(
             validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger, cancellationToken);
 
         var affirmerTags = await RunScopeAffirmerAsync(
-            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger, cancellationToken);
+            visibleTags, cefr, sentText, claude, correctionPromptService, correctionId, logger, cancellationToken);
 
-        var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
+        var mergedVisible = MergeAndDedupWithAffirmer(visibleTags, affirmerTags, correctionId, logger);
+
+        // Combine the student-visible tags (kept) with the above-level tags the filter
+        // removed. Removed tags are persisted (FilterStatus "removed") so the teacher can
+        // opt into an all-errors view; they were deliberately kept out of the affirmer
+        // overlap dedup above so a finding hidden from the student cannot suppress a
+        // visible affirmation (#1351, Sophy model review). One OrderIndex sequence by
+        // StartIndex: the read-side view filter drops rows but never reorders.
+        var persistedTags = mergedVisible
+            .Select(t => (Tag: t, Status: CorrectionTagFilterStatus.Kept))
+            .Concat(removedTags.Select(t => (Tag: t, Status: CorrectionTagFilterStatus.Removed)))
+            .OrderBy(p => p.Tag.StartIndex)
+            .ToList();
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = JsonSerializer.Serialize(dto, JsonOpts);
@@ -160,9 +172,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = now;
         correction.SchemaVersion = 1;
 
-        for (var i = 0; i < mergedTags.Count; i++)
+        for (var i = 0; i < persistedTags.Count; i++)
         {
-            var t = mergedTags[i];
+            var (t, status) = persistedTags[i];
             db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
@@ -174,15 +186,16 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 Explanation = t.Explanation,
                 CorrectedForm = t.CorrectedForm,
                 OrderIndex = i,
+                FilterStatus = status,
             });
         }
 
         await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} RemovedAboveLevel={RemovedAboveLevel} AffirmerAdded={AffirmerAdded}",
             correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
-            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count);
+            persistedTags.Count, removedTags.Count, affirmerTags.Count);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -392,7 +405,11 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return nonOverlapping;
     }
 
-    private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> ApplyLevelFilterAsync(
+    // Returns the student-visible tags (keep + soften-as-MuyBien + always-pass-through) and,
+    // separately, the above-level tags the filter decided to remove. Removed tags used to be
+    // discarded here; they are now returned so the caller can persist them with
+    // FilterStatus "removed" for the teacher-only all-errors view (#1351).
+    private static async Task<(IReadOnlyList<RedaccionCorrectionTagDto> Visible, IReadOnlyList<RedaccionCorrectionTagDto> Removed)> ApplyLevelFilterAsync(
         IReadOnlyList<RedaccionCorrectionTagDto> tags,
         string cefr,
         string? assignmentPrompt,
@@ -403,7 +420,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         CancellationToken cancellationToken = default)
     {
         if (tags.Count == 0)
-            return tags;
+            return (tags, []);
 
         var inputs = tags
             .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
@@ -420,7 +437,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             logger.LogWarning(ex,
                 "Level filter call failed; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
-            return tags;
+            return (tags, []);
         }
 
         var decisions = filterResult.Decisions ?? [];
@@ -433,6 +450,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var result = new List<RedaccionCorrectionTagDto>(tags.Count);
+        var removed = new List<RedaccionCorrectionTagDto>();
         for (var i = 0; i < tags.Count; i++)
         {
             var tag = tags[i];
@@ -468,9 +486,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     });
                     break;
                 case "remove":
+                    // Above the student's level. No longer discarded: persisted with the
+                    // original category/explanation/correctedForm so the teacher can see it
+                    // in the all-errors view, but excluded from the student default (#1351).
                     logger.LogDebug(
                         "Level filter removed above-level tag [{Category}] \"{Span}\". CorrectionId={CorrectionId}",
                         tag.Category, tag.SpannedText, correctionId);
+                    removed.Add(tag);
                     break;
                 default:
                     // Unknown decision; keep.
@@ -479,7 +501,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             }
         }
 
-        return result;
+        return (result, removed);
     }
 
     private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> RunScopeAffirmerAsync(

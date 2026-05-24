@@ -43,7 +43,7 @@ function corregida(): CorrectionDetail {
     studentText: 'Ayer voy a casa.',
     markedUpOutput: null,
     tags: [
-      { category: 'G', spannedText: 'voy', startIndex: 5, endIndex: 8, explanation: 'pasado', correctedForm: 'fui', orderIndex: 0 },
+      { category: 'G', spannedText: 'voy', startIndex: 5, endIndex: 8, explanation: 'pasado', correctedForm: 'fui', orderIndex: 0, filterStatus: 'kept' },
     ],
     createdAt: '2026-05-01T00:00:00Z',
     updatedAt: '2026-05-01T00:00:00Z',
@@ -108,7 +108,7 @@ describe('RedaccionDetail', () => {
     renderAt('/students/stu-1/redacciones/cor-1')
     const btn = await screen.findByRole('button', { name: /Descargar .docx/ })
     fireEvent.click(btn)
-    await waitFor(() => expect(mockDownload).toHaveBeenCalledWith('stu-1', 'cor-1', 'Una tarde'))
+    await waitFor(() => expect(mockDownload).toHaveBeenCalledWith('stu-1', 'cor-1', 'Una tarde', 'student'))
   })
 
   it('shows download error inline when endpoint missing', async () => {
@@ -117,6 +117,45 @@ describe('RedaccionDetail', () => {
     renderAt('/students/stu-1/redacciones/cor-1')
     fireEvent.click(await screen.findByRole('button', { name: /Descargar .docx/ }))
     expect(await screen.findByText(/Descarga aún no disponible/i)).toBeInTheDocument()
+  })
+
+  describe('above-level errors (teacher view, #1351)', () => {
+    function withAboveLevel(): CorrectionDetail {
+      return {
+        ...corregida(),
+        studentText: 'Ayer voy a casa aunque hubiera preferido quedarme.',
+        tags: [
+          { category: 'G', spannedText: 'voy', startIndex: 5, endIndex: 8, explanation: 'pasado', correctedForm: 'fui', orderIndex: 0, filterStatus: 'kept' },
+          { category: 'G', spannedText: 'hubiera', startIndex: 23, endIndex: 30, explanation: 'subjuntivo avanzado', correctedForm: 'habría', orderIndex: 1, filterStatus: 'removed' },
+        ],
+      }
+    }
+
+    it('hides the view toggle when there are no above-level errors', async () => {
+      mockGet.mockResolvedValue(corregida())
+      renderAt('/students/stu-1/redacciones/cor-1')
+      await screen.findByRole('button', { name: /Descargar .docx/ })
+      expect(screen.queryByRole('group', { name: /Vista de errores/i })).not.toBeInTheDocument()
+    })
+
+    it('shows the toggle and reveals the above-level error only in teacher view', async () => {
+      mockGet.mockResolvedValue(withAboveLevel())
+      renderAt('/students/stu-1/redacciones/cor-1')
+      // Default (student) view: above-level span hidden.
+      await screen.findByRole('group', { name: /Vista de errores/i })
+      expect(screen.queryByLabelText(/por encima del nivel/i)).not.toBeInTheDocument()
+      // Switch to teacher view.
+      fireEvent.click(screen.getByRole('button', { name: /Todos los errores/i }))
+      expect(await screen.findByLabelText(/por encima del nivel/i)).toBeInTheDocument()
+    })
+
+    it('downloads the complete version with view=teacher', async () => {
+      mockGet.mockResolvedValue(withAboveLevel())
+      mockDownload.mockResolvedValue(undefined)
+      renderAt('/students/stu-1/redacciones/cor-1')
+      fireEvent.click(await screen.findByRole('button', { name: /Versión completa/i }))
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledWith('stu-1', 'cor-1', 'Una tarde', 'teacher'))
+    })
   })
 
   describe('server-driven Corrigiendo (fresh page load mid-correction)', () => {

@@ -28,6 +28,9 @@ export default function RedaccionDetail() {
   const [viewState, setViewState] = useState<ViewState>('idle')
   const [elapsedHint, setElapsedHint] = useState<ElapsedHint>('none')
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  // 'student' = level-filtered (the view the student receives, default). 'teacher' = every
+  // error detected, including above-level ones the filter suppressed (#1351).
+  const [errorView, setErrorView] = useState<'student' | 'teacher'>('student')
 
   const studentId = id
   const queryKey = ['correction', studentId, correctionId]
@@ -74,11 +77,11 @@ export default function RedaccionDetail() {
     ? estimateCorrectionMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
     : null
 
-  const onDownload = async () => {
+  const onDownload = async (view: 'student' | 'teacher' = 'student') => {
     if (!data) return
     setDownloadError(null)
     try {
-      await downloadCorrectionDocx(studentId!, correctionId!, data.assignmentTitle)
+      await downloadCorrectionDocx(studentId!, correctionId!, data.assignmentTitle, view)
     } catch (err) {
       logger.error('RedaccionDetail', '.docx download failed', err)
       setDownloadError('Descarga aún no disponible')
@@ -114,6 +117,13 @@ export default function RedaccionDetail() {
 
   const breadcrumbLabel = student ? `${student.name} / Redacciones` : 'Redacciones'
 
+  // Above-level errors are persisted but hidden from the student default view. The toggle
+  // and the teacher download only appear when there is something extra to reveal (#1351).
+  const hasAboveLevel = data.tags.some((t) => t.filterStatus === 'removed')
+  const visibleTags = errorView === 'teacher'
+    ? data.tags
+    : data.tags.filter((t) => t.filterStatus !== 'removed')
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <div className="flex items-center justify-between gap-3">
@@ -127,9 +137,15 @@ export default function RedaccionDetail() {
         <div className="flex items-center gap-2">
           <StatusPill status={data.status} viewState={viewState} />
           {isCorregida && (
-            <Button variant="outline" size="sm" onClick={onDownload}>
+            <Button variant="outline" size="sm" onClick={() => onDownload('student')}>
               <Download className="mr-2 h-4 w-4" />
-              Descargar .docx
+              {hasAboveLevel ? 'Versión del estudiante' : 'Descargar .docx'}
+            </Button>
+          )}
+          {isCorregida && hasAboveLevel && (
+            <Button variant="outline" size="sm" onClick={() => onDownload('teacher')}>
+              <Download className="mr-2 h-4 w-4" />
+              Versión completa
             </Button>
           )}
         </div>
@@ -230,17 +246,58 @@ export default function RedaccionDetail() {
 
       {isCorregida && data.studentText && (
         <>
-          {data.tags.length === 0 ? (
+          {hasAboveLevel && (
+            <ErrorViewToggle view={errorView} onChange={setErrorView} />
+          )}
+          {errorView === 'teacher' && (
+            <p className="text-sm text-zinc-500">
+              Mostrando todos los errores detectados. Las marcas por encima del nivel (subrayado discontinuo)
+              {' '}no se muestran al estudiante.
+            </p>
+          )}
+          {visibleTags.length === 0 ? (
             <>
               <ReadingColumn text={data.studentText} />
               <p className="text-sm text-zinc-600">Sin observaciones, todo correcto.</p>
             </>
           ) : (
-            <MarkedUpText studentText={data.studentText} tags={data.tags} />
+            <MarkedUpText studentText={data.studentText} tags={visibleTags} />
           )}
           <CorrectionFeedback studentId={studentId!} correctionId={correctionId!} />
         </>
       )}
+    </div>
+  )
+}
+
+interface ErrorViewToggleProps {
+  view: 'student' | 'teacher'
+  onChange: (view: 'student' | 'teacher') => void
+}
+
+function ErrorViewToggle({ view, onChange }: ErrorViewToggleProps) {
+  const options: { value: 'student' | 'teacher'; label: string }[] = [
+    { value: 'student', label: 'Nivel del estudiante' },
+    { value: 'teacher', label: 'Todos los errores' },
+  ]
+  return (
+    <div role="group" aria-label="Vista de errores" className="inline-flex bg-[#F4F2FD] p-1 rounded-xl">
+      {options.map((opt) => {
+        const active = view === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(opt.value)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+              active ? 'bg-white text-[#3525CD] shadow-sm' : 'text-zinc-500 hover:text-[#3525CD]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

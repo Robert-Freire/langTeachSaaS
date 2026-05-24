@@ -123,7 +123,7 @@ public class CorrectionsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/export.docx")]
-    public async Task<IActionResult> ExportDocx(Guid studentId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ExportDocx(Guid studentId, Guid id, [FromQuery] string? view, CancellationToken cancellationToken)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
@@ -140,11 +140,16 @@ public class CorrectionsController : ControllerBase
 
         if (data is null) return NotFound();
 
-        var bytes = _docxExport.Generate(data.Detail, data.StudentName);
+        // view=teacher → full-diagnostic with above-level errors; anything else → student
+        // handout (default, level-filtered, unchanged). Filename carries the variant so the
+        // two downloads are unambiguous (#1351).
+        var teacherView = string.Equals(view, "teacher", StringComparison.OrdinalIgnoreCase);
+        var bytes = _docxExport.Generate(data.Detail, data.StudentName, includeAboveLevel: teacherView);
         var dateStr = (data.Detail.CorrectedAt ?? data.Detail.UpdatedAt).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var slug = FileNameHelper.SlugifyName(data.StudentName);
-        var asciiName = $"redaccion-{slug}-{dateStr}.docx";
-        var utf8Name = $"redaccion-{data.StudentName}-{dateStr}.docx";
+        var suffix = teacherView ? "-completa" : "";
+        var asciiName = $"redaccion-{slug}-{dateStr}{suffix}.docx";
+        var utf8Name = $"redaccion-{data.StudentName}-{dateStr}{suffix}.docx";
 
         // RFC 5987: emit both filename= (ASCII fallback) and filename*=UTF-8'' so non-ASCII
         // student names survive across Word for macOS / Firefox. The default File(...,

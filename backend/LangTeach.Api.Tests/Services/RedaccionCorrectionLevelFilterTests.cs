@@ -13,8 +13,9 @@ namespace LangTeach.Api.Tests.Services;
 
 /// <summary>
 /// Unit tests for the Pass 2 level-filter agent (issue #1194).
-/// Verifies: O tags always survive, G/L/C tags are filtered, soften converts to MuyBien,
-/// filter failure falls open, empty tag list skips the filter call.
+/// Verifies: O tags always survive, above-level G/L/C tags are persisted as "removed"
+/// (hidden from the student view but kept for the teacher all-errors view, #1351), soften
+/// converts to MuyBien, filter failure falls open, empty tag list skips the filter call.
 /// </summary>
 public class RedaccionCorrectionLevelFilterTests : IDisposable
 {
@@ -84,13 +85,17 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         using var check = new AppDbContext(_dbOptions);
         var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
-        row.Tags.Should().HaveCount(1, "O tag must survive even when filter says remove");
-        row.Tags.First().Category.Should().Be("O");
-        row.Tags.First().SpannedText.Should().Be("ablamos");
+        var kept = row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Kept).ToList();
+        kept.Should().HaveCount(1, "O tag must survive (kept) even when filter says remove");
+        kept[0].Category.Should().Be("O");
+        kept[0].SpannedText.Should().Be("ablamos");
+        // The above-level G tag is no longer discarded: it is persisted as "removed" (#1351).
+        row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Removed)
+            .Should().ContainSingle(t => t.Category == "G");
     }
 
     [Fact]
-    public async Task LevelFilter_AboveLevelGTag_RemovedWhenFilterSaysRemove()
+    public async Task LevelFilter_AboveLevelGTag_PersistedAsRemovedHiddenFromStudentView()
     {
         // Arrange: A2 student, text has only a subjunctive G error (B1 scope).
         var text = "Espero para que no pareces cansado.";
@@ -111,7 +116,12 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         using var check = new AppDbContext(_dbOptions);
         var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
-        row.Tags.Should().BeEmpty("above-level G tag must be removed for A2 student");
+        // Hidden from the student view, but persisted (not discarded) so the teacher can see
+        // it in the all-errors view, with its original category/explanation intact (#1351).
+        row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Kept)
+            .Should().BeEmpty("above-level G tag must not appear in the student-facing view");
+        row.Tags.Should().ContainSingle(t => t.FilterStatus == CorrectionTagFilterStatus.Removed && t.Category == "G");
+        row.Tags.First().Explanation.Should().Be("Subjuntivo requerido.");
     }
 
     [Fact]
@@ -274,7 +284,11 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         using var check = new AppDbContext(_dbOptions);
         var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
-        row.Tags.Should().BeEmpty("over-formal structure in informal task must be removed, not promoted to MuyBien");
+        row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Kept)
+            .Should().BeEmpty("over-formal structure must not appear in the student-facing view");
+        var removed = row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Removed).ToList();
+        removed.Should().ContainSingle();
+        removed[0].Category.Should().Be("L", "removed above-level tag keeps its category, not promoted to MuyBien");
     }
 
     [Fact]
@@ -330,8 +344,12 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         using var check = new AppDbContext(_dbOptions);
         var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
-        row.Tags.Should().HaveCount(1, "O tag falls open (always kept), G tag removed by filter");
-        row.Tags.First().Category.Should().Be("O");
+        var kept = row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Kept).ToList();
+        kept.Should().HaveCount(1, "O tag falls open (always kept)");
+        kept[0].Category.Should().Be("O");
+        // G tag removed by filter is now persisted as removed, not discarded (#1351).
+        row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Removed)
+            .Should().ContainSingle(t => t.Category == "G");
     }
 
     [Theory]
