@@ -131,6 +131,7 @@ public class RedaccionCorrectionPromptBuilder
 When you have identified all errors, call the submit_correction_tags tool with schemaVersion=1 and the complete tags array.
 
 "explanation" and "correctedForm" are always non-empty for every tag.
+"explanation" MUST be written in Spanish (regardless of the student's L1 or CEFR level). It is a metalinguistic teaching note for the teacher, not a student-facing text; use standard pedagogical Spanish.
 
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
 - startIndex and endIndex are Unicode character offsets into the student text between the markers (0-based, end-exclusive).
@@ -204,7 +205,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 
         var adj = _pedagogy.GetL1Adjustments(l1);
         var sb = new StringBuilder();
-        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations that point to the L1 source if applicable.");
+        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations that reference the L1 source if applicable.");
         if (adj is not null)
         {
             if (adj.IncreaseEmphasis.Length > 0)
