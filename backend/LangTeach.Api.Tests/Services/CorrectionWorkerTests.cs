@@ -277,7 +277,8 @@ public class CorrectionWorkerTests : IDisposable
                 Explanation TEXT,
                 CorrectedForm TEXT,
                 OrderIndex INTEGER NOT NULL,
-                FilterStatus TEXT NOT NULL DEFAULT 'kept'
+                FilterStatus TEXT NOT NULL DEFAULT 'kept',
+                CHECK (FilterStatus IN ('kept', 'removed'))
             );
             """;
         cmd.ExecuteNonQuery();
