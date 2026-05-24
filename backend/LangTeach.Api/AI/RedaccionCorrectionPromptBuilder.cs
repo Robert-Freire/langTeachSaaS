@@ -205,7 +205,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 
         var adj = _pedagogy.GetL1Adjustments(l1);
         var sb = new StringBuilder();
-        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations (in Spanish) that point to the L1 source if applicable.");
+        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations that reference the L1 source if applicable.");
         if (adj is not null)
         {
             if (adj.IncreaseEmphasis.Length > 0)
