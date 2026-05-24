@@ -87,8 +87,10 @@ MANDATORY RULES:
 1. Tags with category "O" (Ortografía: accents, spelling, punctuation) MUST always be "keep".
 
 GUIDANCE:
-- Use the grammar in-scope and out-of-scope lists to anchor your decision.
-- G (Gramática), L (Léxico), C (Cohesión y Coherencia) tags may be filtered based on level scope and the calibration cue below.
+- Use the grammar in-scope and out-of-scope lists to anchor your decision. Use the calibration cue in the request to anchor keep/soften/remove decisions.
+- When a structure is on the out-of-scope list, use "soften" if the student attempted it with intentional effort (even if imperfect), "remove" if the attempt is clearly wrong and above level.
+- Use "muybien" only when the student demonstrates genuinely strong usage: a structure at or near their level ceiling, used correctly, AND fitting the register of the assignment.
+- When the out-of-scope list is empty (e.g. C1/C2), keep everything or promote to muybien; softening and removal are rarely appropriate at this level.
 
 Call the submit_filter_decisions tool with a decisions array. Every input tag must appear in the output exactly once, identified by its index.
 """;

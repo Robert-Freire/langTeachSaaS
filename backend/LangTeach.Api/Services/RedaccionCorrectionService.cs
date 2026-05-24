@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -620,14 +621,21 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return result.OrderBy(t => t.StartIndex).ToList();
     }
 
+    private static readonly ConcurrentDictionary<string, Regex> _keywordRegexCache = new();
+
     private static bool IsAlwaysKeepGTag(RedaccionCorrectionTagDto tag, IReadOnlyList<AlwaysKeepGrammarTopic> topics)
     {
         if (tag.Category != CorrectionTagCategory.Gramatica) return false;
         var expl = tag.Explanation ?? "";
         foreach (var topic in topics)
         {
+            if (topic.DescriptionKeywords.Length == 0) continue;
             if (topic.DescriptionKeywords.All(kw =>
-                Regex.IsMatch(expl, $@"\b{Regex.Escape(kw)}\b", RegexOptions.IgnoreCase)))
+            {
+                var rx = _keywordRegexCache.GetOrAdd(kw, k =>
+                    new Regex($@"\b{Regex.Escape(k)}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled));
+                return rx.IsMatch(expl);
+            }))
                 return true;
         }
         return false;

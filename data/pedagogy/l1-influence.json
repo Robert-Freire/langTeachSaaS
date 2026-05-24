@@ -14,7 +14,7 @@
       "contrastivePatterns": [
         {
           "pattern": "ser-estar",
-          "l1Behavior": "Single copula (Italian: essere, French: être, Romanian: a fi) covers both identity and state. Note: does NOT apply to Portuguese, which has the same ser/estar distinction as Spanish.",
+          "l1Behavior": "Single copula (Italian: essere, French: être, Romanian: a fi) covers both identity and state.",
           "targetContrast": "Spanish distinguishes ser (identity/permanent essence) from estar (state/condition/location)",
           "cefrRelevance": ["A1", "A2", "B1", "B2"]
         },
@@ -205,7 +205,7 @@
         "Grammatical gender",
         "Similar verb system"
       ],
-      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). When a Portuguese student makes a ser/estar error, flag it normally as a G error with a standard Spanish grammar correction. Do not add an L1 contrastive explanation for ser/estar -- this is not an L1 interference point. Suppress only the contrastive note; never suppress the error flag itself.",
+      "additionalNotes": "Portuguese has the same ser/estar distinction as Spanish (positive transfer). When a Portuguese student makes a ser/estar error, flag it normally as a G error with a standard Spanish grammar correction. Do not add an L1 contrastive explanation for ser/estar — this is not an L1 interference point.",
       "contrastivePatterns": [
         {
           "pattern": "false-cognates",
