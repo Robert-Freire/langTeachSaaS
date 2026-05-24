@@ -281,7 +281,7 @@ function ErrorViewToggle({ view, onChange }: ErrorViewToggleProps) {
     { value: 'teacher', label: 'Todos los errores' },
   ]
   return (
-    <div role="group" aria-label="Vista de errores" className="inline-flex rounded-lg border border-zinc-200 p-0.5">
+    <div role="group" aria-label="Vista de errores" className="inline-flex bg-[#F4F2FD] p-1 rounded-xl">
       {options.map((opt) => {
         const active = view === opt.value
         return (
@@ -290,8 +290,8 @@ function ErrorViewToggle({ view, onChange }: ErrorViewToggleProps) {
             type="button"
             aria-pressed={active}
             onClick={() => onChange(opt.value)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              active ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:text-zinc-900'
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+              active ? 'bg-white text-[#3525CD] shadow-sm' : 'text-zinc-500 hover:text-[#3525CD]'
             }`}
           >
             {opt.label}
