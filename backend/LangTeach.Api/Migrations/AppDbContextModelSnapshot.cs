@@ -1492,7 +1492,7 @@ namespace LangTeach.Api.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
-                        .WithMany("Followups")
+                        .WithMany("TeacherFollowups")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.NoAction);
 
@@ -1584,8 +1584,6 @@ namespace LangTeach.Api.Migrations
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Group", b =>
                 {
-                    b.Navigation("Followups");
-
                     b.Navigation("SessionLogs");
 
                     b.Navigation("StudentGroups");

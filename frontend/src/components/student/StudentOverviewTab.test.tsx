@@ -130,6 +130,9 @@ PAST_DATE_2.setDate(PAST_DATE_2.getDate() - 14)
 const MOCK_SESSION: SessionLog = {
   id: 'sess-1',
   studentId: 'student-1',
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Test Student',
   sessionDate: PAST_DATE.toISOString(),
   title: 'Vocabulary: Travel',
   plannedContent: null,

@@ -47,7 +47,7 @@ namespace LangTeach.Api.Migrations
                 table: "TeacherFollowups");
 
             migrationBuilder.Sql(
-                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_Scope]");
+                "ALTER TABLE [TeacherFollowups] DROP CONSTRAINT [CK_TeacherFollowups_Scope];");
 
             migrationBuilder.DropColumn(
                 name: "GroupId",

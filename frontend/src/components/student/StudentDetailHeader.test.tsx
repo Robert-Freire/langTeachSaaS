@@ -115,6 +115,9 @@ describe('StudentDetailHeader', () => {
     const session: SessionLog = {
       id: 'sess-1',
       studentId: 'student-1',
+      groupId: null,
+      targetType: 'student',
+      targetName: 'Test Student',
       sessionDate: future.toISOString(),
       title: null,
       plannedContent: null,
@@ -223,5 +226,30 @@ describe('StudentDetailHeader', () => {
       </MemoryRouter>
     )
     expect(screen.getByTestId('voice-update-button')).toBeDisabled()
+  })
+
+  it('renders no group pills when groups prop is empty', () => {
+    renderHeader()
+    expect(screen.queryAllByTestId('group-affiliation-pill')).toHaveLength(0)
+  })
+
+  it('renders group affiliation pills for each group', () => {
+    render(
+      <MemoryRouter>
+        <StudentDetailHeader
+          student={BASE_STUDENT}
+          nextSession={null}
+          sessionFrequency={null}
+          groups={[
+            { id: 'g1', name: 'B1 Conversacion', cefrLevel: 'B1' },
+            { id: 'g2', name: 'Exam Prep', cefrLevel: null },
+          ]}
+        />
+      </MemoryRouter>
+    )
+    const pills = screen.getAllByTestId('group-affiliation-pill')
+    expect(pills).toHaveLength(2)
+    expect(pills[0]).toHaveTextContent('B1 Conversacion - B1')
+    expect(pills[1]).toHaveTextContent('Exam Prep')
   })
 })

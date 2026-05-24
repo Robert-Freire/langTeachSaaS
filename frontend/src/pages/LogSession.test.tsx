@@ -88,6 +88,9 @@ const SAMPLE_STUDENT: Student = {
 const SAMPLE_SESSION: SessionLog = {
   id: 'session-1',
   studentId: STUDENT_ID,
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Test Student',
   sessionDate: '2026-03-01T00:00:00Z',
   plannedContent: null,
   actualContent: 'Covered ser vs estar',

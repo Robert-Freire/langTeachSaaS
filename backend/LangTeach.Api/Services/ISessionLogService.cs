@@ -10,6 +10,9 @@ public interface ISessionLogService
     Task<SessionLogDto?> UpdateAsync(Guid teacherId, Guid studentId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default);
     Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default);
 
+    // Combined student + group sessions for student profile view (Groups sprint #1331).
+    Task<List<SessionLogDto>> ListForStudentIncludingGroupsAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default);
+
     // Group-target session operations (Groups sprint #1326).
     Task<List<SessionLogDto>> ListForGroupAsync(Guid teacherId, Guid groupId, CancellationToken cancellationToken = default);
     Task<SessionLogDto?> GetGroupSessionByIdAsync(Guid teacherId, Guid groupId, Guid sessionId, CancellationToken cancellationToken = default);

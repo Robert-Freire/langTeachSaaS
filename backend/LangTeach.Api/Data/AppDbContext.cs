@@ -404,7 +404,7 @@ public class AppDbContext : DbContext
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.Group)
-             .WithMany(g => g.Followups)
+             .WithMany(g => g.TeacherFollowups)
              .HasForeignKey(f => f.GroupId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
