@@ -239,6 +239,21 @@ describe('SessionHistoryTab', () => {
     expect(screen.getByTestId('group-session-pill')).toBeInTheDocument()
   })
 
+  it('renders the session-type filter as a pill-toggle group matching the status pills, not a dropdown', async () => {
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+
+    const typeFilter = screen.getByTestId('session-type-filter')
+    expect(typeFilter).toBeInTheDocument()
+    // Default option is "All types" (not a bare "All" that would duplicate the status filter)
+    expect(screen.getByTestId('session-type-filter-all')).toHaveTextContent('All types')
+    expect(screen.getByTestId('session-type-filter-1-to-1')).toHaveTextContent('1-to-1')
+    expect(screen.getByTestId('session-type-filter-groups')).toHaveTextContent('Groups')
+    // Old Radix Select dropdown is gone
+    expect(typeFilter.querySelector('[role="combobox"]')).toBeNull()
+  })
+
   it('shows topic tag chips with category colors in expanded view', async () => {
     const session = {
       ...SESSION_BASE,
