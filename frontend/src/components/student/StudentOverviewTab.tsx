@@ -20,6 +20,8 @@ import { rotatingPrompt } from '@/utils/rotatingPrompt'
 interface Props {
   student: Student
   sessions?: SessionLog[]
+  /** All sessions including group sessions. When provided, used for LastSessionCard and recent-sessions strip. */
+  allSessions?: SessionLog[]
   followups?: TeacherFollowup[]
   onFollowupChange?: () => void
   onStudentChange: () => void
@@ -422,6 +424,7 @@ function TeachingNotesPanel({
 export function StudentOverviewTab({
   student,
   sessions = [],
+  allSessions,
   followups = [],
   onFollowupChange,
   onStudentChange,
@@ -433,7 +436,8 @@ export function StudentOverviewTab({
   const pendingFollowupsCount = followups.filter(f => f.status === 'pending').length
   const pendingTodosCount = student.profile.teachingTodos.filter(t => t.status === 'pending').length
   const firstName = student.name.split(' ')[0]
-  const lastSession = pickLastSession(sessions)
+  const mergedSessions = allSessions ?? sessions
+  const lastSession = pickLastSession(mergedSessions)
 
   const FOLLOWUP_PROMPTS = [
     `Anything you promised ${firstName} for next class?`,
@@ -512,7 +516,7 @@ export function StudentOverviewTab({
 
       {/* Compact Session History -- skip the top entry when LastSessionCard is showing it */}
       {lastSession !== null && (
-        <RecentSessions sessions={sessions} onViewAll={onViewAllSessions} skipFirst studentId={student.id} />
+        <RecentSessions sessions={mergedSessions} onViewAll={onViewAllSessions} skipFirst studentId={student.id} />
       )}
 
       {/* Teacher's Working Memory */}

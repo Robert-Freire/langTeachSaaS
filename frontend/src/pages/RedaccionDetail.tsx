@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { ArrowLeft, Download, Lock, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
 import {
   corregirCorrection,
   downloadCorrectionDocx,
@@ -159,8 +159,8 @@ export default function RedaccionDetail() {
             </Button>
           )}
           {isCorregida && hasAboveLevel && (
-            <Button variant="outline" size="sm" onClick={() => onDownload('teacher')}>
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant="secondary" size="sm" onClick={() => onDownload('teacher')}>
+              <Lock className="mr-2 h-4 w-4" />
               Versión completa
             </Button>
           )}

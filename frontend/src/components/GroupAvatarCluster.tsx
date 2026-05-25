@@ -29,15 +29,16 @@ export function GroupAvatarCluster({
 }: GroupAvatarClusterProps) {
   const isGrid = size === 'lg'
   const maxVisible = isGrid ? 4 : 3
-  const visible = members.slice(0, maxVisible)
-  const overflow = totalCount - maxVisible
+  // In grid mode the overflow tile occupies slot 3, so only maxVisible-1 member tiles are shown.
+  const showsOverflow = totalCount > maxVisible
+  const tilesShown = isGrid && showsOverflow ? maxVisible - 1 : Math.min(members.length, maxVisible)
+  const overflow = totalCount - tilesShown
+  const visible = members.slice(0, tilesShown)
   const tileCls = TILE_CLASS[size]
   const ariaNames = visible.map(m => m.name).join(', ')
   const ariaLabel = `${totalCount} member${totalCount === 1 ? '' : 's'}${ariaNames ? `: ${ariaNames}` : ''}`
 
   if (isGrid) {
-    const slots = [...visible]
-    while (slots.length < 4 && slots.length < totalCount) slots.push(null as unknown as GroupAvatarMember)
     return (
       <div
         role="img"
