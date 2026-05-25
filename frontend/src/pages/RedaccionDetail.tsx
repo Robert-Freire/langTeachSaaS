@@ -10,6 +10,7 @@ import {
   type CorrectionDetail,
 } from '../api/corrections'
 import { getStudent } from '../api/students'
+import { isAxiosError } from '../lib/apiClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,6 +32,9 @@ export default function RedaccionDetail() {
   // 'student' = level-filtered (the view the student receives, default). 'teacher' = every
   // error detected, including above-level ones the filter suppressed (#1351).
   const [errorView, setErrorView] = useState<'student' | 'teacher'>('student')
+  // Set when /corregir is refused for being over the monthly generation quota (429), so the
+  // teacher sees the quota block rather than a generic failure (#1223, #1362).
+  const [quotaMessage, setQuotaMessage] = useState<string | null>(null)
 
   const studentId = id
   const queryKey = ['correction', studentId, correctionId]
@@ -50,13 +54,25 @@ export default function RedaccionDetail() {
 
   const corregir = useMutation({
     mutationFn: () => corregirCorrection(studentId!, correctionId!),
-    onMutate: () => setViewState('generating'),
+    onMutate: () => {
+      setQuotaMessage(null)
+      setViewState('generating')
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
       setViewState('idle')
     },
     onError: (err) => {
       logger.error('RedaccionDetail', 'Generation failed', err)
+      if (isAxiosError(err) && err.response?.status === 429) {
+        const body = err.response.data as { message?: string; resetsAt?: string } | undefined
+        const resets = body?.resetsAt ? new Date(body.resetsAt).toLocaleDateString() : null
+        setQuotaMessage(
+          resets
+            ? `Has alcanzado el límite mensual de generaciones. Se restablece el ${resets}.`
+            : 'Has alcanzado el límite mensual de generaciones.',
+        )
+      }
       setViewState('failed')
     },
   })
@@ -229,17 +245,24 @@ export default function RedaccionDetail() {
         <div className="space-y-4">
           <ReadingColumn text={data.studentText} />
           <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
-            <p className="font-medium">No se pudo generar la corrección.</p>
-            <p className="mt-1">Inténtalo de nuevo. Si el problema persiste, vuelve más tarde.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => corregir.mutate()}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reintentar
-            </Button>
+            {quotaMessage ? (
+              // Over monthly quota: retrying will not help until the limit resets, so no retry button.
+              <p className="font-medium">{quotaMessage}</p>
+            ) : (
+              <>
+                <p className="font-medium">No se pudo generar la corrección.</p>
+                <p className="mt-1">Inténtalo de nuevo. Si el problema persiste, vuelve más tarde.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => corregir.mutate()}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reintentar
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
