@@ -518,6 +518,13 @@ public class PedagogyConfigService : IPedagogyConfigService
         return idx >= 0 && idx < CefrOrder.Length - 1 ? CefrOrder[idx + 1] : null;
     }
 
+    public bool IsAtOrAboveLevel(string level, string floor)
+    {
+        var levelIdx = Array.IndexOf(CefrOrder, NormalizeLevel(level));
+        var floorIdx = Array.IndexOf(CefrOrder, NormalizeLevel(floor));
+        return levelIdx >= 0 && floorIdx >= 0 && levelIdx >= floorIdx;
+    }
+
     public IReadOnlyList<AlwaysKeepGrammarTopic> GetAlwaysKeepTopics() =>
         _alwaysKeepRules.AlwaysKeepTopics;
 
@@ -629,6 +636,17 @@ public class PedagogyConfigService : IPedagogyConfigService
                 throw new InvalidOperationException(
                     $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has an example with a blank Text, Note, or Label.");
         }
+
+        // Drift anchor for the paragraph-break floor guard in RedaccionCorrectionService (#1368).
+        // If either constant drifts from the config prose, the service will fail fast at startup.
+        var cohesionCategory = f.Categories.First(c => string.Equals(c.Code, "C", StringComparison.OrdinalIgnoreCase));
+        var cohesionText = cohesionCategory.Description + string.Join(" ", cohesionCategory.SubTypes ?? []);
+        if (!cohesionText.Contains("¶", StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "PedagogyConfigService: correction-categories.json C category must define the paragraph-break marker (¶).");
+        if (!cohesionText.Contains("B1", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                "PedagogyConfigService: correction-categories.json C category must define the paragraph-break floor (B1).");
 
         if (f.CriticalRules.Any(r => string.IsNullOrWhiteSpace(r.Topic) || string.IsNullOrWhiteSpace(r.Preamble)))
             throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a criticalRule with a blank Topic or Preamble.");

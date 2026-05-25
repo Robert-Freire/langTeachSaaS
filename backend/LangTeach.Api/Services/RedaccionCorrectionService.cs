@@ -511,6 +511,19 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     });
                     break;
                 case "remove":
+                    // Floored-category guard (#1368): if the finding's category has a minimum CEFR
+                    // floor and the student is at or above that floor, the tag is in scope and must
+                    // not be removed regardless of the filter's decision.
+                    // Paragraph-break C findings (correctedForm == "¶") have a B1 floor;
+                    // the filter incorrectly classifies them by tag type rather than checking the floor.
+                    if (IsParagraphBreakAtFloor(tag, cefr, pedagogy))
+                    {
+                        logger.LogDebug(
+                            "Level filter overridden: paragraph-break C tag kept for {Cefr} student (floor B1). CorrectionId={CorrectionId}",
+                            cefr, correctionId);
+                        result.Add(tag);
+                        break;
+                    }
                     // Above the student's level. No longer discarded: persisted with the
                     // original category/explanation/correctedForm so the teacher can see it
                     // in the all-errors view, but excluded from the student default (#1351).
@@ -642,6 +655,17 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     }
 
     private static readonly ConcurrentDictionary<string, Regex> _keywordRegexCache = new();
+
+    // Paragraph-break C tags use correctedForm == "¶" as their structural marker (#1350).
+    // They have a B1 floor: only generated for B1-and-above students, so the filter must not
+    // remove them for a student who is at or above that floor (#1368).
+    private const string ParagraphBreakFloor = "B1";
+    private const string ParagraphBreakCorrectedForm = "¶";
+
+    private static bool IsParagraphBreakAtFloor(RedaccionCorrectionTagDto tag, string studentCefr, IPedagogyConfigService pedagogy) =>
+        tag.Category == CorrectionTagCategory.Cohesion
+        && tag.CorrectedForm == ParagraphBreakCorrectedForm
+        && pedagogy.IsAtOrAboveLevel(studentCefr, ParagraphBreakFloor);
 
     private static bool IsAlwaysKeepGTag(RedaccionCorrectionTagDto tag, IReadOnlyList<AlwaysKeepGrammarTopic> topics)
     {
