@@ -118,14 +118,16 @@ public class CorrectionWorker : BackgroundService
         var runDb = sp.GetRequiredService<AppDbContext>();
         var claude = sp.GetRequiredService<IClaudeClient>();
         var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
+        var pedagogy = sp.GetRequiredService<IPedagogyConfigService>();
         var runLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
 
         try
         {
             await RedaccionCorrectionService.RunCorrectionInScopeAsync(
                 correctionId, studentId, teacherId,
-                runDb, claude, correctionPromptService, runLogger,
-                stoppingToken);
+                runDb, claude, correctionPromptService,
+                pedagogy, _options.Value,
+                runLogger, stoppingToken);
         }
         catch (ClaudeRateLimitException rle)
         {

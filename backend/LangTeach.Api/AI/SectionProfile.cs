@@ -4,7 +4,8 @@ public record SectionProfile(
     string SectionType,
     Dictionary<string, SectionLevelProfile> Levels,
     Dictionary<string, string>? WeaknessTargetingGuidance = null,
-    string? SharedGuidance = null
+    string? SharedGuidance = null,
+    string? SharedClosingConstraint = null
 );
 
 public record SectionLevelProfile(

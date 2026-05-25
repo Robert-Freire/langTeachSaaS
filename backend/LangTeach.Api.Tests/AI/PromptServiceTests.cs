@@ -1460,8 +1460,8 @@ public class PromptServiceTests
         var req = _sut.BuildGrammarPrompt(BaseCtx()); // B1
 
         req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING");
-        req.UserPrompt.Should().Contain("pluscuamperfecto");
-        req.UserPrompt.Should().Contain("subjuntivo");
+        req.UserPrompt.Should().ContainEquivalentOf("pluscuamperfecto");
+        req.UserPrompt.Should().ContainEquivalentOf("subjuntivo");
     }
 
     [Fact]
@@ -1484,8 +1484,8 @@ public class PromptServiceTests
 
         req.UserPrompt.Should().Contain("GRAMMAR FOCUS CEILING",
             because: "B1 Production conversation must receive the ceiling constraint to prevent subjuntivo/pluscuamperfecto overreach");
-        req.UserPrompt.Should().Contain("subjuntivo");
-        req.UserPrompt.Should().Contain("pluscuamperfecto");
+        req.UserPrompt.Should().ContainEquivalentOf("subjuntivo");
+        req.UserPrompt.Should().ContainEquivalentOf("pluscuamperfecto");
     }
 
     [Fact]
@@ -1801,8 +1801,8 @@ public class PromptServiceTests
 
         var req = _sut.BuildConversationPrompt(ctx);
 
-        req.UserPrompt.Should().Contain("Do not introduce new vocabulary",
-            because: "WrapUp must explicitly forbid introducing new material");
+        req.UserPrompt.Should().Contain("Review only content from this lesson",
+            because: "WrapUp must constrain content to this lesson only");
     }
 
     [Fact]

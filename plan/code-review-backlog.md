@@ -8,6 +8,10 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into #833 (bug batch) and #837 (deduplication). Remaining entries deleted (verified safe, intentional per spec, or already tracked).*
 
+## From #1359 (2026-05-24)
+
+- `RedaccionCorrectionPromptBuilder.ParseModel` is `internal static` but called by sibling builders (`RedaccionLevelFilterPromptBuilder`, `RedaccionScopeAffirmerPromptBuilder`). Should move to a shared utility (e.g., `ClaudeModelParser` static class) once more callers appear. Low risk; no behavioral issue.
+
 *Cleared 2026-04-27 during Student Profile Voice Input sprint close. Actionable entries batched into #989 (DS component polish), #990 (code hardening), #992 (navigation UX). Cosmetic/dismissed entries deleted.*
 
 *Cleared 2026-05-11 during Text Correction sprint close. Actionable entries batched into #1222-#1233. Cosmetic entries deleted; intentional trade-offs dismissed.*
