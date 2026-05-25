@@ -31,7 +31,7 @@ export function GroupAvatarCluster({
   const maxVisible = isGrid ? 4 : 3
   // In grid mode the overflow tile occupies slot 3, so only maxVisible-1 member tiles are shown.
   const showsOverflow = totalCount > maxVisible
-  const tilesShown = isGrid && showsOverflow ? maxVisible - 1 : Math.min(members.length, maxVisible)
+  const tilesShown = isGrid && showsOverflow ? Math.min(members.length, maxVisible - 1) : Math.min(members.length, maxVisible)
   const overflow = totalCount - tilesShown
   const visible = members.slice(0, tilesShown)
   const tileCls = TILE_CLASS[size]

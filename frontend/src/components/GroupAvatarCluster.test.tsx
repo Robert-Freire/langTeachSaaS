@@ -33,6 +33,12 @@ describe('GroupAvatarCluster', () => {
     expect(screen.getByRole('img', { name: /5 members: Person 0, Person 1, Person 2/i })).toBeInTheDocument()
   })
 
+  it('handles short preview array in grid overflow mode (preview shorter than maxVisible-1)', () => {
+    render(<GroupAvatarCluster size="lg" members={makeMembers(2)} totalCount={5} />)
+    expect(screen.getAllByTestId('group-avatar-tile')).toHaveLength(2)
+    expect(screen.getByTestId('group-avatar-overflow')).toHaveTextContent('+3')
+  })
+
   it('renders 4 tiles and no overflow for size=lg when count = 4', () => {
     render(<GroupAvatarCluster size="lg" members={makeMembers(4)} totalCount={4} />)
     expect(screen.getAllByTestId('group-avatar-tile')).toHaveLength(4)
