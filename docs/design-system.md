@@ -306,6 +306,15 @@ Sessions are edited inline in their expanded row. No modal, no separate edit pag
 
 ---
 
+### 8.4 What Is Explicitly Not Allowed
+
+- Save/Cancel button pairs on inline edits within detail screens.
+- Kebab menus containing only Edit + Delete. If Edit is the primary action, it must be directly accessible via a hover-reveal icon or the expanded state. Kebabs are for 3+ secondary actions.
+- Per-section Save buttons on full-page edit forms (Pattern C).
+- Mixing Pattern A and Pattern B on fields of the same semantic type on the same screen.
+
+---
+
 ### 8.5 Group Create/Edit Save Pattern
 
 GroupForm (`/groups/new`, `/groups/:id/edit`) uses **explicit Save/Cancel** rather than Pattern C (autosave + Done). This is the only approved deviation from Pattern C for a dedicated edit screen.
@@ -318,15 +327,6 @@ GroupForm (`/groups/new`, `/groups/:id/edit`) uses **explicit Save/Cancel** rath
 - **Button row:** `flex items-center justify-between`, Cancel on the left, Save on the right.
 
 **Exception scope:** applies only to GroupForm. Do not apply explicit Save/Cancel to other screens without an explicit design decision and DS update.
-
----
-
-### 8.4 What Is Explicitly Not Allowed
-
-- Save/Cancel button pairs on inline edits within detail screens.
-- Kebab menus containing only Edit + Delete. If Edit is the primary action, it must be directly accessible via a hover-reveal icon or the expanded state. Kebabs are for 3+ secondary actions.
-- Per-section Save buttons on full-page edit forms (Pattern C).
-- Mixing Pattern A and Pattern B on fields of the same semantic type on the same screen.
 
 ---
 
@@ -778,7 +778,7 @@ The `StudentMemberPicker` inside GroupForm provides an inline typeahead search t
 
 **Glassmorphism dropdown:**
 - Container: `absolute z-10 mt-1 w-full rounded-xl border border-[#C7C4D8]/20 bg-white/80 backdrop-blur-[12px] shadow-[0_12px_40px_rgba(26,27,34,0.06)] max-h-52 overflow-y-auto`.
-- This is the §2 glassmorphism spec applied to a dropdown context.
+- This is the §2 glassmorphism spec applied to a dropdown context. `bg-white/80` is the concrete form of `surface-container-lowest` (which is `#FFFFFF`) at 80% opacity.
 - Visible when the dropdown is open and either a search value exists or results are available.
 - Dismisses when the user clicks outside the picker container.
 
@@ -786,7 +786,7 @@ The `StudentMemberPicker` inside GroupForm provides an inline typeahead search t
 - `flex w-full items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-[#F4F2FD] transition-colors`.
 - Avatar: `h-7 w-7 rounded-full text-xs font-semibold` in per-student color.
 - Name: `text-[#1A1B22]`.
-- CEFR badge (if present): `ml-auto rounded px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.05em]` using the standard CEFR color classes (§5 CEFR Badges).
+- CEFR badge (if present): `ml-auto rounded-md px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.05em]` using the standard CEFR color classes (§5 CEFR Badges). Use `rounded-md` (0.375rem) consistent with the CEFR badge shape token in §5, not plain `rounded`.
 - Already-selected students are excluded from the list.
 
 **Empty state inside dropdown:** "No students found" in `text-sm text-zinc-400 italic`.
