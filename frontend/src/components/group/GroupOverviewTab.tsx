@@ -112,15 +112,18 @@ export function GroupOverviewTab({
   onViewAllMembers,
   onViewAllSessions,
 }: Props) {
+  // Overview is a summary, not a full listing: the Members and Sessions tabs own the complete lists.
   const members = group.members ?? []
-  const displayMembers = members.slice(0, 8)
-  const showMembersViewAll = members.length > 8
+  const displayMembers = members.slice(0, 3)
+  const showMembersViewAll = members.length > 3
 
   const pastSessions = sessions
     .filter(s => !s.isCancelled && s.sessionDate && new Date(s.sessionDate) <= new Date())
     .sort((a, b) => new Date(b.sessionDate!).getTime() - new Date(a.sessionDate!).getTime())
   const lastSession = pastSessions[0] ?? null
-  const recentSessions = pastSessions.slice(1, 6)
+  // Last Session card already highlights index 0; the strip summarises the next few.
+  const recentSessions = pastSessions.slice(1, 4)
+  const showSessionsViewAll = pastSessions.length > 4
 
   return (
     <div className="space-y-6">
@@ -211,7 +214,7 @@ export function GroupOverviewTab({
         <div data-testid="session-history-strip">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-[#1A1B22]">Session History</h3>
-            {pastSessions.length > 6 && (
+            {showSessionsViewAll && (
               <button
                 type="button"
                 onClick={onViewAllSessions}

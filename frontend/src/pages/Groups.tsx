@@ -17,7 +17,8 @@ const CEFR_FILTER_OPTIONS = ['All', ...CEFR_LEVELS] as const
 const PAGE_SIZE = 12
 
 const COL_CLASSES = 'grid-cols-[minmax(140px,2fr)_80px_minmax(180px,1.5fr)_110px_130px_1fr]'
-const TABLE_HEADERS = ['NAME', 'CEFR LEVEL', 'MEMBERS', 'LAST SESSION', 'NEXT SESSION', 'SIGNALS'] as const
+// Last column header is intentionally blank: it sits over the row-chevron cell, which carries no label.
+const TABLE_HEADERS = ['NAME', 'CEFR LEVEL', 'MEMBERS', 'LAST SESSION', 'NEXT SESSION', ''] as const
 
 export default function Groups() {
   const navigate = useNavigate()

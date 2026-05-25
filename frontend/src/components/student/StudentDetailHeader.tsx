@@ -11,6 +11,14 @@ import { cn } from '@/lib/utils'
 import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { getObjectiveUrgency, getDaysRemaining, formatDaysRemaining } from '@/lib/objectiveUrgency'
 
+// Append the group's CEFR level only when the group name doesn't already reference it,
+// so "Lunes B1" stays "Lunes B1" instead of becoming "Lunes B1 - B1".
+function groupPillLabel(name: string, cefrLevel: string | null | undefined): string {
+  if (!cefrLevel) return name
+  const alreadyMentioned = new RegExp(`\\b${cefrLevel}\\b`, 'i').test(name)
+  return alreadyMentioned ? name : `${name} - ${cefrLevel}`
+}
+
 function buildIdentitySubtitle(student: Student): string {
   const segments: string[] = []
   if (student.languages.nativeLanguages.length > 0) {
@@ -168,7 +176,7 @@ export function StudentDetailHeader({ student, nextSession, sessionFrequency, on
                   data-testid="group-affiliation-pill"
                   className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium bg-[#EDE9FE] text-[#5B21B6] hover:bg-[#DDD6FE] transition-colors"
                 >
-                  {group.name}{group.cefrLevel ? ` - ${group.cefrLevel}` : ''}
+                  {groupPillLabel(group.name, group.cefrLevel)}
                 </Link>
               ))}
               <TeachingChannelPicker
