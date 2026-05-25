@@ -147,6 +147,7 @@ public class PedagogyConfigService : IPedagogyConfigService
         _correctionCalibration = new Dictionary<string, string>(calibrationFile.CefrCalibration, StringComparer.OrdinalIgnoreCase);
         ValidateCorrectionCalibration(_correctionCalibration);
         _alwaysKeepRules = LoadJson<AlwaysKeepGrammarRulesFile>(assembly, "LangTeach.Api.Correction.always-keep-grammar-rules.json");
+        ValidateAlwaysKeepRules(_alwaysKeepRules);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -612,6 +613,22 @@ public class PedagogyConfigService : IPedagogyConfigService
                 || string.IsNullOrWhiteSpace(e.CorrectedForm) || string.IsNullOrWhiteSpace(e.Note)))
                 throw new InvalidOperationException(
                     $"PedagogyConfigService: correction-categories.json criticalRule '{rule.Topic}' has an example with a blank required field.");
+        }
+    }
+
+    internal static void ValidateAlwaysKeepRules(AlwaysKeepGrammarRulesFile rules)
+    {
+        if (rules.AlwaysKeepTopics is not { Length: > 0 })
+            throw new InvalidOperationException(
+                "PedagogyConfigService: always-keep-grammar-rules.json alwaysKeepTopics is missing or empty.");
+        foreach (var topic in rules.AlwaysKeepTopics)
+        {
+            if (string.IsNullOrWhiteSpace(topic.Topic))
+                throw new InvalidOperationException(
+                    "PedagogyConfigService: always-keep-grammar-rules.json contains a topic with blank 'topic'.");
+            if (topic.DescriptionKeywords is not { Length: > 0 } || topic.DescriptionKeywords.Any(string.IsNullOrWhiteSpace))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: always-keep topic '{topic.Topic}' must define non-empty descriptionKeywords.");
         }
     }
 
