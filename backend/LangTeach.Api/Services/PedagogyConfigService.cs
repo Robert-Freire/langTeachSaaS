@@ -77,6 +77,14 @@ public class PedagogyConfigService : IPedagogyConfigService
 
             if (rule.GrammarFocusTargets is { Length: > 0 })
             {
+                if (rule.GrammarInScope is not { Length: > 0 })
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} defines grammarFocusTargets but grammarInScope is missing/empty. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
+                if (rule.GrammarInScope.Any(string.IsNullOrWhiteSpace))
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} grammarInScope contains blank entries. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
                 // A FocusTarget is valid when it either starts with a grammarInScope entry
                 // (FocusTarget extends an InScope concept with extra drill notes) or an InScope
                 // entry starts with the FocusTarget (FocusTarget uses a shorter canonical form).
