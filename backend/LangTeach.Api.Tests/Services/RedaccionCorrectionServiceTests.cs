@@ -17,6 +17,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
     private readonly ICorrectionPromptService _correctionPromptService;
+    private readonly StubUsageLimitService _usage = new();
     private readonly IPedagogyConfigService _pedagogy;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
@@ -48,7 +49,7 @@ public class RedaccionCorrectionServiceTests : IDisposable
         var scopeProvider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(scopeProvider);
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory, _usage,
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent();
@@ -110,6 +111,61 @@ public class RedaccionCorrectionServiceTests : IDisposable
         row.Tags.Should().HaveCount(1);
         row.Tags.First().Category.Should().Be("O");
         row.Tags.First().SpannedText.Should().Be("ablar");
+    }
+
+    [Fact]
+    public async Task CorregirAsync_OverMonthlyQuota_ThrowsAndDoesNotEnqueueOrRecord()
+    {
+        _usage.CanGenerate = false;
+        var id = SeedCorrection(text: "Hoy fui al parque.", status: CorrectionStatus.Entregada);
+
+        var ex = await Assert.ThrowsAsync<CorrectionQuotaExceededException>(() =>
+            _sut.CorregirAsync(_teacherId, _studentId, id));
+        ex.UsageStatus.Should().NotBeNull();
+
+        // No transition (still Entregada) and no usage recorded: the correction was refused.
+        using var check = new AppDbContext(_dbOptions);
+        check.Corrections.First(c => c.Id == id).Status.Should().Be(CorrectionStatus.Entregada);
+        _usage.RecordCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CorregirAsync_UnderQuota_FirstAttempt_RecordsExactlyOnce()
+    {
+        var id = SeedCorrection(text: "Hoy fui al parque.", status: CorrectionStatus.Entregada);
+
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+
+        result.Status.Should().Be(CorrectionStatus.Encolada);
+        _usage.RecordCount.Should().Be(1, "a first correction attempt counts once against the monthly quota");
+        _usage.RecordedBlockTypes.Should().ContainSingle().Which.Should().Be(ContentBlockType.ErrorCorrection);
+    }
+
+    [Fact]
+    public async Task CorregirAsync_RetryAfterFailedCorrection_DoesNotReRecord()
+    {
+        // A CorreccionFallida -> Encolada retry must not double-charge: the first attempt
+        // already consumed the quota unit (#1223).
+        var id = SeedCorrection(text: "Hoy fui al parque.", status: CorrectionStatus.CorreccionFallida);
+
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+
+        result.Status.Should().Be(CorrectionStatus.Encolada);
+        _usage.RecordCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task CorregirAsync_IdempotentOnInFlight_NotGatedAndNotRecorded_EvenWhenOverQuota()
+    {
+        // The gate sits after the status validation, so a re-corregir on an in-flight correction
+        // returns the existing state without being blocked or recording, even over quota.
+        _usage.CanGenerate = false;
+        var id = SeedCorrection(text: "Hoy fui al parque.", status: CorrectionStatus.Corrigiendo);
+
+        var result = await _sut.CorregirAsync(_teacherId, _studentId, id);
+
+        result.Status.Should().Be(CorrectionStatus.Corrigiendo);
+        _usage.RecordCount.Should().Be(0);
     }
 
     [Fact]

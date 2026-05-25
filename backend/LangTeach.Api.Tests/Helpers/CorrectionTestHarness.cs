@@ -111,7 +111,7 @@ public static class CorrectionTestHarness
         var scopeSp = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(scopeSp);
 
-        var service = new RedaccionCorrectionService(db, scopeFactory,
+        var service = new RedaccionCorrectionService(db, scopeFactory, new StubUsageLimitService(),
             NullLogger<RedaccionCorrectionService>.Instance);
 
         await service.CorregirAsync(teacherId, studentId, correctionId);

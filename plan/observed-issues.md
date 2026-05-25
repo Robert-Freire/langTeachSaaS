@@ -4,8 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |---|---|---|---|
-
-<!-- No open rows. Add new observations below the header above. -->
+| #1362 | 2026-05-25 | medium | DemoSeeder.SeedTeacherFollowupsAsync throws SQL FK constraint error 547 (DemoSeeder.cs:978) during visual-stack startup on sprint/groups, which aborts EnsureAnaVisualCorrectionAsync so no demo corrections get seeded. Non-fatal (API still starts healthy) but blocks the correction-detail visual spec and review-ui Corregida screenshots. Pre-existing, unrelated to this PR. |
 
 ---
 

@@ -80,6 +80,7 @@ public class CorrectionConcurrencyTests : IDisposable
         var sut = new RedaccionCorrectionService(
             serviceDb,
             scopeFactory,
+            new StubUsageLimitService(),
             NullLogger<RedaccionCorrectionService>.Instance);
 
         // Act

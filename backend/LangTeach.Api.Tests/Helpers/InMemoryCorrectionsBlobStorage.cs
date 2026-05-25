@@ -20,5 +20,16 @@ public class InMemoryCorrectionsBlobStorage : ICorrectionsBlobStorage
     public Task<string> GetDownloadUrlAsync(string blobPath)
         => Task.FromResult($"http://localhost/corrections/{blobPath}");
 
+    public Task DeleteAsync(string blobPath, CancellationToken ct = default)
+    {
+        _blobs.TryRemove(blobPath, out _);
+        Interlocked.Increment(ref _deleteCount);
+        return Task.CompletedTask;
+    }
+
+    // Atomic so parallel-delete assertions cannot lose increments (matches the ConcurrentDictionary above).
+    private int _deleteCount;
+    public int DeleteCount => Volatile.Read(ref _deleteCount);
+
     public bool ContainsBlob(string blobPath) => _blobs.ContainsKey(blobPath);
 }

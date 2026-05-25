@@ -120,6 +120,15 @@ public class CorrectionsController : ControllerBase
         {
             return Conflict(new { code = ex.Code, message = ex.Message });
         }
+        catch (CorrectionQuotaExceededException ex)
+        {
+            // Mirror GenerateController's over-quota response so the client shows the same
+            // "monthly limit reached" UX for a blocked correction as for a blocked generation (#1223).
+            Response.Headers["Retry-After"] =
+                Math.Max(0, (int)(ex.UsageStatus.ResetsAt - DateTime.UtcNow).TotalSeconds).ToString(CultureInfo.InvariantCulture);
+            return StatusCode(StatusCodes.Status429TooManyRequests,
+                new { message = ex.Message, resetsAt = ex.UsageStatus.ResetsAt });
+        }
     }
 
     [HttpGet("{id:guid}/export.docx")]

@@ -89,6 +89,18 @@ describe('RedaccionDetail', () => {
     expect(await screen.findByRole('button', { name: /Reintentar/ })).toBeInTheDocument()
   })
 
+  it('shows the quota block (no Retry) when corregir is refused over the monthly limit', async () => {
+    mockGet.mockResolvedValue({ ...corregida(), status: 'Entregada', tags: [] })
+    mockCorregir.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 429, data: { message: 'Monthly generation limit reached.', resetsAt: '2026-06-01T00:00:00Z' } },
+    })
+    renderAt('/students/stu-1/redacciones/cor-1')
+    fireEvent.click(await screen.findByRole('button', { name: 'Corregir' }))
+    expect(await screen.findByText(/límite mensual de generaciones/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Reintentar/ })).not.toBeInTheDocument()
+  })
+
   it('renders Corregida with marked-up text and Descargar button', async () => {
     mockGet.mockResolvedValue(corregida())
     renderAt('/students/stu-1/redacciones/cor-1')

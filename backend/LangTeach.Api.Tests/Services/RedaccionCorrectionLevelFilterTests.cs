@@ -53,7 +53,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory, new StubUsageLimitService(),
             NullLogger<RedaccionCorrectionService>.Instance);
 
         SeedStudent(cefrLevel: "A2");

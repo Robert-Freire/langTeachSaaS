@@ -2,6 +2,10 @@
 
 Unfixed notes from code review (review agent) runs. When reviewing this backlog, be critical: if a finding has real risk (future breakage, i18n issues, security), create an issue. If it's superficial or speculative, delete it.
 
+## Open
+
+- *#1362 (arch, future-reuse, low): quota-429 client handling (detect status, extract resetsAt, format date) is now inline in two places (useGenerate hook + RedaccionDetail onError). If a third 429 call site appears, extract a shared `parseQuotaError` util. Not a current violation (two call sites, different abstraction layers).*
+
 ---
 
 ## Cleared history
