@@ -5,6 +5,7 @@ using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,11 +17,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = AppJsonOptions.CaseInsensitiveWithComments;
 
     public RedaccionCorrectionService(
         AppDbContext db,

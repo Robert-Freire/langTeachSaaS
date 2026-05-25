@@ -140,10 +140,7 @@ startIndex is inclusive; endIndex is exclusive.
         return sb.ToString().TrimEnd();
     }
 
-    // Only normalize whitespace: replacing \n/\r with spaces keeps offsets correct (1-to-1 swap)
-    // and prevents newlines from breaking the prompt structure. Do NOT replace " < > or other
-    // characters: the model reports span indices into the text it sees, so any character mutation
-    // would cause RunScopeAffirmerAsync's span validation to incorrectly reject valid spans.
+    // Whitespace-only: see PromptSanitizer.SanitizeForOffsetTracking for the rationale.
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ');
+        PromptSanitizer.SanitizeForOffsetTracking(s);
 }

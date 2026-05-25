@@ -216,8 +216,10 @@ public class DashboardService : IDashboardService
     private async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
     {
         var cutoff30Days = now.AddDays(-30);
+        var todayDateOnly = DateOnly.FromDateTime(now);
 
-        var rows = await _db.Students
+        // Phase 1a: student rows (todos + metadata).
+        var studentRows = await _db.Students
             .Where(s => s.TeacherId == teacherId && !s.IsDeleted && s.IsActive)
             .Select(s => new
             {
@@ -231,7 +233,7 @@ public class DashboardService : IDashboardService
                 PendingTodos = s.TeacherFollowups
                     .Where(f => f.Kind == TeacherFollowupKinds.Pedagogical && f.Status == "pending")
                     .OrderBy(f => f.CreatedAt)
-                    // Projection matches TeachingTodoDtoProjection.Compiled — keep in sync.
+                    // Projection matches TeachingTodoDtoProjection.Compiled -- keep in sync.
                     .Select(f => new TeachingTodoDto(
                         f.Id.ToString(), f.Text, f.CreatedAt,
                         f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
@@ -239,52 +241,44 @@ public class DashboardService : IDashboardService
                         f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null,
                         f.DueDate))
                     .ToList(),
-                // Groups #1326: per-student stats include sessions targeting groups the student belongs to.
-                // The "session" subquery joins through StudentGroups when GroupId is set.
-                // The predicate is repeated across the five aggregates below because each subquery
-                // correlates with the outer row's s.Id; EF Core projection translation cannot follow
-                // a method call returning IQueryable here. Backlog item to factor via an Expression
-                // tree helper is tracked in plan/code-review-backlog.md.
-                LastSessionDate = _db.SessionLogs
-                    .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now
-                              && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
-                    .Max(sl => (DateTime?)sl.SessionDate),
-                NextSessionDate = _db.SessionLogs
-                    .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now
-                              && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
-                    .Min(sl => (DateTime?)sl.SessionDate),
-                TotalSessions = _db.SessionLogs.Count(sl => sl.TeacherId == teacherId && !sl.IsDeleted
-                              && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted)))),
-                CancelledSessionsLast30Days = _db.SessionLogs
-                    .Count(sl => sl.TeacherId == teacherId && !sl.IsDeleted
-                              && sl.IsCancelled
-                              && sl.SessionDate.HasValue
-                              && sl.SessionDate.Value >= cutoff30Days
-                              && sl.SessionDate.Value <= now
-                              && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted)))),
-                LastHomeworkStatusRaw = _db.SessionLogs
-                    .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted
-                              && sl.SessionDate.HasValue
-                              && sl.SessionDate.Value < now
-                              && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable
-                              && (sl.StudentId == s.Id
-                                  || (sl.GroupId != null && _db.StudentGroups.Any(sg => sg.GroupId == sl.GroupId && sg.StudentId == s.Id && !sg.Group.IsDeleted))))
-                    .OrderByDescending(sl => sl.SessionDate)
-                    .Select(sl => (int?)sl.PreviousHomeworkStatus)
-                    .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
-        var todayDateOnly = DateOnly.FromDateTime(now);
+        // Phase 1b: group memberships for all active students in one batch.
+        // Used below to implement BelongsToStudent without repeating the subquery 5x.
+        // Materialize first (EF Core cannot translate ToDictionaryAsync with ToHashSet selector).
+        var studentIds = studentRows.Select(r => r.Id).ToList();
+        var deletedGroupIds = await _db.Groups
+            .Where(g => g.IsDeleted)
+            .Select(g => g.Id)
+            .ToListAsync(cancellationToken);
+        var deletedGroupIdSet = deletedGroupIds.ToHashSet();
+        var membershipRows = await _db.StudentGroups
+            .Where(sg => studentIds.Contains(sg.StudentId))
+            .Select(sg => new { sg.StudentId, sg.GroupId })
+            .ToListAsync(cancellationToken);
+        var groupIdsByStudent = membershipRows
+            .Where(sg => !deletedGroupIdSet.Contains(sg.GroupId))
+            .GroupBy(sg => sg.StudentId)
+            .ToDictionary(g => g.Key, g => g.Select(x => (Guid?)x.GroupId).ToHashSet());
 
-        return rows.Select(r =>
+        // Phase 1c: all non-deleted sessions for this teacher (scoped by teacher, not per-student).
+        // In-memory aggregation below uses BelongsToStudent (defined once) instead of the previous
+        // 5x inline correlated subquery. Acceptable trade-off: loads ~N rows per teacher vs N*5 SQL
+        // round-trips with correlated subqueries per student.
+        var sessions = await _db.SessionLogs
+            .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && sl.SessionDate.HasValue)
+            .Select(sl => new { sl.StudentId, sl.GroupId, sl.SessionDate, sl.IsCancelled, sl.PreviousHomeworkStatus })
+            .ToListAsync(cancellationToken);
+
+        bool BelongsToStudent(Guid studentId, Guid? groupId)
         {
-            // NearestObjectiveDeadline: earliest future targetDate from ShortTermObjectives JSON
-            // DefaultIfEmpty() on empty sequence returns DateTime.MinValue — treated as null below
+            if (groupId == null) return false;
+            return groupIdsByStudent.TryGetValue(studentId, out var groups) && groups.Contains(groupId);
+        }
+
+        return studentRows.Select(r =>
+        {
             var objectives = JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(r.ShortTermObjectives);
             var nearestDeadline = objectives
                 .Where(o => o.TargetDate.HasValue && o.TargetDate.Value > todayDateOnly)
@@ -293,8 +287,36 @@ public class DashboardService : IDashboardService
                 .Min();
             DateTime? nearestObjectiveDeadline = nearestDeadline == DateTime.MinValue ? null : nearestDeadline;
 
-            string? lastHomeworkStatus = r.LastHomeworkStatusRaw.HasValue
-                ? ((HomeworkStatus)r.LastHomeworkStatusRaw.Value).ToString()
+            var studentSessions = sessions.Where(sl =>
+                sl.StudentId == r.Id || BelongsToStudent(r.Id, sl.GroupId));
+
+            var lastSessionDate = studentSessions
+                .Where(sl => sl.SessionDate!.Value < now)
+                .Select(sl => (DateTime?)sl.SessionDate!.Value)
+                .DefaultIfEmpty(null)
+                .Max();
+
+            var nextSessionDate = studentSessions
+                .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value > now)
+                .Select(sl => (DateTime?)sl.SessionDate!.Value)
+                .DefaultIfEmpty(null)
+                .Min();
+
+            var totalSessions = studentSessions.Count();
+
+            var cancelledLast30 = studentSessions
+                .Count(sl => sl.IsCancelled
+                          && sl.SessionDate!.Value >= cutoff30Days
+                          && sl.SessionDate!.Value <= now);
+
+            var lastHomeworkStatusRaw = studentSessions
+                .Where(sl => sl.SessionDate!.Value < now && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
+                .OrderByDescending(sl => sl.SessionDate)
+                .Select(sl => (int?)sl.PreviousHomeworkStatus)
+                .FirstOrDefault();
+
+            string? lastHomeworkStatus = lastHomeworkStatusRaw.HasValue
+                ? ((HomeworkStatus)lastHomeworkStatusRaw.Value).ToString()
                 : null;
 
             return new ActiveStudentDto(
@@ -303,12 +325,12 @@ public class DashboardService : IDashboardService
                 CefrLevel: r.CefrLevel,
                 NativeLanguages: JsonStorageHelper.DeserializeList<string>(r.NativeLanguages),
                 IsActive: r.IsActive,
-                LastSessionDate: r.LastSessionDate,
-                NextSessionDate: r.NextSessionDate,
-                TotalSessions: r.TotalSessions,
+                LastSessionDate: lastSessionDate,
+                NextSessionDate: nextSessionDate,
+                TotalSessions: totalSessions,
                 TeachingTodosCount: r.TeachingTodosCount,
                 PendingTodos: r.PendingTodos,
-                CancelledSessionsLast30Days: r.CancelledSessionsLast30Days,
+                CancelledSessionsLast30Days: cancelledLast30,
                 NearestObjectiveDeadline: nearestObjectiveDeadline,
                 LastHomeworkStatus: lastHomeworkStatus
             );
