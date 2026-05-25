@@ -31,3 +31,17 @@ public class CorrectionGenerationException : Exception
         Code = code;
     }
 }
+
+// Thrown when a teacher over their monthly generation quota requests a correction.
+// Carries the usage status so the controller can mirror GenerateController's 429 response
+// (message + resetsAt + Retry-After). A correction counts against the same monthly quota
+// as a lesson generation (#1223).
+public class CorrectionQuotaExceededException : Exception
+{
+    public UsageStatusDto UsageStatus { get; }
+    public CorrectionQuotaExceededException(UsageStatusDto usageStatus)
+        : base("Monthly generation limit reached.")
+    {
+        UsageStatus = usageStatus;
+    }
+}

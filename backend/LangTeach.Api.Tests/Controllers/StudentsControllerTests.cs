@@ -663,6 +663,76 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task Update_ClearsNullableScalarFields_ViaPut()
+    {
+        // The student form (manual save + autosave) clears nullable fields through PUT (full
+        // update). This is the path the in-browser "clear a field and reload" flow exercises (#1307).
+        var client = _factory.CreateAuthenticatedClient("auth0|put-clear-scalars", "put-clear-scalars@example.com");
+        var created = await CreateStudentAsync(client, "Clearable Student");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            OfficialCefrLevel = "B2",
+            BirthYear = 1990,
+            ReasonForStudying = "Trabajo en una empresa internacional.",
+        };
+        var setResponse = await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest);
+        setResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var set = await setResponse.Content.ReadFromJsonAsync<StudentDto>();
+        set!.Level.OfficialCefrLevel.Should().Be("B2");
+        set.Identity.BirthYear.Should().Be(1990);
+        set.Profile.ReasonForStudying.Should().Be("Trabajo en una empresa internacional.");
+
+        var clearRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            OfficialCefrLevel = null,
+            BirthYear = null,
+            ReasonForStudying = null,
+        };
+        var clearResponse = await client.PutAsJsonAsync($"/api/students/{created.Id}", clearRequest);
+        clearResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var reload = await client.GetAsync($"/api/students/{created.Id}");
+        var cleared = await reload.Content.ReadFromJsonAsync<StudentDto>();
+        cleared!.Level.OfficialCefrLevel.Should().BeNull();
+        cleared.Identity.BirthYear.Should().BeNull();
+        cleared.Profile.ReasonForStudying.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PatchStudent_OmittedField_LeavesExistingValueUntouched()
+    {
+        // PATCH (voice-merge) is replace-when-present: an omitted/null field must NOT clear the
+        // existing value. Clearing is a PUT concern, not a PATCH one (#1307).
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-omit-untouched", "patch-omit-untouched@example.com");
+        var created = await CreateStudentAsync(client, "Patch Student");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            OfficialCefrLevel = "C1",
+        };
+        (await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var patch = new PatchStudentRequest { Profession = "Ingeniera" };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{created.Id}", patch);
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+
+        updated!.Identity.Profession.Should().Be("Ingeniera");
+        updated.Level.OfficialCefrLevel.Should().Be("C1", "an omitted PATCH field must not clear the existing value");
+    }
+
+    [Fact]
     public async Task PatchStudent_InvalidSkillLevel_ReturnsBadRequest()
     {
         var client = _factory.CreateAuthenticatedClient("auth0|patch-skill-invalid", "patch-skill-invalid@example.com");

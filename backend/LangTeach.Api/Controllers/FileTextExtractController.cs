@@ -113,45 +113,70 @@ public class FileTextExtractController : ControllerBase
 
         memStream.Position = 0;
         string? text = null;
-        OcrException? lastOcrError = null;
-        foreach (var extractor in _extractors.Where(e => e.CanHandle(effectiveContentType)))
+        // The blob was uploaded above so the OCR extractors can read it (and so the success
+        // response can hand the client a SAS). If extraction does NOT succeed, the blob is an
+        // orphan: delete it in the finally so failed OCR attempts do not leak source files into
+        // the corrections container (#1237). The single delete site covers every non-success
+        // exit (422, 500, cancellation) including any added later.
+        try
         {
-            try
+            OcrException? lastOcrError = null;
+            foreach (var extractor in _extractors.Where(e => e.CanHandle(effectiveContentType)))
             {
-                text = await extractor.ExtractTextAsync(memStream, effectiveContentType, cancellationToken);
-                break;
+                try
+                {
+                    text = await extractor.ExtractTextAsync(memStream, effectiveContentType, cancellationToken);
+                    break;
+                }
+                catch (OcrFallbackException)
+                {
+                    memStream.Position = 0;
+                    continue;
+                }
+                catch (OcrException ex)
+                {
+                    lastOcrError = ex;
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);
+                    return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de extracción no está disponible. Inténtalo de nuevo." });
+                }
             }
-            catch (OcrFallbackException)
+            if (text is null)
             {
-                memStream.Position = 0;
-                continue;
+                var msg = lastOcrError?.Message ?? "No se pudo extraer texto del archivo.";
+                _logger.LogWarning("No extractor succeeded. BlobPath={BlobPath}", blobPath);
+                return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = msg });
             }
-            catch (OcrException ex)
+
+            _logger.LogInformation(
+                "Text extraction complete. TeacherId={TeacherId} BlobPath={BlobPath} ExtractedChars={Chars}",
+                teacherId, blobPath, text.Length);
+
+            return Ok(new OcrResultDto(text, blobUrl, Incomplete: text.Length < _options.MinExtractedChars));
+        }
+        finally
+        {
+            if (text is null)
             {
-                lastOcrError = ex;
-                break;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Text extractor error. BlobPath={BlobPath}", blobPath);
-                return StatusCode(500, new { code = "OCR_SERVICE_ERROR", message = "El servicio de extracción no está disponible. Inténtalo de nuevo." });
+                // Best-effort: a cleanup failure must never mask the original OCR error response.
+                // Use CancellationToken.None so a cancelled request still removes its orphan.
+                try
+                {
+                    await _blob.DeleteAsync(blobPath, CancellationToken.None);
+                    _logger.LogInformation("Deleted orphan blob after failed OCR. BlobPath={BlobPath}", blobPath);
+                }
+                catch (Exception delEx)
+                {
+                    _logger.LogError(delEx, "Failed to delete orphan blob after OCR failure. BlobPath={BlobPath}", blobPath);
+                }
             }
         }
-        if (text is null)
-        {
-            var msg = lastOcrError?.Message ?? "No se pudo extraer texto del archivo.";
-            _logger.LogWarning("No extractor succeeded. BlobPath={BlobPath}", blobPath);
-            return UnprocessableEntity(new { code = "OCR_NO_TEXT", message = msg });
-        }
-
-        _logger.LogInformation(
-            "Text extraction complete. TeacherId={TeacherId} BlobPath={BlobPath} ExtractedChars={Chars}",
-            teacherId, blobPath, text.Length);
-
-        return Ok(new OcrResultDto(text, blobUrl, Incomplete: text.Length < _options.MinExtractedChars));
     }
 }

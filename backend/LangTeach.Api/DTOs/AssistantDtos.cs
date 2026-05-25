@@ -47,6 +47,13 @@ public record ProposalDto(
 
 public record AssistantProposeResponse(List<ProposalDto> Proposals, Guid? VoiceNoteId = null, Guid? SessionLogId = null, string? ExtractedSessionDate = null);
 
+// Sparse patch for the voice-update merge flow (PATCH /api/students/{id}). Semantics:
+// null / omitted = "field not provided, leave the current value untouched"; a non-null value
+// replaces. This endpoint deliberately cannot CLEAR a field to null (the only caller,
+// patchStudentVoice, builds a sparse patch from extracted speech and never sends null-to-clear).
+// Clearing a nullable field is done through the full-update path (PUT /api/students/{id}),
+// which assigns every field including nulls. Do not reintroduce a null-means-clear reading here
+// without distinguishing JSON-absent from present-null first (#1307).
 public class PatchStudentRequest
 {
     [RegularExpression(CefrConstants.ValidationPattern, ErrorMessage = "CefrLevel must be one of: A1, A2, B1, B2, C1, C2.")]

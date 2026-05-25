@@ -20,5 +20,14 @@ public class InMemoryCorrectionsBlobStorage : ICorrectionsBlobStorage
     public Task<string> GetDownloadUrlAsync(string blobPath)
         => Task.FromResult($"http://localhost/corrections/{blobPath}");
 
+    public Task DeleteAsync(string blobPath, CancellationToken ct = default)
+    {
+        _blobs.TryRemove(blobPath, out _);
+        DeleteCount++;
+        return Task.CompletedTask;
+    }
+
+    public int DeleteCount { get; private set; }
+
     public bool ContainsBlob(string blobPath) => _blobs.ContainsKey(blobPath);
 }

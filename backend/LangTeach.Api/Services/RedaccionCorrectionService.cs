@@ -14,6 +14,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IUsageLimitService _usageLimitService;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -25,10 +26,12 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
     public RedaccionCorrectionService(
         AppDbContext db,
         IServiceScopeFactory scopeFactory,
+        IUsageLimitService usageLimitService,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
         _scopeFactory = scopeFactory;
+        _usageLimitService = usageLimitService;
         _logger = logger;
     }
 
@@ -59,6 +62,20 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             throw new CorrectionInvalidStateException("invalid_status",
                 $"Unexpected status: {correction.Status}.");
 
+        // Quota gate (#1223). Sits after the status validation so idempotent re-corregir on an
+        // in-flight/completed correction (handled above) never gets blocked, and only a genuinely
+        // correctable redacción (Entregada or a CorreccionFallida retry) consumes the gate.
+        if (!await _usageLimitService.CanGenerateAsync(teacherId, cancellationToken))
+        {
+            var usage = await _usageLimitService.GetUsageStatusAsync(teacherId, cancellationToken);
+            throw new CorrectionQuotaExceededException(usage);
+        }
+
+        // A first attempt (Entregada) counts against the monthly quota; a retry of a previously
+        // failed correction (CorreccionFallida) does NOT re-record, because the first attempt
+        // already consumed one unit. Capture the prior status before the transition overwrites it.
+        var priorStatus = correction.Status;
+
         correction.Status = CorrectionStatus.Encolada;
         correction.UpdatedAt = DateTime.UtcNow;
         try
@@ -68,11 +85,17 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         catch (DbUpdateConcurrencyException)
         {
             // Another concurrent request won the race. Re-query with Include so Tags are also fresh.
+            // The loser must NOT record usage (the winner does), so return before RecordGenerationAsync.
             correction = await _db.Corrections
                 .Include(c => c.Tags)
                 .FirstAsync(c => c.Id == correctionId, cancellationToken);
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         }
+
+        // Record after the WINNING save only, and only for a first attempt, so neither the
+        // concurrency loser nor a failed-correction retry double-counts (#1223).
+        if (priorStatus == CorrectionStatus.Entregada)
+            await _usageLimitService.RecordGenerationAsync(teacherId, ContentBlockType.ErrorCorrection, CancellationToken.None);
 
         correction = await _db.Corrections
             .AsNoTracking()
