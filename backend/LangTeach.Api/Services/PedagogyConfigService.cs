@@ -639,7 +639,7 @@ public class PedagogyConfigService : IPedagogyConfigService
 
         // Drift anchor for the paragraph-break floor guard in RedaccionCorrectionService (#1368).
         // If either constant drifts from the config prose, the service will fail fast at startup.
-        var cohesionCategory = f.Categories.First(c => c.Code == "C");
+        var cohesionCategory = f.Categories.First(c => string.Equals(c.Code, "C", StringComparison.OrdinalIgnoreCase));
         var cohesionText = cohesionCategory.Description + string.Join(" ", cohesionCategory.SubTypes ?? []);
         if (!cohesionText.Contains("¶", StringComparison.Ordinal))
             throw new InvalidOperationException(
