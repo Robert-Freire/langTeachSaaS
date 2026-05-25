@@ -8,6 +8,12 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ---
 
+## #1360 arch-dedup-sweep (2026-05-25)
+
+- **AppJsonOptions migration incomplete (arch reviewer):** 9 additional inline `JsonSerializerOptions` definitions remain in `SessionLogsController.cs`, `AssistantController.cs`, `PedagogyConfigService.cs`, `SessionHistoryService.cs`, `SessionLogService.cs`, `CurriculumValidationService.cs`, `SectionProfileService.cs`, `GrammarValidationService.cs`, `LessonService.cs`. Create follow-up issue to migrate all remaining instances.
+- **PromptSanitizer vs InputSanitizer boundary undocumented (arch reviewer):** Two sanitization helpers in different namespaces with overlapping purpose and no cross-reference. One call site in PromptService.cs still does inline replacement on top of InputSanitizer.Sanitize. Create follow-up issue to clarify boundary and document the split.
+- **b1.json drill note duplicated in `_note` and `grammarFocusTargets` (Isaac):** Inline drill caveat for "Oraciones temporales" exists in both fields. Not a contradiction, but adds redundant prompt noise. Considered minor; trim `_note` to human-only rationale in a future config-authoring pass.
+
 ## Cleared history
 
 *Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Actionable entries batched into #833 (bug batch) and #837 (deduplication). Remaining entries deleted (verified safe, intentional per spec, or already tracked).*

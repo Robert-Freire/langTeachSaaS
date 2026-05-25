@@ -84,7 +84,7 @@ export default function StudentDetail() {
   const { data: corrections } = useQuery({
     queryKey: ['corrections', id],
     queryFn: () => listCorrections(id!),
-    enabled: !!id && activeTab !== 'redacciones',
+    enabled: !!id,
     refetchInterval: 10_000,
   })
 

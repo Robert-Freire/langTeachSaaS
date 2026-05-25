@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using LangTeach.Api.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace LangTeach.Api.AI;
@@ -127,10 +128,7 @@ public class ClaudeApiClient(IHttpClientFactory httpClientFactory, ILogger<Claud
         return result;
     }
 
-    private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = AppJsonOptions.CaseInsensitive;
 
     public async IAsyncEnumerable<string> StreamAsync(
         ClaudeRequest request,

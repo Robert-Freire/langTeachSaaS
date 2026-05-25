@@ -159,7 +159,9 @@ export default function Students() {
 
   const cefrFilter = searchParams.get('level') ?? 'All'
   const sortBy = (searchParams.get('sort') as SortOption) ?? 'lastSession'
-  const visibleCount = Number(searchParams.get('count') ?? PAGE_SIZE)
+  const rawCount = searchParams.get('count')
+  const parsedCount = rawCount !== null ? Number(rawCount) : NaN
+  const visibleCount = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : PAGE_SIZE
 
   const qFromUrl = searchParams.get('q') ?? ''
   const [localSearch, setLocalSearch] = useState(() => qFromUrl)

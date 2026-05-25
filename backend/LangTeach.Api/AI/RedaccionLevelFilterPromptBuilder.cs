@@ -115,7 +115,7 @@ Call the submit_filter_decisions tool with a decisions array. Every input tag mu
         }
 
         if (!string.IsNullOrWhiteSpace(assignmentPrompt))
-            sb.AppendLine($"Assignment context: {assignmentPrompt}");
+            sb.AppendLine($"Assignment context: {SanitizeForPrompt(assignmentPrompt)}");
 
         sb.AppendLine();
         sb.AppendLine("Tags to classify:");
@@ -134,5 +134,5 @@ Call the submit_filter_decisions tool with a decisions array. Every input tag mu
     }
 
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
+        PromptSanitizer.SanitizeForPrompt(s);
 }

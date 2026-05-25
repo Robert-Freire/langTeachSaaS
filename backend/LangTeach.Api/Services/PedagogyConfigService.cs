@@ -75,6 +75,32 @@ public class PedagogyConfigService : IPedagogyConfigService
                 ?? throw new InvalidOperationException($"PedagogyConfigService: deserialized null for resource '{name}'");
             _cefrRules[rule.Level] = rule;
             _log.LogDebug("PedagogyConfigService: loaded CEFR rules for level '{Level}'", rule.Level);
+
+            if (rule.GrammarFocusTargets is { Length: > 0 })
+            {
+                if (rule.GrammarInScope is not { Length: > 0 })
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} defines grammarFocusTargets but grammarInScope is missing/empty. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
+                if (rule.GrammarInScope.Any(string.IsNullOrWhiteSpace))
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} grammarInScope contains blank entries. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
+                // A FocusTarget is valid when it either starts with a grammarInScope entry
+                // (FocusTarget extends an InScope concept with extra drill notes) or an InScope
+                // entry starts with the FocusTarget (FocusTarget uses a shorter canonical form).
+                // This allows B1 entries like "Oraciones temporales ... (en ejercicios activos: ...)"
+                // while still catching genuine mismatches like wrong grammar concept names.
+                var notInScope = rule.GrammarFocusTargets
+                    .Where(ft => !rule.GrammarInScope.Any(isc =>
+                        ft.StartsWith(isc, StringComparison.OrdinalIgnoreCase) ||
+                        isc.StartsWith(ft, StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+                if (notInScope.Length > 0)
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: grammarFocusTargets for {rule.Level} contains entries not related to any grammarInScope entry: " +
+                        $"{string.Join(", ", notInScope)}. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+            }
         }
 
         // Load L1 influence

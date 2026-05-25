@@ -24,7 +24,9 @@ export default function Groups() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const cefrFilter = searchParams.get('level') ?? 'All'
-  const visibleCount = Number(searchParams.get('count') ?? PAGE_SIZE)
+  const rawCount = searchParams.get('count')
+  const parsedCount = rawCount !== null ? Number(rawCount) : NaN
+  const visibleCount = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : PAGE_SIZE
 
   const qFromUrl = searchParams.get('q') ?? ''
   const [localSearch, setLocalSearch] = useState(() => qFromUrl)
