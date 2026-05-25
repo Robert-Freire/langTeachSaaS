@@ -2,7 +2,7 @@
 
 **Authoritative reference for all UI work.** Any bot or developer implementing or reviewing a screen must read this first.
 
-Last updated: 2026-05-04
+Last updated: 2026-05-25
 
 ---
 
@@ -315,6 +315,21 @@ Sessions are edited inline in their expanded row. No modal, no separate edit pag
 
 ---
 
+### 8.5 Group Create/Edit Save Pattern
+
+GroupForm (`/groups/new`, `/groups/:id/edit`) uses **explicit Save/Cancel** rather than Pattern C (autosave + Done). This is the only approved deviation from Pattern C for a dedicated edit screen.
+
+**Why:** Group creation and editing is an atomic multi-step operation: the group entity is created first, then each member is added or removed individually via separate API calls. Auto-saving member changes field-by-field would leave the group in an inconsistent partial state if any step fails. Explicit Save commits the entire group + member delta as one unit; Cancel aborts cleanly before any record is written (create) or discards pending changes (edit).
+
+**Form layout:**
+- **Cancel** (ghost) navigates back without saving. No confirmation required -- on create, no record has been written; on edit, member selections are local state only.
+- **Save** (primary gradient) submits the form. Shows a spinner with "Saving..." label while in flight.
+- **Button row:** `flex items-center justify-between`, Cancel on the left, Save on the right.
+
+**Exception scope:** applies only to GroupForm. Do not apply explicit Save/Cancel to other screens without an explicit design decision and DS update.
+
+---
+
 ## 9. Empty States
 
 - Use `Display-LG` Manrope for the headline — this is a "moment of delight," not a dead end.
@@ -469,6 +484,8 @@ All drawer footers (side drawers overlaying the screen) use this exact button pa
 - **Layout:** `flex items-center justify-end gap-3` row, Cancel left of primary action
 - **Disabled state:** Primary action disabled while saving; Cancel also disabled while saving to prevent double-dismiss
 - The primary action label describes the operation (e.g. "Save 3 changes", "Create student"), not a generic "Save"
+
+**Exemption from §5 ghost-next-to-filled rule:** Drawer footers are exempt because Cancel is a structural escape affordance (it exits the overlay), not a same-level competing CTA. The ghost style correctly signals low emphasis relative to the primary action. Using Secondary would imply the two buttons are competing alternatives of equal weight. This exemption follows the same logic as the Compound Input Bar mode-toggle exception (§5) -- structural controls that switch state rather than submit data are exempt.
 
 ### 11.10 Proposal Card Action Row (Apply / Dismiss / Modify)
 
@@ -701,3 +718,126 @@ Used inside the Atelier proposals view when no session is selected and session p
 - No selected/active state defined for existing session rows — clicking immediately applies and dismisses the picker.
 
 Reference implementation: `AtelierAssistantPanel.tsx` `session-picker-banner` test id.
+
+### 11.20 GroupAvatarCluster
+
+Renders a compact visual summary of a group's members. Three size variants:
+
+| Variant | Tile size | Text size | Layout | Max visible |
+|---------|-----------|-----------|--------|-------------|
+| sm | `w-6 h-6` | `text-[0.625rem]` | Horizontal overlap | 3 |
+| md | `w-8 h-8` | `text-xs` | Horizontal overlap | 3 |
+| lg | `w-10 h-10` | `text-sm` | 2x2 grid | 4 |
+
+**sm and md (horizontal overlap):**
+- Tiles are `rounded-full` with `ring-2 ring-white` (white ring creates visible separation between overlapping tiles).
+- Each tile after the first: `-ml-2` (negative left margin for overlap).
+- Overflow tile: same size and shape, `bg-zinc-100 text-zinc-600`, +N label (e.g. "+5").
+
+**lg (2x2 grid):**
+- Grid container: `grid-cols-2 gap-0.5`.
+- Tiles are `rounded-md`, not `rounded-full`, to sit flush in the grid.
+- Slot 4 (bottom-right): if `totalCount > 4`, shows a +N overflow tile in `bg-zinc-100 text-zinc-600 rounded-md`. Otherwise shows an empty placeholder `bg-zinc-50 rounded-md` if fewer than 4 members.
+- Overflow is `totalCount - 4` (not `members.length - 4`): pass the API-provided total count, not the truncated slice.
+
+**Per-student stable color rule:**
+Colors are derived deterministically from the student ID string via `getAvatarColor(student.id)` in `frontend/src/lib/avatarColor.ts`. The function hashes the ID using a djb2-style sum and maps the result to one of 8 palettes:
+
+| Palette | Classes |
+|---------|---------|
+| 1 | `bg-indigo-100 text-indigo-700` |
+| 2 | `bg-violet-100 text-violet-700` |
+| 3 | `bg-sky-100 text-sky-700` |
+| 4 | `bg-teal-100 text-teal-700` |
+| 5 | `bg-emerald-100 text-emerald-700` |
+| 6 | `bg-amber-100 text-amber-700` |
+| 7 | `bg-rose-100 text-rose-700` |
+| 8 | `bg-orange-100 text-orange-700` |
+
+Never pick colors by student name, display order, or position in a list. Always derive from ID so the same student has the same color across all screens.
+
+**Accessibility:** wrap the cluster in `role="img"` with `aria-label` stating the total member count and visible names (e.g. "3 members: Ana, Marco, Sofia").
+
+Reference implementation: `GroupAvatarCluster.tsx`, `avatarColor.ts`.
+
+### 11.21 Inline Typeahead Member Picker (Group)
+
+The `StudentMemberPicker` inside GroupForm provides an inline typeahead search that adds students to the group member list. It consists of three zones: a selected chips row, a search input, and a glassmorphism dropdown.
+
+**Selected chips:**
+- Container: `flex flex-wrap gap-2`.
+- Chip: `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium bg-indigo-50 text-indigo-700`.
+- Chip mini-avatar: `h-6 w-6 rounded-full text-[0.625rem] font-semibold` in the per-student `getAvatarColor` palette (see §11.20).
+- Name text: `text-[#1A1B22]`.
+- Remove button: X icon `h-3.5 w-3.5`, `text-zinc-400 hover:text-zinc-700 transition-colors`, `aria-label="Remove {name}"`.
+
+**Search input:**
+- Magnifier icon (`h-4 w-4 text-zinc-400`) absolutely positioned left, `pl-9` on the input field.
+- Use the `<Input>` DS component (not a raw `<input>`), placeholder "Search students...".
+- Opens the dropdown on focus or on any keystroke.
+
+**Glassmorphism dropdown:**
+- Container: `absolute z-10 mt-1 w-full rounded-xl border border-[#C7C4D8]/20 bg-white/80 backdrop-blur-[12px] shadow-[0_12px_40px_rgba(26,27,34,0.06)] max-h-52 overflow-y-auto`.
+- This is the §2 glassmorphism spec applied to a dropdown context. `bg-white/80` is the concrete form of `surface-container-lowest` (which is `#FFFFFF`) at 80% opacity.
+- Visible when the dropdown is open and either a search value exists or results are available.
+- Dismisses when the user clicks outside the picker container.
+
+**Student option row:**
+- `flex w-full items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-[#F4F2FD] transition-colors`.
+- Avatar: `h-7 w-7 rounded-full text-xs font-semibold` in per-student color.
+- Name: `text-[#1A1B22]`.
+- CEFR badge (if present): `ml-auto rounded-md px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.05em]` using the standard CEFR color classes (§5 CEFR Badges). Use `rounded-md` (0.375rem) consistent with the CEFR badge shape token in §5, not plain `rounded`.
+- Already-selected students are excluded from the list.
+
+**Empty state inside dropdown:** "No students found" in `text-sm text-zinc-400 italic`.
+
+**Selection behavior:** use `onMouseDown` (not `onClick`) on option rows to prevent the blur event from closing the dropdown before the selection registers.
+
+Reference implementation: `GroupForm.tsx` `StudentMemberPicker`.
+
+### 11.22 Group Affiliation Pill
+
+Displays a student's group memberships in the student hero header. Each group gets one pill linking to the group detail page.
+
+```tsx
+<Link
+  to={`/groups/${group.id}`}
+  className="inline-flex items-center rounded-md px-2 py-0.5 text-[0.6875rem] font-medium bg-[#EDE9FE] text-[#5B21B6] hover:bg-[#DDD6FE] transition-colors"
+>
+  {group.name}{group.cefrLevel ? ` - ${group.cefrLevel}` : ''}
+</Link>
+```
+
+- **Shape:** `rounded-md` -- square-ish, same as CEFR badges (§5). Not `rounded-full`.
+- **Color:** violet family: `bg-[#EDE9FE] text-[#5B21B6]`, hover `bg-[#DDD6FE]`.
+- **Format:** `{GroupName}` when the group has no CEFR level; `{GroupName} - {CEFR}` when it does. The dash and CEFR level are concatenated inline, not separate spans.
+- **Interaction:** navigates to `/groups/:id`. When the pill appears inside a clickable parent row, add `e.stopPropagation()` on the Link's `onClick`.
+- **Multiple groups:** render one pill per group. All groups shown -- no "overflow" truncation. Pills wrap naturally via `flex flex-wrap gap-1.5` on the badge row.
+- **Name truncation:** no explicit max-width on the pill. Rely on group names being short (GroupForm enforces a 100-character limit). Do not add a `truncate` class that would hide the CEFR suffix.
+
+**Placement:** student hero header, line 3 (badge row), after the Active/Inactive and Corporate/Private status badges.
+
+Reference implementation: `StudentDetailHeader.tsx`.
+
+### 11.23 Level-Filter Annotation Badge
+
+Displayed inside the TaggedSpan Popover when a correction tag has been filtered out because it exceeds the student's current CEFR level (`tag.filterStatus === 'removed'`).
+
+```tsx
+<span className="rounded-full bg-violet-100 px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-violet-700">
+  Por encima del nivel
+</span>
+```
+
+- **Shape:** `rounded-full` (pill). Deliberately different from CEFR badges which are `rounded-md` (square). The pill shape signals "status annotation" rather than "level identifier."
+- **Color:** violet family: `bg-violet-100 text-violet-700`. Do not use error, warning, or CEFR badge colors for this token.
+- **Size:** `text-[0.625rem]` (10px) -- slightly smaller than Label-SM so it does not compete with the category label on the left.
+- **Text:** `"Por encima del nivel"` -- fixed Spanish label, always uppercase.
+- **Position:** top-right of the popover header row, aligned opposite the category label (`flex items-center justify-between gap-2` on the header row).
+- **Trigger:** shown only when `tag.filterStatus === 'removed'`. Never shown for in-level errors.
+
+**Matching underline variant:** tags with `filterStatus === 'removed'` also render with `decoration-dashed` on the inline span instead of the default solid underline (§11.16). This is the only visual distinction in the marked-up body text. The badge itself lives inside the popover.
+
+**Token naming convention:** violet is the canonical color for level-annotation status tokens inside popovers. If new filter statuses are introduced (e.g. "below level"), define a new token with a distinct color rather than reusing violet.
+
+Reference implementation: `TaggedSpan.tsx`.
