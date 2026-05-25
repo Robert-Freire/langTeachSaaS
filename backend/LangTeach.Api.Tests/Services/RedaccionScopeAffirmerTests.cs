@@ -21,6 +21,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
     private readonly ICorrectionPromptService _correctionPromptService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
     private readonly Guid _studentId = Guid.NewGuid();
@@ -33,7 +34,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _db = new AppDbContext(_dbOptions);
 
         var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        _pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var pedagogy = _pedagogy;
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
@@ -282,13 +284,13 @@ public class RedaccionScopeAffirmerTests : IDisposable
     [Fact]
     public void ScopeAffirmer_NextLevelMapping_CorrectForAllLevels()
     {
-        // The NextLevel mapping must cover all non-C2 CEFR levels.
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("A1").WhoseValue.Should().Be("A2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("A2").WhoseValue.Should().Be("B1");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("B1").WhoseValue.Should().Be("B2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("B2").WhoseValue.Should().Be("C1");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("C1").WhoseValue.Should().Be("C2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().NotContainKey("C2");
+        // The CEFR progression must cover all non-C2 levels.
+        _pedagogy.GetNextLevel("A1").Should().Be("A2");
+        _pedagogy.GetNextLevel("A2").Should().Be("B1");
+        _pedagogy.GetNextLevel("B1").Should().Be("B2");
+        _pedagogy.GetNextLevel("B2").Should().Be("C1");
+        _pedagogy.GetNextLevel("C1").Should().Be("C2");
+        _pedagogy.GetNextLevel("C2").Should().BeNull();
     }
 
     [Fact]
@@ -365,6 +367,7 @@ public class RedaccionScopeAffirmerTests : IDisposable
         await RedaccionCorrectionService.RunCorrectionInScopeAsync(
             correctionId, correction.StudentId, correction.TeacherId,
             db, _claude, _correctionPromptService,
+            _pedagogy, new CorrectionWorkerOptions(),
             NullLogger<RedaccionCorrectionService>.Instance);
     }
 

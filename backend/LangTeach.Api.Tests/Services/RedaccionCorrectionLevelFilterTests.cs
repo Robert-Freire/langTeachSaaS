@@ -23,6 +23,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
     private readonly ICorrectionPromptService _correctionPromptService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
     private readonly Guid _studentId = Guid.NewGuid();
@@ -35,7 +36,8 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         _db = new AppDbContext(_dbOptions);
 
         var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        _pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var pedagogy = _pedagogy;
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
@@ -553,6 +555,7 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         await RedaccionCorrectionService.RunCorrectionInScopeAsync(
             correctionId, correction.StudentId, correction.TeacherId,
             db, _claude, _correctionPromptService,
+            _pedagogy, new CorrectionWorkerOptions(),
             NullLogger<RedaccionCorrectionService>.Instance);
     }
 

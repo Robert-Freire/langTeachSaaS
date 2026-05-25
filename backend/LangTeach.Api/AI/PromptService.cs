@@ -232,7 +232,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"GRAMMAR SCOPE for {level}:");
         if (scope.InScope.Length > 0)
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
-        if (scope.OutOfScope.Length > 0)
+        if (scope.OutOfScope.Length > 0 && !scope.HasFocusTargets)
             sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
         if (!string.IsNullOrWhiteSpace(scope.CeilingNote))
             sb.AppendLine($"GRAMMAR FOCUS CEILING: {scope.CeilingNote}");

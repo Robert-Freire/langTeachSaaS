@@ -1,0 +1,9 @@
+{
+  "alwaysKeepTopics": [
+    {
+      "topic": "ser-estar",
+      "descriptionKeywords": ["ser", "estar"],
+      "rationale": "ser/estar errors always surface regardless of level (defined in criticalRules). The level filter must not remove or soften them."
+    }
+  ]
+}

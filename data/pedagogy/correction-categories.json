@@ -117,10 +117,10 @@
   ],
   "antiPatternRules_GUARD": "Do not add ser/estar entries here -- it is covered fully in criticalRules above. Adding it would cause duplicate emission in the system prompt.",
   "antiPatternRules": [
-    "A wrong preposition is G, NEVER L.",
-    "A literal translation from the student's L1 is L, NEVER G.",
-    "A missing or wrong connector is C, NEVER G.",
-    "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is C, NEVER G.",
+    "A wrong preposition is always G.",
+    "A literal translation from the student's L1 is always L.",
+    "A missing or wrong connector is always C.",
+    "An ambiguous pronoun or noun-phrase reference where the word is grammatically correct but the referent is unclear is always C.",
     "Do NOT flag paragraph breaks below B1 (i.e. not at A1 or A2), or when the text is already reasonably paragraphed. Do NOT flag a paragraph break for stylistic preference or slightly dense structure -- only flag when there is a clear, unambiguous thematic shift that would lose EOI marks. (Sentence-count threshold is defined in the Paragraph-break subtype above.)"
   ]
 }

@@ -138,6 +138,8 @@ public class CorrectionWorkerTests : IDisposable
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
         scopeServices.AddSingleton(_correctionPromptService);
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        scopeServices.AddSingleton<IPedagogyConfigService>(new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps));
         scopeServices.AddLogging();
         var provider = scopeServices.BuildServiceProvider();
         var scopeFactory = new FakeServiceScopeFactory(provider);

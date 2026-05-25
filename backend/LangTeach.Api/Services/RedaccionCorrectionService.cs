@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -108,6 +109,8 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
+        IPedagogyConfigService pedagogy,
+        CorrectionWorkerOptions workerOptions,
         ILogger logger,
         CancellationToken cancellationToken = default)
     {
@@ -169,10 +172,10 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var (visibleTags, removedTags) = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger, cancellationToken);
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, pedagogy, correctionId, logger, cancellationToken);
 
         var affirmerTags = await RunScopeAffirmerAsync(
-            visibleTags, cefr, sentText, claude, correctionPromptService, correctionId, logger, cancellationToken);
+            visibleTags, cefr, sentText, claude, correctionPromptService, pedagogy, workerOptions, correctionId, logger, cancellationToken);
 
         var mergedVisible = MergeAndDedupWithAffirmer(visibleTags, affirmerTags, correctionId, logger);
 
@@ -438,6 +441,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string? assignmentPrompt,
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
+        IPedagogyConfigService pedagogy,
         Guid correctionId,
         ILogger logger,
         CancellationToken cancellationToken = default)
@@ -445,8 +449,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (tags.Count == 0)
             return (tags, []);
 
+        var alwaysKeepTopics = pedagogy.GetAlwaysKeepTopics();
         var inputs = tags
-            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
+            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsAlwaysKeepGTag(t, alwaysKeepTopics)))
             .ToList();
 
         FilterDecisionsWrapper filterResult;
@@ -533,12 +538,15 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string originalText,
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
+        IPedagogyConfigService pedagogy,
+        CorrectionWorkerOptions workerOptions,
         Guid correctionId,
         ILogger logger,
         CancellationToken cancellationToken = default)
     {
         // Skip C2 (nothing is above C2).
-        if (!RedaccionScopeAffirmerPromptBuilder.NextLevel.TryGetValue(cefr, out var nextCefr))
+        var nextCefr = pedagogy.GetNextLevel(cefr);
+        if (nextCefr is null)
         {
             logger.LogDebug("ScopeAffirmer: skipping for level {Cefr}. CorrectionId={CorrectionId}", cefr, correctionId);
             return [];
@@ -546,7 +554,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         // Skip very long texts to keep cost bounded.
         var wordCount = originalText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-        if (wordCount > 800)
+        if (wordCount > workerOptions.ScopeAffirmerWordCountCap)
         {
             logger.LogDebug("ScopeAffirmer: skipping -- text too long ({Words} words). CorrectionId={CorrectionId}", wordCount, correctionId);
             return [];
@@ -589,7 +597,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 continue;
             }
 
-            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} correctamente: esta estructura le da un nivel superior a tu escritura. Sigue así.";
+            var explanation = workerOptions.MuyBienExplanationTemplate.Replace("{structureLabel}", result.StructureLabel);
 
             affirmerTags.Add(new RedaccionCorrectionTagDto(
                 Category: CorrectionTagCategory.MuyBien,
@@ -636,15 +644,24 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return result.OrderBy(t => t.StartIndex).ToList();
     }
 
-    // Word-boundary regex avoids false positives from words containing "ser" or "estar" as substrings.
-    private static readonly Regex SerRegex = new(@"\bser\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex EstarRegex = new(@"\bestar\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly ConcurrentDictionary<string, Regex> _keywordRegexCache = new();
 
-    private static bool IsSerEstarGTag(RedaccionCorrectionTagDto tag)
+    private static bool IsAlwaysKeepGTag(RedaccionCorrectionTagDto tag, IReadOnlyList<AlwaysKeepGrammarTopic> topics)
     {
         if (tag.Category != CorrectionTagCategory.Gramatica) return false;
         var expl = tag.Explanation ?? "";
-        return SerRegex.IsMatch(expl) && EstarRegex.IsMatch(expl);
+        foreach (var topic in topics)
+        {
+            if (topic.DescriptionKeywords.Length == 0) continue;
+            if (topic.DescriptionKeywords.All(kw =>
+            {
+                var rx = _keywordRegexCache.GetOrAdd(kw, k =>
+                    new Regex($@"\b{Regex.Escape(k)}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled));
+                return rx.IsMatch(expl);
+            }))
+                return true;
+        }
+        return false;
     }
 
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests
