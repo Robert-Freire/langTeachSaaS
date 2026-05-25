@@ -7,7 +7,7 @@ import { listCorrections } from '@/api/corrections'
 import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
-import { listSessions } from '@/api/sessionLogs'
+import { listSessions, listSessionsIncludingGroups } from '@/api/sessionLogs'
 import { getStudentGroups } from '@/api/groups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -56,6 +56,12 @@ export default function StudentDetail() {
   const { data: sessions = [] } = useQuery({
     queryKey: ['sessions', id],
     queryFn: () => listSessions(id!),
+    enabled: !!id,
+  })
+
+  const { data: allSessions = [] } = useQuery({
+    queryKey: ['sessions-all', id],
+    queryFn: () => listSessionsIncludingGroups(id!),
     enabled: !!id,
   })
 
@@ -372,6 +378,7 @@ export default function StudentDetail() {
         <StudentOverviewTab
           student={student}
           sessions={sessions}
+          allSessions={allSessions}
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}

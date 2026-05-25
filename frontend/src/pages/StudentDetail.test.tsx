@@ -22,6 +22,7 @@ vi.mock('../api/students', () => ({
 
 vi.mock('../api/sessionLogs', () => ({
   listSessions: vi.fn().mockResolvedValue([]),
+  listSessionsIncludingGroups: vi.fn().mockResolvedValue([]),
   createSession: vi.fn(),
   serializeTopicTags: vi.fn(() => '[]'),
   parseTopicTags: vi.fn(() => []),

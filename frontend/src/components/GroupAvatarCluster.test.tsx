@@ -23,7 +23,20 @@ describe('GroupAvatarCluster', () => {
   it('renders 2x2 grid for size=lg with overflow on the 4th slot when count > 4', () => {
     render(<GroupAvatarCluster size="lg" members={makeMembers(5)} totalCount={10} />)
     expect(screen.getAllByTestId('group-avatar-tile')).toHaveLength(3)
-    expect(screen.getByTestId('group-avatar-overflow')).toHaveTextContent('+6')
+    expect(screen.getByTestId('group-avatar-overflow')).toHaveTextContent('+7')
+  })
+
+  it('shows correct overflow for a 5-member group (real-world case: 3 tiles + "+2")', () => {
+    render(<GroupAvatarCluster size="lg" members={makeMembers(5)} totalCount={5} />)
+    expect(screen.getAllByTestId('group-avatar-tile')).toHaveLength(3)
+    expect(screen.getByTestId('group-avatar-overflow')).toHaveTextContent('+2')
+    expect(screen.getByRole('img', { name: /5 members: Person 0, Person 1, Person 2/i })).toBeInTheDocument()
+  })
+
+  it('handles short preview array in grid overflow mode (preview shorter than maxVisible-1)', () => {
+    render(<GroupAvatarCluster size="lg" members={makeMembers(2)} totalCount={5} />)
+    expect(screen.getAllByTestId('group-avatar-tile')).toHaveLength(2)
+    expect(screen.getByTestId('group-avatar-overflow')).toHaveTextContent('+3')
   })
 
   it('renders 4 tiles and no overflow for size=lg when count = 4', () => {
