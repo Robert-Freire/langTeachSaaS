@@ -80,6 +80,23 @@ describe('Groups page', () => {
     expect(screen.getAllByTestId('group-avatar-cluster')).toHaveLength(2)
   })
 
+  it('does not render an empty SIGNALS column header', async () => {
+    vi.mocked(groupsApi.getGroups).mockResolvedValue({
+      items: [makeGroup()],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    })
+
+    renderPage()
+
+    await waitFor(() => expect(screen.getByText('B1.1 Tuesdays')).toBeInTheDocument())
+    expect(screen.queryByText('SIGNALS')).not.toBeInTheDocument()
+    // Real headers still present
+    expect(screen.getByText('CEFR LEVEL')).toBeInTheDocument()
+    expect(screen.getByText('NEXT SESSION')).toBeInTheDocument()
+  })
+
   it('filters by CEFR pill', async () => {
     vi.mocked(groupsApi.getGroups).mockResolvedValue({
       items: [makeGroup(), makeGroup({ id: 'g2', name: 'A2.1 Mondays', cefrLevel: 'A2' })],

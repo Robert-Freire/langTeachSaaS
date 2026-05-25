@@ -374,11 +374,11 @@ function GroupFormBody({ group }: { group?: Group }) {
                 CEFR Level
               </Label>
               <Select
-                value={cefrLevel || 'none'}
+                value={cefrLevel || undefined}
                 onValueChange={(v) => setCefrLevel(v == null || v === 'none' ? '' : v)}
               >
                 <SelectTrigger id="group-cefr" data-testid="group-cefr-select">
-                  <SelectValue placeholder="Select level (optional)" />
+                  <SelectValue placeholder="Select level…" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">

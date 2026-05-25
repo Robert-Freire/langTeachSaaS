@@ -22,6 +22,8 @@ import { CefrBadge } from '@/components/dashboard/CefrBadge'
 import { TopicTagsInput } from '@/components/session/TopicTagsInput'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
 import { GroupAvatarCluster } from '@/components/GroupAvatarCluster'
+import { getAvatarColor } from '@/lib/avatarColor'
+import { cn } from '@/lib/utils'
 import { COMPETENCY_OPTIONS } from '@/lib/studentOptions'
 import { suggestTopicTags } from '@/lib/suggestTopicTags'
 import { formatDate as formatDateUtil, relativeTime, todayLocalDateStr } from '@/utils/formatDate'
@@ -478,7 +480,10 @@ export default function GroupLogSession() {
                 {members.map(m => (
                   <div key={m.id} className="flex items-center gap-2">
                     <div
-                      className="flex items-center justify-center rounded-full text-white text-[0.6rem] font-bold shrink-0 lt-gradient-primary"
+                      className={cn(
+                        'flex items-center justify-center rounded-full text-[0.6rem] font-bold shrink-0',
+                        getAvatarColor(m.id),
+                      )}
                       style={{ width: 24, height: 24 }}
                       aria-hidden
                     >

@@ -89,6 +89,12 @@ describe('GroupForm - create mode', () => {
     expect(screen.getByTestId('member-search-input')).toBeInTheDocument()
   })
 
+  it('shows a placeholder for the CEFR control instead of a lowercase "none" default', () => {
+    renderCreate()
+    expect(screen.getByText('Select level…')).toBeInTheDocument()
+    expect(screen.queryByText('none')).not.toBeInTheDocument()
+  })
+
   it('shows validation error when saving with empty name', async () => {
     renderCreate()
     fireEvent.click(screen.getByTestId('save-button'))

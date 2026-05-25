@@ -27,7 +27,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SavedIndicator } from '@/components/ui/SavedIndicator'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -776,6 +775,13 @@ export function SessionHistoryTab({ studentId, sessionTypeFilter = 'all', onSess
     { key: 'draft', label: 'Draft' },
   ]
 
+  // "All types" (not bare "All") avoids a confusing second "All" next to the status pills.
+  const typeButtons: { key: SessionTypeFilter; label: string }[] = [
+    { key: 'all', label: 'All types' },
+    { key: '1-to-1', label: '1-to-1' },
+    { key: 'groups', label: 'Groups' },
+  ]
+
   return (
     <div className="space-y-5 pt-2">
       {/* Header stat */}
@@ -924,26 +930,26 @@ export function SessionHistoryTab({ studentId, sessionTypeFilter = 'all', onSess
           </Popover>
         )}
 
-        {/* Session-type filter */}
-        <Select
-          value={sessionTypeFilter}
-          onValueChange={(v) => {
-            onSessionTypeFilterChange?.(v as SessionTypeFilter)
-            setVisibleCount(PAGE_SIZE)
-          }}
-        >
-          <SelectTrigger
-            className="w-36 bg-white border-0 ring-1 ring-[#C7C4D8]/30 rounded-xl text-sm"
-            data-testid="session-type-filter"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="1-to-1">1-to-1</SelectItem>
-            <SelectItem value="groups">Groups</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Session-type filter -- same pill-toggle paradigm as the status filter */}
+        <div className="flex bg-[#F4F2FD] p-1 rounded-xl" data-testid="session-type-filter">
+          {typeButtons.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => {
+                onSessionTypeFilterChange?.(key)
+                setVisibleCount(PAGE_SIZE)
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                sessionTypeFilter === key
+                  ? 'bg-white text-[#3525CD] shadow-sm'
+                  : 'text-zinc-500 hover:text-[#3525CD]'
+              }`}
+              data-testid={`session-type-filter-${key}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Session feed */}
