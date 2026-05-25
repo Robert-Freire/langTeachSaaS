@@ -4,17 +4,23 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-23)
+## In-Flight: Groups sprint CLOSE (2026-05-25)
 
-**Sprint: Groups (sprint/groups)**
+**Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
 
-### PR Open
-- #1330 (area:frontend, P1) -- Group session log form. PR #1341 open against sprint/groups. CI pending, CodeRabbit not yet. Worktree: task-t1330-group-session-edit.
+All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349 Spanish explanations, #1350 paragraph-break under C, #1351 teacher full-error view + dual .docx) merged to sprint/groups.
 
-### Completed (merged to sprint/groups)
-- #1327 -- GroupAvatarCluster component. PR merged.
-- #1328 -- Groups create/edit form. PR merged.
-- #1329 (area:frontend) -- Group detail screen -- NOT YET STARTED (next task after #1330).
+Backlog triage done at close (2026-05-24): filed #1359-#1363 from the observed-issues/code-review backlogs. #1359 (prompt-health + config externalization), #1360 (arch dedup), #1362 (bug batch), #1363 (DS specs) were pulled into Groups and merged by bots. #1361 (pedagogy generation ceiling + L1) kept as backlog (unmilestoned). The three backlog files (observed-issues, code-review-backlog, ui-review-backlog) were cleared with a dated note.
+
+Sprint-close walkthroughs done (2026-05-25, via claude --chrome): functional Groups + corrections PASS (no FAILs); Vera UX review strong; pedagogy confirmed one real filter bug. Findings filed and pulled into Groups (all qa:ready), awaiting BOT implementation before merge:
+- #1368 (P2 bug) -- level filter strips the in-scope B1 cohesion (paragraph-break) finding from the student view; pedagogy-confirmed misclassification (findings at/below the student's level floor must be `kept`).
+- #1369 (P2 bug) -- close UI defects: GroupAvatarCluster overflow miscount + aria mismatch (detail/log-session vs list), visually-identical dual-download buttons (full-diagnostic hand-off risk), Overview "Last Session" card ignores group sessions.
+- #1370 (P3 polish) -- Vera polish batch (empty SIGNALS column, log-session avatar colors, Overview summary, dual filter paradigm, CEFR casing, redundant hero pill).
+- #1371 (backlog) -- product question: should group-session time count toward per-student Total Hours? Billing-adjacent, needs PM/Jordi decision.
+
+**Close is GATED on #1368/#1369/#1370 landing (bot PRs) + re-verify of those fixes, then merge sprint -> main via the merge-sprint-to-main action (Robert triggers).** Besides those three, only the epic #1238 remains open in the milestone.
+
+Process note: per [[feedback_no_inline_fix_during_close]], during this close I detect + file issues; bots implement; I re-verify. (Early in the close I fixed #1355/#1356 inline before this rule was set.)
 
 ---
 
