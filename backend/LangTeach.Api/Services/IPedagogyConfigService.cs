@@ -216,6 +216,12 @@ public interface IPedagogyConfigService
     string? GetNextLevel(string cefrLevel);
 
     /// <summary>
+    /// Returns true if <paramref name="level"/> is at or above <paramref name="floor"/> in the CEFR order.
+    /// Returns false if either value is unrecognised.
+    /// </summary>
+    bool IsAtOrAboveLevel(string level, string floor);
+
+    /// <summary>
     /// Returns the list of always-keep grammar topics loaded from always-keep-grammar-rules.json.
     /// G tags matching these topics pass through the level filter unconditionally.
     /// </summary>

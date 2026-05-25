@@ -506,6 +506,70 @@ public class RedaccionCorrectionLevelFilterTests : IDisposable
         req.SystemPrompt.Should().Contain("intentional effort", "soften trigger must reference intentional effort by the student");
     }
 
+    [Theory]
+    [InlineData("B1")]
+    [InlineData("B2")]
+    [InlineData("C1")]
+    [InlineData("C2")]
+    public async Task LevelFilter_ParagraphBreakCTag_KeptForB1PlusStudentEvenWhenFilterSaysRemove(string cefr)
+    {
+        // Arrange: student at B1+, paragraph-break C tag (correctedForm="¶").
+        // The filter incorrectly says "remove" -- the structural guard must override it (#1368).
+        var text = "Me gusta el verano porque hace calor y podemos ir a la playa. Pero hay un problema grave en el mundo. El cambio climático afecta a todos.";
+        var student = _db.Students.First(s => s.Id == _studentId);
+        student.CefrLevel = cefr;
+        _db.SaveChanges();
+
+        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+        var spanStart = text.IndexOf("Pero hay un problema", StringComparison.Ordinal);
+        var spanEnd = spanStart + "Pero hay un problema".Length;
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("C", spanStart, spanEnd, "Pero hay un problema", "Aquí debería empezar un párrafo nuevo.", "¶"),
+        }));
+        _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
+
+        row.Tags.Should().HaveCount(1, $"paragraph-break C tag must be kept for {cefr} student even when filter says remove");
+        row.Tags.First().Category.Should().Be("C");
+        row.Tags.First().CorrectedForm.Should().Be("¶");
+        row.Tags.First().FilterStatus.Should().Be(CorrectionTagFilterStatus.Kept);
+    }
+
+    [Fact]
+    public async Task LevelFilter_ParagraphBreakCTag_StillRemovedForBelowFloorStudent()
+    {
+        // A2 is below the B1 floor for paragraph-break C tags.
+        // If the filter says "remove", the tag must remain teacher-only (no floor bypass).
+        var text = "Me gusta el verano porque hace calor. Pero hay un problema grave en el mundo. El cambio climático afecta a todos.";
+        // Default student is A2 (seeded in constructor).
+        var id = SeedCorrection(text, CorrectionStatus.Entregada);
+        var spanStart = text.IndexOf("Pero hay un problema", StringComparison.Ordinal);
+        var spanEnd = spanStart + "Pero hay un problema".Length;
+
+        _claude.EnqueueResponse(Pass1Json(text, new[]
+        {
+            ("C", spanStart, spanEnd, "Pero hay un problema", "Aquí debería empezar un párrafo nuevo.", "¶"),
+        }));
+        _claude.EnqueueResponse(FilterJson(new[] { (0, "remove", "") }));
+
+        await _sut.CorregirAsync(_teacherId, _studentId, id);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check = new AppDbContext(_dbOptions);
+        var row = check.Corrections.Include(c => c.Tags).First(c => c.Id == id);
+
+        row.Tags.Where(t => t.FilterStatus == CorrectionTagFilterStatus.Kept)
+            .Should().BeEmpty("A2 is below the B1 paragraph-break floor; tag must stay teacher-only");
+        row.Tags.Should().ContainSingle(t => t.FilterStatus == CorrectionTagFilterStatus.Removed && t.Category == "C");
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private void SeedStudent(string cefrLevel = "A2")
