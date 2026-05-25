@@ -263,11 +263,13 @@ public class DashboardService : IDashboardService
             .ToDictionary(g => g.Key, g => g.Select(x => (Guid?)x.GroupId).ToHashSet());
 
         // Phase 1c: all non-deleted sessions for this teacher (scoped by teacher, not per-student).
-        // In-memory aggregation below uses BelongsToStudent (defined once) instead of the previous
+        // No SessionDate filter here: TotalSessions in the original query had no date filter and
+        // must count undated sessions too. Date-based aggregates below add HasValue guards inline.
+        // In-memory aggregation uses BelongsToStudent (defined once) instead of the previous
         // 5x inline correlated subquery. Acceptable trade-off: loads ~N rows per teacher vs N*5 SQL
         // round-trips with correlated subqueries per student.
         var sessions = await _db.SessionLogs
-            .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted && sl.SessionDate.HasValue)
+            .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted)
             .Select(sl => new { sl.StudentId, sl.GroupId, sl.SessionDate, sl.IsCancelled, sl.PreviousHomeworkStatus })
             .ToListAsync(cancellationToken);
 
@@ -291,13 +293,13 @@ public class DashboardService : IDashboardService
                 sl.StudentId == r.Id || BelongsToStudent(r.Id, sl.GroupId));
 
             var lastSessionDate = studentSessions
-                .Where(sl => sl.SessionDate!.Value < now)
+                .Where(sl => sl.SessionDate.HasValue && sl.SessionDate.Value < now)
                 .Select(sl => (DateTime?)sl.SessionDate!.Value)
                 .DefaultIfEmpty(null)
                 .Max();
 
             var nextSessionDate = studentSessions
-                .Where(sl => !sl.IsCancelled && sl.SessionDate!.Value > now)
+                .Where(sl => !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now)
                 .Select(sl => (DateTime?)sl.SessionDate!.Value)
                 .DefaultIfEmpty(null)
                 .Min();
@@ -306,11 +308,12 @@ public class DashboardService : IDashboardService
 
             var cancelledLast30 = studentSessions
                 .Count(sl => sl.IsCancelled
-                          && sl.SessionDate!.Value >= cutoff30Days
-                          && sl.SessionDate!.Value <= now);
+                          && sl.SessionDate.HasValue
+                          && sl.SessionDate.Value >= cutoff30Days
+                          && sl.SessionDate.Value <= now);
 
             var lastHomeworkStatusRaw = studentSessions
-                .Where(sl => sl.SessionDate!.Value < now && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
+                .Where(sl => sl.SessionDate.HasValue && sl.SessionDate.Value < now && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
                 .OrderByDescending(sl => sl.SessionDate)
                 .Select(sl => (int?)sl.PreviousHomeworkStatus)
                 .FirstOrDefault();

@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 
@@ -31,23 +30,5 @@ public static class SessionLogQueries
                 !sl.IsDeleted &&
                 ((sl.StudentId == studentId) ||
                  (sl.GroupId != null && groupIds.Contains(sl.GroupId.Value))));
-    }
-
-    /// <summary>
-    /// Returns an expression that is true when a SessionLog belongs to the given student directly
-    /// or via a group the student is a member of. For use in standalone (non-projection) EF Core
-    /// queries where EF Core can translate the expression. Not usable inside a .Select() projection
-    /// that correlates with an outer student row (EF Core limitation -- see DashboardService).
-    /// </summary>
-    public static Expression<Func<SessionLog, bool>> BelongsToStudentExpression(
-        AppDbContext db, Guid studentId)
-    {
-        var groupIds = db.StudentGroups
-            .Where(sg => sg.StudentId == studentId && !sg.Group.IsDeleted)
-            .Select(sg => sg.GroupId);
-
-        return sl =>
-            sl.StudentId == studentId ||
-            (sl.GroupId != null && groupIds.Contains(sl.GroupId.Value));
     }
 }
