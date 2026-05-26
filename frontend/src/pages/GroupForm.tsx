@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Loader2, Search } from 'lucide-react'
+import { X, Loader2, Search, CheckCircle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   type Group,
   getGroup, createGroup, updateGroup, deleteGroup,
   addGroupMember, removeGroupMember,
 } from '@/api/groups'
+import { getFollowups } from '@/api/followups'
 import { logger } from '@/lib/logger'
 import { getStudents } from '@/api/students'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,9 @@ import { CEFR_LEVELS, cefrColors } from '@/lib/cefr-colors'
 import { getAvatarColor } from '@/lib/avatarColor'
 import { getInitials } from '@/utils/nameUtils'
 import { cn } from '@/lib/utils'
+import { GroupTeachingIdeasCard } from '@/components/group/GroupTeachingIdeasCard'
+import { StudentFollowupsCard } from '@/components/student/StudentFollowupsCard'
+import { useGroupAutosave } from '@/hooks/useGroupAutosave'
 
 const MAX_NAME = 100
 const MAX_DESC = 500
@@ -206,7 +210,6 @@ function StudentMemberPicker({
 }
 
 // Outer shell: handles query loading/error, then mounts the form body with stable initial values.
-// Splitting avoids setState-in-effect: inner component initializes state from props, not from an effect.
 export default function GroupForm() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
@@ -220,7 +223,7 @@ export default function GroupForm() {
 
   if (isEdit && loadingGroup) {
     return (
-      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
+      <div className="space-y-6">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
@@ -240,7 +243,6 @@ export default function GroupForm() {
     )
   }
 
-  // key resets inner state when navigating between create and edit, or between different groups
   return <GroupFormBody key={group?.id ?? 'new'} group={group} />
 }
 
@@ -259,10 +261,68 @@ function GroupFormBody({ group }: { group?: Group }) {
   const [nameError, setNameError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [originalMemberIds] = useState(() => existingMembers.map((m) => m.id))
   // Tracks a group created mid-save so retries reuse it instead of creating a duplicate
   const pendingGroupIdRef = useRef<string | null>(null)
 
+  // Autosave (edit mode only)
+  const formDataRef = useRef<(() => import('@/api/groups').GroupFormData | null) | null>(null)
+
+  useEffect(() => {
+    formDataRef.current = () => {
+      if (!isEdit) return null
+      const trimmedName = name.trim()
+      if (!trimmedName) return null
+      return {
+        name: trimmedName,
+        cefrLevel: cefrLevel || null,
+        description: description.trim() || null,
+        isActive: group?.isActive ?? true,
+      }
+    }
+  }, [isEdit, name, cefrLevel, description, group?.isActive])
+
+  const { status: saveStatus, scheduleTextSave, saveNow } = useGroupAutosave(
+    isEdit ? id : undefined,
+    formDataRef,
+  )
+
+  // Followup/ideas queries for edit mode rail
+  const { data: followups = [], refetch: refetchFollowups } = useQuery({
+    queryKey: ['group-followups', id],
+    queryFn: () => getFollowups({ groupId: id!, kind: 'operational' }),
+    enabled: isEdit && !!id,
+  })
+
+  const { data: teachingIdeas = [], refetch: refetchIdeas } = useQuery({
+    queryKey: ['group-ideas', id],
+    queryFn: () => getFollowups({ groupId: id!, kind: 'pedagogical' }),
+    enabled: isEdit && !!id,
+  })
+
+  // Member mutations for immediate API calls in edit mode
+  const { mutate: doAddMember } = useMutation({
+    mutationFn: (studentId: string) => addGroupMember(id!, studentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
+    onError: (err) => logger.error('GroupForm', 'add member failed', err),
+  })
+
+  const { mutate: doRemoveMember } = useMutation({
+    mutationFn: (studentId: string) => removeGroupMember(id!, studentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
+    onError: (err) => logger.error('GroupForm', 'remove member failed', err),
+  })
+
+  const handleMemberChange = useCallback((newMembers: SelectedMember[]) => {
+    if (isEdit && id) {
+      const newIds = new Set(newMembers.map((m) => m.id))
+      const oldIds = new Set(members.map((m) => m.id))
+      newMembers.filter((m) => !oldIds.has(m.id)).forEach((m) => doAddMember(m.id))
+      members.filter((m) => !newIds.has(m.id)).forEach((m) => doRemoveMember(m.id))
+    }
+    setMembers(newMembers)
+  }, [isEdit, id, members, doAddMember, doRemoveMember])
+
+  // Create mode save mutation
   const { mutate: doSave, isPending: saving } = useMutation({
     mutationFn: async () => {
       const selectedIds = members.map((m) => m.id)
@@ -273,10 +333,6 @@ function GroupFormBody({ group }: { group?: Group }) {
           description: description.trim() || null,
           isActive: group?.isActive ?? true,
         })
-        const toAdd = selectedIds.filter((sid) => !originalMemberIds.includes(sid))
-        const toRemove = originalMemberIds.filter((oid) => !selectedIds.includes(oid))
-        for (const sid of toAdd) await addGroupMember(id, sid)
-        for (const oid of toRemove) await removeGroupMember(id, oid)
       } else {
         const groupId = pendingGroupIdRef.current ?? (await createGroup({
           name: name.trim(),
@@ -324,11 +380,229 @@ function GroupFormBody({ group }: { group?: Group }) {
     doSave()
   }
 
+  // ── Edit mode render ──────────────────────────────────────────────────────
+  if (isEdit) {
+    return (
+      <>
+        <PageHeader
+          backTo={`/groups/${id}`}
+          backLabel={group?.name ?? 'Group'}
+          title="Edit Group"
+          subtitle="Update this group's profile."
+        />
+
+        {/* Sticky nav: autosave status + Done */}
+        <div
+          className="sticky top-14 lg:top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm flex items-center justify-end gap-3 py-2 -mx-4 lg:-mx-6 px-4 lg:px-6 mt-4 mb-6"
+          data-testid="section-nav"
+        >
+          <span className="text-xs flex items-center gap-1" data-testid="autosave-status">
+            {saveStatus === 'saving' && (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" /><span className="text-zinc-400">Saving...</span></>
+            )}
+            {saveStatus === 'saved' && (
+              <><CheckCircle className="h-3.5 w-3.5 text-green-500" /><span className="text-zinc-500">All changes saved</span></>
+            )}
+            {saveStatus === 'retrying' && (
+              <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save, retrying...</span></>
+            )}
+            {saveStatus === 'error' && (
+              <><RefreshCw className="h-3.5 w-3.5 text-red-500" /><span className="text-red-500">Couldn't save</span></>
+            )}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => navigate(`/groups/${id}`)}
+            disabled={saveStatus === 'saving'}
+            data-testid="done-btn"
+          >
+            Done
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
+          {/* Main column */}
+          <div className="space-y-6">
+            <Card className="rounded-2xl border-0 bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)]">
+              <CardContent className="p-6 sm:p-8 space-y-6">
+                <div className="space-y-1.5">
+                  <Label htmlFor="group-name" className="text-sm font-medium text-[#1A1B22]">
+                    Name <span className="text-red-500" aria-hidden>*</span>
+                  </Label>
+                  <Input
+                    id="group-name"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      if (nameError) setNameError('')
+                      scheduleTextSave()
+                    }}
+                    placeholder="e.g. Lunes B1"
+                    maxLength={MAX_NAME}
+                    aria-invalid={!!nameError}
+                    aria-describedby={nameError ? 'name-error' : undefined}
+                    data-testid="group-name-input"
+                  />
+                  {nameError && (
+                    <p id="name-error" className="text-sm text-red-600" role="alert">
+                      {nameError}
+                    </p>
+                  )}
+                  {name.length > MAX_NAME * 0.85 && (
+                    <p className="text-xs text-zinc-400 text-right">
+                      {name.length}/{MAX_NAME}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="group-cefr" className="text-sm font-medium text-[#1A1B22]">
+                    CEFR Level
+                  </Label>
+                  <Select
+                    value={cefrLevel || undefined}
+                    onValueChange={(v) => {
+                      const next = v == null || v === 'none' ? '' : v
+                      setCefrLevel(next)
+                      saveNow({ cefrLevel: next || null })
+                    }}
+                  >
+                    <SelectTrigger id="group-cefr" data-testid="group-cefr-select">
+                      <SelectValue placeholder="Select level…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-zinc-400 italic">None</span>
+                      </SelectItem>
+                      {CEFR_LEVELS.map((level) => (
+                        <SelectItem key={level} value={level}>
+                          <span
+                            className={cn(
+                              'inline-block rounded px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.05em] mr-2',
+                              cefrColors(level),
+                            )}
+                          >
+                            {level}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="group-description" className="text-sm font-medium text-[#1A1B22]">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="group-description"
+                    value={description}
+                    onChange={(e) => {
+                      setDescription(e.target.value)
+                      scheduleTextSave()
+                    }}
+                    placeholder="What kind of class is this? Where, when, who?"
+                    maxLength={MAX_DESC}
+                    rows={3}
+                    className="italic placeholder:not-italic"
+                    data-testid="group-description-input"
+                  />
+                  {description.length > MAX_DESC * 0.85 && (
+                    <p className="text-xs text-zinc-400 text-right">
+                      {description.length}/{MAX_DESC}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right rail */}
+          <div className="space-y-4 lg:sticky lg:top-[76px]" data-testid="form-sidebar">
+            {/* Members */}
+            <div
+              className="bg-white rounded-2xl p-4"
+              style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+              data-testid="sidebar-members"
+            >
+              <h3 className="text-xs font-bold uppercase tracking-[0.06em] text-zinc-400 mb-3">Members</h3>
+              <StudentMemberPicker selected={members} onChange={handleMemberChange} />
+            </div>
+
+            {/* Teaching Ideas */}
+            <div
+              className="bg-white rounded-2xl p-4"
+              style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+              data-testid="sidebar-teaching-ideas"
+            >
+              <GroupTeachingIdeasCard
+                ideas={teachingIdeas}
+                groupId={id!}
+                onRefetch={refetchIdeas}
+              />
+            </div>
+
+            {/* Pending Followups */}
+            <div
+              className="bg-white rounded-2xl p-4"
+              style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }}
+              data-testid="sidebar-followups"
+            >
+              <StudentFollowupsCard
+                followups={followups}
+                groupId={id}
+                onFollowupChange={refetchFollowups}
+              />
+            </div>
+
+            {/* Danger zone */}
+            <div className="pt-2" data-testid="danger-zone">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm w-full justify-start"
+                onClick={() => setShowDeleteDialog(true)}
+                data-testid="delete-group-button"
+              >
+                Delete group
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this group?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the group. Sessions and student records will not be affected. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => doDelete()}
+                disabled={deleting}
+                className="bg-red-600 text-white hover:bg-red-700"
+                data-testid="confirm-delete-button"
+              >
+                {deleting ? 'Deleting...' : 'Delete group'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    )
+  }
+
+  // ── Create mode render ────────────────────────────────────────────────────
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
       <PageHeader
-        title={isEdit ? 'Edit Group' : 'New Group'}
-        subtitle={isEdit ? group?.name : 'Set up a new class group'}
+        title="New Group"
+        subtitle="Set up a new class group"
       />
 
       <Card className="rounded-2xl border-0 bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)]">
@@ -448,49 +722,13 @@ function GroupFormBody({ group }: { group?: Group }) {
                     Saving...
                   </>
                 ) : (
-                  isEdit ? 'Save changes' : 'Create group'
+                  'Create group'
                 )}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
-
-      {isEdit && (
-        <div className="pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm"
-            onClick={() => setShowDeleteDialog(true)}
-            data-testid="delete-group-button"
-          >
-            Delete group
-          </Button>
-        </div>
-      )}
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this group?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove the group. Sessions and student records will not be affected. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => doDelete()}
-              disabled={deleting}
-              className="bg-red-600 text-white hover:bg-red-700"
-              data-testid="confirm-delete-button"
-            >
-              {deleting ? 'Deleting...' : 'Delete group'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }
