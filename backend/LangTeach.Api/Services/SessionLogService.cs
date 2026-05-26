@@ -45,6 +45,12 @@ public class SessionLogService : ISessionLogService
         if (!studentExists)
             throw new KeyNotFoundException($"Student {studentId} not found.");
 
+        var studentName = await _db.Students
+            .Where(s => s.Id == studentId)
+            .Select(s => s.Name)
+            .FirstAsync(cancellationToken);
+
+        // Student-route service: only returns student-target sessions (GroupId IS NULL).
         var rawSessions = await _db.SessionLogs
             .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted)
             .OrderBy(sl => sl.SessionDate.HasValue)
@@ -57,13 +63,46 @@ public class SessionLogService : ISessionLogService
             .Select(vna => vna.SessionLogId)
             .ToHashSetAsync(cancellationToken);
 
-        return rawSessions.Select(sl => ToDto(sl, voiceNoteSessionIds.Contains(sl.Id))).ToList();
+        return rawSessions.Select(sl => ToDto(sl, "student", studentName, voiceNoteSessionIds.Contains(sl.Id))).ToList();
+    }
+
+    public async Task<List<SessionLogDto>> ListForStudentIncludingGroupsAsync(Guid teacherId, Guid studentId, CancellationToken cancellationToken = default)
+    {
+        var studentName = await _db.Students
+            .Where(s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (studentName is null)
+            throw new KeyNotFoundException($"Student {studentId} not found.");
+
+        var rawSessions = await SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId)
+            .Include(sl => sl.Group)
+            .OrderBy(sl => sl.SessionDate.HasValue)
+            .ThenByDescending(sl => sl.SessionDate)
+            .ToListAsync(cancellationToken);
+
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl =>
+        {
+            var isGroup = sl.GroupId.HasValue;
+            var targetType = isGroup ? "group" : "student";
+            var targetName = isGroup ? (sl.Group?.Name ?? "") : studentName;
+            return ToDto(sl, targetType, targetName, voiceNoteSessionIds.Contains(sl.Id));
+        }).ToList();
     }
 
     public async Task<SessionLogDto?> GetByIdAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
+        // Student-route lookup: keeps explicit StudentId match. A group session would be fetched via the group route.
         var session = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Student != null && !sl.Student.IsDeleted)
+            .Include(sl => sl.Student)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (session is null) return null;
@@ -71,7 +110,7 @@ public class SessionLogService : ISessionLogService
         var hasVoiceNote = await _db.VoiceNoteApplications
             .AnyAsync(vna => vna.SessionLogId == session.Id, cancellationToken);
 
-        return ToDto(session, hasVoiceNote);
+        return ToDto(session, "student", session.Student!.Name, hasVoiceNote);
     }
 
     public async Task<SessionLogDto> CreateAsync(Guid teacherId, Guid studentId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
@@ -174,7 +213,7 @@ public class SessionLogService : ISessionLogService
         try { await _trendService.RecomputeAsync(teacherId, studentId, cancellationToken); }
         catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session create", studentId); }
 
-        return ToDto(entity);
+        return ToDto(entity, "student", student.Name);
     }
 
     public async Task<SessionLogDto?> UpdateAsync(Guid teacherId, Guid studentId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default)
@@ -193,8 +232,9 @@ public class SessionLogService : ISessionLogService
 
         ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
 
+        // Student-route update: explicit StudentId match.
         var entity = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Student != null && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity is null)
@@ -267,13 +307,19 @@ public class SessionLogService : ISessionLogService
         var hasVoiceNote = await _db.VoiceNoteApplications
             .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
 
-        return ToDto(entity, hasVoiceNote);
+        var studentName = await _db.Students
+            .Where(s => s.Id == studentId)
+            .Select(s => s.Name)
+            .FirstAsync(cancellationToken);
+
+        return ToDto(entity, "student", studentName, hasVoiceNote);
     }
 
     public async Task<bool> SoftDeleteAsync(Guid teacherId, Guid studentId, Guid sessionId, CancellationToken cancellationToken = default)
     {
+        // Student-route delete: explicit StudentId match.
         var entity = await _db.SessionLogs
-            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.Student.IsDeleted)
+            .Where(sl => sl.Id == sessionId && sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Student != null && !sl.Student.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity is null)
@@ -289,6 +335,207 @@ public class SessionLogService : ISessionLogService
         catch (Exception ex) { _logger.LogError(ex, "Trend recompute failed for Student {StudentId} after session delete", studentId); }
 
         return true;
+    }
+
+    public async Task<List<SessionLogDto>> ListForGroupAsync(Guid teacherId, Guid groupId, CancellationToken cancellationToken = default)
+    {
+        var group = await _db.Groups
+            .Where(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted)
+            .Select(g => new { g.Id, g.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (group is null)
+            throw new KeyNotFoundException($"Group {groupId} not found.");
+
+        var rawSessions = await _db.SessionLogs
+            .Where(sl => sl.GroupId == groupId && sl.TeacherId == teacherId && !sl.IsDeleted)
+            .OrderBy(sl => sl.SessionDate.HasValue)
+            .ThenByDescending(sl => sl.SessionDate)
+            .ToListAsync(cancellationToken);
+
+        var sessionIds = rawSessions.Select(sl => sl.Id).ToList();
+        var voiceNoteSessionIds = await _db.VoiceNoteApplications
+            .Where(vna => sessionIds.Contains(vna.SessionLogId))
+            .Select(vna => vna.SessionLogId)
+            .ToHashSetAsync(cancellationToken);
+
+        return rawSessions.Select(sl => ToDto(sl, "group", group.Name, voiceNoteSessionIds.Contains(sl.Id))).ToList();
+    }
+
+    public async Task<SessionLogDto?> GetGroupSessionByIdAsync(Guid teacherId, Guid groupId, Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var session = await _db.SessionLogs
+            .Where(sl => sl.Id == sessionId && sl.GroupId == groupId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Group != null && !sl.Group.IsDeleted)
+            .Include(sl => sl.Group)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (session is null) return null;
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == session.Id, cancellationToken);
+
+        return ToDto(session, "group", session.Group!.Name, hasVoiceNote);
+    }
+
+    public async Task<SessionLogDto> CreateForGroupAsync(Guid teacherId, Guid groupId, CreateSessionLogRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!Enum.IsDefined(request.PreviousHomeworkStatus))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
+        ValidateReassessment(request.LevelReassessmentSkill, request.LevelReassessmentLevel);
+
+        var group = await _db.Groups
+            .Where(g => g.Id == groupId && g.TeacherId == teacherId && !g.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (group is null)
+            throw new KeyNotFoundException($"Group {groupId} not found.");
+
+        if (request.LinkedLessonId.HasValue)
+        {
+            var lessonExists = await _db.Lessons.AnyAsync(
+                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId && !l.IsDeleted,
+                cancellationToken);
+
+            if (!lessonExists)
+                throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
+        }
+
+        if (request.VoiceNoteId.HasValue)
+        {
+            var voiceNoteExists = await _db.VoiceNotes.AnyAsync(
+                v => v.Id == request.VoiceNoteId.Value && v.TeacherId == teacherId,
+                cancellationToken);
+
+            if (!voiceNoteExists)
+                throw new KeyNotFoundException($"VoiceNote {request.VoiceNoteId.Value} not found.");
+        }
+
+        var now = DateTime.UtcNow;
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
+        var entity = new SessionLog
+        {
+            Id = Guid.NewGuid(),
+            StudentId = null,
+            GroupId = groupId,
+            TeacherId = teacherId,
+            SessionDate = request.SessionDate,
+            PlannedContent = request.PlannedContent,
+            ActualContent = request.ActualContent,
+            HomeworkAssigned = request.HomeworkAssigned,
+            PreviousHomeworkStatus = request.PreviousHomeworkStatus,
+            NextSessionTopics = request.NextSessionTopics,
+            GeneralNotes = request.GeneralNotes,
+            LevelReassessmentSkill = request.LevelReassessmentSkill,
+            LevelReassessmentLevel = request.LevelReassessmentLevel,
+            LinkedLessonId = request.LinkedLessonId,
+            TopicTags = request.TopicTags ?? "[]",
+            MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs),
+            SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties),
+            IsCancelled = request.IsCancelled,
+            Status = request.Status,
+            Duration = request.Duration,
+            Title = request.Title ?? GenerateTitle(request.PlannedContent, request.ActualContent, request.SessionDate),
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        _db.SessionLogs.Add(entity);
+
+        if (request.VoiceNoteId.HasValue || request.VoiceNoteTranscription is not null || request.RawExtractionJson is not null)
+        {
+            _db.VoiceNoteApplications.Add(new VoiceNoteApplication
+            {
+                Id = Guid.NewGuid(),
+                SessionLogId = entity.Id,
+                VoiceNoteId = request.VoiceNoteId,
+                Transcription = request.VoiceNoteTranscription,
+                RawExtractionJson = request.RawExtractionJson,
+                ApplicationType = ApplicationType.Create,
+                AppliedAt = now
+            });
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Created group SessionLog {SessionLogId} for Group {GroupId}", entity.Id, groupId);
+
+        return ToDto(entity, "group", group.Name);
+    }
+
+    public async Task<SessionLogDto?> UpdateGroupSessionAsync(Guid teacherId, Guid groupId, Guid sessionId, UpdateSessionLogRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!Enum.IsDefined(request.PreviousHomeworkStatus))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid PreviousHomeworkStatus value: {(int)request.PreviousHomeworkStatus}");
+
+        if (!Enum.IsDefined(request.Status))
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                $"Invalid Status value: {(int)request.Status}");
+
+        if (request.Status == SessionLogStatus.Draft && request.IsCancelled)
+            throw new System.ComponentModel.DataAnnotations.ValidationException(
+                "Draft sessions cannot be cancelled.");
+
+        var entity = await _db.SessionLogs
+            .Where(sl => sl.Id == sessionId && sl.GroupId == groupId && sl.TeacherId == teacherId && !sl.IsDeleted && sl.Group != null && !sl.Group.IsDeleted)
+            .Include(sl => sl.Group)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (entity is null) return null;
+
+        if (request.LinkedLessonId.HasValue)
+        {
+            var lessonExists = await _db.Lessons.AnyAsync(
+                l => l.Id == request.LinkedLessonId.Value && l.TeacherId == teacherId && !l.IsDeleted,
+                cancellationToken);
+            if (!lessonExists)
+                throw new KeyNotFoundException($"Lesson {request.LinkedLessonId.Value} not found.");
+        }
+
+        var sanitizedDifficulties = SanitizeSuggestedDifficulties(request.SuggestedDifficulties, _logger);
+
+        var titlePlanned = request.PlannedContent ?? entity.PlannedContent;
+        var titleActual = request.ActualContent ?? entity.ActualContent;
+        var titleDate = request.SessionDate ?? entity.SessionDate;
+
+        entity.SessionDate = request.SessionDate;
+        entity.PlannedContent = request.PlannedContent;
+        entity.ActualContent = request.ActualContent;
+        entity.HomeworkAssigned = request.HomeworkAssigned;
+        entity.PreviousHomeworkStatus = request.PreviousHomeworkStatus;
+        entity.NextSessionTopics = request.NextSessionTopics;
+        entity.GeneralNotes = request.GeneralNotes;
+        // Level reassessment is a student concept; not applied for group sessions
+        entity.LevelReassessmentSkill = null;
+        entity.LevelReassessmentLevel = null;
+        entity.LinkedLessonId = request.LinkedLessonId;
+        entity.TopicTags = request.TopicTags ?? "[]";
+        entity.MentionedDifficultyPairs = SerializePairs(request.MentionedDifficultyPairs);
+        entity.SuggestedDifficulties = SerializeSuggestedDifficulties(sanitizedDifficulties);
+        entity.IsCancelled = request.IsCancelled;
+        entity.Status = request.Status;
+        entity.Duration = request.Duration;
+        entity.Title = request.Title ?? GenerateTitle(titlePlanned, titleActual, titleDate);
+        entity.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated group SessionLog {SessionLogId} for Group {GroupId}", sessionId, groupId);
+
+        var hasVoiceNote = await _db.VoiceNoteApplications
+            .AnyAsync(vna => vna.SessionLogId == entity.Id, cancellationToken);
+
+        return ToDto(entity, "group", entity.Group!.Name, hasVoiceNote);
     }
 
     private static void ValidateReassessment(string? skill, string? level)
@@ -321,9 +568,12 @@ public class SessionLogService : ISessionLogService
         student.SkillLevelOverrides = JsonSerializer.Serialize(overrides);
     }
 
-    private static SessionLogDto ToDto(SessionLog sl, bool hasVoiceNote = false) => new(
+    internal static SessionLogDto ToDto(SessionLog sl, string targetType, string targetName, bool hasVoiceNote = false) => new(
         sl.Id,
         sl.StudentId,
+        sl.GroupId,
+        targetType,
+        targetName,
         sl.TeacherId,
         sl.SessionDate,
         sl.PlannedContent,

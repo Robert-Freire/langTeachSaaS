@@ -115,6 +115,9 @@ describe('StudentDetailHeader', () => {
     const session: SessionLog = {
       id: 'sess-1',
       studentId: 'student-1',
+      groupId: null,
+      targetType: 'student',
+      targetName: 'Test Student',
       sessionDate: future.toISOString(),
       title: null,
       plannedContent: null,
@@ -223,5 +226,35 @@ describe('StudentDetailHeader', () => {
       </MemoryRouter>
     )
     expect(screen.getByTestId('voice-update-button')).toBeDisabled()
+  })
+
+  it('renders no group pills when groups prop is empty', () => {
+    renderHeader()
+    expect(screen.queryAllByTestId('group-affiliation-pill')).toHaveLength(0)
+  })
+
+  it('renders group affiliation pills, dropping the level only when the name already implies it', () => {
+    render(
+      <MemoryRouter>
+        <StudentDetailHeader
+          student={BASE_STUDENT}
+          nextSession={null}
+          sessionFrequency={null}
+          groups={[
+            // Name already references the level -> trailing " - B1" is dropped as redundant.
+            { id: 'g1', name: 'B1 Conversacion', cefrLevel: 'B1' },
+            // No level -> name only.
+            { id: 'g2', name: 'Exam Prep', cefrLevel: null },
+            // Name does not reference the level -> level is appended.
+            { id: 'g3', name: 'Lunes', cefrLevel: 'B2' },
+          ]}
+        />
+      </MemoryRouter>
+    )
+    const pills = screen.getAllByTestId('group-affiliation-pill')
+    expect(pills).toHaveLength(3)
+    expect(pills[0]).toHaveTextContent(/^B1 Conversacion$/)
+    expect(pills[1]).toHaveTextContent(/^Exam Prep$/)
+    expect(pills[2]).toHaveTextContent(/^Lunes - B2$/)
   })
 })

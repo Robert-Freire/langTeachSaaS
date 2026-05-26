@@ -31,17 +31,22 @@ public class SessionLogsController : ControllerBase
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
-    public async Task<IActionResult> List(Guid studentId, CancellationToken cancellationToken)
+    public async Task<IActionResult> List(Guid studentId, [FromQuery] bool includeGroups = false, CancellationToken cancellationToken = default)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         try
         {
-            var sessions = await _sessionLogService.ListAsync(teacherId, studentId, cancellationToken);
+            List<SessionLogDto> sessions;
+            if (includeGroups)
+                sessions = await _sessionLogService.ListForStudentIncludingGroupsAsync(teacherId, studentId, cancellationToken);
+            else
+                sessions = await _sessionLogService.ListAsync(teacherId, studentId, cancellationToken);
+
             _logger.LogInformation(
-                "GET /api/students/{StudentId}/sessions. TeacherId={TeacherId} Count={Count}",
-                studentId, teacherId, sessions.Count);
+                "GET /api/students/{StudentId}/sessions?includeGroups={IncludeGroups}. TeacherId={TeacherId} Count={Count}",
+                studentId, includeGroups, teacherId, sessions.Count);
             return Ok(sessions);
         }
         catch (KeyNotFoundException)

@@ -16,7 +16,10 @@ public record CorrectionTagDto(
     int EndIndex,
     string? Explanation,
     string? CorrectedForm,
-    int OrderIndex);
+    int OrderIndex,
+    // "kept" (in-level, shown in both views) or "removed" (above level: hidden from the
+    // student default view, shown only in the teacher all-errors view). See #1351.
+    string FilterStatus);
 
 public record CorrectionDetailDto(
     Guid Id,

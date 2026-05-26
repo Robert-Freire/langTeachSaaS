@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type ElementType } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, Users, CalendarDays, BookOpen, GraduationCap, Settings, LogOut, Menu, Sparkles, X } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, CalendarDays, GraduationCap, Settings, LogOut, Menu, Sparkles, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import AtelierLogo from '@/components/AtelierLogo'
@@ -17,9 +17,9 @@ import { getStudent } from '@/api/students'
 const mainNavItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/students', label: 'Students', icon: Users },
+  { to: '/groups', label: 'Groups', icon: UsersRound },
   { to: '/sessions', label: 'Sessions', icon: CalendarDays },
   { to: '/courses', label: 'Courses', icon: GraduationCap },
-  { to: '/lessons', label: 'Lessons', icon: BookOpen },
 ]
 
 const SESSION_EDIT_RE = /^\/students\/[^/]+\/sessions\/[^/]+\/edit$/

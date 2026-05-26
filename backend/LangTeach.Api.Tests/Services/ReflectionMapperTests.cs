@@ -179,7 +179,8 @@ public class ReflectionMapperTests
     {
         var dto = MakeDto(sessionTitle: "Same title");
         var currentSession = new SessionLogDto(
-            Id: Guid.NewGuid(), StudentId: Guid.NewGuid(), TeacherId: Guid.NewGuid(),
+            Id: Guid.NewGuid(), StudentId: Guid.NewGuid(), GroupId: null,
+            TargetType: "student", TargetName: "", TeacherId: Guid.NewGuid(),
             SessionDate: null, PlannedContent: null, ActualContent: null,
             HomeworkAssigned: null, PreviousHomeworkStatus: default,
             PreviousHomeworkStatusName: "", NextSessionTopics: null,

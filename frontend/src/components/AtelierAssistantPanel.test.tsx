@@ -794,6 +794,9 @@ describe('AtelierAssistantPanel', () => {
       mockedList.mockResolvedValueOnce([{
         id: 'session-abc',
         studentId: 'student-1',
+        groupId: null,
+        targetType: 'student',
+        targetName: 'Test Student',
         sessionDate: '2026-04-28',
         title: 'Pretérito indefinido',
         isCancelled: false,

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -5,6 +6,7 @@ using LangTeach.Api.AI;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,21 +16,20 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 {
     private readonly AppDbContext _db;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IUsageLimitService _usageLimitService;
     private readonly ILogger<RedaccionCorrectionService> _logger;
 
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = AppJsonOptions.CaseInsensitiveWithComments;
 
     public RedaccionCorrectionService(
         AppDbContext db,
         IServiceScopeFactory scopeFactory,
+        IUsageLimitService usageLimitService,
         ILogger<RedaccionCorrectionService> logger)
     {
         _db = db;
         _scopeFactory = scopeFactory;
+        _usageLimitService = usageLimitService;
         _logger = logger;
     }
 
@@ -50,7 +51,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         if (correction.Status == CorrectionStatus.Pendiente)
             throw new CorrectionInvalidStateException("no_student_text",
                 "Cannot correct a redacción before student text is provided.");
-        if (correction.Status == CorrectionStatus.Corrigiendo)
+        if (correction.Status == CorrectionStatus.Corrigiendo || correction.Status == CorrectionStatus.Encolada)
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         if (correction.Status == CorrectionStatus.Corregida)
             throw new CorrectionInvalidStateException("already_corrected",
@@ -59,7 +60,21 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             throw new CorrectionInvalidStateException("invalid_status",
                 $"Unexpected status: {correction.Status}.");
 
-        correction.Status = CorrectionStatus.Corrigiendo;
+        // Quota gate (#1223). Sits after the status validation so idempotent re-corregir on an
+        // in-flight/completed correction (handled above) never gets blocked, and only a genuinely
+        // correctable redacción (Entregada or a CorreccionFallida retry) consumes the gate.
+        if (!await _usageLimitService.CanGenerateAsync(teacherId, cancellationToken))
+        {
+            var usage = await _usageLimitService.GetUsageStatusAsync(teacherId, cancellationToken);
+            throw new CorrectionQuotaExceededException(usage);
+        }
+
+        // A first attempt (Entregada) counts against the monthly quota; a retry of a previously
+        // failed correction (CorreccionFallida) does NOT re-record, because the first attempt
+        // already consumed one unit. Capture the prior status before the transition overwrites it.
+        var priorStatus = correction.Status;
+
+        correction.Status = CorrectionStatus.Encolada;
         correction.UpdatedAt = DateTime.UtcNow;
         try
         {
@@ -67,97 +82,38 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // Another concurrent request won the race and already set Corrigiendo (or later).
-            // Re-query with Include so Tags are also fresh (ReloadAsync only refreshes scalars).
+            // Another concurrent request won the race. Re-query with Include so Tags are also fresh.
+            // The loser must NOT record usage (the winner does), so return before RecordGenerationAsync.
             correction = await _db.Corrections
                 .Include(c => c.Tags)
                 .FirstAsync(c => c.Id == correctionId, cancellationToken);
             return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
         }
 
-        var outerLogger = _logger;
-        _ = Task.Run(async () =>
-        {
-            ILogger<RedaccionCorrectionService>? scopeLogger = null;
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var sp = scope.ServiceProvider;
-                var db = sp.GetRequiredService<AppDbContext>();
-                var claude = sp.GetRequiredService<IClaudeClient>();
-                var correctionPromptService = sp.GetRequiredService<ICorrectionPromptService>();
-                scopeLogger = sp.GetRequiredService<ILogger<RedaccionCorrectionService>>();
-                await RunCorrectionInScopeAsync(correctionId, studentId, teacherId, db, claude, correctionPromptService, scopeLogger);
-            }
-            catch (ClaudeRateLimitException rle)
-            {
-                var errLogger = scopeLogger ?? outerLogger;
-                errLogger.LogWarning(
-                    "Background correction: Claude rate limit hit; reverting to Entregada for retry. CorrectionId={CorrectionId} TeacherId={TeacherId} RetryAfter={RetryAfter}",
-                    correctionId, teacherId, rle.RetryAfter);
-                try
-                {
-                    using var failScope = _scopeFactory.CreateScope();
-                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
-                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
-                    {
-                        failRow.Status = CorrectionStatus.Entregada;
-                        failRow.UpdatedAt = DateTime.UtcNow;
-                        // No DbUpdateConcurrencyException guard here: if a race occurs the outer
-                        // catch (Exception saveEx) logs it, and CorrectionStaleRecoveryService
-                        // will reset the row on the next timer tick.
-                        await failDb.SaveChangesAsync();
-                    }
-                }
-                catch (Exception saveEx)
-                {
-                    errLogger.LogError(saveEx,
-                        "Failed to revert status to Entregada after Claude rate limit. CorrectionId={CorrectionId}", correctionId);
-                }
-            }
-            catch (Exception ex)
-            {
-                var errLogger = scopeLogger ?? outerLogger;
-                errLogger.LogError(ex,
-                    "Background correction failed; setting CorreccionFallida. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId}",
-                    correctionId, teacherId, studentId);
-                try
-                {
-                    using var failScope = _scopeFactory.CreateScope();
-                    var failDb = failScope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var failRow = await failDb.Corrections
-                        .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
-                    if (failRow is not null && failRow.Status == CorrectionStatus.Corrigiendo)
-                    {
-                        failRow.Status = CorrectionStatus.CorreccionFallida;
-                        failRow.UpdatedAt = DateTime.UtcNow;
-                        // No DbUpdateConcurrencyException guard here: outer catch logs it,
-                        // and CorrectionStaleRecoveryService resets the row on the next tick.
-                        await failDb.SaveChangesAsync();
-                    }
-                }
-                catch (Exception saveEx)
-                {
-                    errLogger.LogError(saveEx,
-                        "Failed to persist CorreccionFallida status. CorrectionId={CorrectionId}", correctionId);
-                }
-            }
-        });
+        // Record after the WINNING save only, and only for a first attempt, so neither the
+        // concurrency loser nor a failed-correction retry double-counts (#1223).
+        if (priorStatus == CorrectionStatus.Entregada)
+            await _usageLimitService.RecordGenerationAsync(teacherId, ContentBlockType.ErrorCorrection, CancellationToken.None);
 
+        correction = await _db.Corrections
+            .AsNoTracking()
+            .Include(c => c.Tags)
+            .FirstAsync(c => c.Id == correctionId, cancellationToken);
         return CorrectionDtoMapper.ToDetail(correction, correction.Tags);
     }
 
-    private static async Task RunCorrectionInScopeAsync(
+    internal static async Task RunCorrectionInScopeAsync(
         Guid correctionId, Guid studentId, Guid teacherId,
         AppDbContext db, IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
-        ILogger logger)
+        IPedagogyConfigService pedagogy,
+        CorrectionWorkerOptions workerOptions,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         var correction = await db.Corrections
             .Include(c => c.Tags)
-            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Id == correctionId && !c.IsDeleted, cancellationToken);
 
         if (correction is null)
         {
@@ -175,7 +131,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var student = await db.Students.FirstOrDefaultAsync(
-            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted);
+            s => s.Id == studentId && s.TeacherId == teacherId && !s.IsDeleted, cancellationToken);
 
         if (student is null)
         {
@@ -191,7 +147,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         corrReq = corrReq with { CallSite = "correction.pass1", CorrelationId = correctionId };
         var sentText = ctx.StudentText.TrimEnd();
 
-        var dto = await claude.CompleteWithToolAsync<RedaccionCorrectionDto>(corrReq, corrTool, CancellationToken.None);
+        var dto = await claude.CompleteWithToolAsync<RedaccionCorrectionDto>(corrReq, corrTool, cancellationToken);
         if (dto.SchemaVersion != 1)
             throw new InvalidOperationException("Claude tool response is missing or has an unsupported schemaVersion.");
 
@@ -203,7 +159,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             .AsNoTracking()
             .Where(c => c.Id == correctionId)
             .Select(c => c.Status)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
         if (freshStatus != CorrectionStatus.Corrigiendo)
         {
             logger.LogWarning(
@@ -212,13 +168,25 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             return;
         }
 
-        var filteredTags = await ApplyLevelFilterAsync(
-            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, correctionId, logger);
+        var (visibleTags, removedTags) = await ApplyLevelFilterAsync(
+            validatedTags, cefr, ctx.AssignmentPrompt, claude, correctionPromptService, pedagogy, correctionId, logger, cancellationToken);
 
         var affirmerTags = await RunScopeAffirmerAsync(
-            filteredTags, cefr, sentText, claude, correctionPromptService, correctionId, logger);
+            visibleTags, cefr, sentText, claude, correctionPromptService, pedagogy, workerOptions, correctionId, logger, cancellationToken);
 
-        var mergedTags = MergeAndDedupWithAffirmer(filteredTags, affirmerTags, correctionId, logger);
+        var mergedVisible = MergeAndDedupWithAffirmer(visibleTags, affirmerTags, correctionId, logger);
+
+        // Combine the student-visible tags (kept) with the above-level tags the filter
+        // removed. Removed tags are persisted (FilterStatus "removed") so the teacher can
+        // opt into an all-errors view; they were deliberately kept out of the affirmer
+        // overlap dedup above so a finding hidden from the student cannot suppress a
+        // visible affirmation (#1351, Sophy model review). One OrderIndex sequence by
+        // StartIndex: the read-side view filter drops rows but never reorders.
+        var persistedTags = mergedVisible
+            .Select(t => (Tag: t, Status: CorrectionTagFilterStatus.Kept))
+            .Concat(removedTags.Select(t => (Tag: t, Status: CorrectionTagFilterStatus.Removed)))
+            .OrderBy(p => p.Tag.StartIndex)
+            .ToList();
 
         var now = DateTime.UtcNow;
         correction.MarkedUpOutput = JsonSerializer.Serialize(dto, JsonOpts);
@@ -227,9 +195,9 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         correction.UpdatedAt = now;
         correction.SchemaVersion = 1;
 
-        for (var i = 0; i < mergedTags.Count; i++)
+        for (var i = 0; i < persistedTags.Count; i++)
         {
-            var t = mergedTags[i];
+            var (t, status) = persistedTags[i];
             db.CorrectionTags.Add(new CorrectionTag
             {
                 Id = Guid.NewGuid(),
@@ -241,15 +209,16 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 Explanation = t.Explanation,
                 CorrectedForm = t.CorrectedForm,
                 OrderIndex = i,
+                FilterStatus = status,
             });
         }
 
-        await db.SaveChangesAsync(CancellationToken.None);
+        await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
-            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} FilteredOut={FilteredOut} AffirmerAdded={AffirmerAdded}",
+            "Background correction completed. CorrectionId={CorrectionId} TeacherId={TeacherId} StudentId={StudentId} Cefr={Cefr} L1={L1} TagCount={TagCount} RemovedAboveLevel={RemovedAboveLevel} AffirmerAdded={AffirmerAdded}",
             correctionId, teacherId, studentId, cefr, ctx.StudentL1 ?? "(none)",
-            mergedTags.Count, validatedTags.Count - filteredTags.Count, affirmerTags.Count);
+            persistedTags.Count, removedTags.Count, affirmerTags.Count);
     }
 
     private static RedaccionCorrectionPromptContext BuildPromptContext(Correction correction, Student student)
@@ -459,20 +428,27 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return nonOverlapping;
     }
 
-    private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> ApplyLevelFilterAsync(
+    // Returns the student-visible tags (keep + soften-as-MuyBien + always-pass-through) and,
+    // separately, the above-level tags the filter decided to remove. Removed tags used to be
+    // discarded here; they are now returned so the caller can persist them with
+    // FilterStatus "removed" for the teacher-only all-errors view (#1351).
+    private static async Task<(IReadOnlyList<RedaccionCorrectionTagDto> Visible, IReadOnlyList<RedaccionCorrectionTagDto> Removed)> ApplyLevelFilterAsync(
         IReadOnlyList<RedaccionCorrectionTagDto> tags,
         string cefr,
         string? assignmentPrompt,
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
+        IPedagogyConfigService pedagogy,
         Guid correctionId,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         if (tags.Count == 0)
-            return tags;
+            return (tags, []);
 
+        var alwaysKeepTopics = pedagogy.GetAlwaysKeepTopics();
         var inputs = tags
-            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsSerEstarGTag(t)))
+            .Select(t => new LevelFilterTagInput(t.Category, t.SpannedText, t.Explanation, IsAlwaysKeepGTag(t, alwaysKeepTopics)))
             .ToList();
 
         FilterDecisionsWrapper filterResult;
@@ -480,13 +456,13 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var (filterReq, filterTool) = correctionPromptService.BuildLevelFilterToolCall(cefr, inputs, assignmentPrompt);
             filterReq = filterReq with { CallSite = "correction.filter", CorrelationId = correctionId };
-            filterResult = await claude.CompleteWithToolAsync<FilterDecisionsWrapper>(filterReq, filterTool, CancellationToken.None);
+            filterResult = await claude.CompleteWithToolAsync<FilterDecisionsWrapper>(filterReq, filterTool, cancellationToken);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex,
                 "Level filter call failed; keeping all validated tags. CorrectionId={CorrectionId}", correctionId);
-            return tags;
+            return (tags, []);
         }
 
         var decisions = filterResult.Decisions ?? [];
@@ -499,6 +475,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         }
 
         var result = new List<RedaccionCorrectionTagDto>(tags.Count);
+        var removed = new List<RedaccionCorrectionTagDto>();
         for (var i = 0; i < tags.Count; i++)
         {
             var tag = tags[i];
@@ -534,9 +511,26 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                     });
                     break;
                 case "remove":
+                    // Floored-category guard (#1368): if the finding's category has a minimum CEFR
+                    // floor and the student is at or above that floor, the tag is in scope and must
+                    // not be removed regardless of the filter's decision.
+                    // Paragraph-break C findings (correctedForm == "¶") have a B1 floor;
+                    // the filter incorrectly classifies them by tag type rather than checking the floor.
+                    if (IsParagraphBreakAtFloor(tag, cefr, pedagogy))
+                    {
+                        logger.LogDebug(
+                            "Level filter overridden: paragraph-break C tag kept for {Cefr} student (floor B1). CorrectionId={CorrectionId}",
+                            cefr, correctionId);
+                        result.Add(tag);
+                        break;
+                    }
+                    // Above the student's level. No longer discarded: persisted with the
+                    // original category/explanation/correctedForm so the teacher can see it
+                    // in the all-errors view, but excluded from the student default (#1351).
                     logger.LogDebug(
                         "Level filter removed above-level tag [{Category}] \"{Span}\". CorrectionId={CorrectionId}",
                         tag.Category, tag.SpannedText, correctionId);
+                    removed.Add(tag);
                     break;
                 default:
                     // Unknown decision; keep.
@@ -545,7 +539,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
             }
         }
 
-        return result;
+        return (result, removed);
     }
 
     private static async Task<IReadOnlyList<RedaccionCorrectionTagDto>> RunScopeAffirmerAsync(
@@ -554,11 +548,15 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         string originalText,
         IClaudeClient claude,
         ICorrectionPromptService correctionPromptService,
+        IPedagogyConfigService pedagogy,
+        CorrectionWorkerOptions workerOptions,
         Guid correctionId,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         // Skip C2 (nothing is above C2).
-        if (!RedaccionScopeAffirmerPromptBuilder.NextLevel.TryGetValue(cefr, out var nextCefr))
+        var nextCefr = pedagogy.GetNextLevel(cefr);
+        if (nextCefr is null)
         {
             logger.LogDebug("ScopeAffirmer: skipping for level {Cefr}. CorrectionId={CorrectionId}", cefr, correctionId);
             return [];
@@ -566,7 +564,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
 
         // Skip very long texts to keep cost bounded.
         var wordCount = originalText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
-        if (wordCount > 800)
+        if (wordCount > workerOptions.ScopeAffirmerWordCountCap)
         {
             logger.LogDebug("ScopeAffirmer: skipping -- text too long ({Words} words). CorrectionId={CorrectionId}", wordCount, correctionId);
             return [];
@@ -577,7 +575,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         {
             var (affirmerReq, affirmerTool) = correctionPromptService.BuildScopeAffirmerToolCall(cefr, originalText, nextCefr);
             affirmerReq = affirmerReq with { CallSite = "correction.scopeAffirmer", CorrelationId = correctionId };
-            var wrapper = await claude.CompleteWithToolAsync<ScopeSpansWrapper>(affirmerReq, affirmerTool, CancellationToken.None);
+            var wrapper = await claude.CompleteWithToolAsync<ScopeSpansWrapper>(affirmerReq, affirmerTool, cancellationToken);
             results = wrapper.Spans ?? [];
         }
         catch (Exception ex)
@@ -609,8 +607,7 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
                 continue;
             }
 
-            var explanation = $"¡Bien hecho! Usaste {result.StructureLabel} -- una estructura de {result.StructureLevel}. " +
-                              $"Aunque está por encima de tu nivel oficial ({cefr.ToUpperInvariant()}), lo aplicaste correctamente.";
+            var explanation = workerOptions.MuyBienExplanationTemplate.Replace("{structureLabel}", result.StructureLabel);
 
             affirmerTags.Add(new RedaccionCorrectionTagDto(
                 Category: CorrectionTagCategory.MuyBien,
@@ -657,15 +654,35 @@ public class RedaccionCorrectionService : IRedaccionCorrectionService
         return result.OrderBy(t => t.StartIndex).ToList();
     }
 
-    // Word-boundary regex avoids false positives from words containing "ser" or "estar" as substrings.
-    private static readonly Regex SerRegex = new(@"\bser\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex EstarRegex = new(@"\bestar\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly ConcurrentDictionary<string, Regex> _keywordRegexCache = new();
 
-    private static bool IsSerEstarGTag(RedaccionCorrectionTagDto tag)
+    // Paragraph-break C tags use correctedForm == "¶" as their structural marker (#1350).
+    // They have a B1 floor: only generated for B1-and-above students, so the filter must not
+    // remove them for a student who is at or above that floor (#1368).
+    private const string ParagraphBreakFloor = "B1";
+    private const string ParagraphBreakCorrectedForm = "¶";
+
+    private static bool IsParagraphBreakAtFloor(RedaccionCorrectionTagDto tag, string studentCefr, IPedagogyConfigService pedagogy) =>
+        tag.Category == CorrectionTagCategory.Cohesion
+        && tag.CorrectedForm == ParagraphBreakCorrectedForm
+        && pedagogy.IsAtOrAboveLevel(studentCefr, ParagraphBreakFloor);
+
+    private static bool IsAlwaysKeepGTag(RedaccionCorrectionTagDto tag, IReadOnlyList<AlwaysKeepGrammarTopic> topics)
     {
         if (tag.Category != CorrectionTagCategory.Gramatica) return false;
         var expl = tag.Explanation ?? "";
-        return SerRegex.IsMatch(expl) && EstarRegex.IsMatch(expl);
+        foreach (var topic in topics)
+        {
+            if (topic.DescriptionKeywords.Length == 0) continue;
+            if (topic.DescriptionKeywords.All(kw =>
+            {
+                var rx = _keywordRegexCache.GetOrAdd(kw, k =>
+                    new Regex($@"\b{Regex.Escape(k)}\b", RegexOptions.IgnoreCase | RegexOptions.Compiled));
+                return rx.IsMatch(expl);
+            }))
+                return true;
+        }
+        return false;
     }
 
     // Internal DTO mirroring redaccion-correction.schema.json. Exposed as a record so tests

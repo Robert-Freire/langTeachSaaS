@@ -4,7 +4,33 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-19)
+## In-Flight: Groups sprint CLOSE (2026-05-26)
+
+**Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
+
+All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349 Spanish explanations, #1350 paragraph-break under C, #1351 teacher full-error view + dual .docx) merged to sprint/groups.
+
+Backlog triage done at close (2026-05-24): filed #1359-#1363 from the observed-issues/code-review backlogs. #1359 (prompt-health + config externalization), #1360 (arch dedup), #1362 (bug batch), #1363 (DS specs) were pulled into Groups and merged by bots. #1361 (pedagogy generation ceiling + L1) kept as backlog (unmilestoned). The three backlog files (observed-issues, code-review-backlog, ui-review-backlog) were cleared with a dated note.
+
+Sprint-close walkthroughs done (2026-05-25, claude --chrome): functional Groups + corrections PASS; Vera UX; pedagogy. First wave of findings -- #1368 (B1 cohesion filter misclassification), #1369 (UI defects: avatar overflow, dual-download, Overview last-session), #1370 (Vera polish batch) -- bot-fixed, merged (PRs #1372/#1373/#1374), and re-verified live 2026-05-26 (paragraph-break now kept at B1; dual-download distinct). DONE.
+
+Further findings from Robert's MANUAL testing (qa:ready, Groups, awaiting bots): #1375 (polish) group-detail width vs student detail; #1378 (polish) Sessions-tab date tile crams year; #1379 (P2 bug) clicking a group session opens an empty page (missing frontend route `/groups/:id/sessions/:sessionId`).
+
+**RELEASE-SCOPE / MERGE GATE (2026-05-26):** the Edit Group screen is too thin AND inconsistent to ship -- it uses Save/Cancel while Edit Student uses autosave+Done (interaction-model inconsistency, see [[feedback_consistency_over_polish_in_close]]). Groups->main merge is GATED on Edit Group reaching Student parity:
+- #1380 (P2) Edit Group form parity (shell + autosave + rail) -- qa:ready, must land FIRST.
+- #1381 (P2) group profile fields (ReasonForStudying + Interests + Common focus areas columns + migration; class goals via TeacherFollowup keyed by GroupId; Sophy+Isaac shaped) -- qa:ready, depends on #1380; Sophy confirming pass recommended pre-plan.
+
+Backlog (NOT Groups): #1361 (pedagogy generation), #1371 (Total Hours product Q), #1376 (app-wide max-width refactor). #1382 referenced by Robert but not yet created.
+
+Migration validated in dev (2026-05-26): copy-azure-teacher (Jordi->Robert) + migrate-fake-groups --local. B1.1/A2.1 -> real groups, 13 live sessions reassigned (7+6; 1 soft-deleted B1.1 session excluded by design), fake students soft-deleted, members empty (Jordi populates via UI), 0 XOR violations. NOTE: prod migration can only run AFTER the sprint merges + deploys (prod has no Groups schema yet); run `--dry-run` in Azure mode first.
+
+**Merge GATED on: #1379 + #1380 + #1381 landing + re-verify (Edit Group at Student parity), then merge-sprint-to-main (Robert triggers).** Remaining polish (#1375/#1378) and the open epic #1238 also in the milestone.
+
+Process notes: [[feedback_no_inline_fix_during_close]] (I file, bots fix, I re-verify); [[feedback_consistency_over_polish_in_close]] (operation-level inconsistencies are blocking, not polish; add a "ship to Jordi?" check). Early in the close I fixed #1355/#1356 inline before those rules were set.
+
+---
+
+## Previous Sprint Status (2026-05-19)
 
 **Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main.
 
@@ -57,6 +83,7 @@ Key queries:
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
+| Groups | ACTIVE | sprint/groups, milestone created, 8 issues qa:ready |
 | Hardening II | CLOSED 2026-05-17 | sprint/hardening-ii, milestone #22, merged to main. 38 issues total (scope grew from initial 12 as quality gates surfaced late-session bugs). Correction prompt robustness, security rate limit, arch cleanup, DB hardening, prompt externalization, generation grammar scope, pedagogy C-category, UI polish, Atelier hardening, test infra, prompt-health sweep, Vision OCR infra (#1279-#1281), ScopeAffirmer (#1286), max_tokens + timeout raises (#1293/#1296), Corrigiendo render fix (#1299), BuildGrammarScopeBlock injection (#1301). Sprint story: plan/sprints/hardening-ii.md |
 | Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |

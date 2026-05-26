@@ -1,6 +1,6 @@
 {
   "level": "B1",
-  "_note": "grammarInScope = full B1 receptive scope (correction validation). grammarFocusTargets = B1.1 active drill scope (lesson generation). Never encode sub-level qualifications in grammarInScope -- they confuse the correction LLM.",
+  "_note": "grammarInScope = full B1 receptive scope (correction validation). grammarFocusTargets = B1.1 active drill scope (lesson generation). Never encode sub-level qualifications in grammarInScope -- they confuse the correction LLM. Drill note for Oraciones temporales: en ejercicios activos solo indicativo o infinitivo; el subjuntivo en estas conjunciones es receptivo, no objetivo de drill en B1.1.",
   "grammarInScope": [
     "Preterito imperfecto y su contraste con indefinido (habito vs evento, descripcion vs accion)",
     "Futuro simple (irregulares incluidos)",
@@ -25,7 +25,7 @@
     "Oraciones temporales (cuando, mientras, antes de que, despues de que) (en ejercicios activos: solo indicativo o infinitivo; el subjuntivo en estas conjunciones es receptivo, no objetivo de drill en B1.1)",
     "Oraciones causales y finales (porque, como, para que, a fin de que)",
     "Conectores avanzados: sin embargo, no obstante, en primer lugar, por un lado/por otro, en conclusion",
-    "Perifrasis verbales: llevar + gerundio, dejar de + infinitivo, seguir + gerundio, volver a + infinitivo",
+    "Perifrasis: llevar + gerundio, dejar de + infinitivo, seguir + gerundio, volver a + infinitivo",
     "Oraciones relativas con indicativo (que, donde, quien)",
     "Expresar condiciones reales (si + presente, futuro)"
   ],

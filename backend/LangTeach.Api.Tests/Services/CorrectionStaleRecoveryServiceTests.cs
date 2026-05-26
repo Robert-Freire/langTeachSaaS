@@ -71,6 +71,32 @@ public class CorrectionStaleRecoveryServiceTests : IDisposable
         Assert.Equal(CorrectionStatus.CorreccionFallida, row.Status);
     }
 
+    [Fact]
+    public async Task StaleEncolada_RevertedToEntregada()
+    {
+        var staleAt = DateTime.UtcNow.AddSeconds(-(RedaccionCorrectionTimeouts.StaleEncoladaSeconds + 10));
+        await SeedAsync(MakeCorrection(CorrectionStatus.Encolada, staleAt));
+
+        await RunOneTickAsync();
+
+        using var checkDb = new AppDbContext(_dbOptions);
+        var row = await checkDb.Corrections.FirstAsync();
+        Assert.Equal(CorrectionStatus.Entregada, row.Status);
+    }
+
+    [Fact]
+    public async Task FreshEncolada_NotTouched()
+    {
+        var freshAt = DateTime.UtcNow.AddSeconds(-5);
+        await SeedAsync(MakeCorrection(CorrectionStatus.Encolada, freshAt));
+
+        await RunOneTickAsync();
+
+        using var checkDb = new AppDbContext(_dbOptions);
+        var row = await checkDb.Corrections.FirstAsync();
+        Assert.Equal(CorrectionStatus.Encolada, row.Status);
+    }
+
     private async Task SeedAsync(Correction correction)
     {
         using var db = new AppDbContext(_dbOptions);
@@ -137,7 +163,9 @@ public class CorrectionStaleRecoveryServiceTests : IDisposable
                 SpannedText TEXT NOT NULL,
                 Explanation TEXT,
                 CorrectedForm TEXT,
-                OrderIndex INTEGER NOT NULL
+                OrderIndex INTEGER NOT NULL,
+                FilterStatus TEXT NOT NULL DEFAULT 'kept',
+                CHECK (FilterStatus IN ('kept', 'removed'))
             );
             """;
         cmd.ExecuteNonQuery();

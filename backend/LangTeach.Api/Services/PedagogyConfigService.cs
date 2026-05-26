@@ -28,6 +28,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     private readonly FrozenSet<string> _difficultySeverities;
     private readonly CorrectionCategoriesFile _correctionCategories;
     private readonly Dictionary<string, string> _correctionCalibration;
+    private readonly AlwaysKeepGrammarRulesFile _alwaysKeepRules;
     public PromptFragmentsConfig PromptFragments { get; }
     public ProposalFieldsConfig ProposalFields { get; }
     public IntentTriggersConfig IntentTriggers { get; }
@@ -74,6 +75,32 @@ public class PedagogyConfigService : IPedagogyConfigService
                 ?? throw new InvalidOperationException($"PedagogyConfigService: deserialized null for resource '{name}'");
             _cefrRules[rule.Level] = rule;
             _log.LogDebug("PedagogyConfigService: loaded CEFR rules for level '{Level}'", rule.Level);
+
+            if (rule.GrammarFocusTargets is { Length: > 0 })
+            {
+                if (rule.GrammarInScope is not { Length: > 0 })
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} defines grammarFocusTargets but grammarInScope is missing/empty. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
+                if (rule.GrammarInScope.Any(string.IsNullOrWhiteSpace))
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: {rule.Level} grammarInScope contains blank entries. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+
+                // A FocusTarget is valid when it either starts with a grammarInScope entry
+                // (FocusTarget extends an InScope concept with extra drill notes) or an InScope
+                // entry starts with the FocusTarget (FocusTarget uses a shorter canonical form).
+                // This allows B1 entries like "Oraciones temporales ... (en ejercicios activos: ...)"
+                // while still catching genuine mismatches like wrong grammar concept names.
+                var notInScope = rule.GrammarFocusTargets
+                    .Where(ft => !rule.GrammarInScope.Any(isc =>
+                        ft.StartsWith(isc, StringComparison.OrdinalIgnoreCase) ||
+                        isc.StartsWith(ft, StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+                if (notInScope.Length > 0)
+                    throw new InvalidOperationException(
+                        $"Pedagogy config error: grammarFocusTargets for {rule.Level} contains entries not related to any grammarInScope entry: " +
+                        $"{string.Join(", ", notInScope)}. Fix data/pedagogy/cefr-levels/{rule.Level.ToLowerInvariant()}.json");
+            }
         }
 
         // Load L1 influence
@@ -145,6 +172,8 @@ public class PedagogyConfigService : IPedagogyConfigService
         var calibrationFile = LoadJson<CorrectionCalibrationFile>(assembly, "LangTeach.Api.Pedagogy.correction-calibration.json");
         _correctionCalibration = new Dictionary<string, string>(calibrationFile.CefrCalibration, StringComparer.OrdinalIgnoreCase);
         ValidateCorrectionCalibration(_correctionCalibration);
+        _alwaysKeepRules = LoadJson<AlwaysKeepGrammarRulesFile>(assembly, "LangTeach.Api.Correction.always-keep-grammar-rules.json");
+        ValidateAlwaysKeepRules(_alwaysKeepRules);
 
         // Validate cross-layer references — fail fast on dangling IDs
         ValidateCrossLayerRefs();
@@ -244,10 +273,9 @@ public class PedagogyConfigService : IPedagogyConfigService
         var normalLevel = NormalizeLevel(level);
         if (!_cefrRules.TryGetValue(normalLevel, out var rule))
             return new GrammarScope([], []);
-        var inScope = rule.GrammarFocusTargets is { Length: > 0 }
-            ? rule.GrammarFocusTargets
-            : rule.GrammarInScope;
-        return new GrammarScope(inScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling);
+        var hasFocusTargets = rule.GrammarFocusTargets is { Length: > 0 };
+        var inScope = hasFocusTargets ? rule.GrammarFocusTargets! : rule.GrammarInScope;
+        return new GrammarScope(inScope, rule.GrammarOutOfScope, rule.GrammarFocusCeiling, hasFocusTargets);
     }
 
     public GuidedWritingGuidance GetGuidedWritingGuidance(string level)
@@ -481,6 +509,25 @@ public class PedagogyConfigService : IPedagogyConfigService
     public string? GetCorrectionCalibrationCue(string level) =>
         _correctionCalibration.TryGetValue(NormalizeLevel(level), out var cue) ? cue : null;
 
+    private static readonly string[] CefrOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+    public string? GetNextLevel(string cefrLevel)
+    {
+        var normalized = NormalizeLevel(cefrLevel);
+        var idx = Array.IndexOf(CefrOrder, normalized);
+        return idx >= 0 && idx < CefrOrder.Length - 1 ? CefrOrder[idx + 1] : null;
+    }
+
+    public bool IsAtOrAboveLevel(string level, string floor)
+    {
+        var levelIdx = Array.IndexOf(CefrOrder, NormalizeLevel(level));
+        var floorIdx = Array.IndexOf(CefrOrder, NormalizeLevel(floor));
+        return levelIdx >= 0 && floorIdx >= 0 && levelIdx >= floorIdx;
+    }
+
+    public IReadOnlyList<AlwaysKeepGrammarTopic> GetAlwaysKeepTopics() =>
+        _alwaysKeepRules.AlwaysKeepTopics;
+
     // --- Private helpers ---
 
     private static readonly HashSet<string> KnownPromptTokens = new(StringComparer.Ordinal)
@@ -590,6 +637,17 @@ public class PedagogyConfigService : IPedagogyConfigService
                     $"PedagogyConfigService: correction-categories.json category '{cat.Code}' has an example with a blank Text, Note, or Label.");
         }
 
+        // Drift anchor for the paragraph-break floor guard in RedaccionCorrectionService (#1368).
+        // If either constant drifts from the config prose, the service will fail fast at startup.
+        var cohesionCategory = f.Categories.First(c => string.Equals(c.Code, "C", StringComparison.OrdinalIgnoreCase));
+        var cohesionText = cohesionCategory.Description + string.Join(" ", cohesionCategory.SubTypes ?? []);
+        if (!cohesionText.Contains("¶", StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "PedagogyConfigService: correction-categories.json C category must define the paragraph-break marker (¶).");
+        if (!cohesionText.Contains("B1", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                "PedagogyConfigService: correction-categories.json C category must define the paragraph-break floor (B1).");
+
         if (f.CriticalRules.Any(r => string.IsNullOrWhiteSpace(r.Topic) || string.IsNullOrWhiteSpace(r.Preamble)))
             throw new InvalidOperationException("PedagogyConfigService: correction-categories.json has a criticalRule with a blank Topic or Preamble.");
         foreach (var rule in f.CriticalRules)
@@ -599,6 +657,22 @@ public class PedagogyConfigService : IPedagogyConfigService
                 || string.IsNullOrWhiteSpace(e.CorrectedForm) || string.IsNullOrWhiteSpace(e.Note)))
                 throw new InvalidOperationException(
                     $"PedagogyConfigService: correction-categories.json criticalRule '{rule.Topic}' has an example with a blank required field.");
+        }
+    }
+
+    internal static void ValidateAlwaysKeepRules(AlwaysKeepGrammarRulesFile rules)
+    {
+        if (rules.AlwaysKeepTopics is not { Length: > 0 })
+            throw new InvalidOperationException(
+                "PedagogyConfigService: always-keep-grammar-rules.json alwaysKeepTopics is missing or empty.");
+        foreach (var topic in rules.AlwaysKeepTopics)
+        {
+            if (string.IsNullOrWhiteSpace(topic.Topic))
+                throw new InvalidOperationException(
+                    "PedagogyConfigService: always-keep-grammar-rules.json contains a topic with blank 'topic'.");
+            if (topic.DescriptionKeywords is not { Length: > 0 } || topic.DescriptionKeywords.Any(string.IsNullOrWhiteSpace))
+                throw new InvalidOperationException(
+                    $"PedagogyConfigService: always-keep topic '{topic.Topic}' must define non-empty descriptionKeywords.");
         }
     }
 

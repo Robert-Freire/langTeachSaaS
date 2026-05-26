@@ -8,7 +8,7 @@ import {
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
   getSession, listSessions, parseTopicTags, serializeTopicTags,
-  extractSessionReflection,
+  extractSessionReflection, isSuggestedDifficulty,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
@@ -76,16 +76,6 @@ function formatDateMaybeTime(iso: string | null | undefined): string {
   if (!iso) return '--'
   const hasNonMidnightTime = iso.includes('T') && !/T00:00(:[0-9]{2})?(Z|[+-].*)?$/.test(iso)
   return hasNonMidnightTime ? formatDateTimeUtil(iso) : formatDateUtil(iso)
-}
-
-function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
-  return (
-    !!value && typeof value === 'object' &&
-    typeof (value as SuggestedDifficulty).description === 'string' &&
-    typeof (value as SuggestedDifficulty).competency === 'string' &&
-    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
-    typeof (value as SuggestedDifficulty).severity === 'string'
-  )
 }
 
 // Left panel section header
@@ -233,7 +223,7 @@ export default function LogSession() {
 
   const { data: allFollowups = [] } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: !!id,
   })
 
@@ -527,6 +517,7 @@ export default function LogSession() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['sessions', id] })
+      queryClient.invalidateQueries({ queryKey: ['sessions-all', id] })
       queryClient.invalidateQueries({ queryKey: ['student', id] })
       queryClient.invalidateQueries({ queryKey: ['followups', id] })
 

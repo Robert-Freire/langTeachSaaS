@@ -6,6 +6,9 @@ function makeSession(overrides: Partial<SessionLog> = {}): SessionLog {
   return {
     id: '1',
     studentId: '1',
+    groupId: null,
+    targetType: 'student' as const,
+    targetName: 'Test',
     title: null,
     sessionDate: null,
     status: 1,

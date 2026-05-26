@@ -1,6 +1,7 @@
 using System.Text;
 using LangTeach.Api.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.AI;
 
@@ -14,13 +15,16 @@ public class RedaccionCorrectionPromptBuilder
 {
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<RedaccionCorrectionPromptBuilder> _logger;
+    private readonly PassConfig _pass1Config;
 
     public RedaccionCorrectionPromptBuilder(
         IPedagogyConfigService pedagogy,
-        ILogger<RedaccionCorrectionPromptBuilder> logger)
+        ILogger<RedaccionCorrectionPromptBuilder> logger,
+        IOptions<CorrectionPassOptions>? options = null)
     {
         _pedagogy = pedagogy;
         _logger = logger;
+        _pass1Config = options?.Value.Pass1 ?? new PassConfig();
     }
 
     public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildWithTool(RedaccionCorrectionPromptContext ctx)
@@ -36,12 +40,10 @@ public class RedaccionCorrectionPromptBuilder
         // temperature=0: deterministic offset generation -- spannedText must locate uniquely
         // via indexOf in the student text; sampling variation leads the model to rephrase
         // spannedText, breaking the rescue logic in ValidateAndOrderTags.
-        // MaxTokens 32768: A1 students produce 30+ errors/150 words (~50-100 tokens/tag);
-        // Hardening II prompt additions (#1222/#1226/#1227) increased output verbosity further.
-        // 16384 was no longer sufficient for real A1 content (#1293).
         // AssistantPrefill removed: tool calling separates chain-of-thought from structured output
         // at the API level, so the "{" prefill workaround (#1316) is no longer needed.
-        var request = new ClaudeRequest(system, user, ClaudeModel.Sonnet, MaxTokens: 32768, Temperature: 0);
+        var model = ParseModel(_pass1Config.Model);
+        var request = new ClaudeRequest(system, user, model, MaxTokens: _pass1Config.MaxTokens, Temperature: _pass1Config.Temperature);
         return (request, ToolDefinition);
     }
 
@@ -131,14 +133,11 @@ public class RedaccionCorrectionPromptBuilder
 When you have identified all errors, call the submit_correction_tags tool with schemaVersion=1 and the complete tags array.
 
 "explanation" and "correctedForm" are always non-empty for every tag.
+"explanation" MUST be written in Spanish (regardless of the student's L1 or CEFR level). It is a metalinguistic teaching note for the teacher, not a student-facing text; use standard pedagogical Spanish.
 
 OFFSETS (read carefully — accented characters cause silent errors if you count positions):
 - startIndex and endIndex are Unicode character offsets into the student text between the markers (0-based, end-exclusive).
-- CORRECT procedure for every tag (internal reasoning only -- output nothing for these steps):
-  1. Decide which substring of the student text to mark; that substring is spannedText.
-  2. Write the explanation.
-  3. Locate spannedText inside the student text using a forward string search (like indexOf / find), starting from position 0.
-  4. Set startIndex to the result of that search. Set endIndex = startIndex + length(spannedText).
+- To derive offsets: locate spannedText inside the student text using a forward string search (like indexOf / find) starting from position 0; set startIndex to that position and endIndex = startIndex + length(spannedText). This derivation is internal reasoning only — produce no output for it.
 - spannedText MUST equal the student text at [startIndex, endIndex).
 - contextBefore MUST always be emitted: it is the exact characters immediately preceding spannedText in the student text (up to 20 chars, or an empty string if spannedText starts at position 0). It is used server-side to locate the correct occurrence when spannedText appears more than once.
 - If spannedText is still ambiguous after contextBefore (i.e. the same contextBefore + spannedText sequence appears more than once), choose a longer or more specific span for spannedText that is unique. Tags that cannot be located will be dropped.
@@ -190,7 +189,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
         while (ctx.StudentText.Contains(marker, StringComparison.Ordinal))
             marker = "STUDENT_TEXT_VERBATIM_" + Guid.NewGuid().ToString("N");
 
-        sb.AppendLine($"STUDENT TEXT (your tag offsets must reference this text exactly; see OUTPUT CONTRACT; the text appears between the <<<{marker}>>> ... <<</{marker}>>> marker lines below):");
+        sb.AppendLine($"STUDENT TEXT (between the <<<{marker}>>> ... <<</{marker}>>> markers below):");
         sb.AppendLine($"<<<{marker}>>>");
         sb.AppendLine(ctx.StudentText);
         sb.AppendLine($"<<</{marker}>>>");
@@ -204,7 +203,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
 
         var adj = _pedagogy.GetL1Adjustments(l1);
         var sb = new StringBuilder();
-        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations that point to the L1 source if applicable.");
+        sb.AppendLine($"L1 INTERFERENCE: the student's native language is {l1}. When you flag a (L) error, prefer explanations that reference the L1 source if applicable.");
         if (adj is not null)
         {
             if (adj.IncreaseEmphasis.Length > 0)
@@ -216,4 +215,7 @@ OFFSETS (read carefully — accented characters cause silent errors if you count
     }
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max];
+
+    internal static ClaudeModel ParseModel(string model) =>
+        model.Equals("haiku", StringComparison.OrdinalIgnoreCase) ? ClaudeModel.Haiku : ClaudeModel.Sonnet;
 }

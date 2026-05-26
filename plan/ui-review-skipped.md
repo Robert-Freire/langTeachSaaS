@@ -10,3 +10,4 @@ The sprint-close procedure (Stage 1) audits this log and clears it after each sp
 |-------|------|----|-------------------------------------------|
 | #1257 | 2026-05-13 | pending | Added `.docx` to OCR_ACCEPTED constant in RedaccionesTab.tsx (1 line, single file, attribute value only, no components/state/layout change) |
 | #1290 | 2026-05-16 | pending | Import swap only (axios.isAxiosError -> re-exported isAxiosError from apiClient.ts); zero JSX/styling changes, OCR error banner unchanged |
+| #1333 | 2026-05-23 | pending | Removed one nav item + unused icon import from AppShell.tsx (2 lines net deletion), updated 2 test assertions. No styling, no new elements, no logic, no state changes. Verified live on e2e stack: sidebar shows Dashboard/Students/Sessions/Courses/Settings, /lessons route still renders. |

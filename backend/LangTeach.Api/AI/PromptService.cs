@@ -196,6 +196,24 @@ public class PromptService : IPromptService
             .Select(w => w with { Description = w.Description.Length > 120 ? w.Description[..120] : w.Description })
             .ToArray() ?? [];
 
+    /// Appends templateGuidance (always) and optionally a weakness targeting block immediately after.
+    /// Used by the four section-prompt methods that share this tail pattern. Output is byte-identical
+    /// to the inline expansion (same separator "\n\n", same call sites, same conditional checks).
+    private string AppendStandardBlocks(string prompt, GenerationContext ctx, string level,
+        bool includeWeakness = false, string? weaknessSectionType = null)
+    {
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
+        if (includeWeakness)
+        {
+            var weaknessBlock = BuildWeaknessTargetingForSection(ctx, weaknessSectionType ?? ctx.SectionType ?? DefaultSectionType);
+            if (!string.IsNullOrEmpty(weaknessBlock))
+                prompt += "\n\n" + weaknessBlock;
+        }
+        return prompt;
+    }
+
     /// <summary>
     /// Returns a weakness targeting block for a specific section type, or empty string when
     /// the student has no documented weaknesses or the section has no targeting guidance.
@@ -232,7 +250,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"GRAMMAR SCOPE for {level}:");
         if (scope.InScope.Length > 0)
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
-        if (scope.OutOfScope.Length > 0)
+        if (scope.OutOfScope.Length > 0 && !scope.HasFocusTargets)
             sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
         if (!string.IsNullOrWhiteSpace(scope.CeilingNote))
             sb.AppendLine($"GRAMMAR FOCUS CEILING: {scope.CeilingNote}");
@@ -678,9 +696,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
+        prompt = AppendStandardBlocks(prompt, ctx, level);
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -755,9 +771,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(grammarScope))
             prompt += "\n\n" + grammarScope;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
+        prompt = AppendStandardBlocks(prompt, ctx, level);
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -960,13 +974,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
-
-        var gwWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
-        if (!string.IsNullOrEmpty(gwWeaknessBlock))
-            prompt += "\n\n" + gwWeaknessBlock;
+        prompt = AppendStandardBlocks(prompt, ctx, level, includeWeakness: true);
 
         return prompt;
     }
@@ -1009,13 +1017,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
-
-        var ecWeaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
-        if (!string.IsNullOrEmpty(ecWeaknessBlock))
-            prompt += "\n\n" + ecWeaknessBlock;
+        prompt = AppendStandardBlocks(prompt, ctx, level, includeWeakness: true, weaknessSectionType: "practice");
 
         return prompt;
     }

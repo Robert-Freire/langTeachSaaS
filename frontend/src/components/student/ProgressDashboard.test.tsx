@@ -22,6 +22,9 @@ const baseStudent: Student = {
 const baseSession: SessionLog = {
   id: 'session-1',
   studentId: 'student-1',
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Test Student',
   sessionDate: '2026-03-01T10:00:00Z',
   plannedContent: null,
   actualContent: 'Good session.',

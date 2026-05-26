@@ -226,15 +226,18 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId === 'new' && newlyCreatedSessionRef.current) {
         const createdId = newlyCreatedSessionRef.current
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
         Promise.resolve(onAfterSessionApply?.(createdId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
         Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
       } else if (proposal.type === 'todo' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
         await queryClient.invalidateQueries({ queryKey: ['dashboard'] })

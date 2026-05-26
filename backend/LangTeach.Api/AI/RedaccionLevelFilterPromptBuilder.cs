@@ -1,26 +1,37 @@
 using System.Text;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.AI;
 
 public record LevelFilterTagInput(string Category, string SpannedText, string? Explanation, bool IsSerEstar = false);
 
+// This pass converts Pass 2 G-tag soften/muybien decisions into MuyBien for structures at
+// or near the student's level ceiling.
+// Compare with RedaccionScopeAffirmerPromptBuilder, which affirms CORRECT usage of
+// structures STRICTLY ABOVE the student's level when no Pass 2 tag exists for that span.
+// The two paths are intentionally non-overlapping: LevelFilter = Pass 2 tag exists and gets
+// reframed; ScopeAffirmer = no Pass 2 tag exists. Future edits to one path must not silently
+// change the boundary -- update both comments together.
 public class RedaccionLevelFilterPromptBuilder
 {
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<RedaccionLevelFilterPromptBuilder> _logger;
+    private readonly PassConfig _filterConfig;
 
     public RedaccionLevelFilterPromptBuilder(
         IPedagogyConfigService pedagogy,
-        ILogger<RedaccionLevelFilterPromptBuilder> logger)
+        ILogger<RedaccionLevelFilterPromptBuilder> logger,
+        IOptions<CorrectionPassOptions>? options = null)
     {
         _pedagogy = pedagogy;
         _logger = logger;
+        _filterConfig = options?.Value.Filter ?? new PassConfig { Model = "haiku", MaxTokens = 2048 };
     }
 
     // Model: Haiku (classification task, grounded by curriculum JSON grammar scope).
-    // Escalate to Sonnet if teacher QA misclassification rate exceeds 20% on borderline G/L/C tags
-    // (more than 1 wrong call per 5 reviewed); one-line change: ClaudeModel.Sonnet below.
+    // Escalate to Sonnet via CorrectionPasses:Filter:Model in appsettings if teacher QA
+    // misclassification rate exceeds 20% on borderline G/L/C tags.
     public (ClaudeRequest Request, ClaudeToolDefinition Tool) BuildWithTool(string cefr, IReadOnlyList<LevelFilterTagInput> tags, string? assignmentPrompt = null)
     {
         var scope = _pedagogy.GetGrammarScope(cefr);
@@ -34,8 +45,9 @@ public class RedaccionLevelFilterPromptBuilder
 
         // Scale MaxTokens with tag count: each decision is ~30-40 tokens;
         // 2048 is safe for up to ~50 tags; hard cap avoids truncation on dense texts.
-        var maxTokens = Math.Max(1024, Math.Min(2048, 512 + tags.Count * 64));
-        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: maxTokens, Temperature: 0), ToolDefinition);
+        var maxTokens = Math.Max(1024, Math.Min(_filterConfig.MaxTokens, 512 + tags.Count * 64));
+        var model = RedaccionCorrectionPromptBuilder.ParseModel(_filterConfig.Model);
+        return (new ClaudeRequest(SystemPrompt, user, model, MaxTokens: maxTokens, Temperature: _filterConfig.Temperature), ToolDefinition);
     }
 
     public static readonly ClaudeToolDefinition ToolDefinition = new(
@@ -75,12 +87,10 @@ MANDATORY RULES:
 1. Tags with category "O" (Ortografía: accents, spelling, punctuation) MUST always be "keep".
 
 GUIDANCE:
-- Use the grammar in-scope and out-of-scope lists to anchor your decision.
-- When a structure is on the out-of-scope list, use "soften" if the student attempted it correctly or nearly correctly, "remove" if the attempt is clearly wrong and above level.
-- When the out-of-scope list is empty (e.g. C1/C2), keep everything or promote to muybien; softening and removal are rarely appropriate at this level.
-- G (Gramática), L (Léxico), C (Cohesión y Coherencia) tags may be softened, removed, or promoted to muybien based on level scope.
+- Use the grammar in-scope and out-of-scope lists to anchor your decision. Use the calibration cue in the request to anchor keep/soften/remove decisions.
+- When a structure is on the out-of-scope list, use "soften" if the student attempted it with intentional effort (even if imperfect), "remove" if the attempt is clearly wrong and above level.
 - Use "muybien" only when the student demonstrates genuinely strong usage: a structure at or near their level ceiling, used correctly, AND fitting the register of the assignment.
-- Use "soften" when a student attempts an above-scope structure that shows intentional effort, even if imperfect.
+- When the out-of-scope list is empty (e.g. C1/C2), keep everything or promote to muybien; softening and removal are rarely appropriate at this level.
 
 Call the submit_filter_decisions tool with a decisions array. Every input tag must appear in the output exactly once, identified by its index.
 """;
@@ -105,7 +115,7 @@ Call the submit_filter_decisions tool with a decisions array. Every input tag mu
         }
 
         if (!string.IsNullOrWhiteSpace(assignmentPrompt))
-            sb.AppendLine($"Assignment context: {assignmentPrompt}");
+            sb.AppendLine($"Assignment context: {SanitizeForPrompt(assignmentPrompt)}");
 
         sb.AppendLine();
         sb.AppendLine("Tags to classify:");
@@ -124,5 +134,5 @@ Call the submit_filter_decisions tool with a decisions array. Every input tag mu
     }
 
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ').Replace('"', '\'').Replace('<', ' ').Replace('>', ' ');
+        PromptSanitizer.SanitizeForPrompt(s);
 }

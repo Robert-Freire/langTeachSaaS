@@ -20,6 +20,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
     private readonly AppDbContext _db;
     private readonly DbContextOptions<AppDbContext> _dbOptions;
     private readonly StubClaudeClient _claude = new();
+    private readonly ICorrectionPromptService _correctionPromptService;
+    private readonly IPedagogyConfigService _pedagogy;
     private readonly RedaccionCorrectionService _sut;
     private readonly Guid _teacherId = Guid.NewGuid();
     private readonly Guid _studentId = Guid.NewGuid();
@@ -32,23 +34,24 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _db = new AppDbContext(_dbOptions);
 
         var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
-        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        _pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var pedagogy = _pedagogy;
         var promptBuilder = new RedaccionCorrectionPromptBuilder(pedagogy,
             NullLogger<RedaccionCorrectionPromptBuilder>.Instance);
         var filterPromptBuilder = new RedaccionLevelFilterPromptBuilder(pedagogy,
             NullLogger<RedaccionLevelFilterPromptBuilder>.Instance);
         var scopeAffirmerBuilder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
             NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
-        var correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
+        _correctionPromptService = new CorrectionPromptService(promptBuilder, filterPromptBuilder, scopeAffirmerBuilder);
 
         var scopeServices = new ServiceCollection();
         scopeServices.AddTransient<AppDbContext>(_ => new AppDbContext(_dbOptions));
         scopeServices.AddSingleton<IClaudeClient>(_claude);
-        scopeServices.AddSingleton<ICorrectionPromptService>(correctionPromptService);
+        scopeServices.AddSingleton<ICorrectionPromptService>(_correctionPromptService);
         scopeServices.AddLogging();
         var scopeFactory = new FakeServiceScopeFactory(scopeServices.BuildServiceProvider());
 
-        _sut = new RedaccionCorrectionService(_db, scopeFactory,
+        _sut = new RedaccionCorrectionService(_db, scopeFactory, new StubUsageLimitService(),
             NullLogger<RedaccionCorrectionService>.Instance);
     }
 
@@ -75,16 +78,22 @@ public class RedaccionScopeAffirmerTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check1 = new AppDbContext(_dbOptions);
+        var row = check1.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "ScopeAffirmer should emit one MuyBien tag");
         var tag = row.Tags.First();
         tag.Category.Should().Be("MuyBien");
         tag.SpannedText.Should().Be("vengan");
         tag.Explanation.Should().NotBeNull("ScopeAffirmer-path MuyBien carries an Explanation");
-        tag.Explanation.Should().Contain("presente de subjuntivo");
-        tag.Explanation.Should().Contain("B1");
-        tag.Explanation.Should().Contain("A1", "must reference the student's official level");
+        tag.Explanation.Should().Contain("presente de subjuntivo", "the structure label must appear in the praise");
+        tag.Explanation.Should().Contain("Sigue así", "the praise must end with positive encouragement");
+        tag.Explanation.Should().NotContain("B1", "praise must not label the structure with its CEFR level");
+        tag.Explanation.Should().NotContain("A1", "praise must not reference the student's official level");
+        tag.Explanation.Should().NotContain("nivel oficial", "praise must not frame the achievement as exceeding the student's box");
+        tag.Explanation.Should().NotContain("una estructura de", "old template phrasing must be gone");
         tag.CorrectedForm.Should().BeNull();
     }
 
@@ -107,7 +116,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("{\"spans\":[]}");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check2 = new AppDbContext(_dbOptions);
+        var row = check2.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1);
         row.Tags.First().Category.Should().Be("MuyBien");
@@ -129,7 +141,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("""{"spans":[{"startIndex":5,"endIndex":12,"spannedText":"no_existe","structureLabel":"test","structureLevel":"B1"}]}""");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check3 = new AppDbContext(_dbOptions);
+        var row = check3.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().BeEmpty("hallucinated span must be dropped silently");
     }
@@ -156,7 +171,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         }));
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check4 = new AppDbContext(_dbOptions);
+        var row = check4.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "ScopeAffirmer result overlapping a G tag must be dropped");
         row.Tags.First().Category.Should().Be("G", "the G tag must survive; the affirmer span must lose");
@@ -174,7 +192,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
         // Filter: skipped (no tags). ScopeAffirmer must also be skipped.
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
 
         _claude.CompleteCallCount.Should().Be(1, "C2 student: only Pass 1 call; ScopeAffirmer must be skipped");
     }
@@ -192,7 +211,8 @@ public class RedaccionScopeAffirmerTests : IDisposable
         // Filter: skipped (no tags). ScopeAffirmer: skipped (too long).
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
 
         _claude.CompleteCallCount.Should().Be(1, "long text must skip ScopeAffirmer");
     }
@@ -228,15 +248,49 @@ public class RedaccionScopeAffirmerTests : IDisposable
     }
 
     [Fact]
+    public void ScopeAffirmer_PromptBuilder_SystemPrompt_ContainsHayaDisambiguation()
+    {
+        // The system prompt must include the disambiguation block that prevents standalone
+        // "haya"/"hubiera"/"hubiese" from being flagged as subjuntivo perfecto achievements.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+
+        var req = builder.BuildWithTool("B1", "No haya problema.", "B2").Request;
+
+        req.SystemPrompt.Should().Contain("DISAMBIGUATION", "the haya rule must be anchored under a labelled section");
+        req.SystemPrompt.Should().Contain("haya", "the rule must name the form it disambiguates");
+        req.SystemPrompt.Should().Contain("past participle", "the rule must spell out the qualifying condition");
+    }
+
+    [Fact]
+    public void ScopeAffirmer_PromptBuilder_SystemPrompt_NoDuplicatedThresholdRule()
+    {
+        // The threshold criterion ("NEXT CEFR level threshold") must appear at most twice in the
+        // assembled system prompt -- once in the task description, once in the call-to-action.
+        // A third occurrence (the old RULES bullet) was removed in #1302 to cut prompt-bloat.
+        var sps = new SectionProfileService(NullLogger<SectionProfileService>.Instance);
+        var pedagogy = new PedagogyConfigService(NullLogger<PedagogyConfigService>.Instance, sps);
+        var builder = new RedaccionScopeAffirmerPromptBuilder(pedagogy,
+            NullLogger<RedaccionScopeAffirmerPromptBuilder>.Instance);
+
+        var req = builder.BuildWithTool("A1", "Ojalá vengas.", "A2").Request;
+
+        var count = System.Text.RegularExpressions.Regex.Matches(req.SystemPrompt, "NEXT CEFR level threshold").Count;
+        count.Should().Be(1, "the threshold criterion lives in step 2 of the task description only; the duplicated RULES bullet was removed in #1302");
+    }
+
+    [Fact]
     public void ScopeAffirmer_NextLevelMapping_CorrectForAllLevels()
     {
-        // The NextLevel mapping must cover all non-C2 CEFR levels.
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("A1").WhoseValue.Should().Be("A2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("A2").WhoseValue.Should().Be("B1");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("B1").WhoseValue.Should().Be("B2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("B2").WhoseValue.Should().Be("C1");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().ContainKey("C1").WhoseValue.Should().Be("C2");
-        RedaccionScopeAffirmerPromptBuilder.NextLevel.Should().NotContainKey("C2");
+        // The CEFR progression must cover all non-C2 levels.
+        _pedagogy.GetNextLevel("A1").Should().Be("A2");
+        _pedagogy.GetNextLevel("A2").Should().Be("B1");
+        _pedagogy.GetNextLevel("B1").Should().Be("B2");
+        _pedagogy.GetNextLevel("B2").Should().Be("C1");
+        _pedagogy.GetNextLevel("C1").Should().Be("C2");
+        _pedagogy.GetNextLevel("C2").Should().BeNull();
     }
 
     [Fact]
@@ -257,7 +311,10 @@ public class RedaccionScopeAffirmerTests : IDisposable
         _claude.EnqueueResponse("NOT JSON AT ALL");
 
         await _sut.CorregirAsync(_teacherId, _studentId, id);
-        var row = await WaitForStatusAsync(id, CorrectionStatus.Corregida);
+        SetStatusToCorrigiendo(id);
+        await RunExecutionAsync(id);
+        using var check5 = new AppDbContext(_dbOptions);
+        var row = check5.Corrections.Include(c => c.Tags).First(c => c.Id == id);
 
         row.Tags.Should().HaveCount(1, "pipeline must complete despite ScopeAffirmer parse failure");
         row.Tags.First().Category.Should().Be("O");
@@ -296,18 +353,22 @@ public class RedaccionScopeAffirmerTests : IDisposable
         return id;
     }
 
-    private async Task<Correction> WaitForStatusAsync(Guid id, string expected, int timeoutMs = 5000)
+    private void SetStatusToCorrigiendo(Guid correctionId)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            using var check = new AppDbContext(_dbOptions);
-            var row = check.Corrections.Include(c => c.Tags).FirstOrDefault(c => c.Id == id);
-            if (row?.Status == expected)
-                return row;
-            await Task.Delay(50);
-        }
-        throw new TimeoutException($"Correction {id} never reached {expected} in {timeoutMs}ms.");
+        var row = _db.Corrections.First(c => c.Id == correctionId);
+        row.Status = CorrectionStatus.Corrigiendo;
+        _db.SaveChanges();
+    }
+
+    private async Task RunExecutionAsync(Guid correctionId)
+    {
+        using var db = new AppDbContext(_dbOptions);
+        var correction = await db.Corrections.FirstAsync(c => c.Id == correctionId);
+        await RedaccionCorrectionService.RunCorrectionInScopeAsync(
+            correctionId, correction.StudentId, correction.TeacherId,
+            db, _claude, _correctionPromptService,
+            _pedagogy, new CorrectionWorkerOptions(),
+            NullLogger<RedaccionCorrectionService>.Instance);
     }
 
     private static string Pass1Json(

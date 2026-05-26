@@ -4,8 +4,10 @@ export interface TeacherFollowup {
   id: string
   studentId: string | null
   studentName: string | null
+  groupId: string | null
   text: string
   status: 'pending' | 'done'
+  kind: string
   createdAt: string
   dueDate: string | null
   completedAt: string | null
@@ -15,13 +17,14 @@ export interface TeacherFollowup {
 export interface CreateFollowupRequest {
   text: string
   studentId?: string | null
+  groupId?: string | null
+  kind?: string | null
   dueDate?: string | null
   sourceSessionLogId?: string | null
 }
 
-export async function getFollowups(studentId?: string): Promise<TeacherFollowup[]> {
-  const params = studentId ? { studentId } : {}
-  const res = await apiClient.get<TeacherFollowup[]>('/api/teacher-followups', { params })
+export async function getFollowups(params?: { studentId?: string; groupId?: string; kind?: string }): Promise<TeacherFollowup[]> {
+  const res = await apiClient.get<TeacherFollowup[]>('/api/teacher-followups', { params: params ?? {} })
   return res.data
 }
 
