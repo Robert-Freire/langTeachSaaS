@@ -124,6 +124,9 @@ public class GroupService : IGroupService
             IsDeleted = false,
             CreatedAt = now,
             UpdatedAt = now,
+            ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying,
+            Interests = string.IsNullOrWhiteSpace(request.Interests) ? "[]" : request.Interests,
+            CommonFocusAreas = string.IsNullOrWhiteSpace(request.CommonFocusAreas) ? "[]" : request.CommonFocusAreas,
         };
 
         _db.Groups.Add(group);
@@ -147,6 +150,9 @@ public class GroupService : IGroupService
         group.CefrLevel = string.IsNullOrWhiteSpace(request.CefrLevel) ? null : request.CefrLevel;
         group.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description;
         group.IsActive = request.IsActive;
+        group.ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying;
+        group.Interests = string.IsNullOrWhiteSpace(request.Interests) ? "[]" : request.Interests;
+        group.CommonFocusAreas = string.IsNullOrWhiteSpace(request.CommonFocusAreas) ? "[]" : request.CommonFocusAreas;
         group.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -311,7 +317,10 @@ public class GroupService : IGroupService
         lastSessionDate,
         nextSessionDate,
         teachingIdeas,
-        g.TeachingNotes
+        g.TeachingNotes,
+        g.ReasonForStudying,
+        g.Interests,
+        g.CommonFocusAreas
     );
 
     public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)

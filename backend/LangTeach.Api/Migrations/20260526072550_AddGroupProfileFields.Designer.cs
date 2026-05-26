@@ -4,6 +4,7 @@ using LangTeach.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LangTeach.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526072550_AddGroupProfileFields")]
+    partial class AddGroupProfileFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1077,7 +1080,7 @@ namespace LangTeach.Api.Migrations
 
                     b.ToTable("TeacherFollowups", t =>
                         {
-                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective')");
+                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')");
 
                             t.HasCheckConstraint("CK_TeacherFollowups_Scope", "[StudentId] IS NULL OR [GroupId] IS NULL");
                         });

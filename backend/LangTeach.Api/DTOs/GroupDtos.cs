@@ -30,7 +30,10 @@ public record GroupDto(
     DateTime? LastSessionDate = null,
     DateTime? NextSessionDate = null,
     List<GroupTeachingIdeaDto>? TeachingIdeas = null,
-    string? TeachingNotes = null
+    string? TeachingNotes = null,
+    string? ReasonForStudying = null,
+    string? Interests = null,
+    string? CommonFocusAreas = null
 );
 
 public class CreateGroupRequest
@@ -45,6 +48,13 @@ public class CreateGroupRequest
     public string? Description { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    [MaxLength(500)]
+    public string? ReasonForStudying { get; set; }
+
+    public string? Interests { get; set; }
+
+    public string? CommonFocusAreas { get; set; }
 }
 
 /// <remarks>
@@ -64,6 +74,13 @@ public class UpdateGroupRequest
     public string? Description { get; set; }
 
     public bool IsActive { get; set; }
+
+    [MaxLength(500)]
+    public string? ReasonForStudying { get; set; }
+
+    public string? Interests { get; set; }
+
+    public string? CommonFocusAreas { get; set; }
 }
 
 public class AddGroupMemberRequest
