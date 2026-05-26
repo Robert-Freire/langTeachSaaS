@@ -42,6 +42,16 @@ export interface SuggestedDifficulty {
   severity: string
 }
 
+export function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
+  return (
+    !!value && typeof value === 'object' &&
+    typeof (value as SuggestedDifficulty).description === 'string' &&
+    typeof (value as SuggestedDifficulty).competency === 'string' &&
+    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
+    typeof (value as SuggestedDifficulty).severity === 'string'
+  )
+}
+
 export interface ExtractedTextField {
   value: string | null
   mode: 'append' | 'replace' | 'skip'
