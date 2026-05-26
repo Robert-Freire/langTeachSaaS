@@ -260,13 +260,9 @@ function GroupFormBody({ group }: { group?: Group }) {
   const [cefrLevel, setCefrLevel] = useState(group?.cefrLevel ?? '')
   const [description, setDescription] = useState(group?.description ?? '')
   const [reasonForStudying, setReasonForStudying] = useState(group?.reasonForStudying ?? '')
-  const [interests, setInterests] = useState<string[]>(() => {
-    try { return JSON.parse(group?.interests ?? '[]') } catch { return [] }
-  })
+  const [interests, setInterests] = useState<string[]>(group?.interests ?? [])
   const [interestInput, setInterestInput] = useState('')
-  const [focusAreas, setFocusAreas] = useState<string[]>(() => {
-    try { return JSON.parse(group?.commonFocusAreas ?? '[]') } catch { return [] }
-  })
+  const [focusAreas, setFocusAreas] = useState<string[]>(group?.commonFocusAreas ?? [])
   const [focusAreaInput, setFocusAreaInput] = useState('')
   const interestInputRef = useRef<HTMLInputElement>(null)
   const focusAreaInputRef = useRef<HTMLInputElement>(null)
@@ -368,8 +364,8 @@ function GroupFormBody({ group }: { group?: Group }) {
           description: description.trim() || null,
           isActive: group?.isActive ?? true,
           reasonForStudying: reasonForStudying.trim() || null,
-          interests: JSON.stringify(finalInterests),
-          commonFocusAreas: JSON.stringify(finalFocusAreas),
+          interests: finalInterests,
+          commonFocusAreas: finalFocusAreas,
         })
         const toAdd = selectedIds.filter((sid) => !originalMemberIds.includes(sid))
         const toRemove = originalMemberIds.filter((oid) => !selectedIds.includes(oid))
@@ -382,8 +378,8 @@ function GroupFormBody({ group }: { group?: Group }) {
           description: description.trim() || null,
           isActive: true,
           reasonForStudying: reasonForStudying.trim() || null,
-          interests: JSON.stringify(finalInterests),
-          commonFocusAreas: JSON.stringify(finalFocusAreas),
+          interests: finalInterests,
+          commonFocusAreas: finalFocusAreas,
         })).id
         pendingGroupIdRef.current = groupId
         for (const sid of selectedIds) await addGroupMember(groupId, sid)

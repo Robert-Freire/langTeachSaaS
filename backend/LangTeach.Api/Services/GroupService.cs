@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -125,8 +126,8 @@ public class GroupService : IGroupService
             CreatedAt = now,
             UpdatedAt = now,
             ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying,
-            Interests = string.IsNullOrWhiteSpace(request.Interests) ? "[]" : request.Interests,
-            CommonFocusAreas = string.IsNullOrWhiteSpace(request.CommonFocusAreas) ? "[]" : request.CommonFocusAreas,
+            Interests = JsonStorageHelper.Serialize(request.Interests),
+            CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas),
         };
 
         _db.Groups.Add(group);
@@ -151,8 +152,8 @@ public class GroupService : IGroupService
         group.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description;
         group.IsActive = request.IsActive;
         group.ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying;
-        group.Interests = string.IsNullOrWhiteSpace(request.Interests) ? "[]" : request.Interests;
-        group.CommonFocusAreas = string.IsNullOrWhiteSpace(request.CommonFocusAreas) ? "[]" : request.CommonFocusAreas;
+        group.Interests = JsonStorageHelper.Serialize(request.Interests);
+        group.CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas);
         group.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -319,8 +320,8 @@ public class GroupService : IGroupService
         teachingIdeas,
         g.TeachingNotes,
         g.ReasonForStudying,
-        g.Interests,
-        g.CommonFocusAreas
+        JsonStorageHelper.DeserializeList<string>(g.Interests),
+        JsonStorageHelper.DeserializeList<string>(g.CommonFocusAreas)
     );
 
     public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)

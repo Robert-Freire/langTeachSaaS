@@ -32,8 +32,8 @@ public record GroupDto(
     List<GroupTeachingIdeaDto>? TeachingIdeas = null,
     string? TeachingNotes = null,
     string? ReasonForStudying = null,
-    string? Interests = null,
-    string? CommonFocusAreas = null
+    List<string>? Interests = null,
+    List<string>? CommonFocusAreas = null
 );
 
 public class CreateGroupRequest
@@ -52,9 +52,9 @@ public class CreateGroupRequest
     [MaxLength(500)]
     public string? ReasonForStudying { get; set; }
 
-    public string? Interests { get; set; }
+    public List<string> Interests { get; set; } = [];
 
-    public string? CommonFocusAreas { get; set; }
+    public List<string> CommonFocusAreas { get; set; } = [];
 }
 
 /// <remarks>
@@ -78,9 +78,9 @@ public class UpdateGroupRequest
     [MaxLength(500)]
     public string? ReasonForStudying { get; set; }
 
-    public string? Interests { get; set; }
+    public List<string> Interests { get; set; } = [];
 
-    public string? CommonFocusAreas { get; set; }
+    public List<string> CommonFocusAreas { get; set; } = [];
 }
 
 public class AddGroupMemberRequest

@@ -61,8 +61,8 @@ const SAMPLE_GROUP: Group = {
   teachingIdeas: [],
   teachingNotes: null,
   reasonForStudying: null,
-  interests: '[]',
-  commonFocusAreas: '[]',
+  interests: [],
+  commonFocusAreas: [],
 }
 
 const SAMPLE_SESSION: SessionLog = {

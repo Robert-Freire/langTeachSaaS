@@ -71,8 +71,8 @@ function renderEdit(groupId: string, groupData: Partial<groupsApi.Group> = {}) {
     nextSessionDate: null,
     teachingNotes: null,
     reasonForStudying: null,
-    interests: '[]',
-    commonFocusAreas: '[]',
+    interests: [],
+    commonFocusAreas: [],
     ...groupData,
   })
   return render(
@@ -153,8 +153,8 @@ describe('GroupForm - create mode', () => {
       nextSessionDate: null,
       teachingNotes: null,
       reasonForStudying: null,
-      interests: '[]',
-      commonFocusAreas: '[]',
+      interests: [],
+      commonFocusAreas: [],
     })
     vi.mocked(groupsApi.addGroupMember).mockResolvedValue({} as groupsApi.Group)
 
@@ -219,8 +219,8 @@ describe('GroupForm - edit mode', () => {
   it('loads existing profile fields', async () => {
     renderEdit('g1', {
       reasonForStudying: 'DELE B2 prep',
-      interests: '["Viajes","Cine"]',
-      commonFocusAreas: '["Subjuntivo"]',
+      interests: ['Viajes', 'Cine'],
+      commonFocusAreas: ['Subjuntivo'],
     })
     await waitFor(() => {
       expect(screen.getByTestId('group-reason-input')).toHaveValue('DELE B2 prep')

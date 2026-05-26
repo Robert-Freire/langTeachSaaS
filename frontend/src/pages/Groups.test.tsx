@@ -31,8 +31,8 @@ function makeGroup(overrides: Partial<groupsApi.Group> = {}): groupsApi.Group {
     nextSessionDate: null,
     teachingNotes: null,
     reasonForStudying: null,
-    interests: '[]',
-    commonFocusAreas: '[]',
+    interests: [],
+    commonFocusAreas: [],
     ...overrides,
   }
 }

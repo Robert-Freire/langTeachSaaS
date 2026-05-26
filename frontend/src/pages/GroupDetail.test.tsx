@@ -47,8 +47,8 @@ const mockGroup: Group = {
   nextSessionDate: null,
   teachingNotes: null,
   reasonForStudying: null,
-  interests: '[]',
-  commonFocusAreas: '[]',
+  interests: [],
+  commonFocusAreas: [],
 }
 
 function renderGroupDetail() {
