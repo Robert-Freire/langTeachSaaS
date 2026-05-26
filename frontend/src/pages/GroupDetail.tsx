@@ -87,8 +87,8 @@ export default function GroupDetail() {
       <GroupDetailHeader group={group} sessionFrequency={sessionFrequency} />
 
       {/* Tabs row */}
-      <div className="bg-white border-b border-zinc-100 px-6">
-        <div className="max-w-6xl mx-auto flex gap-0">
+      <div className="bg-white border-b border-zinc-100">
+        <div className="flex gap-0">
           {TABS.map(tab => (
             <button
               key={tab}
@@ -108,7 +108,7 @@ export default function GroupDetail() {
       </div>
 
       {/* Tab content */}
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="py-6">
         {activeTab === 'overview' && (
           <GroupOverviewTab
             group={group}
