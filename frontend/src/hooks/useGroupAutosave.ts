@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { updateGroup } from '../api/groups'
 import type { GroupFormData } from '../api/groups'
 import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
@@ -14,7 +14,6 @@ export function useGroupAutosave(
   groupId: string | undefined,
   getFormData: React.MutableRefObject<(() => GroupFormData | null) | null>,
 ): UseGroupAutosaveResult {
-  const queryClient = useQueryClient()
   const [showSaved, setShowSaved] = useState(false)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -24,9 +23,7 @@ export function useGroupAutosave(
       updateGroup(id, data),
     retry: MAX_RETRIES,
     retryDelay: RETRY_DELAY_MS,
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['group', id] })
-      queryClient.invalidateQueries({ queryKey: ['groups'] })
+    onSuccess: () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
       setShowSaved(true)
       idleTimerRef.current = setTimeout(() => {

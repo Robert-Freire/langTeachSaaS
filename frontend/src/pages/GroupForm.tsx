@@ -414,7 +414,11 @@ function GroupFormBody({ group }: { group?: Group }) {
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => navigate(`/groups/${id}`)}
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['group', id] })
+              queryClient.invalidateQueries({ queryKey: ['groups'] })
+              navigate(`/groups/${id}`)
+            }}
             disabled={saveStatus === 'saving'}
             data-testid="done-btn"
           >
