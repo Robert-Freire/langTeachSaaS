@@ -303,13 +303,22 @@ function GroupFormBody({ group }: { group?: Group }) {
   const { mutate: doAddMember } = useMutation({
     mutationFn: (studentId: string) => addGroupMember(id!, studentId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
-    onError: (err) => logger.error('GroupForm', 'add member failed', err),
+    onError: (err, studentId) => {
+      logger.error('GroupForm', 'add member failed', err)
+      setMembers(prev => prev.filter(m => m.id !== studentId))
+      toast.error('Failed to add member')
+    },
   })
 
   const { mutate: doRemoveMember } = useMutation({
     mutationFn: (studentId: string) => removeGroupMember(id!, studentId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group', id] }),
-    onError: (err) => logger.error('GroupForm', 'remove member failed', err),
+    onError: (err, studentId) => {
+      logger.error('GroupForm', 'remove member failed', err)
+      const restored = members.find(m => m.id === studentId)
+      if (restored) setMembers(prev => [...prev, restored])
+      toast.error('Failed to remove member')
+    },
   })
 
   const handleMemberChange = useCallback((newMembers: SelectedMember[]) => {
@@ -415,6 +424,7 @@ function GroupFormBody({ group }: { group?: Group }) {
             size="sm"
             variant="outline"
             onClick={() => {
+              saveNow()
               queryClient.invalidateQueries({ queryKey: ['group', id] })
               queryClient.invalidateQueries({ queryKey: ['groups'] })
               navigate(`/groups/${id}`)

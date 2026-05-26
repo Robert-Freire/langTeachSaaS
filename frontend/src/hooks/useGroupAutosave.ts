@@ -17,6 +17,10 @@ export function useGroupAutosave(
   const [showSaved, setShowSaved] = useState(false)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // When a save fires while one is in-flight, store the latest payload so it is
+  // sent in onSuccess rather than being silently dropped. Without this, a save
+  // that starts while mutation.isPending could overwrite newer data with a stale snapshot.
+  const queuedPayloadRef = useRef<{ id: string; data: GroupFormData } | null>(null)
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: GroupFormData }) =>
@@ -40,6 +44,19 @@ export function useGroupAutosave(
     }
   }, [])
 
+  // Flush queued payload after each settled mutation (success or final error).
+  // Using an effect keyed on isPending avoids the circular-ref problem of calling
+  // mutate inside onSuccess.
+  const isPending = mutation.isPending
+  const { mutate } = mutation
+  useEffect(() => {
+    if (!isPending && queuedPayloadRef.current) {
+      const payload = queuedPayloadRef.current
+      queuedPayloadRef.current = null
+      mutate(payload)
+    }
+  }, [isPending, mutate])
+
   let status: SaveStatus = showSaved ? 'saved' : 'idle'
   if (mutation.isPending) {
     status = mutation.failureCount > 0 ? 'retrying' : 'saving'
@@ -47,15 +64,19 @@ export function useGroupAutosave(
     status = 'error'
   }
 
-  const { mutate } = mutation
-
   const doSave = useCallback((override?: Partial<GroupFormData>) => {
     if (!groupId) return
     const baseData = getFormData.current?.()
     if (!baseData) return
     const data = override ? { ...baseData, ...override } : baseData
-    mutate({ id: groupId, data })
-  }, [groupId, getFormData, mutate])
+    const payload = { id: groupId, data }
+    if (isPending) {
+      // Keep only the most recent snapshot; older queued payloads are superseded.
+      queuedPayloadRef.current = payload
+      return
+    }
+    mutate(payload)
+  }, [groupId, getFormData, mutate, isPending])
 
   const scheduleTextSave = useCallback(() => {
     if (!groupId) return
