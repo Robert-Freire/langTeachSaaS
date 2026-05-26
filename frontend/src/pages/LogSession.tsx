@@ -233,7 +233,7 @@ export default function LogSession() {
 
   const { data: allFollowups = [] } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: !!id,
   })
 
@@ -527,6 +527,7 @@ export default function LogSession() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['sessions', id] })
+      queryClient.invalidateQueries({ queryKey: ['sessions-all', id] })
       queryClient.invalidateQueries({ queryKey: ['student', id] })
       queryClient.invalidateQueries({ queryKey: ['followups', id] })
 

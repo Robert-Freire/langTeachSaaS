@@ -62,6 +62,9 @@ function wrapper(ui: React.ReactElement) {
 describe('RedaccionesTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // URL.createObjectURL / revokeObjectURL are not implemented in jsdom
+    URL.createObjectURL = vi.fn(() => 'blob:http://localhost/mock-preview')
+    URL.revokeObjectURL = vi.fn()
   })
 
   it('renders empty state with CTA when no corrections', async () => {
@@ -466,6 +469,176 @@ describe('RedaccionesTab', () => {
     resolveOcr({ text: 'Texto extraído.', blobUrl: 'https://blob.example.com/source.jpg', incomplete: false })
     await waitFor(() => {
       expect(screen.getByTestId('correction-drawer-save')).not.toBeDisabled()
+    })
+  })
+
+  // Scan preview tests
+  it('image upload shows scan preview immediately before OCR resolves', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('correction-drawer-scan-preview')).toBeInTheDocument()
+    })
+    expect(URL.createObjectURL).toHaveBeenCalledWith(jpgFile)
+    // img element (not iframe) for image type
+    expect(screen.getByTestId('correction-drawer-scan-preview').tagName).toBe('IMG')
+  })
+
+  it('PDF upload shows iframe scan preview immediately', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const pdfFile = new File(['data'], 'exam.pdf', { type: 'application/pdf' })
+    Object.defineProperty(input, 'files', { value: [pdfFile], writable: false })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('correction-drawer-scan-preview')).toBeInTheDocument()
+    })
+    // iframe element for PDF type
+    expect(screen.getByTestId('correction-drawer-scan-preview').tagName).toBe('IFRAME')
+  })
+
+  it('DOCX upload does NOT show scan preview', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const docxFile = new File(['data'], 'essay.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    Object.defineProperty(input, 'files', { value: [docxFile], writable: false })
+    fireEvent.change(input)
+
+    // Give React a tick to process
+    await waitFor(() => {
+      expect(correctionsApi.uploadForExtractText).toHaveBeenCalled()
+    })
+    expect(screen.queryByTestId('correction-drawer-scan-preview')).not.toBeInTheDocument()
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('OCR error keeps scan preview visible for manual editing', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockRejectedValue(new Error('network error'))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false })
+    fireEvent.change(input)
+
+    // Wait for error to appear
+    await screen.findByTestId('correction-drawer-ocr-error')
+
+    // Preview must still be present
+    expect(screen.getByTestId('correction-drawer-scan-preview')).toBeInTheDocument()
+  })
+
+  it('drawer panel gets wide class when preview is present', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const panelBefore = screen.getByTestId('correction-drawer-panel')
+    expect(panelBefore.className).toContain('sm:w-[520px]')
+
+    const input = screen.getByTestId('correction-drawer-file-input')
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      const panelAfter = screen.getByTestId('correction-drawer-panel')
+      expect(panelAfter.className).toContain('sm:w-[90vw]')
+    })
+  })
+
+  it('object URL is revoked when drawer closes', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false })
+    fireEvent.change(input)
+
+    await screen.findByTestId('correction-drawer-scan-preview')
+
+    fireEvent.click(screen.getByTestId('correction-drawer-cancel'))
+
+    // After unmount the effect cleanup should have been called
+    await waitFor(() => {
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-preview')
+    })
+  })
+
+  it('HEIC upload after valid image clears the stale preview', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    // First: valid JPG -- preview should appear
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false, configurable: true })
+    fireEvent.change(input)
+    await screen.findByTestId('correction-drawer-scan-preview')
+
+    // Second: HEIC -- preview should be cleared, error shown
+    const heicFile = new File(['data'], 'photo.heic', { type: 'image/heic' })
+    Object.defineProperty(input, 'files', { value: [heicFile], writable: false, configurable: true })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('correction-drawer-scan-preview')).not.toBeInTheDocument()
+    })
+    expect(screen.getByTestId('correction-drawer-ocr-error')).toBeInTheDocument()
+  })
+
+  it('DOCX upload after valid image clears the stale preview', async () => {
+    vi.mocked(correctionsApi.listCorrections).mockResolvedValue([])
+    vi.mocked(correctionsApi.uploadForExtractText).mockReturnValue(new Promise(() => {}))
+    wrapper(<RedaccionesTab studentId={STUDENT_ID} />)
+
+    fireEvent.click(await screen.findByTestId('redacciones-empty-cta'))
+    const input = await screen.findByTestId('correction-drawer-file-input')
+
+    // First: valid JPG -- preview should appear
+    const jpgFile = new File(['data'], 'scan.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [jpgFile], writable: false, configurable: true })
+    fireEvent.change(input)
+    await screen.findByTestId('correction-drawer-scan-preview')
+
+    // Second: DOCX -- preview should be cleared
+    const docxFile = new File(['data'], 'essay.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    Object.defineProperty(input, 'files', { value: [docxFile], writable: false, configurable: true })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('correction-drawer-scan-preview')).not.toBeInTheDocument()
     })
   })
 

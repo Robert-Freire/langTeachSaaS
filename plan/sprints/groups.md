@@ -56,3 +56,11 @@ Pilot user Jordi has 0 lessons across 6 months. The Lessons sidebar entry is dea
 Every task, review, and live test in this sprint should be checked against one question: **does Jordi open Atelier on a Monday afternoon, see his academy classes as first-class objects, and never again type the words "B1.1" into a student name field?** If a screen technically works but still leaks the old workaround mental model, it is not done.
 
 The empirical truth that grounds this whole sprint: Jordi has been logging real academy sessions against fake student rows for months. The shape of his data is the spec. Trust the data over abstract pedagogical models for v1.
+
+## Addendum (2026-05-24): corrections items added mid-sprint
+
+After the eight Groups tasks were code-complete, Jordi gave correction feedback that Robert chose to fold into this sprint's close rather than defer (sprint close is heavy; batch it). These three are net-new and intentionally break the original "no AI work this sprint" scope line above:
+
+- **#1349** corrections explanations always in Spanish (teacher aid). Pedagogy resolved (always Spanish, all levels).
+- **#1350** flag missing paragraph breaks under the C category. Isaac rubric posted on the issue (B1+, three triggers, anti over-flag guardrails).
+- **#1351** teacher view of all flagged errors (pre level-filter) + download both versions. Still gated on Sophy (schema) and Vera (toggle UI) before qa:ready.

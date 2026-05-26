@@ -55,4 +55,5 @@ public class Student
     public ICollection<Course> Courses { get; set; } = [];
     public ICollection<SessionLog> SessionLogs { get; set; } = [];
     public ICollection<TeacherFollowup> TeacherFollowups { get; set; } = [];
+    public ICollection<StudentGroup> StudentGroups { get; set; } = [];
 }

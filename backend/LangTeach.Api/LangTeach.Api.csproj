@@ -32,6 +32,7 @@
     <EmbeddedResource Include="..\..\data\pedagogy\correction-calibration.json" Link="Pedagogy\correction-calibration.json" />
     <EmbeddedResource Include="..\..\data\assistant\proposal-fields.json" Link="Assistant\proposal-fields.json" />
     <EmbeddedResource Include="..\..\data\assistant\intent-triggers.json" Link="Assistant\intent-triggers.json" />
+    <EmbeddedResource Include="..\..\data\correction\always-keep-grammar-rules.json" Link="Correction\always-keep-grammar-rules.json" />
   </ItemGroup>
 
   <ItemGroup>

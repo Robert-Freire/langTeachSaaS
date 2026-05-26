@@ -130,6 +130,9 @@ PAST_DATE_2.setDate(PAST_DATE_2.getDate() - 14)
 const MOCK_SESSION: SessionLog = {
   id: 'sess-1',
   studentId: 'student-1',
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Test Student',
   sessionDate: PAST_DATE.toISOString(),
   title: 'Vocabulary: Travel',
   plannedContent: null,
@@ -326,7 +329,7 @@ describe('StudentOverviewTab - card order and conditional styling', () => {
   })
 
   it('Followups card has amber background when pending followups exist', () => {
-    const pendingFollowup = { id: 'f1', text: 'Prepare vocabulary list', status: 'pending' as const, studentId: 'student-1', studentName: null, createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null }
+    const pendingFollowup = { id: 'f1', text: 'Prepare vocabulary list', status: 'pending' as const, studentId: 'student-1', studentName: null, groupId: null, kind: 'operational', createdAt: new Date().toISOString(), dueDate: null, completedAt: null, sourceSessionLogId: null }
     renderOverview(BASE_STUDENT, [], [pendingFollowup])
     const wrapper = screen.getByTestId('followups-card-wrapper')
     expect(wrapper.className).toContain('FFF9F2')
@@ -392,5 +395,42 @@ describe('StudentOverviewTab - rotating empty-state prompts', () => {
     }
     renderOverview(student)
     expect(screen.queryByTestId('ideas-rotating-prompt')).not.toBeInTheDocument()
+  })
+})
+
+describe('StudentOverviewTab - allSessions includes group sessions', () => {
+  const GROUP_SESSION: SessionLog = {
+    ...MOCK_SESSION,
+    id: 'group-sess-1',
+    targetType: 'group' as const,
+    groupId: 'grp-1',
+    targetName: 'B1 Group',
+    title: 'Group Conversation Class',
+    sessionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+  }
+
+  it('shows empty state when sessions=[](1-to-1 only) and allSessions not passed', () => {
+    renderOverview(BASE_STUDENT, [])
+    expect(screen.getByTestId('last-session-empty')).toBeInTheDocument()
+  })
+
+  it('shows LastSessionCard for group session when allSessions provided and sessions is empty', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <TooltipProvider>
+          <MemoryRouter>
+            <StudentOverviewTab
+              student={BASE_STUDENT}
+              sessions={[]}
+              allSessions={[GROUP_SESSION]}
+              onStudentChange={() => {}}
+            />
+          </MemoryRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    )
+    expect(screen.getByTestId('last-session-card')).toBeInTheDocument()
+    expect(screen.getByTestId('last-session-title')).toHaveTextContent('Group Conversation Class')
   })
 })

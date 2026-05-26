@@ -591,8 +591,8 @@ public class SectionProfileServiceTests
     {
         var constraint = _sut.GetClosingConstraint("wrapup", level);
         constraint.Should().NotBeNullOrEmpty(because: $"wrapup {level} must have a closing constraint");
-        constraint.Should().Contain("Do not introduce new vocabulary",
-            because: "the constraint must prohibit introducing new material");
+        constraint.Should().Contain("Review only content from this lesson",
+            because: "the constraint must restrict content to this lesson only");
     }
 
     [Fact]

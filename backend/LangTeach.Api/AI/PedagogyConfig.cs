@@ -36,6 +36,11 @@ public record CorrectionCriticalRuleExample(
 // Correction calibration cues (correction-calibration.json)
 public record CorrectionCalibrationFile(Dictionary<string, string> CefrCalibration);
 
+// Always-keep grammar rules (correction/always-keep-grammar-rules.json)
+public record AlwaysKeepGrammarRulesFile(AlwaysKeepGrammarTopic[] AlwaysKeepTopics);
+
+public record AlwaysKeepGrammarTopic(string Topic, string[] DescriptionKeywords);
+
 // Exercise catalog (exercise-types.json)
 public record ExerciseCatalog(ExerciseTypeEntry[] ExerciseTypes);
 

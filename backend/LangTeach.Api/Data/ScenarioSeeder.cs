@@ -135,7 +135,16 @@ public static class ScenarioSeeder
 
     private static async Task WipeAsync(AppDbContext db, Guid teacherId, Guid[] studentIds, DateTime now, ILogger logger)
     {
-        var sessions = await db.SessionLogs.Where(sl => studentIds.Contains(sl.StudentId)).ToListAsync();
+        // Wipe student-target AND group-target sessions that involve any scenario student.
+        // For group sessions, look up groups containing these students through StudentGroups.
+        var groupIds = await db.StudentGroups
+            .Where(sg => studentIds.Contains(sg.StudentId))
+            .Select(sg => sg.GroupId)
+            .Distinct()
+            .ToListAsync();
+        var sessions = await db.SessionLogs.Where(sl =>
+            (sl.StudentId.HasValue && studentIds.Contains(sl.StudentId.Value)) ||
+            (sl.GroupId.HasValue && groupIds.Contains(sl.GroupId.Value))).ToListAsync();
         db.SessionLogs.RemoveRange(sessions);
 
         var followups = await db.TeacherFollowups.Where(f => f.TeacherId == teacherId).ToListAsync();

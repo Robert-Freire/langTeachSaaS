@@ -209,4 +209,21 @@ public interface IPedagogyConfigService
     /// Returns the CEFR-specific calibration cue for the level filter prompt, or null if not defined.
     /// </summary>
     string? GetCorrectionCalibrationCue(string level);
+
+    /// <summary>
+    /// Returns the next CEFR level in the standard progression (A1→A2→B1→B2→C1→C2), or null for C2.
+    /// </summary>
+    string? GetNextLevel(string cefrLevel);
+
+    /// <summary>
+    /// Returns true if <paramref name="level"/> is at or above <paramref name="floor"/> in the CEFR order.
+    /// Returns false if either value is unrecognised.
+    /// </summary>
+    bool IsAtOrAboveLevel(string level, string floor);
+
+    /// <summary>
+    /// Returns the list of always-keep grammar topics loaded from always-keep-grammar-rules.json.
+    /// G tags matching these topics pass through the level filter unconditionally.
+    /// </summary>
+    IReadOnlyList<AlwaysKeepGrammarTopic> GetAlwaysKeepTopics();
 }

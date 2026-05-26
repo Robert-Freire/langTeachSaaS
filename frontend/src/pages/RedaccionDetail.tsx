@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { ArrowLeft, Download, Lock, Loader2, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
 import {
   corregirCorrection,
   downloadCorrectionDocx,
@@ -10,12 +10,13 @@ import {
   type CorrectionDetail,
 } from '../api/corrections'
 import { getStudent } from '../api/students'
+import { isAxiosError } from '../lib/apiClient'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarkedUpText } from '@/components/corrections/MarkedUpText'
 import { ChipLegend } from '@/components/corrections/ChipLegend'
-import { STATUS_BADGE, STATUS_LABEL } from '@/lib/correction-status'
+import { STATUS_BADGE, STATUS_LABEL, estimateCorrectionMinutes } from '@/lib/correction-status'
 import { logger } from '../lib/logger'
 
 type ViewState = 'idle' | 'generating' | 'failed'
@@ -28,6 +29,12 @@ export default function RedaccionDetail() {
   const [viewState, setViewState] = useState<ViewState>('idle')
   const [elapsedHint, setElapsedHint] = useState<ElapsedHint>('none')
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  // 'student' = level-filtered (the view the student receives, default). 'teacher' = every
+  // error detected, including above-level ones the filter suppressed (#1351).
+  const [errorView, setErrorView] = useState<'student' | 'teacher'>('student')
+  // Set when /corregir is refused for being over the monthly generation quota (429), so the
+  // teacher sees the quota block rather than a generic failure (#1223, #1362).
+  const [quotaMessage, setQuotaMessage] = useState<string | null>(null)
 
   const studentId = id
   const queryKey = ['correction', studentId, correctionId]
@@ -36,7 +43,7 @@ export default function RedaccionDetail() {
     queryKey,
     queryFn: () => getCorrection(studentId!, correctionId!),
     enabled: !!studentId && !!correctionId,
-    refetchInterval: (q) => q.state.data?.status === 'Corrigiendo' ? 3000 : false,
+    refetchInterval: (q) => (q.state.data?.status === 'Encolada' || q.state.data?.status === 'Corrigiendo') ? 3000 : false,
   })
 
   const { data: student } = useQuery({
@@ -47,19 +54,31 @@ export default function RedaccionDetail() {
 
   const corregir = useMutation({
     mutationFn: () => corregirCorrection(studentId!, correctionId!),
-    onMutate: () => setViewState('generating'),
+    onMutate: () => {
+      setQuotaMessage(null)
+      setViewState('generating')
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
       setViewState('idle')
     },
     onError: (err) => {
       logger.error('RedaccionDetail', 'Generation failed', err)
+      if (isAxiosError(err) && err.response?.status === 429) {
+        const body = err.response.data as { message?: string; resetsAt?: string } | undefined
+        const resets = body?.resetsAt ? new Date(body.resetsAt).toLocaleDateString() : null
+        setQuotaMessage(
+          resets
+            ? `Has alcanzado el límite mensual de generaciones. Se restablece el ${resets}.`
+            : 'Has alcanzado el límite mensual de generaciones.',
+        )
+      }
       setViewState('failed')
     },
   })
 
   useEffect(() => {
-    const isInProgress = viewState === 'generating' || data?.status === 'Corrigiendo'
+    const isInProgress = viewState === 'generating' || data?.status === 'Encolada' || data?.status === 'Corrigiendo'
     if (!isInProgress) return
     const slowTimer = setTimeout(() => setElapsedHint('slow'), 60_000)
     const verySlowTimer = setTimeout(() => setElapsedHint('very-slow'), 4 * 60_000)
@@ -70,11 +89,15 @@ export default function RedaccionDetail() {
     }
   }, [viewState, data?.status])
 
-  const onDownload = async () => {
+  const estimatedMinutes = data?.studentText && student
+    ? estimateCorrectionMinutes(data.studentText.split(/\s+/).filter(Boolean).length, student.level.cefrLevel)
+    : null
+
+  const onDownload = async (view: 'student' | 'teacher' = 'student') => {
     if (!data) return
     setDownloadError(null)
     try {
-      await downloadCorrectionDocx(studentId!, correctionId!, data.assignmentTitle)
+      await downloadCorrectionDocx(studentId!, correctionId!, data.assignmentTitle, view)
     } catch (err) {
       logger.error('RedaccionDetail', '.docx download failed', err)
       setDownloadError('Descarga aún no disponible')
@@ -110,6 +133,13 @@ export default function RedaccionDetail() {
 
   const breadcrumbLabel = student ? `${student.name} / Redacciones` : 'Redacciones'
 
+  // Above-level errors are persisted but hidden from the student default view. The toggle
+  // and the teacher download only appear when there is something extra to reveal (#1351).
+  const hasAboveLevel = data.tags.some((t) => t.filterStatus === 'removed')
+  const visibleTags = errorView === 'teacher'
+    ? data.tags
+    : data.tags.filter((t) => t.filterStatus !== 'removed')
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <div className="flex items-center justify-between gap-3">
@@ -123,9 +153,15 @@ export default function RedaccionDetail() {
         <div className="flex items-center gap-2">
           <StatusPill status={data.status} viewState={viewState} />
           {isCorregida && (
-            <Button variant="outline" size="sm" onClick={onDownload}>
+            <Button variant="outline" size="sm" onClick={() => onDownload('student')}>
               <Download className="mr-2 h-4 w-4" />
-              Descargar .docx
+              {hasAboveLevel ? 'Versión del estudiante' : 'Descargar .docx'}
+            </Button>
+          )}
+          {isCorregida && hasAboveLevel && (
+            <Button variant="secondary" size="sm" onClick={() => onDownload('teacher')}>
+              <Lock className="mr-2 h-4 w-4" />
+              Versión completa
             </Button>
           )}
         </div>
@@ -172,13 +208,19 @@ export default function RedaccionDetail() {
         </div>
       )}
 
-      {(viewState === 'generating' || data.status === 'Corrigiendo') && data.studentText && (
+      {(viewState === 'generating' || data.status === 'Encolada' || data.status === 'Corrigiendo') && data.studentText && (
         <div className="space-y-4">
           <ReadingColumn text={data.studentText} />
           <Button disabled>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Corrigiendo
           </Button>
+          {elapsedHint === 'none' && estimatedMinutes !== null && (
+            <p data-testid="hint-estimate" className="text-sm text-zinc-500">
+              Esto tardará aproximadamente {estimatedMinutes} minuto{estimatedMinutes === 1 ? '' : 's'}.
+              {' '}Puedes cerrar esta pestaña o ir a otra parte de Atelier; te avisamos cuando esté listo.
+            </p>
+          )}
           {elapsedHint === 'slow' && (
             <p data-testid="hint-slow" className="text-sm text-zinc-500">
               Esto puede tardar hasta 3 minutos para textos largos. Puedes esperar aquí.
@@ -203,34 +245,82 @@ export default function RedaccionDetail() {
         <div className="space-y-4">
           <ReadingColumn text={data.studentText} />
           <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">
-            <p className="font-medium">No se pudo generar la corrección.</p>
-            <p className="mt-1">Inténtalo de nuevo. Si el problema persiste, vuelve más tarde.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => corregir.mutate()}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reintentar
-            </Button>
+            {quotaMessage ? (
+              // Over monthly quota: retrying will not help until the limit resets, so no retry button.
+              <p className="font-medium">{quotaMessage}</p>
+            ) : (
+              <>
+                <p className="font-medium">No se pudo generar la corrección.</p>
+                <p className="mt-1">Inténtalo de nuevo. Si el problema persiste, vuelve más tarde.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => corregir.mutate()}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reintentar
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
 
       {isCorregida && data.studentText && (
         <>
-          {data.tags.length === 0 ? (
+          {hasAboveLevel && (
+            <ErrorViewToggle view={errorView} onChange={setErrorView} />
+          )}
+          {errorView === 'teacher' && (
+            <p className="text-sm text-zinc-500">
+              Mostrando todos los errores detectados. Las marcas por encima del nivel (subrayado discontinuo)
+              {' '}no se muestran al estudiante.
+            </p>
+          )}
+          {visibleTags.length === 0 ? (
             <>
               <ReadingColumn text={data.studentText} />
               <p className="text-sm text-zinc-600">Sin observaciones, todo correcto.</p>
             </>
           ) : (
-            <MarkedUpText studentText={data.studentText} tags={data.tags} />
+            <MarkedUpText studentText={data.studentText} tags={visibleTags} />
           )}
           <CorrectionFeedback studentId={studentId!} correctionId={correctionId!} />
         </>
       )}
+    </div>
+  )
+}
+
+interface ErrorViewToggleProps {
+  view: 'student' | 'teacher'
+  onChange: (view: 'student' | 'teacher') => void
+}
+
+function ErrorViewToggle({ view, onChange }: ErrorViewToggleProps) {
+  const options: { value: 'student' | 'teacher'; label: string }[] = [
+    { value: 'student', label: 'Nivel del estudiante' },
+    { value: 'teacher', label: 'Todos los errores' },
+  ]
+  return (
+    <div role="group" aria-label="Vista de errores" className="inline-flex bg-[#F4F2FD] p-1 rounded-xl">
+      {options.map((opt) => {
+        const active = view === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(opt.value)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+              active ? 'bg-white text-[#3525CD] shadow-sm' : 'text-zinc-500 hover:text-[#3525CD]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

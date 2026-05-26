@@ -1,0 +1,19 @@
+{
+  "_readme": "Explicit key classification overrides for audit-config-wiring.py. Values: SECRET | CONFIG | INTERNAL. Add entries here when the heuristic misclassifies a key rather than modifying the script.",
+  "keys": {
+    "Logging:LogLevel:Default": "INTERNAL",
+    "Logging:LogLevel:Microsoft.AspNetCore": "INTERNAL",
+    "AllowedHosts": "INTERNAL",
+    "AzureSpeech:Language": "CONFIG",
+    "AzureSpeech:Region": "SECRET",
+    "AzureOpenAIWhisper:Language": "CONFIG",
+    "Transcription:Provider": "CONFIG",
+    "Ocr:MaxBytes": "CONFIG",
+    "Ocr:MinExtractedChars": "CONFIG",
+    "Ocr:AcceptedContentTypes": "CONFIG",
+    "Ocr:PdfClaudeMaxFileBytes": "CONFIG",
+    "GenerationLimits:FreeTierMonthlyLimit": "CONFIG",
+    "GenerationLimits:ProTierMonthlyLimit": "CONFIG",
+    "Claude:BaseUrl": "CONFIG"
+  }
+}

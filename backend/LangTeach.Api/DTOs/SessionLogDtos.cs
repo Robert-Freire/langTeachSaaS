@@ -8,7 +8,10 @@ public record DifficultyPairDto(string Competency, string Subcategory);
 
 public record SessionLogDto(
     Guid Id,
-    Guid StudentId,
+    Guid? StudentId,
+    Guid? GroupId,
+    string TargetType,
+    string TargetName,
     Guid TeacherId,
     DateTime? SessionDate,
     string? PlannedContent,

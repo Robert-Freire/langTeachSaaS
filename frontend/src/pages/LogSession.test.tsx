@@ -88,6 +88,9 @@ const SAMPLE_STUDENT: Student = {
 const SAMPLE_SESSION: SessionLog = {
   id: 'session-1',
   studentId: STUDENT_ID,
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Test Student',
   sessionDate: '2026-03-01T00:00:00Z',
   plannedContent: null,
   actualContent: 'Covered ser vs estar',
@@ -429,7 +432,7 @@ describe('LogSession', () => {
     vi.mocked(followupsApi.getFollowups).mockResolvedValue([
       {
         id: 'f-1', text: 'Send grammar sheet', status: 'pending',
-        studentId: STUDENT_ID, studentName: 'Ana Seed', dueDate: null,
+        studentId: STUDENT_ID, studentName: 'Ana Seed', groupId: null, kind: 'operational', dueDate: null,
         createdAt: '2026-01-01T00:00:00Z', completedAt: null, sourceSessionLogId: null,
       },
     ])
@@ -446,7 +449,7 @@ describe('LogSession', () => {
     vi.mocked(followupsApi.getFollowups).mockResolvedValue([
       {
         id: 'f-1', text: 'Send grammar sheet', status: 'pending',
-        studentId: STUDENT_ID, studentName: 'Ana Seed', dueDate: null,
+        studentId: STUDENT_ID, studentName: 'Ana Seed', groupId: null, kind: 'operational', dueDate: null,
         createdAt: '2026-01-01T00:00:00Z', completedAt: null, sourceSessionLogId: null,
       },
     ])

@@ -91,6 +91,10 @@ function sortStudents(students: ActiveStudent[], sortBy: SortOption): ActiveStud
   }
 }
 
+// Intentionally local. The shared `utils/formatRelativeDate.ts` has richer
+// future-date semantics ("Tomorrow", weekday names, "in Nd") which the
+// dashboard card does not need; this variant short-circuits future dates to
+// a locale date for a quieter visual on the roster.
 function formatRelativeDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   const date = new Date(dateStr)

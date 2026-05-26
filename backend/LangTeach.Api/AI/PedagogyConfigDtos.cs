@@ -4,7 +4,7 @@ namespace LangTeach.Api.AI;
 /// Output DTO for GetGrammarScope — contains in-scope and out-of-scope grammar lists for a CEFR level.
 /// Not a JSON deserialization model; constructed by PedagogyConfigService from CefrLevelRules data.
 /// </summary>
-public record GrammarScope(string[] InScope, string[] OutOfScope, string? CeilingNote = null);
+public record GrammarScope(string[] InScope, string[] OutOfScope, string? CeilingNote = null, bool HasFocusTargets = false);
 
 /// <summary>
 /// Output DTO for GetVocabularyGuidance.

@@ -26,8 +26,9 @@ public class SessionHistoryService : ISessionHistoryService
         DateTime generationDate,
         CancellationToken ct = default)
     {
-        var sessions = await _db.SessionLogs
-            .Where(sl => sl.TeacherId == teacherId && sl.StudentId == studentId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+        // Groups #1326: include group sessions for groups the student is a member of.
+        var sessions = await SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId)
+            .Where(sl => !sl.IsCancelled && sl.SessionDate.HasValue)
             .OrderByDescending(sl => sl.SessionDate)
             .Take(5)
             .ToListAsync(ct);

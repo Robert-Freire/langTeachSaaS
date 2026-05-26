@@ -3,17 +3,18 @@ import { Loader2 } from 'lucide-react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getStudent, updateStudent, patchStudentVoice } from '../api/students'
+import { listCorrections } from '@/api/corrections'
 import { logger } from '../lib/logger'
 import { newId } from '@/lib/newId'
 import { getFollowups } from '@/api/followups'
-import { listSessions } from '@/api/sessionLogs'
-import type { SessionLog } from '@/api/sessionLogs'
+import { listSessions, listSessionsIncludingGroups } from '@/api/sessionLogs'
+import { getStudentGroups } from '@/api/groups'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StudentDetailHeader } from '@/components/student/StudentDetailHeader'
 import { StudentProfileTab } from '@/components/student/StudentProfileTab'
 import { StudentOverviewTab } from '@/components/student/StudentOverviewTab'
-import { SessionHistoryTab } from '@/components/session/SessionHistoryTab'
+import { SessionHistoryTab, type SessionTypeFilter } from '@/components/session/SessionHistoryTab'
 import { RedaccionesTab } from '@/components/student/RedaccionesTab'
 import { ProgressDashboard } from '@/components/student/ProgressDashboard'
 import { AudioRecorder } from '@/components/audio/AudioRecorder'
@@ -21,22 +22,7 @@ import { VoiceUpdateDrawer } from '@/components/student/VoiceUpdateDrawer'
 import type { VoiceMergePatch } from '@/lib/voiceUpdateMerge'
 import { extractStudentProfile } from '@/api/studentExtraction'
 import { useVoiceExtractionFlow } from '@/hooks/useVoiceExtractionFlow'
-
-function calcSessionFrequency(sessions: SessionLog[]): string | null {
-  const past = sessions
-    .filter(s => !s.isCancelled && s.sessionDate && s.statusName === 'Confirmed' && new Date(s.sessionDate) <= new Date())
-    .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())
-  if (past.length === 0) return null
-  if (past.length === 1) return '1 session'
-  const first = new Date(past[0].sessionDate!)
-  const last = new Date(past[past.length - 1].sessionDate!)
-  const spanDays = Math.round((last.getTime() - first.getTime()) / 86400000)
-  if (spanDays < 14) return `${past.length} sessions`
-  const weeks = Math.max(1, Math.round(spanDays / 7))
-  const avgDays = Math.round(spanDays / (past.length - 1))
-  const weekLabel = weeks === 1 ? '1 week' : `${weeks} weeks`
-  return `${past.length} sessions in ${weekLabel} · avg. every ${avgDays} days`
-}
+import { calcSessionFrequency } from '@/utils/sessionFrequency'
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -63,7 +49,7 @@ export default function StudentDetail() {
 
   const { data: followups = [], refetch: refetchFollowups } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: !!id,
   })
 
@@ -73,9 +59,44 @@ export default function StudentDetail() {
     enabled: !!id,
   })
 
+  const { data: allSessions = [] } = useQuery({
+    queryKey: ['sessions-all', id],
+    queryFn: () => listSessionsIncludingGroups(id!),
+    enabled: !!id,
+  })
+
+  const { data: studentGroups = [] } = useQuery({
+    queryKey: ['student-groups', id],
+    queryFn: () => getStudentGroups(id!),
+    enabled: !!id,
+  })
+
+  const rawSessionType = searchParams.get('sessionType')
+  const sessionTypeFilter: SessionTypeFilter =
+    rawSessionType === '1-to-1' || rawSessionType === 'groups' ? rawSessionType : 'all'
+  function handleSessionTypeFilterChange(v: SessionTypeFilter) {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (v === 'all') next.delete('sessionType')
+      else next.set('sessionType', v)
+      return next
+    })
+  }
+
   const nextSession = sessions
     .filter(s => s.sessionDate && new Date(s.sessionDate) > new Date() && !s.isCancelled && s.statusName === 'Confirmed')
     .sort((a, b) => new Date(a.sessionDate!).getTime() - new Date(b.sessionDate!).getTime())[0] ?? null
+
+  const { data: corrections } = useQuery({
+    queryKey: ['corrections', id],
+    queryFn: () => listCorrections(id!),
+    enabled: !!id,
+    refetchInterval: 10_000,
+  })
+
+  const hasActiveCorrections = corrections?.some(
+    c => c.status === 'Encolada' || c.status === 'Corrigiendo'
+  ) ?? false
 
   const onFollowupChange = useCallback(() => { refetchFollowups() }, [refetchFollowups])
   const onStudentChange = useCallback(() => {
@@ -272,11 +293,11 @@ export default function StudentDetail() {
   }
 
   const tabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'profile', label: 'Profile' },
-    { key: 'sessions', label: 'Sessions' },
-    { key: 'redacciones', label: 'Redacciones' },
-    { key: 'progress', label: 'Progress' },
+    { key: 'overview', label: 'Overview', badge: false },
+    { key: 'profile', label: 'Profile', badge: false },
+    { key: 'sessions', label: 'Sessions', badge: false },
+    { key: 'redacciones', label: 'Redacciones', badge: hasActiveCorrections && activeTab !== 'redacciones' },
+    { key: 'progress', label: 'Progress', badge: false },
   ]
 
   const sessionFrequency = calcSessionFrequency(sessions)
@@ -290,6 +311,7 @@ export default function StudentDetail() {
         onVoiceUpdateClick={() => setVoiceFlow('recording')}
         voiceFlowActive={voiceFlow !== 'idle'}
         onChannelChange={() => queryClient.invalidateQueries({ queryKey: ['student', id] })}
+        groups={studentGroups}
       />
 
       {voiceFlow === 'recording' && (
@@ -341,7 +363,12 @@ export default function StudentDetail() {
             style={activeTab === tab.key ? { boxShadow: '0 1px 3px rgba(26, 27, 34, 0.08)' } : undefined}
             data-testid={`tab-${tab.key}`}
           >
-            {tab.label}
+            <span className="relative">
+              {tab.label}
+              {tab.badge && (
+                <span className="absolute -top-1 -right-2 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              )}
+            </span>
           </button>
         ))}
       </div>
@@ -351,6 +378,7 @@ export default function StudentDetail() {
         <StudentOverviewTab
           student={student}
           sessions={sessions}
+          allSessions={allSessions}
           followups={followups}
           onFollowupChange={onFollowupChange}
           onStudentChange={onStudentChange}
@@ -378,7 +406,11 @@ export default function StudentDetail() {
       )}
 
       {activeTab === 'sessions' && (
-        <SessionHistoryTab studentId={student.id} />
+        <SessionHistoryTab
+          studentId={student.id}
+          sessionTypeFilter={sessionTypeFilter}
+          onSessionTypeFilterChange={handleSessionTypeFilterChange}
+        />
       )}
 
       {activeTab === 'redacciones' && (
