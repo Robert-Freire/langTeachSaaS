@@ -463,7 +463,9 @@ export default function GroupLogSession() {
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [groupLoading])
+    // editSessionLoading gates the main render in edit mode, so the aside/sentinel
+    // refs only mount once it resolves; re-run then to attach the observer.
+  }, [groupLoading, editSessionLoading])
 
   const tagSuggestions = useMemo(
     () => suggestTopicTags(actualContent, topicTags),
