@@ -30,6 +30,9 @@ export interface Group {
   nextSessionDate: string | null
   teachingIdeas?: GroupTeachingIdea[] | null
   teachingNotes: string | null
+  reasonForStudying: string | null
+  interests: string[] | null
+  commonFocusAreas: string[] | null
 }
 
 export interface GroupListResponse {
@@ -44,6 +47,9 @@ export interface GroupFormData {
   cefrLevel?: string | null
   description?: string | null
   isActive: boolean
+  reasonForStudying?: string | null
+  interests?: string[]
+  commonFocusAreas?: string[]
 }
 
 export async function getGroups(params?: {

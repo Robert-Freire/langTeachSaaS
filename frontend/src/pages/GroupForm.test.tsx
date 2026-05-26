@@ -19,6 +19,12 @@ vi.mock('../api/students', () => ({
   getStudents: vi.fn(),
 }))
 
+vi.mock('../api/followups', () => ({
+  getFollowups: vi.fn().mockResolvedValue([]),
+  createFollowup: vi.fn(),
+  updateFollowupStatus: vi.fn(),
+}))
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
   Toaster: () => null,
@@ -64,6 +70,9 @@ function renderEdit(groupId: string, groupData: Partial<groupsApi.Group> = {}) {
     lastSessionDate: null,
     nextSessionDate: null,
     teachingNotes: null,
+    reasonForStudying: null,
+    interests: [],
+    commonFocusAreas: [],
     ...groupData,
   })
   return render(
@@ -86,7 +95,30 @@ describe('GroupForm - create mode', () => {
     expect(screen.getByTestId('group-name-input')).toBeInTheDocument()
     expect(screen.getByTestId('group-cefr-select')).toBeInTheDocument()
     expect(screen.getByTestId('group-description-input')).toBeInTheDocument()
+    expect(screen.getByTestId('group-reason-input')).toBeInTheDocument()
+    expect(screen.getByTestId('interest-input')).toBeInTheDocument()
+    expect(screen.getByTestId('focus-area-input')).toBeInTheDocument()
     expect(screen.getByTestId('member-search-input')).toBeInTheDocument()
+  })
+
+  it('adds and removes interest chips', async () => {
+    renderCreate()
+    const input = screen.getByTestId('interest-input')
+    fireEvent.change(input, { target: { value: 'Travel' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('interest-chip')).toHaveTextContent('Travel'))
+    fireEvent.click(screen.getByLabelText('Remove Travel'))
+    expect(screen.queryByTestId('interest-chip')).not.toBeInTheDocument()
+  })
+
+  it('adds and removes focus area chips', async () => {
+    renderCreate()
+    const input = screen.getByTestId('focus-area-input')
+    fireEvent.change(input, { target: { value: 'Subjunctive' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('focus-area-chip')).toHaveTextContent('Subjunctive'))
+    fireEvent.click(screen.getByLabelText('Remove Subjunctive'))
+    expect(screen.queryByTestId('focus-area-chip')).not.toBeInTheDocument()
   })
 
   it('shows a placeholder for the CEFR control instead of a lowercase "none" default', () => {
@@ -120,6 +152,9 @@ describe('GroupForm - create mode', () => {
       lastSessionDate: null,
       nextSessionDate: null,
       teachingNotes: null,
+      reasonForStudying: null,
+      interests: [],
+      commonFocusAreas: [],
     })
     vi.mocked(groupsApi.addGroupMember).mockResolvedValue({} as groupsApi.Group)
 
@@ -171,5 +206,26 @@ describe('GroupForm - edit mode', () => {
     await waitFor(() => {
       expect(screen.queryByText('Inactive Student')).not.toBeInTheDocument()
     })
+  })
+
+  it('shows goals section and empty state in edit mode', async () => {
+    renderEdit('g1')
+    await waitFor(() => screen.getByTestId('goals-empty'))
+    expect(screen.getByTestId('goal-text-input')).toBeInTheDocument()
+    expect(screen.getByTestId('goal-due-date-input')).toBeInTheDocument()
+    expect(screen.getByTestId('goal-add-btn')).toBeInTheDocument()
+  })
+
+  it('loads existing profile fields', async () => {
+    renderEdit('g1', {
+      reasonForStudying: 'DELE B2 prep',
+      interests: ['Viajes', 'Cine'],
+      commonFocusAreas: ['Subjuntivo'],
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('group-reason-input')).toHaveValue('DELE B2 prep')
+    })
+    expect(screen.getAllByTestId('interest-chip')[0]).toHaveTextContent('Viajes')
+    expect(screen.getAllByTestId('focus-area-chip')[0]).toHaveTextContent('Subjuntivo')
   })
 })

@@ -15,6 +15,10 @@ public class Group
 
     public string? TeachingNotes { get; set; }
 
+    public string? ReasonForStudying { get; set; }
+    public string Interests { get; set; } = "[]";
+    public string CommonFocusAreas { get; set; } = "[]";
+
     public Teacher Teacher { get; set; } = null!;
     public ICollection<StudentGroup> StudentGroups { get; set; } = [];
     public ICollection<SessionLog> SessionLogs { get; set; } = [];

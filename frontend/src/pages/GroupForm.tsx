@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Loader2, Search, CheckCircle, RefreshCw } from 'lucide-react'
+import { X, Loader2, Search, Plus, CheckCircle2, Circle, CheckCircle, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   type Group,
   getGroup, createGroup, updateGroup, deleteGroup,
   addGroupMember, removeGroupMember,
 } from '@/api/groups'
-import { getFollowups } from '@/api/followups'
+import { getFollowups, createFollowup, updateFollowupStatus, type TeacherFollowup } from '@/api/followups'
 import { logger } from '@/lib/logger'
 import { getStudents } from '@/api/students'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,9 @@ import { useGroupAutosave } from '@/hooks/useGroupAutosave'
 
 const MAX_NAME = 100
 const MAX_DESC = 500
+const MAX_REASON = 500
+const MAX_INTERESTS = 50
+const MAX_FOCUS_AREAS = 50
 
 interface SelectedMember {
   id: string
@@ -257,12 +260,25 @@ function GroupFormBody({ group }: { group?: Group }) {
   const [name, setName] = useState(group?.name ?? '')
   const [cefrLevel, setCefrLevel] = useState(group?.cefrLevel ?? '')
   const [description, setDescription] = useState(group?.description ?? '')
+  const [reasonForStudying, setReasonForStudying] = useState(group?.reasonForStudying ?? '')
+  const [interests, setInterests] = useState<string[]>(group?.interests ?? [])
+  const [interestInput, setInterestInput] = useState('')
+  const [focusAreas, setFocusAreas] = useState<string[]>(group?.commonFocusAreas ?? [])
+  const [focusAreaInput, setFocusAreaInput] = useState('')
+  const interestInputRef = useRef<HTMLInputElement>(null)
+  const focusAreaInputRef = useRef<HTMLInputElement>(null)
   const [members, setMembers] = useState<SelectedMember[]>(existingMembers)
   const [nameError, setNameError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   // Tracks a group created mid-save so retries reuse it instead of creating a duplicate
   const pendingGroupIdRef = useRef<string | null>(null)
+
+  function mergePendingChip(values: string[], pending: string, max: number): string[] {
+    const trimmed = pending.trim()
+    if (!trimmed || values.includes(trimmed) || values.length >= max) return values
+    return [...values, trimmed]
+  }
 
   // Autosave (edit mode only)
   const formDataRef = useRef<(() => import('@/api/groups').GroupFormData | null) | null>(null)
@@ -272,14 +288,19 @@ function GroupFormBody({ group }: { group?: Group }) {
       if (!isEdit) return null
       const trimmedName = name.trim()
       if (!trimmedName) return null
+      const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
+      const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
       return {
         name: trimmedName,
         cefrLevel: cefrLevel || null,
         description: description.trim() || null,
         isActive: group?.isActive ?? true,
+        reasonForStudying: reasonForStudying.trim() || null,
+        interests: finalInterests,
+        commonFocusAreas: finalFocusAreas,
       }
     }
-  }, [isEdit, name, cefrLevel, description, group?.isActive])
+  }, [isEdit, name, cefrLevel, description, group?.isActive, reasonForStudying, interests, interestInput, focusAreas, focusAreaInput])
 
   const { status: saveStatus, scheduleTextSave, saveNow } = useGroupAutosave(
     isEdit ? id : undefined,
@@ -297,6 +318,37 @@ function GroupFormBody({ group }: { group?: Group }) {
     queryKey: ['group-ideas', id],
     queryFn: () => getFollowups({ groupId: id!, kind: 'pedagogical' }),
     enabled: isEdit && !!id,
+  })
+
+  // Class goals (only in edit mode, saved immediately via API)
+  const { data: goals = [], refetch: refetchGoals } = useQuery({
+    queryKey: ['group-goals', id],
+    queryFn: () => getFollowups({ groupId: id!, kind: 'objective' }),
+    enabled: isEdit && !!id,
+  })
+  const [goalText, setGoalText] = useState('')
+  const [goalDueDate, setGoalDueDate] = useState('')
+
+  const addGoalMutation = useMutation({
+    mutationFn: () => createFollowup({
+      text: goalText.trim(),
+      groupId: id!,
+      kind: 'objective',
+      dueDate: goalDueDate || null,
+    }),
+    onSuccess: () => {
+      setGoalText('')
+      setGoalDueDate('')
+      refetchGoals()
+    },
+    onError: () => toast.error('Could not add goal. Please try again.'),
+  })
+
+  const toggleGoalMutation = useMutation({
+    mutationFn: (g: TeacherFollowup) =>
+      updateFollowupStatus(g.id, g.status === 'pending' ? 'done' : 'pending'),
+    onSuccess: () => refetchGoals(),
+    onError: () => toast.error('Could not update goal.'),
   })
 
   // Member mutations for immediate API calls in edit mode
@@ -331,16 +383,64 @@ function GroupFormBody({ group }: { group?: Group }) {
     setMembers(newMembers)
   }, [isEdit, id, members, doAddMember, doRemoveMember])
 
+  function addInterest(value: string) {
+    const trimmed = value.trim()
+    if (trimmed && !interests.includes(trimmed) && interests.length < MAX_INTERESTS) {
+      setInterests([...interests, trimmed])
+    }
+    setInterestInput('')
+  }
+
+  function removeInterest(item: string) {
+    setInterests(interests.filter((i) => i !== item))
+  }
+
+  function handleInterestKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addInterest(interestInput)
+    } else if (e.key === 'Backspace' && interestInput === '' && interests.length > 0) {
+      setInterests(interests.slice(0, -1))
+    }
+  }
+
+  function addFocusArea(value: string) {
+    const trimmed = value.trim()
+    if (trimmed && !focusAreas.includes(trimmed) && focusAreas.length < MAX_FOCUS_AREAS) {
+      setFocusAreas([...focusAreas, trimmed])
+    }
+    setFocusAreaInput('')
+  }
+
+  function removeFocusArea(item: string) {
+    setFocusAreas(focusAreas.filter((f) => f !== item))
+  }
+
+  function handleFocusAreaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addFocusArea(focusAreaInput)
+    } else if (e.key === 'Backspace' && focusAreaInput === '' && focusAreas.length > 0) {
+      setFocusAreas(focusAreas.slice(0, -1))
+    }
+  }
+
   // Create mode save mutation
   const { mutate: doSave, isPending: saving } = useMutation({
     mutationFn: async () => {
       const selectedIds = members.map((m) => m.id)
+      const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
+      const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
+
       if (isEdit && id) {
         await updateGroup(id, {
           name: name.trim(),
           cefrLevel: cefrLevel || null,
           description: description.trim() || null,
           isActive: group?.isActive ?? true,
+          reasonForStudying: reasonForStudying.trim() || null,
+          interests: finalInterests,
+          commonFocusAreas: finalFocusAreas,
         })
       } else {
         const groupId = pendingGroupIdRef.current ?? (await createGroup({
@@ -348,6 +448,9 @@ function GroupFormBody({ group }: { group?: Group }) {
           cefrLevel: cefrLevel || null,
           description: description.trim() || null,
           isActive: true,
+          reasonForStudying: reasonForStudying.trim() || null,
+          interests: finalInterests,
+          commonFocusAreas: finalFocusAreas,
         })).id
         pendingGroupIdRef.current = groupId
         for (const sid of selectedIds) await addGroupMember(groupId, sid)
@@ -531,6 +634,169 @@ function GroupFormBody({ group }: { group?: Group }) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Profile fields card */}
+            <Card className="rounded-2xl border-0 bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)]">
+              <CardContent className="p-6 sm:p-8 space-y-6">
+                <div className="space-y-1.5">
+                  <Label htmlFor="group-reason" className="text-sm font-medium text-[#1A1B22]">Class Purpose</Label>
+                  <Textarea
+                    id="group-reason"
+                    value={reasonForStudying}
+                    onChange={(e) => { setReasonForStudying(e.target.value); scheduleTextSave() }}
+                    placeholder="e.g. DELE B2 exam prep, conversational fluency for work..."
+                    maxLength={MAX_REASON}
+                    rows={2}
+                    className="italic placeholder:not-italic"
+                    data-testid="group-reason-input"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-[#1A1B22]">Interests</Label>
+                  <div
+                    className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                    onClick={() => interestInputRef.current?.focus()}
+                  >
+                    {interests.map((item) => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                        data-testid="interest-chip"
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeInterest(item); scheduleTextSave() }}
+                          className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
+                          aria-label={`Remove ${item}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      ref={interestInputRef}
+                      value={interestInput}
+                      onChange={(e) => setInterestInput(e.target.value)}
+                      onKeyDown={handleInterestKeyDown}
+                      onBlur={() => { if (interestInput.trim()) { addInterest(interestInput); scheduleTextSave() } }}
+                      placeholder={interests.length === 0 ? 'Type and press Enter…' : ''}
+                      className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                      data-testid="interest-input"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-[#1A1B22]">Common Focus Areas</Label>
+                  <p className="text-xs text-zinc-400 -mt-0.5">Shared error patterns or remedial priorities for this class.</p>
+                  <div
+                    className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                    onClick={() => focusAreaInputRef.current?.focus()}
+                  >
+                    {focusAreas.map((item) => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                        data-testid="focus-area-chip"
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeFocusArea(item); scheduleTextSave() }}
+                          className="text-amber-400 hover:text-amber-700 p-0.5 -mr-0.5"
+                          aria-label={`Remove ${item}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      ref={focusAreaInputRef}
+                      value={focusAreaInput}
+                      onChange={(e) => setFocusAreaInput(e.target.value)}
+                      onKeyDown={handleFocusAreaKeyDown}
+                      onBlur={() => { if (focusAreaInput.trim()) { addFocusArea(focusAreaInput); scheduleTextSave() } }}
+                      placeholder={focusAreas.length === 0 ? 'Type and press Enter…' : ''}
+                      className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                      data-testid="focus-area-input"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+                </div>
+
+                <div className="space-y-3 border-t border-zinc-100 pt-4">
+                  <div>
+                    <Label className="text-sm font-medium text-[#1A1B22]">Class Teaching Goals</Label>
+                    <p className="text-xs text-zinc-400 mt-0.5">Long-term objectives for this class. Saved immediately.</p>
+                  </div>
+                  <div className="space-y-2">
+                    {goals.length === 0 && (
+                      <p className="text-xs text-zinc-400 italic" data-testid="goals-empty">No teaching goals yet.</p>
+                    )}
+                    {goals.map((g) => (
+                      <div key={g.id} className="flex items-start gap-2 group">
+                        <button
+                          type="button"
+                          onClick={() => !toggleGoalMutation.isPending && toggleGoalMutation.mutate(g)}
+                          className="mt-0.5 shrink-0 text-zinc-400 hover:text-emerald-600 transition-colors"
+                          aria-label={g.status === 'done' ? 'Mark pending' : 'Mark done'}
+                          data-testid={`goal-toggle-${g.id}`}
+                        >
+                          {g.status === 'done'
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            : <Circle className="h-4 w-4" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn('text-sm', g.status === 'done' && 'line-through text-zinc-400')} data-testid={`goal-text-${g.id}`}>{g.text}</p>
+                          {g.dueDate && (
+                            <p className="text-xs text-zinc-400">Due {g.dueDate}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        value={goalText}
+                        onChange={(e) => setGoalText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); if (goalText.trim()) addGoalMutation.mutate() }
+                        }}
+                        placeholder="Add a teaching goal…"
+                        maxLength={500}
+                        className="text-sm"
+                        data-testid="goal-text-input"
+                        disabled={addGoalMutation.isPending}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Input
+                        type="date"
+                        value={goalDueDate}
+                        onChange={(e) => setGoalDueDate(e.target.value)}
+                        className="text-sm w-38"
+                        data-testid="goal-due-date-input"
+                        aria-label="Due date"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { if (goalText.trim()) addGoalMutation.mutate() }}
+                      disabled={addGoalMutation.isPending || !goalText.trim()}
+                      data-testid="goal-add-btn"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right rail */}
@@ -709,10 +975,177 @@ function GroupFormBody({ group }: { group?: Group }) {
               )}
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="group-reason" className="text-sm font-medium text-[#1A1B22]">
+                Class Purpose
+              </Label>
+              <Textarea
+                id="group-reason"
+                value={reasonForStudying}
+                onChange={(e) => setReasonForStudying(e.target.value)}
+                placeholder="e.g. DELE B2 exam prep, conversational fluency for work..."
+                maxLength={MAX_REASON}
+                rows={2}
+                className="italic placeholder:not-italic"
+                data-testid="group-reason-input"
+              />
+              {reasonForStudying.length > MAX_REASON * 0.85 && (
+                <p className="text-xs text-zinc-400 text-right">
+                  {reasonForStudying.length}/{MAX_REASON}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-[#1A1B22]">Interests</Label>
+              <div
+                className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                onClick={() => interestInputRef.current?.focus()}
+              >
+                {interests.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                    data-testid="interest-chip"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeInterest(item) }}
+                      className="text-indigo-400 hover:text-indigo-700 p-0.5 -mr-0.5"
+                      aria-label={`Remove ${item}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={interestInputRef}
+                  value={interestInput}
+                  onChange={(e) => setInterestInput(e.target.value)}
+                  onKeyDown={handleInterestKeyDown}
+                  onBlur={() => { if (interestInput.trim()) addInterest(interestInput) }}
+                  placeholder={interests.length === 0 ? 'Type and press Enter…' : ''}
+                  className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                  data-testid="interest-input"
+                />
+              </div>
+              <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-[#1A1B22]">Common Focus Areas</Label>
+              <p className="text-xs text-zinc-400 -mt-0.5">Shared error patterns or remedial priorities for this class.</p>
+              <div
+                className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                onClick={() => focusAreaInputRef.current?.focus()}
+              >
+                {focusAreas.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                    data-testid="focus-area-chip"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeFocusArea(item) }}
+                      className="text-amber-400 hover:text-amber-700 p-0.5 -mr-0.5"
+                      aria-label={`Remove ${item}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={focusAreaInputRef}
+                  value={focusAreaInput}
+                  onChange={(e) => setFocusAreaInput(e.target.value)}
+                  onKeyDown={handleFocusAreaKeyDown}
+                  onBlur={() => { if (focusAreaInput.trim()) addFocusArea(focusAreaInput) }}
+                  placeholder={focusAreas.length === 0 ? 'Type and press Enter…' : ''}
+                  className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                  data-testid="focus-area-input"
+                />
+              </div>
+              <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-sm font-medium text-[#1A1B22]">Members</Label>
               <StudentMemberPicker selected={members} onChange={setMembers} />
             </div>
+
+            {isEdit && (
+              <div className="space-y-3 border-t border-zinc-100 pt-4">
+                <div>
+                  <Label className="text-sm font-medium text-[#1A1B22]">Class Teaching Goals</Label>
+                  <p className="text-xs text-zinc-400 mt-0.5">Long-term objectives for this class. Saved immediately.</p>
+                </div>
+                <div className="space-y-2">
+                  {goals.length === 0 && (
+                    <p className="text-xs text-zinc-400 italic" data-testid="goals-empty">No teaching goals yet.</p>
+                  )}
+                  {goals.map((g) => (
+                    <div key={g.id} className="flex items-start gap-2 group">
+                      <button
+                        type="button"
+                        onClick={() => !toggleGoalMutation.isPending && toggleGoalMutation.mutate(g)}
+                        className="mt-0.5 shrink-0 text-zinc-400 hover:text-emerald-600 transition-colors"
+                        aria-label={g.status === 'done' ? 'Mark pending' : 'Mark done'}
+                        data-testid={`goal-toggle-${g.id}`}
+                      >
+                        {g.status === 'done'
+                          ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          : <Circle className="h-4 w-4" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('text-sm', g.status === 'done' && 'line-through text-zinc-400')} data-testid={`goal-text-${g.id}`}>{g.text}</p>
+                        {g.dueDate && (
+                          <p className="text-xs text-zinc-400">Due {g.dueDate}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <Input
+                      value={goalText}
+                      onChange={(e) => setGoalText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); if (goalText.trim()) addGoalMutation.mutate() }
+                      }}
+                      placeholder="Add a teaching goal…"
+                      maxLength={500}
+                      className="text-sm"
+                      data-testid="goal-text-input"
+                      disabled={addGoalMutation.isPending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Input
+                      type="date"
+                      value={goalDueDate}
+                      onChange={(e) => setGoalDueDate(e.target.value)}
+                      className="text-sm w-38"
+                      data-testid="goal-due-date-input"
+                      aria-label="Due date"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { if (goalText.trim()) addGoalMutation.mutate() }}
+                    disabled={addGoalMutation.isPending || !goalText.trim()}
+                    data-testid="goal-add-btn"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-2">
               <Button

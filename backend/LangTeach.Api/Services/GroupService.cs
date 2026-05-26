@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using LangTeach.Api.Data;
 using LangTeach.Api.Data.Models;
 using LangTeach.Api.DTOs;
+using LangTeach.Api.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace LangTeach.Api.Services;
@@ -124,6 +125,9 @@ public class GroupService : IGroupService
             IsDeleted = false,
             CreatedAt = now,
             UpdatedAt = now,
+            ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying,
+            Interests = JsonStorageHelper.Serialize(request.Interests),
+            CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas),
         };
 
         _db.Groups.Add(group);
@@ -147,6 +151,9 @@ public class GroupService : IGroupService
         group.CefrLevel = string.IsNullOrWhiteSpace(request.CefrLevel) ? null : request.CefrLevel;
         group.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description;
         group.IsActive = request.IsActive;
+        group.ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying;
+        group.Interests = JsonStorageHelper.Serialize(request.Interests);
+        group.CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas);
         group.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -311,7 +318,10 @@ public class GroupService : IGroupService
         lastSessionDate,
         nextSessionDate,
         teachingIdeas,
-        g.TeachingNotes
+        g.TeachingNotes,
+        g.ReasonForStudying,
+        JsonStorageHelper.DeserializeList<string>(g.Interests),
+        JsonStorageHelper.DeserializeList<string>(g.CommonFocusAreas)
     );
 
     public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)
