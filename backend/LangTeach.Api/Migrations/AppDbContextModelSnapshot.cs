@@ -1077,7 +1077,7 @@ namespace LangTeach.Api.Migrations
 
                     b.ToTable("TeacherFollowups", t =>
                         {
-                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective')");
+                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective') AND (Kind COLLATE Latin1_General_100_BIN2 <> 'objective' OR ([GroupId] IS NOT NULL AND [StudentId] IS NULL))");
 
                             t.HasCheckConstraint("CK_TeacherFollowups_Scope", "[StudentId] IS NULL OR [GroupId] IS NULL");
                         });

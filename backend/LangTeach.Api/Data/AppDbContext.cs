@@ -383,7 +383,7 @@ public class AppDbContext : DbContext
             // Allowed values defined in TeacherFollowupKinds; SQL string literal required here
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Kind",
-                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective')"));
+                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective') AND (Kind COLLATE Latin1_General_100_BIN2 <> 'objective' OR ([GroupId] IS NOT NULL AND [StudentId] IS NULL))"));
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });

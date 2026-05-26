@@ -274,6 +274,12 @@ function GroupFormBody({ group }: { group?: Group }) {
   // Tracks a group created mid-save so retries reuse it instead of creating a duplicate
   const pendingGroupIdRef = useRef<string | null>(null)
 
+  function mergePendingChip(values: string[], pending: string, max: number): string[] {
+    const trimmed = pending.trim()
+    if (!trimmed || values.includes(trimmed) || values.length >= max) return values
+    return [...values, trimmed]
+  }
+
   // Autosave (edit mode only)
   const formDataRef = useRef<(() => import('@/api/groups').GroupFormData | null) | null>(null)
 
@@ -282,8 +288,8 @@ function GroupFormBody({ group }: { group?: Group }) {
       if (!isEdit) return null
       const trimmedName = name.trim()
       if (!trimmedName) return null
-      const finalInterests = interestInput.trim() ? [...interests, interestInput.trim()] : interests
-      const finalFocusAreas = focusAreaInput.trim() ? [...focusAreas, focusAreaInput.trim()] : focusAreas
+      const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
+      const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
       return {
         name: trimmedName,
         cefrLevel: cefrLevel || null,
@@ -423,12 +429,8 @@ function GroupFormBody({ group }: { group?: Group }) {
   const { mutate: doSave, isPending: saving } = useMutation({
     mutationFn: async () => {
       const selectedIds = members.map((m) => m.id)
-      const finalInterests = interestInput.trim()
-        ? [...interests, interestInput.trim()]
-        : interests
-      const finalFocusAreas = focusAreaInput.trim()
-        ? [...focusAreas, focusAreaInput.trim()]
-        : focusAreas
+      const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
+      const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
 
       if (isEdit && id) {
         await updateGroup(id, {
