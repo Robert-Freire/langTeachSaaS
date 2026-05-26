@@ -6,7 +6,7 @@ import {
   Loader2, CheckCircle, RefreshCw, Users,
 } from 'lucide-react'
 import {
-  serializeTopicTags, parseTopicTags,
+  serializeTopicTags, parseTopicTags, isSuggestedDifficulty,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import {
@@ -66,16 +66,6 @@ function nowTimeHHMM(): string {
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--'
   return formatDateUtil(iso)
-}
-
-function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
-  return (
-    !!value && typeof value === 'object' &&
-    typeof (value as SuggestedDifficulty).description === 'string' &&
-    typeof (value as SuggestedDifficulty).competency === 'string' &&
-    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
-    typeof (value as SuggestedDifficulty).severity === 'string'
-  )
 }
 
 function PanelSection({ label, children }: { label: string; children: React.ReactNode }) {
@@ -217,7 +207,6 @@ export default function GroupLogSession() {
   const initializedForIdRef = useRef<string | null>(null)
 
   // Edit mode: pre-populate form state from the fetched session (one-shot per session id)
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!editSession) return
     if (initializedForIdRef.current === editSession.id) return
@@ -248,7 +237,6 @@ export default function GroupLogSession() {
     } catch { setSuggestedDifficulties([]) }
     initializedForIdRef.current = editSession.id
   }, [editSession])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Autosave
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
