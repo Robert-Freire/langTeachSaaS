@@ -85,7 +85,7 @@ function SessionRow({ session, groupId, isMostRecent }: { session: GroupSession;
   const title = session.title ?? (session.actualContent ? session.actualContent.slice(0, 60) : 'Session')
   return (
     <Link
-      to={`/groups/${groupId}/sessions/${session.id}`}
+      to={`/groups/${groupId}/sessions/${session.id}/edit`}
       className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-[#F4F2FD] transition-colors"
       style={{ boxShadow: '0 4px 16px rgba(26, 27, 34, 0.05)', minHeight: '64px' }}
       data-testid="group-session-row"
@@ -156,7 +156,7 @@ export function GroupOverviewTab({
         <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 12px 40px rgba(26, 27, 34, 0.06)' }} data-testid="last-session-card">
           <h3 className="text-xs font-bold uppercase tracking-[0.06em] text-zinc-400 mb-4">Last Session</h3>
           <Link
-            to={`/groups/${group.id}/sessions/${lastSession.id}`}
+            to={`/groups/${group.id}/sessions/${lastSession.id}/edit`}
             className="flex items-start gap-3 group"
           >
             {lastSession.sessionDate && (

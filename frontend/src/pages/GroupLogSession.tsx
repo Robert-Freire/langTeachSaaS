@@ -6,11 +6,11 @@ import {
   Loader2, CheckCircle, RefreshCw, Users,
 } from 'lucide-react'
 import {
-  serializeTopicTags,
+  serializeTopicTags, parseTopicTags, isSuggestedDifficulty,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import {
-  getGroup, listGroupSessions, appendGroupTeachingIdea, extractGroupSessionReflection,
+  getGroup, getGroupSession, listGroupSessions, appendGroupTeachingIdea, extractGroupSessionReflection,
 } from '@/api/groups'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -114,7 +114,8 @@ function ToggleSwitch({
 
 export default function GroupLogSession() {
   const navigate = useNavigate()
-  const { id: groupId } = useParams<{ id: string }>()
+  const { id: groupId, sessionId } = useParams<{ id: string; sessionId?: string }>()
+  const isEditMode = !!sessionId
   const queryClient = useQueryClient()
 
   // Form state
@@ -180,9 +181,62 @@ export default function GroupLogSession() {
     enabled: !!groupId,
   })
 
+  // Edit mode: load the existing group session. Query key matches the cancel key the
+  // autosave hook uses, so an in-flight refetch can't clobber an optimistic write.
+  const { data: editSession, isLoading: editSessionLoading, isError: editSessionError } = useQuery({
+    queryKey: ['group-session', groupId, sessionId],
+    queryFn: () => getGroupSession(groupId!, sessionId!),
+    enabled: isEditMode && !!groupId && !!sessionId,
+  })
+
   const nonCancelledSessions = sessions.filter(s => !s.isCancelled)
-  const prevSession = nonCancelledSessions[0] ?? null
-  const sessionNumber = nonCancelledSessions.length + 1
+  // In edit mode "previous session" is the one before the edited session chronologically
+  // (sessions arrive newest-first). Mirrors LogSession.tsx.
+  const prevSession = isEditMode
+    ? (() => {
+        const idx = nonCancelledSessions.findIndex(s => s.id === sessionId)
+        return idx >= 0 && idx + 1 < nonCancelledSessions.length ? nonCancelledSessions[idx + 1] : null
+      })()
+    : nonCancelledSessions[0] ?? null
+  const editSessionRank = isEditMode
+    ? (() => { const i = nonCancelledSessions.findIndex(s => s.id === sessionId); return i >= 0 ? nonCancelledSessions.length - i : null })()
+    : null
+  const sessionNumber: number | string = isEditMode ? (editSessionRank ?? '?') : nonCancelledSessions.length + 1
+
+  // Guards the one-shot prefill effect so a refetch doesn't re-clobber teacher edits.
+  const initializedForIdRef = useRef<string | null>(null)
+
+  // Edit mode: pre-populate form state from the fetched session (one-shot per session id)
+  useEffect(() => {
+    if (!editSession) return
+    if (initializedForIdRef.current === editSession.id) return
+    const [datePart, timePart] = (editSession.sessionDate ?? '').split('T')
+    setSessionDate(datePart || todayISO())
+    setSessionTime(timePart?.slice(0, 5) || nowTimeHHMM())
+    setActualContent(editSession.actualContent ?? '')
+    setHomeworkAssigned(editSession.homeworkAssigned ?? '')
+    setNextSessionTopics(editSession.nextSessionTopics ?? '')
+    setGeneralNotes(editSession.generalNotes ?? '')
+    setIsCancelled(editSession.isCancelled)
+    setTopicTags(parseTopicTags(editSession.topicTags ?? '[]'))
+    setSessionTitle(editSession.title ?? undefined)
+    const dur = editSession.duration
+    if (dur === null || dur === undefined) {
+      setDurationChoice('other')
+      setDurationOther('')
+    } else if ([25, 30, 45, 50, 60, 90].includes(dur)) {
+      setDurationChoice(String(dur))
+      setDurationOther('')
+    } else {
+      setDurationChoice('other')
+      setDurationOther(String(dur))
+    }
+    try {
+      const parsed = JSON.parse(editSession.suggestedDifficulties || '[]') as unknown[]
+      setSuggestedDifficulties(Array.isArray(parsed) ? parsed.filter(isSuggestedDifficulty) : [])
+    } catch { setSuggestedDifficulties([]) }
+    initializedForIdRef.current = editSession.id
+  }, [editSession])
 
   // Autosave
   const getFormDataRef = useRef<(() => CreateSessionLogRequest) | null>(null)
@@ -232,7 +286,10 @@ export default function GroupLogSession() {
   const { status: saveStatus, sessionId: autosavedSessionId, lastSavedAt, scheduleTextSave, saveNow } = useGroupSessionAutosave(
     groupId ?? undefined,
     getFormDataRef,
+    sessionId,
   )
+
+  const doneNavTarget = isEditMode ? `/groups/${groupId}?tab=sessions` : `/groups/${groupId}`
 
   const doneBusy = isDone || saveStatus === 'saving'
 
@@ -272,16 +329,33 @@ export default function GroupLogSession() {
   }
 
   async function handleBack() {
+    if (isEditMode) {
+      // Edit mode: autosave persists every change to the existing session, so there is
+      // nothing to "discard". Flush any pending debounced save, then navigate. If the
+      // flush fails, do NOT navigate (the teacher would think edits were saved).
+      if (hasChanges) {
+        setDoneError(null)
+        const sid = await saveNow()
+        if (!sid) {
+          setDoneError('Failed to save session. Please try again.')
+          return
+        }
+      }
+      navigate(doneNavTarget)
+      return
+    }
+    // Create mode: the discard banner still makes sense because autosave progressively
+    // creates a draft the teacher may want to throw away.
     if (hasChanges || !!autosavedSessionId) {
       setShowDiscardConfirm(true)
       return
     }
-    navigate(`/groups/${groupId}`)
+    navigate(doneNavTarget)
   }
 
   function handleDiscard() {
     setShowDiscardConfirm(false)
-    navigate(`/groups/${groupId}`)
+    navigate(doneNavTarget)
   }
 
   async function handleDone() {
@@ -312,8 +386,9 @@ export default function GroupLogSession() {
 
       queryClient.invalidateQueries({ queryKey: ['group-sessions', groupId] })
       queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+      if (isEditMode) queryClient.invalidateQueries({ queryKey: ['group-session', groupId, sessionId] })
 
-      navigate(`/groups/${groupId}`)
+      navigate(doneNavTarget)
     } catch (err) {
       logger.error('GroupLogSession', 'done handler failed', err)
       setDoneError('Something went wrong. Please try again.')
@@ -388,7 +463,9 @@ export default function GroupLogSession() {
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [groupLoading])
+    // editSessionLoading gates the main render in edit mode, so the aside/sentinel
+    // refs only mount once it resolves; re-run then to attach the observer.
+  }, [groupLoading, editSessionLoading])
 
   const tagSuggestions = useMemo(
     () => suggestTopicTags(actualContent, topicTags),
@@ -406,7 +483,7 @@ export default function GroupLogSession() {
     )
   }
 
-  if (groupLoading) {
+  if (groupLoading || (isEditMode && editSessionLoading)) {
     return (
       <div className="p-8 space-y-4" data-testid="group-log-session-loading">
         <Skeleton className="h-8 w-48" />
@@ -422,6 +499,17 @@ export default function GroupLogSession() {
         <p className="text-sm text-zinc-500">Group not found.</p>
         <button type="button" onClick={() => navigate('/groups')} className="self-start text-sm text-indigo-600 hover:underline">
           Back to Groups
+        </button>
+      </div>
+    )
+  }
+
+  if (isEditMode && editSessionError) {
+    return (
+      <div className="p-8 flex flex-col gap-3" data-testid="group-session-not-found">
+        <p className="text-sm text-zinc-500">Session not found.</p>
+        <button type="button" onClick={() => navigate(`/groups/${groupId}?tab=sessions`)} className="self-start text-sm text-indigo-600 hover:underline">
+          Back to group
         </button>
       </div>
     )

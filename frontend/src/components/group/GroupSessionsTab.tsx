@@ -10,12 +10,11 @@ function DateBlock({ dateStr }: { dateStr: string }) {
   const d = new Date(dateStr)
   const day = d.getDate()
   const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase()
-  const year = d.getFullYear()
   return (
     <div className="shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center bg-indigo-100">
       <span className="text-base font-bold leading-none text-indigo-700">{day}</span>
       <span className="text-[9px] font-bold tracking-wide leading-none mt-0.5 text-indigo-500">
-        {month} {year}
+        {month}
       </span>
     </div>
   )
@@ -43,7 +42,7 @@ export function GroupSessionsTab({ groupId, sessions }: Props) {
       {sorted.map(session => (
         <Link
           key={session.id}
-          to={`/groups/${groupId}/sessions/${session.id}`}
+          to={`/groups/${groupId}/sessions/${session.id}/edit`}
           className="bg-white rounded-xl px-4 py-3 flex items-start gap-3 hover:bg-[#F4F2FD] transition-colors"
           style={{ boxShadow: '0 4px 16px rgba(26, 27, 34, 0.05)', minHeight: '64px' }}
           data-testid="group-session-item"

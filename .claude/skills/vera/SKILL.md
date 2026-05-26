@@ -58,7 +58,7 @@ Evaluate the screen for:
 - **Information density:** Too much? Too little? Right amount but wrong grouping?
 - **Interaction clarity:** Can the teacher tell what's clickable, editable, expandable?
 - **Empty states:** What happens when there's no data? Is it helpful or just blank?
-- **Consistency:** Does it follow the patterns established in other screens?
+- **Consistency:** Does it follow the patterns established in other screens? This includes the **page shell, not just the contents**: when a screen shares a scaffold with a sibling (detail pages, list pages), its outer content width, max-width, and side gutters must match that sibling. Reviewing a screen in isolation hides shell mismatches; a 1152px centered column looks fine alone and only reads as wrong beside a sibling that fills the frame. Check the container, not only the cards inside it. (Failure case: GroupDetail capped at `max-w-6xl` while StudentDetail had no cap, giving the group fat side gutters; missed in the close review because the screens were never compared side-by-side at a wide viewport.)
 - **Accessibility basics:** Contrast ratios, touch targets, keyboard navigation paths
 - **Design system compliance:** Check against `docs/design-system.md` — colors, badge shapes, button pairing rules, no-line rule, form input labels, interaction patterns (autosave vs save/cancel, list-add pattern, toggle switch dimensions)
 
@@ -86,9 +86,10 @@ Verdict options: **POLISHED** / **ALMOST** / **RETHINK**
 2. **Read the Stitch mockup** for the screen: `plan/langteach-beta/stitch-design-system/<screen>/` — there's a screenshot PNG and a DESIGN.md.
 3. **Read the component code** before writing findings. What looks broken may be missing data, not a code gap. Always check the actual component logic before concluding something is wrong. (Failure case: hero countdown and briefing once looked missing but were fully implemented, only invisible due to empty data.)
 4. **Screenshot and compare** side-by-side (Stitch PNG vs live screenshot).
-5. **Write a behavior doc** at `plan/langteach-beta/scenarios-by-screen.vera/<screen>-behavior.md` with three sections: Quick Reference, Full Behavior, Test Scenarios. See existing dashboard doc as template.
-6. **Update `plan/ui-redesign-feedback2.md`** with only actionable items. No "confirmed implemented" entries, no "what was working" sections.
-7. **Create issues in batches** at session end, not per screen: seed data fixes separate from code fixes. Don't create issues for screens still to be reviewed.
+5. **Cross-page shell check (wide viewport, mandatory).** When the screen shares a scaffold with a sibling (detail vs detail, list vs list), open **both** at ≥1600px width and confirm the page-shell geometry matches: outer content width, `max-w-*`, `mx-auto` centering, and left/right gutters. The card grid, hero, and dark sections must start and end at the same x-positions across siblings. This is a deliberate step, not something to trust yourself to notice while reviewing one screen. Add container width to the checklist alongside badges, padding, and the no-line rule.
+6. **Write a behavior doc** at `plan/langteach-beta/scenarios-by-screen.vera/<screen>-behavior.md` with three sections: Quick Reference, Full Behavior, Test Scenarios. See existing dashboard doc as template.
+7. **Update `plan/ui-redesign-feedback2.md`** with only actionable items. No "confirmed implemented" entries, no "what was working" sections.
+8. **Create issues in batches** at session end, not per screen: seed data fixes separate from code fixes. Don't create issues for screens still to be reviewed.
 
 ### Mode 2: Interaction Design
 When the user brings an interaction question ("should this be a modal or a drawer?", "how should inline editing work?", "tabs or sections?"), work through it:

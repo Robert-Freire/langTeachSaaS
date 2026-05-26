@@ -34,6 +34,12 @@ vi.mock('@/api/sessionLogs', () => ({
     try { return JSON.parse(raw) as unknown[] } catch { return [] }
   }),
   serializeTopicTags: vi.fn((tags: unknown[]) => JSON.stringify(tags)),
+  isSuggestedDifficulty: (v: unknown) =>
+    !!v && typeof v === 'object' &&
+    typeof (v as { description?: unknown }).description === 'string' &&
+    typeof (v as { competency?: unknown }).competency === 'string' &&
+    typeof (v as { subcategory?: unknown }).subcategory === 'string' &&
+    typeof (v as { severity?: unknown }).severity === 'string',
 }))
 
 vi.mock('@/api/followups', () => ({

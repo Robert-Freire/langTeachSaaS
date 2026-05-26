@@ -8,7 +8,7 @@ import {
 import { getStudent, appendTeachingTodo, updateTeachingTodo } from '@/api/students'
 import {
   getSession, listSessions, parseTopicTags, serializeTopicTags,
-  extractSessionReflection,
+  extractSessionReflection, isSuggestedDifficulty,
   type TopicTag, type CreateSessionLogRequest, type SuggestedDifficulty,
 } from '@/api/sessionLogs'
 import { getFollowups, createFollowup, updateFollowupStatus } from '@/api/followups'
@@ -76,16 +76,6 @@ function formatDateMaybeTime(iso: string | null | undefined): string {
   if (!iso) return '--'
   const hasNonMidnightTime = iso.includes('T') && !/T00:00(:[0-9]{2})?(Z|[+-].*)?$/.test(iso)
   return hasNonMidnightTime ? formatDateTimeUtil(iso) : formatDateUtil(iso)
-}
-
-function isSuggestedDifficulty(value: unknown): value is SuggestedDifficulty {
-  return (
-    !!value && typeof value === 'object' &&
-    typeof (value as SuggestedDifficulty).description === 'string' &&
-    typeof (value as SuggestedDifficulty).competency === 'string' &&
-    typeof (value as SuggestedDifficulty).subcategory === 'string' &&
-    typeof (value as SuggestedDifficulty).severity === 'string'
-  )
 }
 
 // Left panel section header
