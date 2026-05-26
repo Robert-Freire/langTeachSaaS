@@ -1,11 +1,17 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text.Json;
 using FluentAssertions;
 using LangTeach.Api.Controllers;
+using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
+using LangTeach.Api.Tests.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.Tests.Controllers;
 
@@ -191,4 +197,106 @@ public class FileTextExtractControllerTests
         body.Should().Contain("OCR_FORMAT_UNSUPPORTED");
     }
 
+}
+
+// Direct controller unit tests for the orphan-blob cleanup (#1237). The integration factory
+// stubs the Vision client to always succeed, so forcing an OCR failure deterministically requires
+// driving the controller with a failing ITextExtractor and an in-memory blob store.
+public class FileTextExtractControllerCleanupTests
+{
+    private sealed class FakeProfileService : IProfileService
+    {
+        public Task<Guid> UpsertTeacherAsync(string auth0UserId, string email, string name = "")
+            => Task.FromResult(Guid.NewGuid());
+        public Task<ProfileDto?> GetProfileAsync(string auth0UserId) => throw new NotImplementedException();
+        public Task<ProfileDto> UpdateProfileAsync(string auth0UserId, UpdateProfileRequest request) => throw new NotImplementedException();
+        public Task<string> GetStoredEmailAsync(string auth0UserId) => throw new NotImplementedException();
+        public Task CompleteOnboardingAsync(string auth0UserId) => throw new NotImplementedException();
+    }
+
+    private sealed class FakeTextExtractor : ITextExtractor
+    {
+        private readonly Func<string> _behavior;
+        public FakeTextExtractor(Func<string> behavior) => _behavior = behavior;
+        public bool CanHandle(string contentType) => true;
+        public Task<string> ExtractTextAsync(Stream stream, string contentType, CancellationToken ct = default)
+            => Task.FromResult(_behavior());
+    }
+
+    private sealed class ContentFormFile : IFormFile
+    {
+        private readonly byte[] _content;
+        public ContentFormFile(string fileName, string contentType, byte[] content)
+        {
+            FileName = fileName;
+            ContentType = contentType;
+            _content = content;
+        }
+        public string ContentType { get; }
+        public string ContentDisposition => $"form-data; name=\"file\"; filename=\"{FileName}\"";
+        public IHeaderDictionary Headers => new HeaderDictionary();
+        public long Length => _content.Length;
+        public string Name => "file";
+        public string FileName { get; }
+        public void CopyTo(Stream target) => target.Write(_content, 0, _content.Length);
+        public Task CopyToAsync(Stream target, CancellationToken ct = default)
+        {
+            target.Write(_content, 0, _content.Length);
+            return Task.CompletedTask;
+        }
+        public Stream OpenReadStream() => new MemoryStream(_content);
+    }
+
+    private static (FileTextExtractController ctrl, InMemoryCorrectionsBlobStorage blob) Build(ITextExtractor extractor)
+    {
+        var blob = new InMemoryCorrectionsBlobStorage();
+        var ctrl = new FileTextExtractController(
+            new[] { extractor },
+            blob,
+            new FakeProfileService(),
+            Options.Create(new OcrOptions()),
+            NullLogger<FileTextExtractController>.Instance);
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "auth0|ocr-unit"),
+            new Claim(ClaimTypes.Email, "ocr-unit@example.com"),
+        }, "TestAuth"));
+        ctrl.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
+        return (ctrl, blob);
+    }
+
+    private static IFormFile Jpeg() => new ContentFormFile("hw.jpg", "image/jpeg", new byte[] { 0xFF, 0xD8, 0xFF });
+
+    [Fact]
+    public async Task Extract_SuccessfulOcr_KeepsBlob()
+    {
+        var (ctrl, blob) = Build(new FakeTextExtractor(() => "Texto extraído suficientemente largo."));
+
+        var result = await ctrl.Extract(Jpeg(), CancellationToken.None);
+
+        result.Should().BeOfType<OkObjectResult>();
+        blob.DeleteCount.Should().Be(0, "the success path must keep the blob for the 15-min SAS");
+    }
+
+    [Fact]
+    public async Task Extract_OcrNoText_DeletesOrphanBlob()
+    {
+        var (ctrl, blob) = Build(new FakeTextExtractor(() => throw new OcrException("no text")));
+
+        var result = await ctrl.Extract(Jpeg(), CancellationToken.None);
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>();
+        blob.DeleteCount.Should().Be(1, "a failed OCR must not leak its uploaded source blob (#1237)");
+    }
+
+    [Fact]
+    public async Task Extract_OcrServiceError_DeletesOrphanBlob()
+    {
+        var (ctrl, blob) = Build(new FakeTextExtractor(() => throw new InvalidOperationException("boom")));
+
+        var result = await ctrl.Extract(Jpeg(), CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        blob.DeleteCount.Should().Be(1, "the 500 failure path must also clean up the orphan blob");
+    }
 }

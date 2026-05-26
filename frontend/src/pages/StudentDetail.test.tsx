@@ -22,6 +22,7 @@ vi.mock('../api/students', () => ({
 
 vi.mock('../api/sessionLogs', () => ({
   listSessions: vi.fn().mockResolvedValue([]),
+  listSessionsIncludingGroups: vi.fn().mockResolvedValue([]),
   createSession: vi.fn(),
   serializeTopicTags: vi.fn(() => '[]'),
   parseTopicTags: vi.fn(() => []),
@@ -348,6 +349,9 @@ describe('StudentDetail - Header badges', () => {
     vi.mocked(listSessions).mockResolvedValueOnce([{
       id: 'future-sess',
       studentId: 'student-1',
+      groupId: null,
+      targetType: 'student' as const,
+      targetName: 'Test Student',
       sessionDate: future.toISOString(),
       title: 'Upcoming class',
       plannedContent: null,
@@ -402,6 +406,9 @@ describe('StudentDetail - Header badges', () => {
     const makeSession = (id: string, date: Date) => ({
       id,
       studentId: 'student-1',
+      groupId: null,
+      targetType: 'student' as const,
+      targetName: 'Test Student',
       sessionDate: date.toISOString(),
       title: null,
       plannedContent: null,

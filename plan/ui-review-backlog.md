@@ -4,12 +4,14 @@ Non-blocking findings from review-ui runs. Periodically review this file and bat
 
 ---
 
-*Cleared 2026-04-22 during UI Redesign & Student Profile Polish sprint close. Seeder coverage gaps batched into #834. UX polish items (combobox summary, Focus Areas description) batched into #840. Remaining entries deleted (intentional per Stitch spec, covered by unit tests, or pre-existing infrastructure).*
+## Cleared history
 
-*Cleared 2026-04-27 during Student Profile Voice Input sprint close. DS/component findings batched into #989 (DS component polish batch). Seeder coverage gap (#904) batched into #991 (e2e test fixes). Environment-only entry (#906) deleted. Navigation findings batched into #992.*
+*Cleared 2026-04-22 (UI Redesign close): batched into #834, #840; remaining deleted (intentional per Stitch spec, covered by tests, or pre-existing infra).*
 
-*Cleared 2026-05-03 during Unified Voice & Chat sprint close. All Atelier Assistant pattern findings (#997, #1008 [4 patterns], #1005, #1004, #1010, #1029) batched into #1064 (Vera DS canonicalization pass -- Hardening milestone). Deleted: #1030 close-guard fix (no visual to track per inline note).*
+*Cleared 2026-04-27 (Student Profile Voice Input close): DS/component findings batched into #989; nav findings into #992; seeder gap into #991.*
 
-*Cleared 2026-05-11 during Text Correction sprint close. Findings batched into: #1225 (chip legend + breadcrumb, frontend unification), #1231 (thumbs label, Atelier picker contrast, DS spec updates, AtelierAssistantPanel tonal color). I4 mobile header overflow REFUTED (pre-existing, header not changed in sprint). M3 native date picker in Atelier logged to observed-issues for next pass.*
+*Cleared 2026-05-03 (Unified Voice & Chat close): Atelier Assistant pattern findings batched into #1064 (Vera DS canonicalization).*
 
-| #1274 | 2026-05-16 | review-ui could not visually verify M2 (thumbs 44px hit area) and M3 (resize-none on CONSIGNA) because Docker e2e stack serves main repo code, not worktree (pre-existing limitation #1113). Both changes confirmed via Playwright DOM inspection on the live e2e stack during live verify step. |
+*Cleared 2026-05-11 (Text Correction close): batched into #1225, #1231; I4 mobile header overflow refuted; M3 native date picker logged to observed-issues.*
+
+*Cleared 2026-05-24 during Groups sprint close. The DS-spec gaps were batched into #1363 (design-system: spec Groups + correction + Atelier patterns, Groups milestone): #1327 GroupAvatarCluster, #1328 inline typeahead glassmorphism, #1351 level-filter annotation badge token. Deleted: #1274 (M2 thumbs 44px / M3 resize-none could not be screenshotted due to the pre-existing worktree-vs-Docker limitation #1113, but both were confirmed via Playwright DOM inspection on the live stack during the live-verify step).*

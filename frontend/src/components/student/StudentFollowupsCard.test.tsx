@@ -17,8 +17,10 @@ function makeFollowup(overrides: Partial<TeacherFollowup> = {}): TeacherFollowup
     id: 'f1',
     studentId: 'student-1',
     studentName: null,
+    groupId: null,
     text: 'Enviar ejercicio',
     status: 'pending',
+    kind: 'operational',
     createdAt: new Date().toISOString(),
     dueDate: null,
     completedAt: null,
@@ -45,7 +47,7 @@ describe('StudentFollowupsCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreate.mockResolvedValue({ id: 'new-f', text: 'Nueva', status: 'pending', createdAt: new Date().toISOString(), studentId: 'student-1', studentName: null, dueDate: null, completedAt: null, sourceSessionLogId: null })
+    mockCreate.mockResolvedValue({ id: 'new-f', text: 'Nueva', status: 'pending', kind: 'operational', createdAt: new Date().toISOString(), studentId: 'student-1', studentName: null, groupId: null, dueDate: null, completedAt: null, sourceSessionLogId: null })
     mockUpdate.mockResolvedValue({})
   })
 
@@ -76,7 +78,7 @@ describe('StudentFollowupsCard', () => {
     renderCard({ followups: [], onFollowupChange })
     fireEvent.change(screen.getByTestId('followup-input'), { target: { value: 'Nueva tarea' } })
     fireEvent.click(screen.getByTestId('followup-add-btn'))
-    await waitFor(() => expect(mockCreate).toHaveBeenCalledWith({ text: 'Nueva tarea', studentId: 's1' }))
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledWith({ text: 'Nueva tarea', studentId: 's1', groupId: null }))
     expect(onFollowupChange).toHaveBeenCalled()
   })
 

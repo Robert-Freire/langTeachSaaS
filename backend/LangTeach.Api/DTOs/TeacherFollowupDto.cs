@@ -12,7 +12,8 @@ public record TeacherFollowupDto(
     DateOnly? DueDate,
     DateTime? CompletedAt,
     string? SourceSessionLogId,
-    string Kind);
+    string Kind,
+    string? GroupId = null);
 
 public record CreateTeacherFollowupRequest(
     [Required]
@@ -26,7 +27,8 @@ public record CreateTeacherFollowupRequest(
     [MinLength(1, ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
     [RegularExpression("^(pedagogical|operational)$",
         ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
-    string? Kind = null);
+    string? Kind = null,
+    Guid? GroupId = null);
 
 public record UpdateTeacherFollowupRequest(
     [Required]

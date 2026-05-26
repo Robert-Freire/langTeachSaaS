@@ -30,8 +30,9 @@ public class DifficultyTrendService : IDifficultyTrendService
 
         // Load all non-deleted, non-cancelled session logs with a date, ordered chronologically.
         // Sessions without a date are excluded: their chronological position is ambiguous.
-        var sessionLogs = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+        // Groups #1326: include group sessions the student attended.
+        var sessionLogs = await SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId)
+            .Where(sl => !sl.IsCancelled && sl.SessionDate.HasValue)
             .OrderBy(sl => sl.SessionDate)
             .ToListAsync(ct);
 

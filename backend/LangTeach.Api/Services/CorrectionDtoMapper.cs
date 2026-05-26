@@ -22,7 +22,7 @@ internal static class CorrectionDtoMapper
             tags.OrderBy(t => t.OrderIndex)
                 .Select(t => new CorrectionTagDto(
                     t.Category, t.SpannedText, t.StartIndex, t.EndIndex,
-                    t.Explanation, t.CorrectedForm, t.OrderIndex))
+                    t.Explanation, t.CorrectedForm, t.OrderIndex, t.FilterStatus))
                 .ToList(),
             c.CreatedAt,
             c.UpdatedAt,

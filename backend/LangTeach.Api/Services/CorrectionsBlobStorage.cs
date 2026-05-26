@@ -28,6 +28,15 @@ public class CorrectionsBlobStorage : ICorrectionsBlobStorage
             .UploadAsync(stream, new BlobUploadOptions { HttpHeaders = headers }, ct);
     }
 
+    public async Task DeleteAsync(string blobPath, CancellationToken ct = default)
+    {
+        await _container.GetBlobClient(blobPath).DeleteIfExistsAsync(cancellationToken: ct);
+    }
+
+    // Returns a short-lived (15-minute) read SAS for the just-uploaded source file. Known
+    // limitation (#1237): this expiring URL is what gets persisted as Correction.SourceImageUrl,
+    // so it goes stale. No user impact today (the image is never re-rendered). IF an image
+    // preview is built later, persist the blob path instead and regenerate the SAS on read.
     public Task<string> GetDownloadUrlAsync(string blobPath)
     {
         var blob = _container.GetBlobClient(blobPath);

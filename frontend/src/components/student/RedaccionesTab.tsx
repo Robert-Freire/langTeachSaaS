@@ -43,7 +43,7 @@ export function RedaccionesTab({ studentId }: RedaccionesTabProps) {
     queryKey: ['corrections', studentId],
     queryFn: () => listCorrections(studentId),
     refetchInterval: (query) =>
-      query.state.data?.some((c) => c.status === 'Corrigiendo') ? 3000 : false,
+      query.state.data?.some((c) => c.status === 'Encolada' || c.status === 'Corrigiendo') ? 3000 : false,
   })
 
   function invalidate() {
@@ -310,6 +310,8 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
   const [ocrError, setOcrError] = useState<string | null>(null)
   const [ocrErrorCode, setOcrErrorCode] = useState<string | null>(null)
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
+  const [previewType, setPreviewType] = useState<'image' | 'pdf' | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const detailQuery = useQuery({
@@ -330,14 +332,37 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
     }
   }, [isEdit, detail, hydrated])
 
+  // Revoke the object URL when it changes or when the drawer unmounts
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
+    }
+  }, [localPreviewUrl])
+
   async function handleFileUpload(file: File) {
     setOcrErrorCode(null)
     const lower = file.name.toLowerCase()
     if (HEIC_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+      setLocalPreviewUrl(null)
+      setPreviewType(null)
+      setBlobUrl(null)
       setOcrError('El formato HEIC no es compatible. Usa JPG, PNG, WEBP o PDF.')
       setOcrState('error')
       return
     }
+
+    // Create a local object URL immediately for non-DOCX files so the scan is
+    // visible before OCR completes (and stays visible even on extraction error).
+    if (!lower.endsWith('.docx')) {
+      const newUrl = URL.createObjectURL(file)
+      setLocalPreviewUrl(newUrl)
+      setPreviewType(lower.endsWith('.pdf') ? 'pdf' : 'image')
+    } else {
+      // DOCX has no visual preview; clear any previous scan from a prior upload.
+      setLocalPreviewUrl(null)
+      setPreviewType(null)
+    }
+
     setOcrState('loading')
     setOcrError(null)
     setBlobUrl(null)
@@ -357,6 +382,8 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
       }
       setOcrErrorCode(backendCode)
       setOcrError(backendMessage ?? 'No se pudo extraer el texto. Inténtalo de nuevo o escríbelo manualmente.')
+      // localPreviewUrl is intentionally kept so the teacher can see the scan
+      // while typing the correction text manually after a failed extraction.
     }
   }
 
@@ -445,6 +472,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
 
   const detailLoading = isEdit && detailQuery.isLoading
   const detailError = isEdit && detailQuery.isError
+  const hasPreview = localPreviewUrl !== null
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" data-testid="correction-drawer">
@@ -454,7 +482,7 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
         data-testid="correction-drawer-backdrop"
       />
       <div
-        className="relative flex flex-col w-full sm:w-[520px] h-full overflow-hidden bg-white"
+        className={`relative flex flex-col ${hasPreview ? 'w-full sm:w-[90vw] max-w-[1400px]' : 'w-full sm:w-[520px]'} h-full overflow-hidden bg-white transition-all duration-300`}
         data-testid="correction-drawer-panel"
       >
         <div className="flex items-center justify-between px-6 py-4 bg-zinc-50/60">
@@ -472,133 +500,158 @@ function CorrectionDrawer({ studentId, editId, onClose, onSaved, onCorregirError
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {detailLoading && (
-            <div className="space-y-3" data-testid="correction-drawer-loading">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-20 w-full" />
+        <div className="flex-1 overflow-hidden flex flex-col sm:flex-row">
+          {hasPreview && (
+            <div
+              className="h-52 sm:h-auto sm:w-1/2 flex-shrink-0 bg-[#F4F2FD] overflow-auto"
+              data-testid="correction-drawer-scan-panel"
+            >
+              {previewType === 'pdf' ? (
+                <iframe
+                  src={localPreviewUrl}
+                  className="w-full h-full"
+                  title="Documento original"
+                  data-testid="correction-drawer-scan-preview"
+                />
+              ) : (
+                <img
+                  src={localPreviewUrl}
+                  alt="Documento original"
+                  className="w-full h-full object-contain"
+                  data-testid="correction-drawer-scan-preview"
+                />
+              )}
             </div>
           )}
 
-          {detailError && (
-            <div className="text-sm text-red-600">No se pudo cargar la redacción.</div>
-          )}
-
-          {!detailLoading && !detailError && (
-            <>
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="redaccion-title"
-                  className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
-                >
-                  Título
-                </label>
-                <Input
-                  id="redaccion-title"
-                  autoFocus
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
-                  placeholder="p. ej. Carta a un extraterrestre"
-                  data-testid="correction-drawer-title"
-                />
+          <div className={`overflow-y-auto px-6 py-4 space-y-4 ${hasPreview ? 'sm:w-1/2 flex-1' : 'flex-1'}`}>
+            {detailLoading && (
+              <div className="space-y-3" data-testid="correction-drawer-loading">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-20 w-full" />
               </div>
+            )}
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="redaccion-prompt"
-                  className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
-                >
-                  Consigna (opcional)
-                </label>
-                <Textarea
-                  id="redaccion-prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_MAX))}
-                  placeholder="Notas sobre el ejercicio"
-                  rows={3}
-                  className="resize-none"
-                  data-testid="correction-drawer-prompt"
-                />
-              </div>
+            {detailError && (
+              <div className="text-sm text-red-600">No se pudo cargar la redacción.</div>
+            )}
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+            {!detailLoading && !detailError && (
+              <>
+                <div className="space-y-1.5">
                   <label
-                    htmlFor="redaccion-text"
+                    htmlFor="redaccion-title"
                     className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
                   >
-                    Texto del alumno (opcional)
+                    Título
                   </label>
+                  <Input
+                    id="redaccion-title"
+                    autoFocus
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
+                    placeholder="p. ej. Carta a un extraterrestre"
+                    data-testid="correction-drawer-title"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="redaccion-prompt"
+                    className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
+                  >
+                    Consigna (opcional)
+                  </label>
+                  <Textarea
+                    id="redaccion-prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_MAX))}
+                    placeholder="Notas sobre el ejercicio"
+                    rows={3}
+                    className="resize-none"
+                    data-testid="correction-drawer-prompt"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="redaccion-text"
+                      className="text-[10px] font-bold tracking-widest uppercase text-gray-400"
+                    >
+                      Texto del alumno (opcional)
+                    </label>
+                    {!studentTextLocked && (
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept={OCR_ACCEPTED}
+                          className="sr-only"
+                          data-testid="correction-drawer-file-input"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) void handleFileUpload(file)
+                            e.target.value = ''
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={ocrState === 'loading'}
+                          className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-indigo-600 hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Subir archivo: foto, PDF o documento Word"
+                          data-testid="correction-drawer-upload-btn"
+                        >
+                          {ocrState === 'loading'
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <FileUp className="h-3.5 w-3.5" />}
+                          Subir archivo
+                        </button>
+                      </>
+                    )}
+                  </div>
                   {!studentTextLocked && (
-                    <>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={OCR_ACCEPTED}
-                        className="sr-only"
-                        data-testid="correction-drawer-file-input"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) void handleFileUpload(file)
-                          e.target.value = ''
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={ocrState === 'loading'}
-                        className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-indigo-600 hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Subir archivo: foto, PDF o documento Word"
-                        data-testid="correction-drawer-upload-btn"
-                      >
-                        {ocrState === 'loading'
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <FileUp className="h-3.5 w-3.5" />}
-                        Subir archivo
-                      </button>
-                    </>
+                    <p className="text-[10px] text-zinc-400" data-testid="correction-drawer-upload-hint">
+                      Acepta imagen (JPG, PNG, WEBP), PDF y Word (.docx)
+                    </p>
+                  )}
+                  <Textarea
+                    id="redaccion-text"
+                    value={ocrState === 'loading' ? '' : text}
+                    onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
+                    placeholder={ocrState === 'loading' ? 'Extrayendo texto...' : 'Pega el texto del alumno aquí'}
+                    rows={10}
+                    className="resize-y max-h-[50vh] min-h-[12rem]"
+                    disabled={studentTextLocked || ocrState === 'loading'}
+                    data-testid="correction-drawer-text"
+                  />
+                  {ocrState === 'warn' && (
+                    <p className="text-xs text-amber-600" data-testid="correction-drawer-ocr-warn">
+                      El texto extraído parece incompleto. Puedes editarlo antes de corregir.
+                    </p>
+                  )}
+                  {ocrState === 'error' && ocrError && (
+                    <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error" data-error-code={ocrErrorCode ?? undefined}>
+                      {ocrError}
+                    </p>
+                  )}
+                  <p className="text-xs text-zinc-500">
+                    {studentTextLocked
+                      ? 'El texto no se puede modificar una vez generada la corrección.'
+                      : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto, PDF o documento Word. Lo puedes añadir más tarde.'}
+                  </p>
+                  {textLockedError && (
+                    <p className="text-xs text-red-600" data-testid="correction-drawer-text-error">
+                      {textLockedError}
+                    </p>
                   )}
                 </div>
-                {!studentTextLocked && (
-                  <p className="text-[10px] text-zinc-400" data-testid="correction-drawer-upload-hint">
-                    Acepta imagen (JPG, PNG, WEBP), PDF y Word (.docx)
-                  </p>
-                )}
-                <Textarea
-                  id="redaccion-text"
-                  value={ocrState === 'loading' ? '' : text}
-                  onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
-                  placeholder={ocrState === 'loading' ? 'Extrayendo texto...' : 'Pega el texto del alumno aquí'}
-                  rows={10}
-                  className="resize-y max-h-[50vh] min-h-[12rem]"
-                  disabled={studentTextLocked || ocrState === 'loading'}
-                  data-testid="correction-drawer-text"
-                />
-                {ocrState === 'warn' && (
-                  <p className="text-xs text-amber-600" data-testid="correction-drawer-ocr-warn">
-                    El texto extraído parece incompleto. Puedes editarlo antes de corregir.
-                  </p>
-                )}
-                {ocrState === 'error' && ocrError && (
-                  <p className="text-xs text-red-600" data-testid="correction-drawer-ocr-error" data-error-code={ocrErrorCode ?? undefined}>
-                    {ocrError}
-                  </p>
-                )}
-                <p className="text-xs text-zinc-500">
-                  {studentTextLocked
-                    ? 'El texto no se puede modificar una vez generada la corrección.'
-                    : 'Si ya tienes el texto del alumno, pégalo aquí o sube una foto, PDF o documento Word. Lo puedes añadir más tarde.'}
-                </p>
-                {textLockedError && (
-                  <p className="text-xs text-red-600" data-testid="correction-drawer-text-error">
-                    {textLockedError}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 px-6 py-4 bg-zinc-50/60">

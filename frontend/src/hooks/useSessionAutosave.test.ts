@@ -25,6 +25,9 @@ function makeSessionLog(overrides: Partial<SessionLog> = {}): SessionLog {
   return {
     id: 'ses-1',
     studentId: 'stu-1',
+    groupId: null,
+    targetType: 'student' as const,
+    targetName: 'Test Student',
     sessionDate: '2026-04-14',
     plannedContent: null,
     actualContent: 'We reviewed subjunctive',

@@ -29,9 +29,10 @@ public class ProgressService : IProgressService
             .OrderByDescending(c => c.CreatedAt)
             .FirstOrDefaultAsync(ct);
 
-        // Session logs for pacing and timeline date lookup
-        var sessionLogs = await _db.SessionLogs
-            .Where(sl => sl.StudentId == studentId && sl.TeacherId == teacherId && !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue)
+        // Session logs for pacing and timeline date lookup.
+        // Groups #1326: include group sessions the student attended.
+        var sessionLogs = await SessionLogQueries.ForStudentIncludingGroups(_db, teacherId, studentId)
+            .Where(sl => !sl.IsCancelled && sl.SessionDate.HasValue)
             .ToListAsync(ct);
 
         var sessionsDone = sessionLogs.Count;

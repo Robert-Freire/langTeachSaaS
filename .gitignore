@@ -81,3 +81,5 @@ voice_note_*.mp3
 voice_note_*.ogg
 voice_note_*.wav
 *.webm
+__pycache__/
+*.pyc

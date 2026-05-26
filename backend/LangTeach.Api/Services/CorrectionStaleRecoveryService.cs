@@ -44,9 +44,10 @@ public class CorrectionStaleRecoveryService : BackgroundService
     internal async Task RecoverOnceForTestAsync(CancellationToken ct) =>
         await RecoverStaleCorrectionsAsync(ct);
 
-    private async Task RecoverStaleCorrectionsAsync(CancellationToken ct)
+    internal async Task RecoverStaleCorrectionsAsync(CancellationToken ct)
     {
-        var staleThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleCorrigiendoSeconds);
+        var corrigiendoThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleCorrigiendoSeconds);
+        var encoladaThreshold = DateTime.UtcNow.AddSeconds(-RedaccionCorrectionTimeouts.StaleEncoladaSeconds);
 
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -59,18 +60,31 @@ public class CorrectionStaleRecoveryService : BackgroundService
         // so a correction that completes normally (Corrigiendo -> Corregida) between the
         // WHERE evaluation and the UPDATE is not overwritten.
         var now = DateTime.UtcNow;
-        var count = await db.Corrections
+        var corrigiendoCount = await db.Corrections
             .Where(c => !c.IsDeleted
                      && c.Status == CorrectionStatus.Corrigiendo
-                     && c.UpdatedAt < staleThreshold)
+                     && c.UpdatedAt < corrigiendoThreshold)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(c => c.Status, CorrectionStatus.Entregada)
                 .SetProperty(c => c.UpdatedAt, now), ct);
 
-        if (count == 0) return;
+        if (corrigiendoCount > 0)
+            _logger.LogInformation(
+                "CorrectionStaleRecoveryService: reverted {Count} stale Corrigiendo corrections to Entregada",
+                corrigiendoCount);
 
-        _logger.LogInformation(
-            "CorrectionStaleRecoveryService: reverted {Count} stale Corrigiendo corrections to Entregada",
-            count);
+        // Also revert Encolada rows that the worker never picked up (worker down or starved).
+        var encoladaCount = await db.Corrections
+            .Where(c => !c.IsDeleted
+                     && c.Status == CorrectionStatus.Encolada
+                     && c.UpdatedAt < encoladaThreshold)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(c => c.Status, CorrectionStatus.Entregada)
+                .SetProperty(c => c.UpdatedAt, now), ct);
+
+        if (encoladaCount > 0)
+            _logger.LogInformation(
+                "CorrectionStaleRecoveryService: reverted {Count} stale Encolada corrections to Entregada",
+                encoladaCount);
     }
 }

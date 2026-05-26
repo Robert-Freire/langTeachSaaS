@@ -1,0 +1,36 @@
+title = "LangTeach gitleaks config"
+
+# Extend the default built-in ruleset; only add overrides below
+[extend]
+  useDefault = true
+
+[allowlist]
+  description = "Known-safe constants and generated files"
+
+  # Azurite storage emulator well-known public key (Microsoft-published constant, not a real secret)
+  regexes = [
+    '''Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==''',
+    '''sha512-[A-Za-z0-9+/]+=*''',
+    '''sha256-[A-Za-z0-9+/]+=*''',
+    '''sha1-[A-Za-z0-9+/]+=*''',
+    '''langteachsaas-e2e-api-1''',
+  ]
+
+  # Lockfiles: full of base64 integrity hashes, never contain real secrets
+  # Test fixtures: may contain mock tokens/JWTs by design
+  # EF Core Designer files: auto-generated, contain large base64 migration snapshots
+  # .env example files: placeholder values only, real values are gitignored
+  # frontend/.env.e2e: contains public Auth0 client ID (not a secret; Auth0 client IDs are public)
+  # infra/modules/: Bicep infrastructure templates; contain public Azure RBAC role GUIDs, not secrets
+  paths = [
+    '''frontend/package-lock\.json''',
+    '''(.*/)?(packages\.lock\.json)''',
+    '''pnpm-lock\.yaml''',
+    '''e2e/fixtures''',
+    '''backend/LangTeach\.Api\.Tests''',
+    '''backend/LangTeach\.Api/Migrations/.*\.Designer\.cs''',
+    '''\.env\..*\.example''',
+    '''\.env\.example''',
+    '''frontend/\.env\.e2e''',
+    '''infra/modules/''',
+  ]

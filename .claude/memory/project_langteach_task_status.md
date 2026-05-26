@@ -4,7 +4,27 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-19)
+## In-Flight: Groups sprint CLOSE (2026-05-25)
+
+**Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
+
+All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349 Spanish explanations, #1350 paragraph-break under C, #1351 teacher full-error view + dual .docx) merged to sprint/groups.
+
+Backlog triage done at close (2026-05-24): filed #1359-#1363 from the observed-issues/code-review backlogs. #1359 (prompt-health + config externalization), #1360 (arch dedup), #1362 (bug batch), #1363 (DS specs) were pulled into Groups and merged by bots. #1361 (pedagogy generation ceiling + L1) kept as backlog (unmilestoned). The three backlog files (observed-issues, code-review-backlog, ui-review-backlog) were cleared with a dated note.
+
+Sprint-close walkthroughs done (2026-05-25, via claude --chrome): functional Groups + corrections PASS (no FAILs); Vera UX review strong; pedagogy confirmed one real filter bug. Findings filed and pulled into Groups (all qa:ready), awaiting BOT implementation before merge:
+- #1368 (P2 bug) -- level filter strips the in-scope B1 cohesion (paragraph-break) finding from the student view; pedagogy-confirmed misclassification (findings at/below the student's level floor must be `kept`).
+- #1369 (P2 bug) -- close UI defects: GroupAvatarCluster overflow miscount + aria mismatch (detail/log-session vs list), visually-identical dual-download buttons (full-diagnostic hand-off risk), Overview "Last Session" card ignores group sessions.
+- #1370 (P3 polish) -- Vera polish batch (empty SIGNALS column, log-session avatar colors, Overview summary, dual filter paradigm, CEFR casing, redundant hero pill).
+- #1371 (backlog) -- product question: should group-session time count toward per-student Total Hours? Billing-adjacent, needs PM/Jordi decision.
+
+**Close is GATED on #1368/#1369/#1370 landing (bot PRs) + re-verify of those fixes, then merge sprint -> main via the merge-sprint-to-main action (Robert triggers).** Besides those three, only the epic #1238 remains open in the milestone.
+
+Process note: per [[feedback_no_inline_fix_during_close]], during this close I detect + file issues; bots implement; I re-verify. (Early in the close I fixed #1355/#1356 inline before this rule was set.)
+
+---
+
+## Previous Sprint Status (2026-05-19)
 
 **Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main.
 
@@ -57,6 +77,7 @@ Key queries:
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
+| Groups | ACTIVE | sprint/groups, milestone created, 8 issues qa:ready |
 | Hardening II | CLOSED 2026-05-17 | sprint/hardening-ii, milestone #22, merged to main. 38 issues total (scope grew from initial 12 as quality gates surfaced late-session bugs). Correction prompt robustness, security rate limit, arch cleanup, DB hardening, prompt externalization, generation grammar scope, pedagogy C-category, UI polish, Atelier hardening, test infra, prompt-health sweep, Vision OCR infra (#1279-#1281), ScopeAffirmer (#1286), max_tokens + timeout raises (#1293/#1296), Corrigiendo render fix (#1299), BuildGrammarScopeBlock injection (#1301). Sprint story: plan/sprints/hardening-ii.md |
 | Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |
