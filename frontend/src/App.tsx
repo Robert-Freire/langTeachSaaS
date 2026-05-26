@@ -81,6 +81,7 @@ export default function App() {
                   <Route path="/groups/:id" element={<GroupDetail />} />
                   <Route path="/groups/:id/edit" element={<GroupForm />} />
                   <Route path="/groups/:id/log-session" element={<GroupLogSession />} />
+                  <Route path="/groups/:id/sessions/:sessionId/edit" element={<GroupLogSession />} />
                   <Route path="/sessions" element={<Sessions />} />
                   <Route path="/students/:id" element={<StudentDetail />} />
                   <Route path="/students/:id/redacciones/:correctionId" element={<RedaccionDetail />} />
