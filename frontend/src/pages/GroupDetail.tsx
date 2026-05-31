@@ -8,6 +8,7 @@ import { GroupOverviewTab } from '@/components/group/GroupOverviewTab'
 import { GroupMembersTab } from '@/components/group/GroupMembersTab'
 import { GroupSessionsTab } from '@/components/group/GroupSessionsTab'
 import { calcSessionFrequency } from '@/utils/sessionFrequency'
+import { PillTabs } from '@/components/common/PillTabs'
 
 const TABS = ['overview', 'members', 'sessions'] as const
 type Tab = typeof TABS[number]
@@ -83,32 +84,20 @@ export default function GroupDetail() {
   const members = group.members ?? []
 
   return (
-    <div className="min-h-screen bg-[#F7F6FC]" data-testid="group-detail-page">
+    <div className="min-h-screen bg-[#F4F2FD]" data-testid="group-detail-page">
       <GroupDetailHeader group={group} sessionFrequency={sessionFrequency} />
 
-      {/* Tabs row */}
-      <div className="bg-white border-b border-zinc-100">
-        <div className="flex gap-0">
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setTab(tab)}
-              className={`px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === tab
-                  ? 'border-indigo-600 text-indigo-700'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-700'
-              }`}
-              data-testid={`tab-${tab}`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
-        </div>
+      {/* Tab bar */}
+      <div className="mt-4">
+        <PillTabs
+          tabs={TABS.map(t => ({ key: t, label: TAB_LABELS[t] }))}
+          activeTab={activeTab}
+          onTabChange={tab => setTab(tab as Tab)}
+        />
       </div>
 
       {/* Tab content */}
-      <div className="py-6">
+      <div className="py-4">
         {activeTab === 'overview' && (
           <GroupOverviewTab
             group={group}
