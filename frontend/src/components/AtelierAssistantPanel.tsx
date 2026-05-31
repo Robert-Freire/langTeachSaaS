@@ -296,8 +296,9 @@ export default function AtelierAssistantPanel({
   const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
   const applyAllBlocked = (
-    (!studentId && pendingProposals.some(p => p.type === 'newSession')) ||
-    hasSessionProposalsWithoutContext
+    (!studentId && pendingProposals.some(p => p.type === 'newSession' && !(p.payload as import('@/api/assistant').NewSessionData | null)?.groupId)) ||
+    hasSessionProposalsWithoutContext ||
+    pendingProposals.some(p => p.type === 'newSession' && (p.payload as import('@/api/assistant').NewSessionData | null)?.requiresConfirmation)
   )
 
   return (
