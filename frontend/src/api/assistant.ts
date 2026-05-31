@@ -61,12 +61,14 @@ export async function proposeAssistant(
   studentId?: string,
   sessionId?: string,
   voiceNoteId?: string,
+  groupId?: string | null,
 ): Promise<ProposeResponse> {
   const res = await apiClient.post<ProposeResponse>('/api/assistant/propose', {
     text,
     studentId: studentId ?? null,
     sessionLogId: sessionId ?? null,
     voiceNoteId: voiceNoteId ?? null,
+    groupId: groupId ?? null,
   })
   return res.data
 }

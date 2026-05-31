@@ -4,6 +4,7 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 
 | Source issue | Date | Severity | Observation |
 |---|---|---|---|
+| #1398 | 2026-05-31 | low | AssistantTargetResolver.TryNormalizeSpoken emits CEFR subforms like "B1.1" which violate project rule (only A1/A2/B1/B2/C1/C2 valid, no dot notation). Pre-existing, out of scope. |
 | #1362 | 2026-05-25 | medium | DemoSeeder.SeedTeacherFollowupsAsync throws SQL FK constraint error 547 (DemoSeeder.cs:978) during visual-stack startup on sprint/groups, which aborts EnsureAnaVisualCorrectionAsync so no demo corrections get seeded. Non-fatal (API still starts healthy) but blocks the correction-detail visual spec and review-ui Corregida screenshots. Pre-existing, unrelated to this PR. |
 
 ---

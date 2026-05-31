@@ -456,8 +456,8 @@ describe('AppShell', () => {
   })
 
   describe('launcher enabled/disabled by route', () => {
-    const disabledRoutes = ['/', '/courses', '/courses/abc', '/lessons', '/lessons/abc', '/lessons/abc/study', '/sessions', '/settings']
-    const enabledRoutes = ['/students', '/students/123', '/students/123/edit', '/students/123/log-session', '/students/123/sessions/456/edit']
+    const disabledRoutes = ['/', '/courses', '/courses/abc', '/lessons', '/lessons/abc', '/lessons/abc/study', '/sessions', '/settings', '/groups/new']
+    const enabledRoutes = ['/students', '/students/123', '/students/123/edit', '/students/123/log-session', '/students/123/sessions/456/edit', '/groups', '/groups/abc', '/groups/abc/log-session']
 
     for (const route of disabledRoutes) {
       it(`launcher is disabled on ${route}`, () => {

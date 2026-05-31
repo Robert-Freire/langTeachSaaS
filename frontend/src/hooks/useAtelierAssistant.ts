@@ -48,6 +48,7 @@ export function useAtelierAssistant(
   studentId: string | null,
   sessionId: string | null,
   onAfterSessionApply?: (sessionId: string) => void,
+  groupId?: string | null,
 ): AtelierAssistantState & AtelierAssistantActions {
   const queryClient = useQueryClient()
   const [transcription, setTranscription] = useState<string | null>(null)
@@ -89,6 +90,8 @@ export function useAtelierAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
+        undefined,
+        groupId,
       )
       if (generationRef.current !== gen) return
       extractedSessionDateRef.current = extractedSessionDate ?? null
@@ -130,7 +133,7 @@ export function useAtelierAssistant(
     } finally {
       if (generationRef.current === gen) setProcessing(false)
     }
-  }, [studentId, sessionId])
+  }, [studentId, sessionId, groupId])
 
   const apply = useCallback(async (id: string) => {
     if (applyingIdsRef.current.has(id)) return

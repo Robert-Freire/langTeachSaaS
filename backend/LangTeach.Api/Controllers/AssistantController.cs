@@ -197,6 +197,11 @@ public class AssistantController : ControllerBase
             }
         }
 
+        // If the request carries a GroupId anchor (FAB opened from a group route) and the
+        // transcript did not produce a group mention, pin the resolved target to that group.
+        if (resolvedTarget is null && request.GroupId.HasValue)
+            resolvedTarget = await _targetResolver.ResolveByIdAsync(request.GroupId.Value, teacherId, ct);
+
         proposals.AddRange(ReflectionMapper.ToSessionFieldProposals(
             reflectionExtraction, session, _pedagogy.ProposalFields,
             resolvedTarget, hasAdminIntent, adminMemberName));

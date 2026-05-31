@@ -4,6 +4,7 @@ Unfixed notes from code review (review agent) runs. When reviewing this backlog,
 
 ## Open
 
+- *#1398 (arch, convention, low): `useAtelierAssistant` hook signature has `groupId` as 4th param (after `onAfterSessionApply`) instead of grouped with other entity anchors before the callback. Breaks the (studentId, sessionId, onAfterSessionApply) positional convention. Correcting it requires updating ~30 test call sites. Address when another entity anchor is added or a hook API cleanup sprint occurs.*
 - *#1362 (arch, future-reuse, low): quota-429 client handling (detect status, extract resetsAt, format date) is now inline in two places (useGenerate hook + RedaccionDetail onError). If a third 429 call site appears, extract a shared `parseQuotaError` util. Not a current violation (two call sites, different abstraction layers).*
 - *#1369 (arch, convention, low): RedaccionDetail uses `variant="secondary"` for the teacher-only "Versión completa" button to visually differentiate it from the student-facing `variant="outline"` button. No existing restricted-action button pattern in the codebase. If a design system spec for restricted/teacher actions is established, this should adopt that pattern.*
 - *#1385 (arch, intentional scope): StudentDetailHeader still hand-rolls the same floating-card layout and badge markup that EntityDetailHeader/StatusBadge introduce. Student migration is explicitly out of scope -- tracked in #1386.*

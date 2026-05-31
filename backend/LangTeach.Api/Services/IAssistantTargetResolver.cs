@@ -7,4 +7,5 @@ public record ResolvedTarget(bool IsConfident, ProposedTarget Target, string? Re
 public interface IAssistantTargetResolver
 {
     Task<ResolvedTarget> ResolveAsync(string rawMention, Guid teacherId, CancellationToken ct = default);
+    Task<ResolvedTarget?> ResolveByIdAsync(Guid groupId, Guid teacherId, CancellationToken ct = default);
 }
