@@ -48,7 +48,7 @@ export function EntityDetailHeader({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-manrope text-[1.75rem] font-bold text-[#1A1B22] leading-tight truncate" data-testid={titleTestId}>
+              <h1 className="font-manrope text-[1.75rem] font-bold text-foreground leading-tight truncate" data-testid={titleTestId}>
                 {title}
               </h1>
               {cefrBadge}
