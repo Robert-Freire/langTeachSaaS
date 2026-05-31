@@ -59,16 +59,36 @@ Assign a verdict to each criterion:
 - **NO**: the diff does not address this criterion
 - **UNCLEAR**: cannot determine from the diff alone (explain why)
 
+### Step 5b: Live Verify Section (HARD GATE)
+
+Separate from acceptance criteria, the issue body almost always contains a section headed `Verify`, `Verify in browser`, `Live verify`, or `Test plan`. These describe a real-app walkthrough that must have been executed against the running stack before merge. They are NOT the same as test coverage.
+
+For each step in that section:
+1. **Look for execution evidence in the diff and PR body**: a referenced screenshot, an e2e test file with a matching scenario, a deployed-URL hit logged in the PR description, or a commit message documenting the live-test run with output.
+2. **If no evidence is found, the step is UNVERIFIED.**
+
+Verdict rules for the Live Verify section:
+- **Any UNVERIFIED step makes the overall verdict FAIL.** This overrides Step 7's verdict logic. PASS WITH GAPS is NOT an acceptable outcome when a Live Verify step lacks execution evidence -- the recurring failure mode (PR #1393, 2026-05-31) is exactly this: bot writes the live-verify checkbox into the PR body, leaves it unchecked, declares PASS WITH GAPS, merges, feature is broken in browser.
+- "I would have tested this but the entry point is disabled / unreachable" is also FAIL. It is a scope gap and must be surfaced, not absorbed into PARTIAL.
+- "Tests pass in isolation" is NOT live verify evidence. The Live Verify section asks specifically about the user-facing flow in the running app.
+
+When the verdict is FAIL on this basis, name the unverified steps explicitly in the report's `Missing Coverage` section and call out `LIVE VERIFY NOT EXECUTED` at the top of the verdict line so it cannot be missed.
+
 ### Step 6: Scope Check
 
 List any files in the diff that do not relate to any acceptance criterion. These are not necessarily wrong (could be necessary refactors or dependencies), but flag them for awareness.
 
 ### Step 7: Produce Verdict
 
-- **PASS**: all criteria are YES
-- **PASS WITH GAPS**: all criteria are YES or PARTIAL (code is there but tests are missing)
-- **FAIL**: any criterion is NO, or multiple are UNCLEAR
-- **UNCLEAR**: issue has no extractable acceptance criteria
+Apply in order. Any FAIL trigger short-circuits the verdict.
+
+- **FAIL (live verify)**: any Live Verify step from Step 5b is UNVERIFIED. This trumps everything else. Report header must read `FAIL: LIVE VERIFY NOT EXECUTED`.
+- **FAIL**: any acceptance criterion is NO, or multiple are UNCLEAR.
+- **PASS WITH GAPS**: every Live Verify step has execution evidence AND all acceptance criteria are YES or PARTIAL (code is there but unit/integration test coverage is missing).
+- **PASS**: every Live Verify step has execution evidence AND all acceptance criteria are YES.
+- **UNCLEAR**: issue has no extractable acceptance criteria.
+
+PASS WITH GAPS is reserved for missing unit / integration test coverage. It is NEVER reserved for missing live-browser execution. See Step 5b for the rationale.
 
 ## Report Format
 
@@ -80,14 +100,20 @@ List any files in the diff that do not relate to any acceptance criterion. These
 |---|-----------|-----------|-------|-------|
 | 1 | <text>    | YES/NO/PARTIAL/UNCLEAR | Unit/E2E/None | ... |
 
+### Live Verify
+| # | Step | Evidence | Verdict |
+|---|------|----------|---------|
+| 1 | <text from issue Verify section> | <screenshot ref / e2e test / deployed-URL hit / "none"> | VERIFIED/UNVERIFIED |
+
 ### Missing Coverage
 - <criteria with no test coverage, or "None">
+- <Live Verify steps with no execution evidence, or "None">
 
 ### Scope Check
 - Files changed unrelated to any criterion: <list or "None">
 
 ### Verdict
-PASS | PASS WITH GAPS | FAIL (<count> unmet) | UNCLEAR (no extractable criteria)
+PASS | PASS WITH GAPS | FAIL (<count> unmet) | FAIL: LIVE VERIFY NOT EXECUTED | UNCLEAR (no extractable criteria)
 ```
 
 ## Important
@@ -95,4 +121,6 @@ PASS | PASS WITH GAPS | FAIL (<count> unmet) | UNCLEAR (no extractable criteria)
 - Do NOT review code quality, style, naming, architecture, or implementation approach. That is the `review` agent's job. You only check completeness.
 - Be conservative: if you're not sure a criterion is met, mark it UNCLEAR, not YES.
 - "Test coverage" means an actual test file in the diff or existing test suite, not just that the code "could be tested."
-- If the issue body is a one-liner with no acceptance criteria, that is an UNCLEAR verdict, not a PASS. The issue should have gone through `/qa` first.
+- If the issue body is a one-liner with no acceptance criteria, that is an UNCLEAR verdict, not a PASS.
+- The Live Verify section is the hard gate. PASS WITH GAPS is for missing test coverage only, never for unexecuted live-browser steps. See Step 5b and Step 7.
+- "I checked the issue body, the live verify can be performed after merge" is FAIL, not PASS. See [[feedback_no_deferred_verify]]. The issue should have gone through `/qa` first.

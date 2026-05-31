@@ -1,0 +1,86 @@
+name: verify-checkboxes
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  scan:
+    name: Block merge while Verify checkboxes are unchecked
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan PR body for unchecked Verify items
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 <<'PY'
+          import os, re, sys
+
+          body = os.environ.get("PR_BODY") or ""
+          if not body.strip():
+              print("PR body is empty -- nothing to verify.")
+              sys.exit(0)
+
+          # Section headings that gate merge (case-insensitive). Any heading at any
+          # level (## / ###). The section runs until the next heading of equal-or-
+          # higher level, or EOF.
+          GATE_HEADINGS = [
+              r"test plan",
+              r"verify",
+              r"verify in browser",
+              r"live verify",
+          ]
+          gate_re = re.compile(
+              r"^(#{1,6})\s+(" + "|".join(GATE_HEADINGS) + r")\s*$",
+              re.IGNORECASE | re.MULTILINE,
+          )
+
+          lines = body.splitlines()
+          # Pre-compute heading positions: (line_index, level, text)
+          heading_positions = []
+          heading_line_re = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+          for i, line in enumerate(lines):
+              m = heading_line_re.match(line)
+              if m:
+                  heading_positions.append((i, len(m.group(1)), m.group(2)))
+
+          def section_end(start_line, start_level):
+              for (idx, lvl, _) in heading_positions:
+                  if idx > start_line and lvl <= start_level:
+                      return idx
+              return len(lines)
+
+          unchecked_re = re.compile(r"^\s*[-*]\s+\[\s\]\s+(.*)$")
+
+          failures = []
+          for (idx, level, text) in heading_positions:
+              if not any(re.fullmatch(h, text.strip(), re.IGNORECASE) for h in GATE_HEADINGS):
+                  continue
+              end = section_end(idx, level)
+              for j in range(idx + 1, end):
+                  m = unchecked_re.match(lines[j])
+                  if m:
+                      item = m.group(1).strip()
+                      # Truncate very long items for readable output
+                      if len(item) > 140:
+                          item = item[:137] + "..."
+                      failures.append(f'  L{j+1} (under "## {text}"): {item}')
+
+          if failures:
+              print("FAIL: PR body has unchecked items in a Verify-gated section.")
+              print("These checkboxes must be completed (and the corresponding")
+              print("verification actually performed) before merge:")
+              print()
+              for f in failures:
+                  print(f)
+              print()
+              print("If a step does not apply, remove the line. If a step was")
+              print("skipped intentionally, document why in the PR body and")
+              print("convert it from a checkbox to a regular line.")
+              sys.exit(1)
+
+          print("PASS: no unchecked items in gated sections.")
+          PY
