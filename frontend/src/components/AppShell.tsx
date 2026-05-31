@@ -315,7 +315,7 @@ export default function AppShell() {
         <TooltipContent side="left">
           {atelierEnabled
             ? <>Open Assistant <kbd data-slot="kbd">⌘K</kbd></>
-            : 'Open a student or session to use the assistant'}
+            : 'Open a student, session, or group to use the assistant'}
         </TooltipContent>
       </Tooltip>
 
