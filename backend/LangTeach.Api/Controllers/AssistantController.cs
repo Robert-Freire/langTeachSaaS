@@ -21,7 +21,6 @@ public class AssistantController : ControllerBase
     private readonly IPedagogyConfigService _pedagogy;
     private readonly IAssistantFeedbackService _feedbackService;
     private readonly IAssistantTargetResolver _targetResolver;
-    private readonly IGroupService _groupService;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -33,7 +32,6 @@ public class AssistantController : ControllerBase
         IPedagogyConfigService pedagogy,
         IAssistantFeedbackService feedbackService,
         IAssistantTargetResolver targetResolver,
-        IGroupService groupService,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -44,7 +42,6 @@ public class AssistantController : ControllerBase
         _pedagogy = pedagogy;
         _feedbackService = feedbackService;
         _targetResolver = targetResolver;
-        _groupService = groupService;
         _logger = logger;
     }
 
@@ -203,17 +200,7 @@ public class AssistantController : ControllerBase
         // If the request carries a GroupId anchor (FAB opened from a group route) and the
         // transcript did not produce a group mention, pin the resolved target to that group.
         if (resolvedTarget is null && request.GroupId.HasValue)
-        {
-            var anchorGroup = await _groupService.GetByIdAsync(teacherId, request.GroupId.Value, ct);
-            if (anchorGroup is not null)
-            {
-                resolvedTarget = new ResolvedTarget(
-                    IsConfident: true,
-                    Target: new ProposedTarget("group", anchorGroup.Name, anchorGroup.Id, [], true),
-                    ResolvedGroupName: anchorGroup.Name,
-                    ResolvedCefrLevel: anchorGroup.CefrLevel);
-            }
-        }
+            resolvedTarget = await _targetResolver.ResolveByIdAsync(request.GroupId.Value, teacherId, ct);
 
         proposals.AddRange(ReflectionMapper.ToSessionFieldProposals(
             reflectionExtraction, session, _pedagogy.ProposalFields,

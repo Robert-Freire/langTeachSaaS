@@ -22,6 +22,13 @@ public class AssistantTargetResolver : IAssistantTargetResolver
         _groupService = groupService;
     }
 
+    public async Task<ResolvedTarget?> ResolveByIdAsync(Guid groupId, Guid teacherId, CancellationToken ct = default)
+    {
+        var group = await _groupService.GetByIdAsync(teacherId, groupId, ct);
+        if (group is null) return null;
+        return Confident(new GroupForResolutionDto(group.Id, group.Name, group.Aliases ?? [], group.CefrLevel), group.Name, []);
+    }
+
     public async Task<ResolvedTarget> ResolveAsync(string rawMention, Guid teacherId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(rawMention))

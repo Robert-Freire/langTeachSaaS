@@ -192,5 +192,24 @@ public class AssistantTargetResolverTests : IDisposable
         result.Target.RawMention.Should().Be("be uno punto uno");
     }
 
+    [Fact]
+    public async Task ResolveByIdAsync_KnownGroup_ReturnsConfidentWithGroupNameAndLevel()
+    {
+        var id = AddGroup("B1 Intensivo", "B1");
+        var result = await _sut.ResolveByIdAsync(id, _teacherId);
+        result.Should().NotBeNull();
+        result!.IsConfident.Should().BeTrue();
+        result.Target.ResolvedId.Should().Be(id);
+        result.ResolvedGroupName.Should().Be("B1 Intensivo");
+        result.ResolvedCefrLevel.Should().Be("B1");
+    }
+
+    [Fact]
+    public async Task ResolveByIdAsync_UnknownId_ReturnsNull()
+    {
+        var result = await _sut.ResolveByIdAsync(Guid.NewGuid(), _teacherId);
+        result.Should().BeNull();
+    }
+
     public void Dispose() => _db.Dispose();
 }
