@@ -146,6 +146,7 @@ public class SessionLogsController : ControllerBase
         if (patch.ActualContent is not null) request.ActualContent = patch.ActualContent;
         if (patch.GeneralNotes is not null) request.GeneralNotes = patch.GeneralNotes;
         if (patch.HomeworkAssigned is not null) request.HomeworkAssigned = patch.HomeworkAssigned;
+        if (patch.NextSessionTopics is not null) request.NextSessionTopics = patch.NextSessionTopics;
 
         try
         {
