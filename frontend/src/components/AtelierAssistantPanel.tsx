@@ -224,7 +224,9 @@ export default function AtelierAssistantPanel({
 
   function handleCloseAttempt() {
     if (uploadState === 'uploading') return
-    const hasBlockingWork = processing || pendingProposals.length > 0
+    // session proposals in a group context (no studentId) have a permanently disabled Apply
+    // button and cannot be applied — they do not represent committable work
+    const hasBlockingWork = processing || pendingProposals.some(p => !(p.type === 'session' && !studentId))
     if (recording) {
       stopMicRecording(true)
       if (hasBlockingWork) {
