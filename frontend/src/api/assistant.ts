@@ -121,6 +121,15 @@ export async function applySessionProposal(
   await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: value })
 }
 
+export async function applyGroupSessionProposal(
+  groupId: string,
+  sessionId: string,
+  field: string,
+  value: string,
+): Promise<void> {
+  await apiClient.patch(`/api/groups/${groupId}/sessions/${sessionId}`, { [field]: value })
+}
+
 export async function applyTodoProposal(
   studentId: string,
   text: string,

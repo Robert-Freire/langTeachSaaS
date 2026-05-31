@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  applyGroupSessionProposal,
   applyNewSessionProposal,
   applySessionProposal,
   applyStudentProposal,
@@ -175,6 +176,10 @@ export function useAtelierAssistant(
         throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
+      } else if (proposal.type === 'session' && groupId && sessionId && sessionId !== 'new') {
+        await applyGroupSessionProposal(groupId, sessionId, proposal.field, proposal.newValue)
+      } else if (proposal.type === 'session' && groupId) {
+        throw new Error('Select an existing session to apply these notes to.')
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
@@ -247,6 +252,9 @@ export function useAtelierAssistant(
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
         Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
+      } else if (proposal.type === 'session' && groupId && sessionId && sessionId !== 'new') {
+        await queryClient.invalidateQueries({ queryKey: ['group-session', groupId, sessionId] })
+        await queryClient.invalidateQueries({ queryKey: ['group-sessions', groupId] })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
       } else if (proposal.type === 'newSession') {
