@@ -28,23 +28,25 @@ public class AssistantTargetResolver : IAssistantTargetResolver
         var mention = rawMention.Trim();
 
         // Layer 1: exact name match
-        var exactMatch = TryExactMatch(groups, mention);
-        if (exactMatch is not null)
-            return Confident(exactMatch, rawMention, groups);
+        var exactMatches = FindExactMatches(groups, mention);
+        if (exactMatches.Count == 1) return Confident(exactMatches[0], rawMention, groups);
+        if (exactMatches.Count > 1) return Ambiguous(exactMatches, rawMention);
 
         // Layer 2: alias match
-        var aliasMatch = TryAliasMatch(groups, mention);
-        if (aliasMatch is not null)
-            return Confident(aliasMatch, rawMention, groups);
+        var aliasMatches = FindAliasMatches(groups, mention);
+        if (aliasMatches.Count == 1) return Confident(aliasMatches[0], rawMention, groups);
+        if (aliasMatches.Count > 1) return Ambiguous(aliasMatches, rawMention);
 
-        // Layer 3: spoken-number normalization then exact match
+        // Layer 3: spoken-number normalization then exact/alias match
         var normalized = TryNormalizeSpoken(mention);
         if (normalized is not null)
         {
-            var normalizedMatch = TryExactMatch(groups, normalized)
-                ?? TryAliasMatch(groups, normalized);
-            if (normalizedMatch is not null)
-                return Confident(normalizedMatch, rawMention, groups);
+            var normExact = FindExactMatches(groups, normalized);
+            if (normExact.Count == 1) return Confident(normExact[0], rawMention, groups);
+            if (normExact.Count > 1) return Ambiguous(normExact, rawMention);
+            var normAlias = FindAliasMatches(groups, normalized);
+            if (normAlias.Count == 1) return Confident(normAlias[0], rawMention, groups);
+            if (normAlias.Count > 1) return Ambiguous(normAlias, rawMention);
         }
 
         // Layer 4: fuzzy match — never auto-resolves, always returns candidates
@@ -54,27 +56,25 @@ public class AssistantTargetResolver : IAssistantTargetResolver
             Target: new ProposedTarget(
                 Kind: "group",
                 RawMention: rawMention,
-                ResolvedId: fuzzyMatches.Count == 1 ? fuzzyMatches[0].Id : null,
+                ResolvedId: null,
                 Candidates: fuzzyMatches.Select(g => new GroupSummaryDto(g.Id, g.Name, g.CefrLevel)).ToList(),
                 IsConfident: false));
     }
 
-    private static GroupForResolutionDto? TryExactMatch(List<GroupForResolutionDto> groups, string mention)
-    {
-        var matches = groups
-            .Where(g => string.Equals(g.Name.Trim(), mention, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        return matches.Count == 1 ? matches[0] : null;
-    }
+    private static List<GroupForResolutionDto> FindExactMatches(List<GroupForResolutionDto> groups, string mention) =>
+        groups.Where(g => string.Equals(g.Name.Trim(), mention, StringComparison.OrdinalIgnoreCase)).ToList();
 
-    private static GroupForResolutionDto? TryAliasMatch(List<GroupForResolutionDto> groups, string mention)
-    {
-        var matches = groups
-            .Where(g => g.Aliases.Any(a =>
-                string.Equals(a.Trim(), mention, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-        return matches.Count == 1 ? matches[0] : null;
-    }
+    private static List<GroupForResolutionDto> FindAliasMatches(List<GroupForResolutionDto> groups, string mention) =>
+        groups.Where(g => g.Aliases.Any(a => string.Equals(a.Trim(), mention, StringComparison.OrdinalIgnoreCase))).ToList();
+
+    private static ResolvedTarget Ambiguous(List<GroupForResolutionDto> candidates, string rawMention) =>
+        new(IsConfident: false,
+            Target: new ProposedTarget(
+                Kind: "group",
+                RawMention: rawMention,
+                ResolvedId: null,
+                Candidates: candidates.Select(g => new GroupSummaryDto(g.Id, g.Name, g.CefrLevel)).ToList(),
+                IsConfident: false));
 
     // Converts spoken CEFR-like strings to their canonical form.
     // Examples: "be uno punto uno" -> "B1" + ".1" suffix, "a dos" -> "A2", "be uno" -> "B1"
@@ -116,16 +116,20 @@ public class AssistantTargetResolver : IAssistantTargetResolver
 
     private static List<GroupForResolutionDto> TryFuzzyMatch(List<GroupForResolutionDto> groups, string mention)
     {
+        // Skip fuzzy matching for very short tokens to avoid noisy spurious matches.
+        if (mention.Length < 3) return [];
+
         var lower = mention.ToLowerInvariant();
         return groups
             .Where(g =>
-                g.Name.ToLowerInvariant().Contains(lower) ||
-                lower.Contains(g.Name.ToLowerInvariant()) ||
-                LevenshteinDistance(g.Name.ToLowerInvariant(), lower) <= 2 ||
-                g.Aliases.Any(a =>
+                (g.Name.Length >= 3 && (
+                    g.Name.ToLowerInvariant().Contains(lower) ||
+                    lower.Contains(g.Name.ToLowerInvariant()) ||
+                    LevenshteinDistance(g.Name.ToLowerInvariant(), lower) <= 2)) ||
+                g.Aliases.Any(a => a.Length >= 3 && (
                     a.ToLowerInvariant().Contains(lower) ||
                     lower.Contains(a.ToLowerInvariant()) ||
-                    LevenshteinDistance(a.ToLowerInvariant(), lower) <= 2))
+                    LevenshteinDistance(a.ToLowerInvariant(), lower) <= 2)))
             .ToList();
     }
 
@@ -138,7 +142,9 @@ public class AssistantTargetResolver : IAssistantTargetResolver
                 RawMention: rawMention,
                 ResolvedId: group.Id,
                 Candidates: [],
-                IsConfident: true));
+                IsConfident: true),
+            ResolvedGroupName: group.Name,
+            ResolvedCefrLevel: group.CefrLevel);
     }
 
     // Wagner-Fischer dynamic programming Levenshtein distance.

@@ -70,8 +70,8 @@ internal static class ReflectionMapper
                     title = proposed.Title,
                     sessionDate,
                     groupId,
-                    groupName = resolvedTarget.Target.RawMention,
-                    cefrLevel = resolvedTarget.Target.Candidates.FirstOrDefault()?.CefrLevel,
+                    groupName = resolvedTarget.ResolvedGroupName ?? resolvedTarget.Target.RawMention,
+                    cefrLevel = resolvedTarget.ResolvedCefrLevel,
                     requiresConfirmation = false,
                     adminCallout,
                 };

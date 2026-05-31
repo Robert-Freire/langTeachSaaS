@@ -128,7 +128,7 @@ public class GroupService : IGroupService
             ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying,
             Interests = JsonStorageHelper.Serialize(request.Interests),
             CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas),
-            Aliases = JsonStorageHelper.Serialize(request.Aliases),
+            Aliases = JsonStorageHelper.Serialize(NormalizeAliases(request.Aliases)),
         };
 
         _db.Groups.Add(group);
@@ -283,6 +283,16 @@ public class GroupService : IGroupService
                 $"Invalid CefrLevel '{cefr}'. Allowed: {string.Join(", ", CefrConstants.AllLevels)}.");
     }
 
+    // Normalize aliases: trim whitespace, drop empties/duplicates, cap per-item length and total count.
+    private static List<string> NormalizeAliases(List<string> aliases) =>
+        aliases
+            .Select(a => a.Trim())
+            .Where(a => a.Length > 0)
+            .Select(a => a.Length > 100 ? a[..100] : a)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .ToList();
+
     public async Task<GroupDto?> PatchTeachingNotesAsync(Guid teacherId, Guid groupId, string? notes, CancellationToken ct = default)
     {
         var group = await _db.Groups
@@ -329,17 +339,18 @@ public class GroupService : IGroupService
 
     public async Task<List<GroupForResolutionDto>> GetAllActiveAsync(Guid teacherId, CancellationToken ct = default)
     {
-        return await _db.Groups
+        var rows = await _db.Groups
             .Where(g => g.TeacherId == teacherId && g.IsActive && !g.IsDeleted)
             .Select(g => new { g.Id, g.Name, g.Aliases, g.CefrLevel })
-            .ToListAsync(ct)
-            .ContinueWith(t => t.Result
-                .Select(g => new GroupForResolutionDto(
-                    g.Id,
-                    g.Name,
-                    JsonStorageHelper.DeserializeList<string>(g.Aliases),
-                    g.CefrLevel))
-                .ToList(), ct);
+            .ToListAsync(ct);
+
+        return rows
+            .Select(g => new GroupForResolutionDto(
+                g.Id,
+                g.Name,
+                JsonStorageHelper.DeserializeList<string>(g.Aliases),
+                g.CefrLevel))
+            .ToList();
     }
 
     public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)

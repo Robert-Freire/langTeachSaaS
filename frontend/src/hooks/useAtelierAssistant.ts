@@ -216,6 +216,7 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'newSession') {
         const data = proposal.payload as NewSessionData | null | undefined
         if (!data?.title?.trim()) throw new Error('Session title is missing.')
+        if (data?.requiresConfirmation) throw new Error('Select a group before applying.')
         if (data?.groupId) {
           // Group-targeted session: land as group session log
           await createGroupSession(data.groupId, {

@@ -2,7 +2,7 @@ using LangTeach.Api.DTOs;
 
 namespace LangTeach.Api.Services;
 
-public record ResolvedTarget(bool IsConfident, ProposedTarget Target);
+public record ResolvedTarget(bool IsConfident, ProposedTarget Target, string? ResolvedGroupName = null, string? ResolvedCefrLevel = null);
 
 public interface IAssistantTargetResolver
 {
