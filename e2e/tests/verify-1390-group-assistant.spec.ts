@@ -38,13 +38,12 @@ test('FAB assistant: student-only transcript does not create a group session pro
     await input.fill('Ana trabajó subjuntivo hoy, estuvo muy bien')
     await panel.getByTestId('assistant-send-btn').click()
 
-    // Wait for processing to finish
-    await expect(panel.getByTestId('proposals-loading')).toBeVisible({ timeout: UI_TIMEOUT })
+    // Wait for processing to finish (don't assert on the loading indicator — it may clear before assertion)
     await expect(panel.getByTestId('proposals-loading')).not.toBeVisible({ timeout: 30000 })
 
-    // No group-targeted session proposal should appear
-    const groupTargets = panel.locator('[data-testid^="group-target-"]')
-    await expect(groupTargets).toHaveCount(0)
+    // Neither resolved group targets nor unresolved-group selectors should appear
+    await expect(panel.locator('[data-testid^="group-target-"]')).toHaveCount(0)
+    await expect(panel.locator('[data-testid^="unresolved-group-"]')).toHaveCount(0)
   } finally {
     await context.close()
   }

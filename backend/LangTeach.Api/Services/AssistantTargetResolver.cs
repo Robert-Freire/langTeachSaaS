@@ -24,6 +24,10 @@ public class AssistantTargetResolver : IAssistantTargetResolver
 
     public async Task<ResolvedTarget> ResolveAsync(string rawMention, Guid teacherId, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(rawMention))
+            return new ResolvedTarget(IsConfident: false,
+                Target: new ProposedTarget("group", rawMention ?? "", null, [], false));
+
         var groups = await _groupService.GetAllActiveAsync(teacherId, ct);
         var mention = rawMention.Trim();
 

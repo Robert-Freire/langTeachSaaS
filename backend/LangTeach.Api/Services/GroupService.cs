@@ -284,9 +284,9 @@ public class GroupService : IGroupService
     }
 
     // Normalize aliases: trim whitespace, drop empties/duplicates, cap per-item length and total count.
-    private static List<string> NormalizeAliases(List<string> aliases) =>
-        aliases
-            .Select(a => a.Trim())
+    private static List<string> NormalizeAliases(List<string>? aliases) =>
+        (aliases ?? [])
+            .Select(a => a?.Trim() ?? string.Empty)
             .Where(a => a.Length > 0)
             .Select(a => a.Length > 100 ? a[..100] : a)
             .Distinct(StringComparer.OrdinalIgnoreCase)

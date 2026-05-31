@@ -33,7 +33,7 @@ export interface Group {
   reasonForStudying: string | null
   interests: string[] | null
   commonFocusAreas: string[] | null
-  aliases: string[] | null
+  aliases?: string[] | null
 }
 
 export interface GroupListResponse {
