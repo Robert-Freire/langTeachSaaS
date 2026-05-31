@@ -111,6 +111,7 @@ function SidebarContent({ user, initials, logout, location }: {
 
 const STUDENT_ID_RE = /^\/students\/([^/]+)/
 const SESSION_ID_RE = /^\/students\/[^/]+\/sessions\/([^/]+)/
+const GROUP_ID_RE = /^\/groups\/([^/]+)/
 
 function extractStudentId(pathname: string): string | null {
   const match = pathname.match(STUDENT_ID_RE)
@@ -123,11 +124,20 @@ function extractSessionId(pathname: string): string | null {
   return match ? match[1] : null
 }
 
+function extractGroupId(pathname: string): string | null {
+  const match = pathname.match(GROUP_ID_RE)
+  if (!match) return null
+  return match[1] === 'new' ? null : match[1]
+}
+
 // Returns true only when the route has a concrete entity anchor.
-// `/students` is explicitly OR'd because STUDENT_ID_RE requires a segment
-// after "students" and does not match the list route itself.
+// `/students` and `/groups` are explicitly OR'd because their ID regexes
+// require a segment after the noun and do not match the list routes themselves.
 function isAtelierEnabled(pathname: string): boolean {
-  return pathname === '/students' || extractStudentId(pathname) !== null
+  return (
+    pathname === '/students' || extractStudentId(pathname) !== null ||
+    pathname === '/groups' || extractGroupId(pathname) !== null
+  )
 }
 
 export default function AppShell() {
@@ -138,6 +148,7 @@ export default function AppShell() {
 
   const studentId = extractStudentId(location.pathname)
   const sessionId = extractSessionId(location.pathname)
+  const groupId = extractGroupId(location.pathname)
   const atelierEnabled = isAtelierEnabled(location.pathname)
   const assistantOpen = userWantsOpen && atelierEnabled
 
@@ -159,7 +170,7 @@ export default function AppShell() {
     }
   }, [studentId, navigate])
 
-  const assistant = useAtelierAssistant(studentId, effectiveSessionId, handleAfterSessionApply)
+  const assistant = useAtelierAssistant(studentId, effectiveSessionId, handleAfterSessionApply, groupId)
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
@@ -241,7 +252,7 @@ export default function AppShell() {
             <TooltipContent side="bottom">
               {atelierEnabled
                 ? (assistantOpen ? 'Close Assistant' : 'Open Assistant')
-                : 'Open a student or session to use the assistant'}
+                : 'Open a student, session, or group to use the assistant'}
             </TooltipContent>
           </Tooltip>
           <Avatar className="h-8 w-8">
@@ -328,6 +339,7 @@ export default function AppShell() {
         onEditPayload={assistant.onEditPayload}
         studentId={studentId}
         sessionId={effectiveSessionId}
+        groupId={groupId}
         onSelectSession={setPickerSessionId}
       />
     </div>

@@ -52,6 +52,7 @@ interface Props {
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
   sessionId?: string | null
+  groupId?: string | null
   onSelectSession?: (sessionId: string) => void
 }
 

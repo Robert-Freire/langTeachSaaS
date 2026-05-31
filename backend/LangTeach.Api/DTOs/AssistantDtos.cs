@@ -12,6 +12,7 @@ public class AssistantProposeRequest
     public Guid? StudentId { get; set; }
     public Guid? SessionLogId { get; set; }
     public Guid? VoiceNoteId { get; set; }
+    public Guid? GroupId { get; set; }
 }
 
 public class AssistantFeedbackRequest

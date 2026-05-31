@@ -82,7 +82,7 @@ describe('useAtelierAssistant', () => {
     const { result } = renderHook(() => useAtelierAssistant('student-1', 'session-1'), { wrapper: makeWrapper() })
     act(() => { result.current.submit('Some text') })
     await act(async () => { await vi.runAllTimersAsync() })
-    expect(mockPropose).toHaveBeenCalledWith('Some text', 'student-1', 'session-1')
+    expect(mockPropose).toHaveBeenCalledWith('Some text', 'student-1', 'session-1', undefined, undefined)
   })
 
   it('apply: routes student proposal to applyStudentProposal', async () => {
