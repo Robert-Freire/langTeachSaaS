@@ -11,6 +11,8 @@
   --font-inter: 'Inter Variable', sans-serif;
   --font-manrope: 'Manrope Variable', sans-serif;
   --animate-extraction-pulse: extraction-pulse 1.4s ease-in-out 2;
+  --shadow-card: 0 12px 40px rgba(26, 27, 34, 0.06);
+  --shadow-card-sm: 0 4px 16px rgba(26, 27, 34, 0.06);
 }
 
 @keyframes extraction-pulse {
