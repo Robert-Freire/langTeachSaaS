@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.Json;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -101,6 +102,73 @@ public class GroupSessionLogsController : ControllerBase
             ModelState.AddModelError(string.Empty, ex.Message);
             return BadRequest(ModelState);
         }
+    }
+
+    [HttpPatch("{sessionId:guid}")]
+    public async Task<IActionResult> PatchSession(Guid groupId, Guid sessionId, [FromBody] PatchSessionRequest patch, CancellationToken ct)
+    {
+        if (Auth0Id is null) return Unauthorized();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
+        var session = await _sessionLogService.GetGroupSessionByIdAsync(teacherId, groupId, sessionId, ct);
+        if (session is null) return NotFound();
+
+        var request = MapSessionToUpdateRequest(session);
+        if (patch.Title is not null) request.Title = patch.Title;
+        if (patch.ActualContent is not null) request.ActualContent = patch.ActualContent;
+        if (patch.GeneralNotes is not null) request.GeneralNotes = patch.GeneralNotes;
+        if (patch.HomeworkAssigned is not null) request.HomeworkAssigned = patch.HomeworkAssigned;
+        if (patch.NextSessionTopics is not null) request.NextSessionTopics = patch.NextSessionTopics;
+
+        try
+        {
+            var updated = await _sessionLogService.UpdateGroupSessionAsync(teacherId, groupId, sessionId, request, ct);
+            if (updated is null) return NotFound();
+            return Ok(updated);
+        }
+        catch (ValidationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return BadRequest(ModelState);
+        }
+    }
+
+    private static readonly JsonSerializerOptions _caseInsensitive =
+        new() { PropertyNameCaseInsensitive = true };
+
+    private static UpdateSessionLogRequest MapSessionToUpdateRequest(SessionLogDto s)
+    {
+        var pairs = TryDeserialize<List<DifficultyPairDto>>(s.MentionedDifficultyPairs);
+        var difficulties = TryDeserialize<List<SuggestedDifficultyDto>>(s.SuggestedDifficulties);
+
+        return new UpdateSessionLogRequest
+        {
+            SessionDate = s.SessionDate,
+            PlannedContent = s.PlannedContent,
+            ActualContent = s.ActualContent,
+            HomeworkAssigned = s.HomeworkAssigned,
+            PreviousHomeworkStatus = s.PreviousHomeworkStatus,
+            NextSessionTopics = s.NextSessionTopics,
+            GeneralNotes = s.GeneralNotes,
+            LevelReassessmentSkill = s.LevelReassessmentSkill,
+            LevelReassessmentLevel = s.LevelReassessmentLevel,
+            LinkedLessonId = s.LinkedLessonId,
+            TopicTags = s.TopicTags,
+            IsCancelled = s.IsCancelled,
+            Status = s.Status,
+            Duration = s.Duration,
+            Title = s.Title,
+            MentionedDifficultyPairs = pairs,
+            SuggestedDifficulties = difficulties,
+        };
+    }
+
+    private static T? TryDeserialize<T>(string? json) where T : class
+    {
+        if (string.IsNullOrWhiteSpace(json) || json == "[]") return null;
+        try { return JsonSerializer.Deserialize<T>(json, _caseInsensitive); }
+        catch { return null; }
     }
 
     [HttpPost("extract")]

@@ -12,6 +12,7 @@ import { formatDuration } from '@/lib/formatDuration'
 import { BRAND_NAME } from '@/lib/brand'
 import { useQuery } from '@tanstack/react-query'
 import { listSessions } from '@/api/sessionLogs'
+import { listGroupSessions } from '@/api/groups'
 import { formatMonthDay } from '@/utils/formatDate'
 
 const MIN_DURATION_S = 1
@@ -75,6 +76,7 @@ export default function AtelierAssistantPanel({
   onEditPayload,
   studentId,
   sessionId,
+  groupId,
   onSelectSession,
 }: Props) {
   const sessionContextMissing = !sessionId
@@ -89,6 +91,21 @@ export default function AtelierAssistantPanel({
     queryKey: ['sessions', studentId],
     queryFn: () => listSessions(studentId!),
     enabled: !!studentId && showSessionPicker,
+    select: (sessions) =>
+      [...sessions]
+        .filter(s => !s.isCancelled)
+        .sort((a, b) => {
+          const da = new Date(a.sessionDate ?? a.createdAt).getTime()
+          const db = new Date(b.sessionDate ?? b.createdAt).getTime()
+          return db - da
+        })
+        .slice(0, 3),
+  })
+
+  const { data: groupSessions } = useQuery({
+    queryKey: ['group-sessions-picker', groupId],
+    queryFn: () => listGroupSessions(groupId!),
+    enabled: !!groupId && showSessionPicker,
     select: (sessions) =>
       [...sessions]
         .filter(s => !s.isCancelled)
@@ -463,7 +480,12 @@ export default function AtelierAssistantPanel({
                           }
                           New session
                         </button>
-                        {(recentSessions ?? []).map(session => {
+                        {groupId && groupSessions !== undefined && groupSessions.length === 0 && (
+                          <p className="text-xs font-inter text-zinc-500 italic px-2" data-testid="group-sessions-empty">
+                            No sessions have been logged for this group yet.
+                          </p>
+                        )}
+                        {(groupId ? (groupSessions ?? []) : (recentSessions ?? [])).map(session => {
                           const dateLabel = session.sessionDate
                             ? formatMonthDay(session.sessionDate)
                             : session.createdAt
