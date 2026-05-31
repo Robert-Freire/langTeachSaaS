@@ -155,7 +155,7 @@ public class GroupService : IGroupService
         group.ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying;
         group.Interests = JsonStorageHelper.Serialize(request.Interests);
         group.CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas);
-        group.Aliases = JsonStorageHelper.Serialize(request.Aliases);
+        group.Aliases = JsonStorageHelper.Serialize(NormalizeAliases(request.Aliases));
         group.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);

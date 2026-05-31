@@ -6,6 +6,8 @@ namespace LangTeach.Api.Services;
 
 internal static class ReflectionMapper
 {
+    private static readonly JsonSerializerOptions CamelCaseOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     internal static CreateSessionLogRequest ToSessionLogRequest(ExtractedReflectionDto extracted, string rawNotes)
     {
         var generalNotes = JoinGeneralNotes(extracted.AreasToImprove?.Value, extracted.EmotionalSignals);
@@ -52,7 +54,6 @@ internal static class ReflectionMapper
 
         if (extracted.ProposedNewSession is { } proposed)
         {
-            var camelCaseOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
             var sessionDate = extracted.SessionStartTime is { } t
                 ? $"{dateOnly}T{t}"
@@ -94,7 +95,7 @@ internal static class ReflectionMapper
                 newSessionPayload = new { title = proposed.Title, sessionDate };
             }
 
-            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
+            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, CamelCaseOpts);
             yield return new ProposalDto(
                 Guid.NewGuid().ToString(),
                 "newSession",
