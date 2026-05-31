@@ -84,7 +84,7 @@ export default function GroupDetail() {
   const members = group.members ?? []
 
   return (
-    <div className="min-h-screen bg-[#F4F2FD]" data-testid="group-detail-page">
+    <div className="min-h-screen" data-testid="group-detail-page">
       <GroupDetailHeader group={group} sessionFrequency={sessionFrequency} />
 
       {/* Tab bar */}
