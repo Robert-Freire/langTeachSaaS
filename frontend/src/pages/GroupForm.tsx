@@ -539,7 +539,7 @@ function GroupFormBody({ group }: { group?: Group }) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start overflow-x-hidden">
           {/* Main column */}
           <div className="space-y-6">
             <Card className="rounded-2xl border-0 bg-white shadow-[0_12px_40px_rgba(26,27,34,0.06)]">
@@ -837,19 +837,20 @@ function GroupFormBody({ group }: { group?: Group }) {
               />
             </div>
 
-            {/* Danger zone */}
-            <div className="pt-2" data-testid="danger-zone">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-sm w-full justify-start"
-                onClick={() => setShowDeleteDialog(true)}
-                data-testid="delete-group-button"
-              >
-                Delete group
-              </Button>
-            </div>
           </div>
+        </div>
+
+        {/* Danger zone */}
+        <div className="pt-8 space-y-2" data-testid="danger-zone">
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 text-sm px-0"
+            onClick={() => setShowDeleteDialog(true)}
+            data-testid="delete-group-button"
+          >
+            Delete group
+          </Button>
         </div>
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
