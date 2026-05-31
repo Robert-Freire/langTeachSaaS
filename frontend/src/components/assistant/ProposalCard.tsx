@@ -160,7 +160,7 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
                   <Users className="h-3.5 w-3.5 text-violet-500 shrink-0" aria-hidden="true" />
                   <span className="text-xs font-inter font-medium text-violet-700">{newSessionPayload?.groupName ?? 'Group'}</span>
                   {newSessionPayload?.cefrLevel && (
-                    <span className="text-[0.625rem] font-bold uppercase px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-inter">
+                    <span className="text-[0.625rem] font-bold uppercase px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-700 font-inter">
                       {newSessionPayload.cefrLevel}
                     </span>
                   )}
