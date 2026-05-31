@@ -1,4 +1,4 @@
-interface PillTab {
+export interface PillTab {
   key: string
   label: string
   badge?: boolean
@@ -8,11 +8,12 @@ interface PillTabsProps {
   tabs: PillTab[]
   activeTab: string
   onTabChange: (key: string) => void
+  'data-testid'?: string
 }
 
-export function PillTabs({ tabs, activeTab, onTabChange }: PillTabsProps) {
+export function PillTabs({ tabs, activeTab, onTabChange, 'data-testid': testId }: PillTabsProps) {
   return (
-    <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist">
+    <div className="flex gap-1 overflow-x-auto scrollbar-none" role="tablist" data-testid={testId}>
       {tabs.map(tab => (
         <button
           key={tab.key}
