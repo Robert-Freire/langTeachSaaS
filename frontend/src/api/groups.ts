@@ -33,6 +33,7 @@ export interface Group {
   reasonForStudying: string | null
   interests: string[] | null
   commonFocusAreas: string[] | null
+  aliases: string[] | null
 }
 
 export interface GroupListResponse {
@@ -50,6 +51,7 @@ export interface GroupFormData {
   reasonForStudying?: string | null
   interests?: string[]
   commonFocusAreas?: string[]
+  aliases?: string[]
 }
 
 export async function getGroups(params?: {

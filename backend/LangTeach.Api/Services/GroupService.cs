@@ -128,6 +128,7 @@ public class GroupService : IGroupService
             ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying,
             Interests = JsonStorageHelper.Serialize(request.Interests),
             CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas),
+            Aliases = JsonStorageHelper.Serialize(request.Aliases),
         };
 
         _db.Groups.Add(group);
@@ -154,6 +155,7 @@ public class GroupService : IGroupService
         group.ReasonForStudying = string.IsNullOrWhiteSpace(request.ReasonForStudying) ? null : request.ReasonForStudying;
         group.Interests = JsonStorageHelper.Serialize(request.Interests);
         group.CommonFocusAreas = JsonStorageHelper.Serialize(request.CommonFocusAreas);
+        group.Aliases = JsonStorageHelper.Serialize(request.Aliases);
         group.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
@@ -321,8 +323,24 @@ public class GroupService : IGroupService
         g.TeachingNotes,
         g.ReasonForStudying,
         JsonStorageHelper.DeserializeList<string>(g.Interests),
-        JsonStorageHelper.DeserializeList<string>(g.CommonFocusAreas)
+        JsonStorageHelper.DeserializeList<string>(g.CommonFocusAreas),
+        JsonStorageHelper.DeserializeList<string>(g.Aliases)
     );
+
+    public async Task<List<GroupForResolutionDto>> GetAllActiveAsync(Guid teacherId, CancellationToken ct = default)
+    {
+        return await _db.Groups
+            .Where(g => g.TeacherId == teacherId && g.IsActive && !g.IsDeleted)
+            .Select(g => new { g.Id, g.Name, g.Aliases, g.CefrLevel })
+            .ToListAsync(ct)
+            .ContinueWith(t => t.Result
+                .Select(g => new GroupForResolutionDto(
+                    g.Id,
+                    g.Name,
+                    JsonStorageHelper.DeserializeList<string>(g.Aliases),
+                    g.CefrLevel))
+                .ToList(), ct);
+    }
 
     public async Task<List<GroupSummaryDto>> GetGroupsForStudentAsync(Guid teacherId, Guid studentId, CancellationToken ct = default)
     {

@@ -16,6 +16,7 @@ public class CefrSublevelsGuardTest
         "CefrLevelNormalizer.cs",           // normalization helper -- intentionally handles sublevel input
         "StudentProfileExtractionService.cs", // accepts sublevel AI output before normalization
         "CurriculumTemplateService.cs",     // loads curriculum JSON files that use sublevel resource names
+        "AssistantTargetResolver.cs",       // spoken-number normalizer -- resolves "be uno punto uno" to group names that may include sublevel suffixes
         "CefrSublevelsGuardTest.cs",
         "20260508124854_RemoveCefrSublevels.cs", // data migration that maps stored sublevel values to base levels
         "cefrUtils.ts",                     // normalization helper -- intentionally handles sublevel input

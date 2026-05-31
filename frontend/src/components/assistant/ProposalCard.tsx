@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Calendar, CheckSquare, Loader2, User, UserPlus } from 'lucide-react'
+import { AlertTriangle, Calendar, CheckSquare, Loader2, User, UserPlus, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -106,8 +106,10 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
   const isNewStudent = proposal.type === 'newStudent'
   const isNewSession = proposal.type === 'newSession'
   const newSessionPayload = isNewSession ? (proposal.payload as NewSessionData | null | undefined) : null
-  const newSessionApplyDisabled = isNewSession && !studentId
-  const sessionApplyDisabled = proposal.type === 'session' && !!sessionContextMissing
+  const isGroupSession = !!(newSessionPayload?.groupId)
+  const requiresConfirmation = !!(newSessionPayload?.requiresConfirmation)
+  const newSessionApplyDisabled = isNewSession && !isGroupSession && !studentId
+  const sessionApplyDisabled = (proposal.type === 'session' && !!sessionContextMissing) || requiresConfirmation
   const newSessionDateEditable = isNewSession && (proposal.status === 'proposed' || proposal.status === 'error')
   return (
     <div
@@ -153,19 +155,65 @@ export default function ProposalCard({ proposal, onApply, onDismiss, onUndo, onR
           {isNewSession ? (
             <div className="flex flex-col gap-2">
               <span className="text-sm font-semibold font-inter text-zinc-800">{proposal.newValue}</span>
+              {isGroupSession && (
+                <div className="flex items-center gap-1.5" data-testid={`group-target-${proposal.id}`}>
+                  <Users className="h-3.5 w-3.5 text-violet-500 shrink-0" aria-hidden="true" />
+                  <span className="text-xs font-inter font-medium text-violet-700">{newSessionPayload?.groupName ?? 'Group'}</span>
+                  {newSessionPayload?.cefrLevel && (
+                    <span className="text-[0.625rem] font-bold uppercase px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-inter">
+                      {newSessionPayload.cefrLevel}
+                    </span>
+                  )}
+                </div>
+              )}
+              {requiresConfirmation && (
+                <div className="flex flex-col gap-1 p-2 rounded-lg bg-amber-50" data-testid={`unresolved-group-${proposal.id}`}>
+                  <p className="text-xs font-inter text-amber-800 font-medium">
+                    Didn't recognize "{newSessionPayload?.rawGroupMention}". Select a group:
+                  </p>
+                  {(newSessionPayload?.candidates ?? []).map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => onEditPayload?.(proposal.id, {
+                        ...newSessionPayload!,
+                        groupId: c.id,
+                        groupName: c.name,
+                        cefrLevel: c.cefrLevel,
+                        requiresConfirmation: false,
+                        candidates: [],
+                      })}
+                      className="text-xs font-inter text-left px-2 py-1 rounded hover:bg-amber-100 text-amber-900 transition-colors"
+                    >
+                      {c.name}{c.cefrLevel ? ` (${c.cefrLevel})` : ''}
+                    </button>
+                  ))}
+                  {(newSessionPayload?.candidates ?? []).length === 0 && (
+                    <p className="text-xs font-inter text-amber-700">No matching groups found.</p>
+                  )}
+                </div>
+              )}
+              {newSessionPayload?.adminCallout && (
+                <div className="flex items-start gap-1.5 p-2 rounded-lg bg-yellow-50" data-testid={`admin-callout-${proposal.id}`}>
+                  <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-xs font-inter text-yellow-800">
+                    {newSessionPayload.adminCallout.memberName} mentioned — log a separate 1-to-1 session if needed.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-inter text-zinc-500">Date:</span>
                 <input
                   type="date"
-                  value={newSessionPayload?.sessionDate ?? ''}
+                  value={newSessionPayload?.sessionDate?.split('T')[0] ?? ''}
                   disabled={!newSessionDateEditable}
                   onChange={e => {
                     const date = e.target.value
                     if (date && onEditPayload && newSessionDateEditable) {
                       onEditPayload(proposal.id, {
+                        ...newSessionPayload,
                         title: newSessionPayload?.title ?? proposal.newValue,
                         sessionDate: date,
-                      })
+                      } as NewSessionData)
                     }
                   }}
                   data-testid={`session-date-input-${proposal.id}`}

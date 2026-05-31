@@ -13,9 +13,28 @@ export interface NewStudentData {
   reasonForStudying?: string | null
 }
 
+export interface GroupCandidate {
+  id: string
+  name: string
+  cefrLevel?: string | null
+}
+
+export interface AdminCallout {
+  memberName: string
+  rawText: string
+}
+
 export interface NewSessionData {
   title: string
   sessionDate: string
+  // Group targeting fields (present when session targets a group)
+  groupId?: string
+  groupName?: string
+  cefrLevel?: string | null
+  requiresConfirmation?: boolean
+  candidates?: GroupCandidate[]
+  rawGroupMention?: string
+  adminCallout?: AdminCallout | null
 }
 
 export interface ProposalDto {

@@ -48,6 +48,7 @@ const MAX_DESC = 500
 const MAX_REASON = 500
 const MAX_INTERESTS = 50
 const MAX_FOCUS_AREAS = 50
+const MAX_ALIASES = 20
 
 interface SelectedMember {
   id: string
@@ -265,8 +266,11 @@ function GroupFormBody({ group }: { group?: Group }) {
   const [interestInput, setInterestInput] = useState('')
   const [focusAreas, setFocusAreas] = useState<string[]>(group?.commonFocusAreas ?? [])
   const [focusAreaInput, setFocusAreaInput] = useState('')
+  const [aliases, setAliases] = useState<string[]>(group?.aliases ?? [])
+  const [aliasInput, setAliasInput] = useState('')
   const interestInputRef = useRef<HTMLInputElement>(null)
   const focusAreaInputRef = useRef<HTMLInputElement>(null)
+  const aliasInputRef = useRef<HTMLInputElement>(null)
   const [members, setMembers] = useState<SelectedMember[]>(existingMembers)
   const [nameError, setNameError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -290,6 +294,7 @@ function GroupFormBody({ group }: { group?: Group }) {
       if (!trimmedName) return null
       const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
       const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
+      const finalAliases = mergePendingChip(aliases, aliasInput, MAX_ALIASES)
       return {
         name: trimmedName,
         cefrLevel: cefrLevel || null,
@@ -298,9 +303,10 @@ function GroupFormBody({ group }: { group?: Group }) {
         reasonForStudying: reasonForStudying.trim() || null,
         interests: finalInterests,
         commonFocusAreas: finalFocusAreas,
+        aliases: finalAliases,
       }
     }
-  }, [isEdit, name, cefrLevel, description, group?.isActive, reasonForStudying, interests, interestInput, focusAreas, focusAreaInput])
+  }, [isEdit, name, cefrLevel, description, group?.isActive, reasonForStudying, interests, interestInput, focusAreas, focusAreaInput, aliases, aliasInput])
 
   const { status: saveStatus, scheduleTextSave, saveNow } = useGroupAutosave(
     isEdit ? id : undefined,
@@ -425,12 +431,34 @@ function GroupFormBody({ group }: { group?: Group }) {
     }
   }
 
+  function addAlias(value: string) {
+    const trimmed = value.trim()
+    if (trimmed && !aliases.includes(trimmed) && aliases.length < MAX_ALIASES) {
+      setAliases([...aliases, trimmed])
+    }
+    setAliasInput('')
+  }
+
+  function removeAlias(item: string) {
+    setAliases(aliases.filter((a) => a !== item))
+  }
+
+  function handleAliasKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addAlias(aliasInput)
+    } else if (e.key === 'Backspace' && aliasInput === '' && aliases.length > 0) {
+      setAliases(aliases.slice(0, -1))
+    }
+  }
+
   // Create mode save mutation
   const { mutate: doSave, isPending: saving } = useMutation({
     mutationFn: async () => {
       const selectedIds = members.map((m) => m.id)
       const finalInterests = mergePendingChip(interests, interestInput, MAX_INTERESTS)
       const finalFocusAreas = mergePendingChip(focusAreas, focusAreaInput, MAX_FOCUS_AREAS)
+      const finalAliases = mergePendingChip(aliases, aliasInput, MAX_ALIASES)
 
       if (isEdit && id) {
         await updateGroup(id, {
@@ -441,6 +469,7 @@ function GroupFormBody({ group }: { group?: Group }) {
           reasonForStudying: reasonForStudying.trim() || null,
           interests: finalInterests,
           commonFocusAreas: finalFocusAreas,
+          aliases: finalAliases,
         })
       } else {
         const groupId = pendingGroupIdRef.current ?? (await createGroup({
@@ -451,6 +480,7 @@ function GroupFormBody({ group }: { group?: Group }) {
           reasonForStudying: reasonForStudying.trim() || null,
           interests: finalInterests,
           commonFocusAreas: finalFocusAreas,
+          aliases: finalAliases,
         })).id
         pendingGroupIdRef.current = groupId
         for (const sid of selectedIds) await addGroupMember(groupId, sid)
@@ -722,6 +752,44 @@ function GroupFormBody({ group }: { group?: Group }) {
                       placeholder={focusAreas.length === 0 ? 'Type and press Enter…' : ''}
                       className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
                       data-testid="focus-area-input"
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-[#1A1B22]">Assistant Aliases</Label>
+                  <p className="text-xs text-zinc-400 -mt-0.5 italic">How you refer to this group when speaking to the Atelier assistant ("Lunes", "los del lunes", "grupo de las seis").</p>
+                  <div
+                    className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                    onClick={() => aliasInputRef.current?.focus()}
+                  >
+                    {aliases.map((item) => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                        data-testid="alias-chip"
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeAlias(item); scheduleTextSave() }}
+                          className="text-violet-400 hover:text-violet-700 p-0.5 -mr-0.5"
+                          aria-label={`Remove ${item}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      ref={aliasInputRef}
+                      value={aliasInput}
+                      onChange={(e) => setAliasInput(e.target.value)}
+                      onKeyDown={handleAliasKeyDown}
+                      onBlur={() => { if (aliasInput.trim()) { addAlias(aliasInput); scheduleTextSave() } }}
+                      placeholder={aliases.length === 0 ? 'Type and press Enter…' : ''}
+                      className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                      data-testid="alias-input"
                     />
                   </div>
                   <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
@@ -1066,6 +1134,44 @@ function GroupFormBody({ group }: { group?: Group }) {
                   placeholder={focusAreas.length === 0 ? 'Type and press Enter…' : ''}
                   className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
                   data-testid="focus-area-input"
+                />
+              </div>
+              <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-[#1A1B22]">Assistant Aliases</Label>
+              <p className="text-xs text-zinc-400 -mt-0.5 italic">How you refer to this group when speaking to the Atelier assistant ("Lunes", "los del lunes", "grupo de las seis").</p>
+              <div
+                className="flex flex-wrap gap-1.5 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 cursor-text"
+                onClick={() => aliasInputRef.current?.focus()}
+              >
+                {aliases.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1 bg-violet-50 text-violet-700 text-xs font-medium rounded-full px-2.5 py-0.5"
+                    data-testid="alias-chip"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeAlias(item) }}
+                      className="text-violet-400 hover:text-violet-700 p-0.5 -mr-0.5"
+                      aria-label={`Remove ${item}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={aliasInputRef}
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  onKeyDown={handleAliasKeyDown}
+                  onBlur={() => { if (aliasInput.trim()) addAlias(aliasInput) }}
+                  placeholder={aliases.length === 0 ? 'Type and press Enter…' : ''}
+                  className="flex-1 min-w-24 outline-none text-sm bg-transparent placeholder:text-zinc-400"
+                  data-testid="alias-input"
                 />
               </div>
               <p className="text-xs text-zinc-400">Press Enter or comma to add. Backspace to remove last.</p>

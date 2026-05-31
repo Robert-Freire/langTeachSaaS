@@ -15,6 +15,7 @@ import {
 export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
 import { createSession } from '../api/sessionLogs'
+import { createGroupSession } from '../api/groups'
 import { normalizeLanguage, normalizeLanguages } from '../lib/extractionNormalizer'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -213,10 +214,19 @@ export function useAtelierAssistant(
           difficulties: [],
         })
       } else if (proposal.type === 'newSession') {
-        if (!studentId) throw new Error('Open from a student\'s screen to schedule a session.')
         const data = proposal.payload as NewSessionData | null | undefined
         if (!data?.title?.trim()) throw new Error('Session title is missing.')
-        await applyNewSessionProposal(studentId, data.title, data.sessionDate)
+        if (data?.groupId) {
+          // Group-targeted session: land as group session log
+          await createGroupSession(data.groupId, {
+            title: data.title,
+            sessionDate: data.sessionDate ?? new Date().toISOString().split('T')[0],
+            previousHomeworkStatus: 'NotApplicable',
+          })
+        } else {
+          if (!studentId) throw new Error('Open from a student\'s screen to schedule a session.')
+          await applyNewSessionProposal(studentId, data.title, data.sessionDate)
+        }
       }
       if (generationRef.current !== gen) return
       updateProposal(id, { status: 'applied' })
@@ -235,9 +245,15 @@ export function useAtelierAssistant(
         Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
-      } else if (proposal.type === 'newSession' && studentId) {
-        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
-        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
+      } else if (proposal.type === 'newSession') {
+        const invalidateData = proposal.payload as NewSessionData | null | undefined
+        if (invalidateData?.groupId) {
+          await queryClient.invalidateQueries({ queryKey: ['group-sessions', invalidateData.groupId] })
+          await queryClient.invalidateQueries({ queryKey: ['groups'] })
+        } else if (studentId) {
+          await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+          await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
+        }
       } else if (proposal.type === 'todo' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
         await queryClient.invalidateQueries({ queryKey: ['dashboard'] })

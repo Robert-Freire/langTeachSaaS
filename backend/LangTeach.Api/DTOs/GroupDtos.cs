@@ -4,6 +4,8 @@ namespace LangTeach.Api.DTOs;
 
 public record GroupSummaryDto(Guid Id, string Name, string? CefrLevel);
 
+public record GroupForResolutionDto(Guid Id, string Name, List<string> Aliases, string? CefrLevel);
+
 public record GroupTeachingIdeaDto(
     Guid Id,
     string Text,
@@ -33,7 +35,8 @@ public record GroupDto(
     string? TeachingNotes = null,
     string? ReasonForStudying = null,
     List<string>? Interests = null,
-    List<string>? CommonFocusAreas = null
+    List<string>? CommonFocusAreas = null,
+    List<string>? Aliases = null
 );
 
 public class CreateGroupRequest
@@ -55,6 +58,8 @@ public class CreateGroupRequest
     public List<string> Interests { get; set; } = [];
 
     public List<string> CommonFocusAreas { get; set; } = [];
+
+    public List<string> Aliases { get; set; } = [];
 }
 
 /// <remarks>
@@ -81,6 +86,8 @@ public class UpdateGroupRequest
     public List<string> Interests { get; set; } = [];
 
     public List<string> CommonFocusAreas { get; set; } = [];
+
+    public List<string> Aliases { get; set; } = [];
 }
 
 public class AddGroupMemberRequest
