@@ -4,29 +4,19 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight: Groups sprint CLOSE (2026-05-26)
+## In-Flight: Groups sprint CLOSE
 
 **Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
 
-All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349 Spanish explanations, #1350 paragraph-break under C, #1351 teacher full-error view + dual .docx) merged to sprint/groups.
+All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349/#1350/#1351) merged to sprint/groups. Backlog triage done; the three backlog files cleared with a dated note. Sprint-close walkthroughs done (claude --chrome): functional Groups + corrections PASS; Vera UX; pedagogy.
 
-Backlog triage done at close (2026-05-24): filed #1359-#1363 from the observed-issues/code-review backlogs. #1359 (prompt-health + config externalization), #1360 (arch dedup), #1362 (bug batch), #1363 (DS specs) were pulled into Groups and merged by bots. #1361 (pedagogy generation ceiling + L1) kept as backlog (unmilestoned). The three backlog files (observed-issues, code-review-backlog, ui-review-backlog) were cleared with a dated note.
+**Consistency bar for this sprint:** Group screens must look and behave like Student screens. Operation-level inconsistencies are blocking, not polish (see [[feedback_consistency_over_polish_in_close]]). The merge gate is built from issues that flag Group-vs-Student divergence.
 
-Sprint-close walkthroughs done (2026-05-25, claude --chrome): functional Groups + corrections PASS; Vera UX; pedagogy. First wave of findings -- #1368 (B1 cohesion filter misclassification), #1369 (UI defects: avatar overflow, dual-download, Overview last-session), #1370 (Vera polish batch) -- bot-fixed, merged (PRs #1372/#1373/#1374), and re-verified live 2026-05-26 (paragraph-break now kept at B1; dual-download distinct). DONE.
+**Merge gate (query GitHub for live status; do not diary per-issue findings here -- see [[feedback_pm_stale_data]]):** open gate items live in the Groups milestone with the `qa:ready` label. Earlier gate items #1379/#1380/#1381 are closed. #1385 (Group detail header reaches Student parity via shared EntityDetailHeader primitive) is the current open gate candidate (pending two body clarifications before qa:ready).
 
-Further findings from Robert's MANUAL testing (qa:ready, Groups, awaiting bots): #1375 (polish) group-detail width vs student detail; #1378 (polish) Sessions-tab date tile crams year; #1379 (P2 bug) clicking a group session opens an empty page (missing frontend route `/groups/:id/sessions/:sessionId`).
+Migration validated in dev (2026-05-26): copy-azure-teacher (Jordi->Robert) + migrate-fake-groups --local. B1.1/A2.1 -> real groups, 13 live sessions reassigned, fake students soft-deleted, members empty (Jordi populates via UI), 0 XOR violations. NOTE: prod migration can only run AFTER the sprint merges + deploys; run `--dry-run` in Azure mode first.
 
-**RELEASE-SCOPE / MERGE GATE (2026-05-26):** the Edit Group screen is too thin AND inconsistent to ship -- it uses Save/Cancel while Edit Student uses autosave+Done (interaction-model inconsistency, see [[feedback_consistency_over_polish_in_close]]). Groups->main merge is GATED on Edit Group reaching Student parity:
-- #1380 (P2) Edit Group form parity (shell + autosave + rail) -- qa:ready, must land FIRST.
-- #1381 (P2) group profile fields (ReasonForStudying + Interests + Common focus areas columns + migration; class goals via TeacherFollowup keyed by GroupId; Sophy+Isaac shaped) -- qa:ready, depends on #1380; Sophy confirming pass recommended pre-plan.
-
-Backlog (NOT Groups): #1361 (pedagogy generation), #1371 (Total Hours product Q), #1376 (app-wide max-width refactor). #1382 referenced by Robert but not yet created.
-
-Migration validated in dev (2026-05-26): copy-azure-teacher (Jordi->Robert) + migrate-fake-groups --local. B1.1/A2.1 -> real groups, 13 live sessions reassigned (7+6; 1 soft-deleted B1.1 session excluded by design), fake students soft-deleted, members empty (Jordi populates via UI), 0 XOR violations. NOTE: prod migration can only run AFTER the sprint merges + deploys (prod has no Groups schema yet); run `--dry-run` in Azure mode first.
-
-**Merge GATED on: #1379 + #1380 + #1381 landing + re-verify (Edit Group at Student parity), then merge-sprint-to-main (Robert triggers).** Remaining polish (#1375/#1378) and the open epic #1238 also in the milestone.
-
-Process notes: [[feedback_no_inline_fix_during_close]] (I file, bots fix, I re-verify); [[feedback_consistency_over_polish_in_close]] (operation-level inconsistencies are blocking, not polish; add a "ship to Jordi?" check). Early in the close I fixed #1355/#1356 inline before those rules were set.
+Process notes: [[feedback_no_inline_fix_during_close]] (I file, bots fix, I re-verify); [[feedback_consistency_over_polish_in_close]] (operation-level inconsistencies are blocking; add a "ship to Jordi?" check).
 
 ---
 
