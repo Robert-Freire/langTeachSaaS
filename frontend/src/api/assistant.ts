@@ -119,8 +119,10 @@ export async function applySessionProposal(
 ): Promise<void> {
   let patchValue: string | number = value
   if (field === 'duration') {
-    const parsed = parseInt(value, 10)
-    if (isNaN(parsed)) return
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
+      throw new Error(`Invalid duration proposal value: ${value}`)
+    }
     patchValue = parsed
   }
   await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: patchValue })
@@ -134,8 +136,10 @@ export async function applyGroupSessionProposal(
 ): Promise<void> {
   let patchValue: string | number = value
   if (field === 'duration') {
-    const parsed = parseInt(value, 10)
-    if (isNaN(parsed)) return
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
+      throw new Error(`Invalid duration proposal value: ${value}`)
+    }
     patchValue = parsed
   }
   await apiClient.patch(`/api/groups/${groupId}/sessions/${sessionId}`, { [field]: patchValue })
