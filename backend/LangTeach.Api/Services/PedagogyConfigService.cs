@@ -542,7 +542,7 @@ public class PedagogyConfigService : IPedagogyConfigService
     // session proposal field requires updating BOTH this set AND proposal-fields.json
     // sessionFields[]. Drift is caught at startup by ValidateProposalFields.
     internal static readonly HashSet<string> ExpectedSessionProposalFieldKeys = new(StringComparer.Ordinal)
-        { "title", "actualContent", "generalNotes", "homeworkAssigned", "nextSessionTopics" };
+        { "title", "actualContent", "generalNotes", "homeworkAssigned", "nextSessionTopics", "duration", "topicTags" };
 
     internal static void ValidateProposalFields(ProposalFieldsConfig f)
     {

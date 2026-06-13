@@ -114,4 +114,9 @@ public class PatchSessionRequest
 
     [MaxLength(2000)]
     public string? NextSessionTopics { get; set; }
+
+    public int? Duration { get; set; }
+
+    [MaxLength(2000)]
+    public string? TopicTags { get; set; }
 }
