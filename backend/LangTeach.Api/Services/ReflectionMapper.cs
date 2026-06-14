@@ -36,6 +36,10 @@ internal static class ReflectionMapper
         bool hasAdminIntent = false,
         string? adminMemberName = null)
     {
+        var extractedTopicTags = extracted.TopicTags.Count > 0
+            ? JsonSerializer.Serialize(extracted.TopicTags, CamelCaseOpts)
+            : null;
+
         var fieldValues = new Dictionary<string, (string? current, string? extracted)>
         {
             ["title"] = (current?.Title, NormalizeSessionTitle(extracted.SessionTitle)),
@@ -43,6 +47,8 @@ internal static class ReflectionMapper
             ["generalNotes"] = (current?.GeneralNotes, extracted.AreasToImprove?.Value),
             ["homeworkAssigned"] = (current?.HomeworkAssigned, extracted.HomeworkAssigned?.Value),
             ["nextSessionTopics"] = (current?.NextSessionTopics, extracted.NextSessionTopics?.Value),
+            ["duration"] = (current?.Duration?.ToString(), extracted.DurationMinutes?.ToString()),
+            ["topicTags"] = (current?.TopicTags, extractedTopicTags),
         };
 
         foreach (var f in config.SessionFields)

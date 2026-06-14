@@ -117,8 +117,15 @@ export async function applySessionProposal(
   field: string,
   value: string,
 ): Promise<void> {
-  // field is one of: title, actualContent, generalNotes, homeworkAssigned, nextSessionTopics — matches PatchSessionRequest
-  await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: value })
+  let patchValue: string | number = value
+  if (field === 'duration') {
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
+      throw new Error(`Invalid duration proposal value: ${value}`)
+    }
+    patchValue = parsed
+  }
+  await apiClient.patch(`/api/students/${studentId}/sessions/${sessionId}`, { [field]: patchValue })
 }
 
 export async function applyGroupSessionProposal(
@@ -127,7 +134,15 @@ export async function applyGroupSessionProposal(
   field: string,
   value: string,
 ): Promise<void> {
-  await apiClient.patch(`/api/groups/${groupId}/sessions/${sessionId}`, { [field]: value })
+  let patchValue: string | number = value
+  if (field === 'duration') {
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 1440) {
+      throw new Error(`Invalid duration proposal value: ${value}`)
+    }
+    patchValue = parsed
+  }
+  await apiClient.patch(`/api/groups/${groupId}/sessions/${sessionId}`, { [field]: patchValue })
 }
 
 export async function applyTodoProposal(
