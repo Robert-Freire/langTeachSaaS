@@ -105,10 +105,10 @@ public class CorrectionsControllerTests
             $"/api/students/{studentId}/corrections/{created.Id}/corregir",
             content: null);
 
-        // Endpoint returns immediately with Corrigiendo; background task fires asynchronously.
+        // Endpoint returns immediately with Encolada; the CorrectionWorker processes it asynchronously.
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var immediate = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        immediate!.Status.Should().Be("Corrigiendo");
+        immediate!.Status.Should().Be("Encolada");
 
         // Background task (stub: synchronous, no network) should complete within a few hundred ms.
         var detail = await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corregida");
@@ -196,6 +196,62 @@ public class CorrectionsControllerTests
     }
 
     [Fact]
+    public async Task Corregir_WhenOverMonthlyQuota_Returns429AndDoesNotEnqueue()
+    {
+        var (client, studentId) = await SetupAsync("auth0|corr-corregir-quota");
+        var created = await CreateCorrectionAsync(client, studentId, new CreateCorrectionRequest
+        {
+            AssignmentTitle = "Quota test",
+            StudentText = "Hoy fui al parque con mi familia.",
+        });
+
+        // Drive the teacher to the monthly free-tier limit by seeding usage rows for this month.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            var limit = scope.ServiceProvider
+                .GetRequiredService<Microsoft.Extensions.Options.IOptions<LangTeach.Api.Services.GenerationLimitsOptions>>()
+                .Value.FreeTierMonthlyLimit;
+            limit.Should().BeGreaterThan(0, "test config must use a finite free-tier limit for this test");
+            var teacher = db.Teachers.First(t => t.Auth0UserId == "auth0|corr-corregir-quota");
+            for (var i = 0; i < limit; i++)
+            {
+                db.GenerationUsages.Add(new LangTeach.Api.Data.Models.GenerationUsage
+                {
+                    Id = Guid.NewGuid(),
+                    TeacherId = teacher.Id,
+                    BlockType = LangTeach.Api.Data.Models.ContentBlockType.ErrorCorrection,
+                    CreatedAt = DateTime.UtcNow,
+                });
+            }
+            db.SaveChanges();
+        }
+
+        _factory.ClaudeStub.Reset();
+
+        var resp = await client.PostAsync(
+            $"/api/students/{studentId}/corrections/{created.Id}/corregir",
+            content: null);
+
+        resp.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        resp.Headers.Should().ContainKey("Retry-After");
+        var body = await resp.Content.ReadFromJsonAsync<QuotaErrorBody>();
+        body!.Message.Should().Be("Monthly generation limit reached.");
+        body.ResetsAt.Should().BeAfter(DateTime.UtcNow);
+
+        // Blocked: no AI call, and the correction stays Entregada (never queued).
+        _factory.ClaudeStub.CompleteCallCount.Should().Be(0);
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<LangTeach.Api.Data.AppDbContext>();
+            db.Corrections.First(c => c.Id == created.Id).Status
+                .Should().Be(LangTeach.Api.Data.Models.CorrectionStatus.Entregada);
+        }
+    }
+
+    private record QuotaErrorBody(string Message, DateTime ResetsAt);
+
+    [Fact]
     public async Task Corregir_OnEntregada_ReturnsCorrigiendoEvenWhenAiFails()
     {
         // Endpoint fires background task and returns immediately. AI failure is silent;
@@ -217,9 +273,9 @@ public class CorrectionsControllerTests
             content: null);
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
         var detail = await resp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        detail!.Status.Should().Be("Corrigiendo");
+        detail!.Status.Should().Be("Encolada");
 
-        // Wait for the background task to consume the stub response (bad JSON).
+        // Wait for the worker to consume the stub response (bad JSON).
         // This prevents the stub queue from racing with the next test in the collection.
         await WaitForCorrectionStatusAsync(client, studentId, created.Id, "Corrigiendo",
             maxWaitMs: 2000, stopWhenUpdatedAtAdvances: preCallTime);
@@ -281,7 +337,7 @@ public class CorrectionsControllerTests
             content: null);
         corregirResp.StatusCode.Should().Be(HttpStatusCode.OK);
         var immediate = await corregirResp.Content.ReadFromJsonAsync<CorrectionDetailDto>();
-        immediate!.Status.Should().Be("Corrigiendo");
+        immediate!.Status.Should().Be("Encolada");
 
         var corrected = await WaitForCorrectionStatusAsync(client, studentId, detail.Id, "Corregida");
         corrected.Status.Should().Be("Corregida");

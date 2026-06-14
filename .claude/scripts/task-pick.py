@@ -99,7 +99,7 @@ def get_inflight_issue_nums() -> set[int]:
     prs = json.loads(raw)
     found = set()
     for pr in prs:
-        m = re.match(r"task/t(\d+)-", pr.get("headRefName", ""))
+        m = re.search(r"(?:task/t|worktree-task-t)(\d+)-", pr.get("headRefName", ""))
         if m:
             found.add(int(m.group(1)))
     return found

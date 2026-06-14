@@ -15,6 +15,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 vi.mock('../../api/sessionLogs', () => ({
   listSessions: vi.fn(),
+  listSessionsIncludingGroups: vi.fn(),
   deleteSession: vi.fn(),
   updateSession: vi.fn(),
   createSession: vi.fn(),
@@ -47,6 +48,9 @@ vi.mock('./TopicTagsInput', () => ({
 const SESSION_BASE: sessionLogsApi.SessionLog = {
   id: 'session-1',
   studentId: 'student-1',
+  groupId: null,
+  targetType: 'student',
+  targetName: 'Ana García',
   sessionDate: '2026-03-30T00:00:00Z',
   plannedContent: 'Preterito indefinido intro',
   actualContent: 'Covered basics and exercises',
@@ -90,33 +94,33 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows loading skeletons while fetching', () => {
-    vi.mocked(sessionLogsApi.listSessions).mockReturnValue(new Promise(() => {}))
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockReturnValue(new Promise(() => {}))
     wrapper()
     expect(screen.getByTestId('session-history-loading')).toBeInTheDocument()
   })
 
   it('shows empty state when no sessions', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([])
     wrapper()
     expect(await screen.findByTestId('session-history-empty')).toBeInTheDocument()
     expect(screen.getByText(/No sessions logged yet/)).toBeInTheDocument()
   })
 
   it('shows error state when fetch fails, with retry button', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockRejectedValue(new Error('Network error'))
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockRejectedValue(new Error('Network error'))
     wrapper()
     expect(await screen.findByTestId('session-history-error')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
   it('renders session entries when data loads', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     expect(await screen.findAllByTestId('session-entry')).toHaveLength(1)
   })
 
   it('shows actualContent snippet in collapsed state with line-clamp-1 when title exists', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, title: 'Preterito Indefinido' },
     ])
     wrapper()
@@ -129,7 +133,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows actualContent snippet with line-clamp-2 when no title', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, title: null },
     ])
     wrapper()
@@ -139,7 +143,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('hides actualContent snippet when expanded and shows it in detail section as editable input', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -152,7 +156,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows previous homework status badge in expanded view', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -161,7 +165,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('expands entry on click to show full detail', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('session-entry-detail')).not.toBeInTheDocument()
@@ -172,13 +176,82 @@ describe('SessionHistoryTab', () => {
   })
 
   it('collapses entry on second click', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.getByTestId('session-entry-detail')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
     expect(screen.queryByTestId('session-entry-detail')).not.toBeInTheDocument()
+  })
+
+  it('shows group-session pill for group session', async () => {
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([groupSession])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    expect(screen.getByTestId('group-session-pill')).toHaveTextContent('B1 Conversacion')
+  })
+
+  it('shows "View in group" link and no delete button for group session', async () => {
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([groupSession])
+    wrapper()
+    await screen.findByTestId('session-entry')
+    fireEvent.click(screen.getByTestId('session-entry-toggle'))
+    expect(screen.getByTestId('view-in-group-link')).toBeInTheDocument()
+    expect(screen.queryByTestId('delete-session-btn')).not.toBeInTheDocument()
+  })
+
+  it('filters to group sessions only when sessionType=groups', async () => {
+    const studentSession = { ...SESSION_BASE }
+    const groupSession: sessionLogsApi.SessionLog = {
+      ...SESSION_BASE,
+      id: 'session-2',
+      studentId: null,
+      groupId: 'group-1',
+      targetType: 'group',
+      targetName: 'B1 Conversacion',
+    }
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([studentSession, groupSession])
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/?sessionType=groups']}>
+          <SessionHistoryTab studentId="student-1" sessionTypeFilter="groups" />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+    await screen.findByTestId('session-entry')
+    const entries = screen.getAllByTestId('session-entry')
+    expect(entries).toHaveLength(1)
+    expect(screen.getByTestId('group-session-pill')).toBeInTheDocument()
+  })
+
+  it('renders the session-type filter as a pill-toggle group matching the status pills, not a dropdown', async () => {
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
+    wrapper()
+    await screen.findByTestId('session-entry')
+
+    const typeFilter = screen.getByTestId('session-type-filter')
+    expect(typeFilter).toBeInTheDocument()
+    // Default option is "All types" (not a bare "All" that would duplicate the status filter)
+    expect(screen.getByTestId('session-type-filter-all')).toHaveTextContent('All types')
+    expect(screen.getByTestId('session-type-filter-1-to-1')).toHaveTextContent('1-to-1')
+    expect(screen.getByTestId('session-type-filter-groups')).toHaveTextContent('Groups')
+    // Old Radix Select dropdown is gone
+    expect(typeFilter.querySelector('[role="combobox"]')).toBeNull()
   })
 
   it('shows topic tag chips with category colors in expanded view', async () => {
@@ -189,7 +262,7 @@ describe('SessionHistoryTab', () => {
         { tag: 'viajes', category: 'vocabulary' },
       ]),
     }
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([session])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([session])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -200,14 +273,14 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show kebab trigger in the collapsed row', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('session-kebab-trigger')).not.toBeInTheDocument()
   })
 
   it('shows delete button in expanded row', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -215,7 +288,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not call deleteSession when delete button is clicked without confirming', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
@@ -229,7 +302,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('calls deleteSession and invalidates query on confirm', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     vi.mocked(sessionLogsApi.deleteSession).mockResolvedValue(undefined)
     wrapper()
     await screen.findByTestId('session-entry')
@@ -244,7 +317,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows session title as editable input in expanded state', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, title: 'My Session' }])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, title: 'My Session' }])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -255,7 +328,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows session narrative as editable textarea in expanded state', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -266,7 +339,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows separate action item and note counts when both are set', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.getByTestId('action-item-count')).toHaveTextContent('1 action item')
@@ -274,7 +347,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows only action item count when nextSessionTopics is set and generalNotes is null', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, generalNotes: null },
     ])
     wrapper()
@@ -284,7 +357,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows only general note count when generalNotes is set and nextSessionTopics is null', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
@@ -294,7 +367,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows no count indicators when both generalNotes and nextSessionTopics are null', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, generalNotes: null, nextSessionTopics: null },
     ])
     wrapper()
@@ -304,7 +377,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows date badge with month and day for a session', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, sessionDate: '2026-03-30T00:00:00Z' },
     ])
     wrapper()
@@ -315,21 +388,21 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows Cancelled badge for a cancelled session', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, isCancelled: true }])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, isCancelled: true }])
     wrapper()
     expect(await screen.findByTestId('cancelled-badge')).toBeInTheDocument()
     expect(screen.getByTestId('cancelled-badge')).toHaveTextContent('Cancelled')
   })
 
   it('does not show Cancelled badge for a non-cancelled session', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('cancelled-badge')).not.toBeInTheDocument()
   })
 
   it('shows "Pending review" badge for a Draft session', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, status: 1, statusName: 'Draft' as const },
     ])
     wrapper()
@@ -338,14 +411,14 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show "Pending review" badge for a Confirmed session', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('draft-badge')).not.toBeInTheDocument()
   })
 
   it('action item badge contains a chevron icon for expand affordance', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     const badge = screen.getByTestId('action-item-count')
@@ -353,7 +426,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('general note badge contains a chevron icon for expand affordance', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     const badge = screen.getByTestId('general-note-count')
@@ -361,7 +434,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows next session topics preview line in collapsed state when nextSessionTopics is set', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     const preview = screen.getByTestId('next-session-topics-preview')
@@ -371,7 +444,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show next session topics preview when nextSessionTopics is null', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
@@ -380,7 +453,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows next plan as editable textarea with amber heading in expanded state', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -392,7 +465,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show start-next-session-button when nextSessionTopics is null and local input is empty', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
@@ -402,7 +475,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows "Start next session" button when nextSessionTopics is non-empty', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -410,7 +483,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show "Start next session" button when nextSessionTopics is null and local input empty', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, nextSessionTopics: null },
     ])
     wrapper()
@@ -420,7 +493,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('clicking "Start next session" navigates to log-session page', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -431,14 +504,14 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows Total Hours stat when sessions have duration', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
     wrapper()
     await screen.findByTestId('total-hours-stat')
     expect(screen.getByTestId('total-hours-value')).toHaveTextContent('1')
   })
 
   it('hides Total Hours stat when all sessions have null duration', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('total-hours-stat')).not.toBeInTheDocument()
@@ -447,7 +520,7 @@ describe('SessionHistoryTab', () => {
   it('filters sessions by search query on title and content', async () => {
     const sessionA = { ...SESSION_BASE, id: 'a', title: 'Subjunctive Usage', actualContent: 'Covered subjunctive' }
     const sessionB = { ...SESSION_BASE, id: 'b', title: 'Business Spanish', actualContent: 'Corporate vocabulary' }
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([sessionA, sessionB])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([sessionA, sessionB])
     wrapper()
     await screen.findAllByTestId('session-entry')
     const input = screen.getByTestId('session-search-input')
@@ -462,7 +535,7 @@ describe('SessionHistoryTab', () => {
   it('shows only cancelled sessions when Cancelled filter is active', async () => {
     const cancelled = { ...SESSION_BASE, id: 'c', isCancelled: true }
     const normal = { ...SESSION_BASE, id: 'n', isCancelled: false }
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([cancelled, normal])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([cancelled, normal])
     wrapper()
     await screen.findAllByTestId('session-entry')
     fireEvent.click(screen.getByTestId('status-filter-cancelled'))
@@ -478,7 +551,7 @@ describe('SessionHistoryTab', () => {
       id: `s-${i}`,
       sessionDate: new Date(2026, 0, 16 - i).toISOString(),
     }))
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue(sessions)
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue(sessions)
     wrapper()
     await screen.findAllByTestId('session-entry')
     expect(screen.getByTestId('load-earlier-sessions')).toBeInTheDocument()
@@ -491,7 +564,7 @@ describe('SessionHistoryTab', () => {
       id: `s-${i}`,
       sessionDate: new Date(2026, 0, 16 - i).toISOString(),
     }))
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue(sessions)
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue(sessions)
     wrapper()
     await screen.findAllByTestId('session-entry')
     fireEvent.click(screen.getByTestId('load-earlier-sessions'))
@@ -502,28 +575,28 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows mic icon when hasVoiceNote is true', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, hasVoiceNote: true }])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, hasVoiceNote: true }])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.getByTestId('voice-note-icon')).toBeInTheDocument()
   })
 
   it('does not show mic icon when hasVoiceNote is false', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.queryByTestId('voice-note-icon')).not.toBeInTheDocument()
   })
 
   it('shows duration badge when duration is set', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, duration: 60 }])
     wrapper()
     await screen.findByTestId('session-entry')
     expect(screen.getByTestId('duration-badge')).toHaveTextContent('60 min')
   })
 
   it('shows session title when title is set', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, title: 'Subjunctive Usage in Time Clauses' },
     ])
     wrapper()
@@ -532,7 +605,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows 0 min duration badge for cancelled sessions without duration', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, isCancelled: true, duration: null },
     ])
     wrapper()
@@ -543,7 +616,7 @@ describe('SessionHistoryTab', () => {
   it('filters sessions by date range', async () => {
     const sessionOld = { ...SESSION_BASE, id: 'old', sessionDate: '2026-01-01T00:00:00Z' }
     const sessionNew = { ...SESSION_BASE, id: 'new', sessionDate: '2026-03-30T00:00:00Z' }
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([sessionNew, sessionOld])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([sessionNew, sessionOld])
     wrapper()
     await screen.findAllByTestId('session-entry')
     fireEvent.click(screen.getByTestId('date-range-button'))
@@ -555,7 +628,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('falls back to Session date format when no title', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, title: null, sessionDate: '2026-04-05T10:00:00Z' },
     ])
     wrapper()
@@ -564,7 +637,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows homework status icon in collapsed row when previousHomeworkStatusName is set', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, previousHomeworkStatusName: 'Done' },
     ])
     wrapper()
@@ -574,7 +647,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows x icon when homework not done', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, previousHomeworkStatusName: 'NotDone', previousHomeworkStatus: 2 },
     ])
     wrapper()
@@ -583,7 +656,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows half-circle icon when homework partially done', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, previousHomeworkStatusName: 'Partial', previousHomeworkStatus: 3 },
     ])
     wrapper()
@@ -592,7 +665,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show homework status icon when previousHomeworkStatusName is empty', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, previousHomeworkStatusName: '', previousHomeworkStatus: 0 },
     ])
     wrapper()
@@ -601,7 +674,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show homework status icon when status is NotApplicable', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, previousHomeworkStatusName: 'NotApplicable', previousHomeworkStatus: 3 },
     ])
     wrapper()
@@ -610,7 +683,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('always uses two-column layout in expanded state (next-plan textarea always present)', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       {
         ...SESSION_BASE,
         homeworkAssigned: null,
@@ -628,7 +701,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows "Logged" timestamp in expanded session row', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -637,7 +710,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows "Edited" timestamp when updatedAt differs from createdAt by more than 60s', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{
       ...SESSION_BASE,
       createdAt: '2026-03-30T10:00:00Z',
       updatedAt: '2026-03-30T10:05:00Z',
@@ -651,7 +724,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show "Edited" when updatedAt is within 60s of createdAt', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{
       ...SESSION_BASE,
       createdAt: '2026-03-30T10:00:00Z',
       updatedAt: '2026-03-30T10:00:30Z',
@@ -665,7 +738,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('expanded row shows "Edit full session" link pointing to log-session with sessionId', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
     wrapper()
     await screen.findByTestId('session-entry')
     fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -675,7 +748,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows Scheduled badge for a Confirmed session with a far-future date', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z' },
     ])
     wrapper()
@@ -685,7 +758,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('shows Completed badge for a Confirmed session with a past date', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, sessionDate: '2020-06-10T00:00:00Z' },
     ])
     wrapper()
@@ -695,7 +768,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show Scheduled badge for a Draft session with a future date', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', status: 1, statusName: 'Draft' as const },
     ])
     wrapper()
@@ -704,7 +777,7 @@ describe('SessionHistoryTab', () => {
   })
 
   it('does not show Scheduled badge for a cancelled session with a future date', async () => {
-    vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([
+    vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([
       { ...SESSION_BASE, sessionDate: '2099-01-15T00:00:00Z', isCancelled: true },
     ])
     wrapper()
@@ -714,7 +787,7 @@ describe('SessionHistoryTab', () => {
 
   describe('inline edit autosave', () => {
     it('expanding a row renders all four editable inputs', async () => {
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
       wrapper()
       await screen.findByTestId('session-entry')
       fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -725,7 +798,7 @@ describe('SessionHistoryTab', () => {
     })
 
     it('title input initialises with empty string when session.title is null', async () => {
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([{ ...SESSION_BASE, title: null }])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([{ ...SESSION_BASE, title: null }])
       wrapper()
       await screen.findByTestId('session-entry')
       fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -741,7 +814,7 @@ describe('SessionHistoryTab', () => {
         scheduleTextSave: vi.fn(),
         saveNow: saveNowMock,
       })
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
       wrapper()
       await screen.findByTestId('session-entry')
       fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -760,7 +833,7 @@ describe('SessionHistoryTab', () => {
         scheduleTextSave: vi.fn(),
         saveNow: saveNowMock,
       })
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
       wrapper()
       await screen.findByTestId('session-entry')
       fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -777,7 +850,7 @@ describe('SessionHistoryTab', () => {
         scheduleTextSave: vi.fn(),
         saveNow: vi.fn().mockResolvedValue('session-1'),
       })
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
       wrapper()
       await screen.findByTestId('session-entry')
       fireEvent.click(screen.getByTestId('session-entry-toggle'))
@@ -787,7 +860,7 @@ describe('SessionHistoryTab', () => {
     it('after RQ cache update on save, edited value persists when row is reopened', async () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       const updatedSession: sessionLogsApi.SessionLog = { ...SESSION_BASE, title: 'Saved Title' }
-      vi.mocked(sessionLogsApi.listSessions).mockResolvedValue([SESSION_BASE])
+      vi.mocked(sessionLogsApi.listSessionsIncludingGroups).mockResolvedValue([SESSION_BASE])
       vi.mocked(useSessionAutosaveModule.useSessionAutosave).mockImplementation(
         () => {
           return {
@@ -796,7 +869,7 @@ describe('SessionHistoryTab', () => {
             lastSavedAt: null,
             scheduleTextSave: vi.fn(),
             saveNow: vi.fn().mockImplementation(async () => {
-              queryClient.setQueryData<sessionLogsApi.SessionLog[]>(['sessions', 'student-1'], [updatedSession])
+              queryClient.setQueryData<sessionLogsApi.SessionLog[]>(['sessions-all', 'student-1'], [updatedSession])
               return 'session-1'
             }),
           }

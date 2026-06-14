@@ -4,7 +4,23 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight Tasks (2026-05-19)
+## In-Flight: Groups sprint CLOSE
+
+**Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
+
+All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349/#1350/#1351) merged to sprint/groups. Backlog triage done; the three backlog files cleared with a dated note. Sprint-close walkthroughs done (claude --chrome): functional Groups + corrections PASS; Vera UX; pedagogy.
+
+**Consistency bar for this sprint:** Group screens must look and behave like Student screens. Operation-level inconsistencies are blocking, not polish (see [[feedback_consistency_over_polish_in_close]]). The merge gate is built from issues that flag Group-vs-Student divergence.
+
+**Merge gate (query GitHub for live status; do not diary per-issue findings here -- see [[feedback_pm_stale_data]]):** open gate items live in the Groups milestone with the `qa:ready` label. Earlier gate items #1379/#1380/#1381 are closed. #1385 (Group detail header reaches Student parity via shared EntityDetailHeader primitive) is the current open gate candidate (pending two body clarifications before qa:ready).
+
+Migration validated in dev (2026-05-26): copy-azure-teacher (Jordi->Robert) + migrate-fake-groups --local. B1.1/A2.1 -> real groups, 13 live sessions reassigned, fake students soft-deleted, members empty (Jordi populates via UI), 0 XOR violations. NOTE: prod migration can only run AFTER the sprint merges + deploys; run `--dry-run` in Azure mode first.
+
+Process notes: [[feedback_no_inline_fix_during_close]] (I file, bots fix, I re-verify); [[feedback_consistency_over_polish_in_close]] (operation-level inconsistencies are blocking; add a "ship to Jordi?" check).
+
+---
+
+## Previous Sprint Status (2026-05-19)
 
 **Hardening II CLOSED 2026-05-17.** 38/38 issues merged to main.
 
@@ -57,6 +73,7 @@ Key queries:
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
+| Groups | ACTIVE | sprint/groups, milestone created, 8 issues qa:ready |
 | Hardening II | CLOSED 2026-05-17 | sprint/hardening-ii, milestone #22, merged to main. 38 issues total (scope grew from initial 12 as quality gates surfaced late-session bugs). Correction prompt robustness, security rate limit, arch cleanup, DB hardening, prompt externalization, generation grammar scope, pedagogy C-category, UI polish, Atelier hardening, test infra, prompt-health sweep, Vision OCR infra (#1279-#1281), ScopeAffirmer (#1286), max_tokens + timeout raises (#1293/#1296), Corrigiendo render fix (#1299), BuildGrammarScopeBlock injection (#1301). Sprint story: plan/sprints/hardening-ii.md |
 | Text Correction | CLOSED 2026-05-11 | sprint/text-correction, milestone #21, merged to main. Redacción markup (C/G/L/O), two-pass pipeline, .docx export, CEFR-calibrated corrections, thumbs feedback. Sprint story: plan/sprints/text-correction.md |
 | Hardening | CLOSED 2026-05-08 | sprint/hardening, milestone #20, merged to main and deployed. Atelier rebrand shipped, CEFR canonicalization, extraction polish, Whisper transcription rework. Sprint story: plan/sprints/hardening.md |

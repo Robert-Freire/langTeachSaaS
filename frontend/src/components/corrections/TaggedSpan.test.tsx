@@ -11,6 +11,7 @@ const baseTag: CorrectionTag = {
   explanation: 'Era pasado',
   correctedForm: 'fui',
   orderIndex: 0,
+  filterStatus: 'kept',
 }
 
 describe('TaggedSpan', () => {
@@ -31,5 +32,13 @@ describe('TaggedSpan', () => {
   it('uses Spanish category labels for ARIA', () => {
     render(<TaggedSpan tag={{ ...baseTag, category: 'O' }} text="Era" />)
     expect(screen.getByRole('button', { name: /Ortografía/ })).toBeInTheDocument()
+  })
+
+  it('marks above-level errors distinctly (dashed underline + ARIA + badge)', () => {
+    render(<TaggedSpan tag={{ ...baseTag, filterStatus: 'removed' }} text="voy" />)
+    const trigger = screen.getByRole('button', { name: /por encima del nivel/i })
+    expect(trigger.className).toContain('decoration-dashed')
+    fireEvent.click(trigger)
+    expect(screen.getByText(/Por encima del nivel/i)).toBeInTheDocument()
   })
 })

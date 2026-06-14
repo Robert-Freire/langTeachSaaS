@@ -15,7 +15,9 @@ public class ReflectionMapperTests
         string? whatWasCovered = null,
         string? homeworkAssigned = null,
         string? nextSessionTopics = null,
-        List<SuggestedDifficultyDto>? suggestedDifficulties = null)
+        List<SuggestedDifficultyDto>? suggestedDifficulties = null,
+        int? durationMinutes = null,
+        List<TopicTagDto>? topicTags = null)
     {
         return new ExtractedReflectionDto(
             WhatWasCovered: whatWasCovered is null ? null : new ExtractedTextFieldDto(whatWasCovered, ExtractionMode.Replace),
@@ -27,12 +29,12 @@ public class ReflectionMapperTests
             SuggestedDifficulties: suggestedDifficulties ?? [],
             RawExtractionJson: null,
             SessionTitle: sessionTitle,
-            TopicTags: [],
+            TopicTags: topicTags ?? [],
             PreviousHomeworkStatus: null,
             TeachingTodos: [],
             TeacherFollowups: [],
             LevelReassessment: null,
-            DurationMinutes: null,
+            DurationMinutes: durationMinutes,
             IsCancelled: null,
             DifficultiesWorkedOn: [],
             SessionStartTime: null,
@@ -179,7 +181,8 @@ public class ReflectionMapperTests
     {
         var dto = MakeDto(sessionTitle: "Same title");
         var currentSession = new SessionLogDto(
-            Id: Guid.NewGuid(), StudentId: Guid.NewGuid(), TeacherId: Guid.NewGuid(),
+            Id: Guid.NewGuid(), StudentId: Guid.NewGuid(), GroupId: null,
+            TargetType: "student", TargetName: "", TeacherId: Guid.NewGuid(),
             SessionDate: null, PlannedContent: null, ActualContent: null,
             HomeworkAssigned: null, PreviousHomeworkStatus: default,
             PreviousHomeworkStatusName: "", NextSessionTopics: null,
@@ -195,6 +198,67 @@ public class ReflectionMapperTests
             SessionFields: [new SessionFieldEntry("title", "Title", false)]);
 
         var proposals = ReflectionMapper.ToSessionFieldProposals(dto, currentSession, config).ToList();
+
+        Assert.Empty(proposals);
+    }
+
+    [Fact]
+    public void ToSessionFieldProposals_EmitsDurationProposal_WhenExtracted()
+    {
+        var dto = MakeDto(durationMinutes: 50);
+        var config = new ProposalFieldsConfig(
+            StudentFields: [],
+            SkillLevelFields: [],
+            SessionFields: [new SessionFieldEntry("duration", "Duration (minutes)", false)]);
+
+        var proposals = ReflectionMapper.ToSessionFieldProposals(dto, null, config).ToList();
+
+        Assert.Single(proposals);
+        Assert.Equal("duration", proposals[0].Field);
+        Assert.Equal("50", proposals[0].NewValue);
+    }
+
+    [Fact]
+    public void ToSessionFieldProposals_SkipsDurationProposal_WhenNotExtracted()
+    {
+        var dto = MakeDto(durationMinutes: null);
+        var config = new ProposalFieldsConfig(
+            StudentFields: [],
+            SkillLevelFields: [],
+            SessionFields: [new SessionFieldEntry("duration", "Duration (minutes)", false)]);
+
+        var proposals = ReflectionMapper.ToSessionFieldProposals(dto, null, config).ToList();
+
+        Assert.Empty(proposals);
+    }
+
+    [Fact]
+    public void ToSessionFieldProposals_EmitsTopicTagsProposal_WhenExtracted()
+    {
+        var tags = new List<TopicTagDto> { new("comida", "vocabulary"), new("llevarse bien/mal", "grammar") };
+        var dto = MakeDto(topicTags: tags);
+        var config = new ProposalFieldsConfig(
+            StudentFields: [],
+            SkillLevelFields: [],
+            SessionFields: [new SessionFieldEntry("topicTags", "Topic Tags", false)]);
+
+        var proposals = ReflectionMapper.ToSessionFieldProposals(dto, null, config).ToList();
+
+        Assert.Single(proposals);
+        Assert.Equal("topicTags", proposals[0].Field);
+        Assert.Contains("comida", proposals[0].NewValue);
+    }
+
+    [Fact]
+    public void ToSessionFieldProposals_SkipsTopicTagsProposal_WhenEmpty()
+    {
+        var dto = MakeDto(topicTags: []);
+        var config = new ProposalFieldsConfig(
+            StudentFields: [],
+            SkillLevelFields: [],
+            SessionFields: [new SessionFieldEntry("topicTags", "Topic Tags", false)]);
+
+        var proposals = ReflectionMapper.ToSessionFieldProposals(dto, null, config).ToList();
 
         Assert.Empty(proposals);
     }

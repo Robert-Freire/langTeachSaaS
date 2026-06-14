@@ -15,6 +15,9 @@ public class Correction
     public string? AssignmentPrompt { get; set; }
     public string? StudentText { get; set; }
     public string? MarkedUpOutput { get; set; }
+    // Known limitation (#1237): stores a 15-minute read SAS captured at upload time, so the URL
+    // expires. Harmless today because the image is never re-rendered. IF an image preview is built
+    // later, persist the blob path here instead and regenerate the SAS on read.
     [System.ComponentModel.DataAnnotations.MaxLength(2048)]
     public string? SourceImageUrl { get; set; }
 

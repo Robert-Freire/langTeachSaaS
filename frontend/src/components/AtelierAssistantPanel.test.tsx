@@ -327,6 +327,48 @@ describe('AtelierAssistantPanel', () => {
     expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
   })
 
+  it('calls onClose immediately when only session proposals remain in group context (no student)', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderPanel({
+      proposals: [makeProposal({ type: 'session', field: 'actualContent', status: 'proposed' })],
+      studentId: null,
+      sessionId: null,
+      onClose,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByTestId('discard-confirm')).not.toBeInTheDocument()
+  })
+
+  it('calls onClose when newSession applied and only session proposals remain in group context', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    renderPanel({
+      proposals: [
+        makeProposal({ id: 'ns1', type: 'newSession', field: 'newSession', status: 'applied' }),
+        makeProposal({ id: 's1', type: 'session', field: 'actualContent', status: 'proposed' }),
+      ],
+      studentId: null,
+      sessionId: null,
+      onClose,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByTestId('discard-confirm')).not.toBeInTheDocument()
+  })
+
+  it('shows discard confirm when session proposals remain in student context (picker can enable apply)', async () => {
+    const user = userEvent.setup()
+    renderPanel({
+      proposals: [makeProposal({ type: 'session', field: 'actualContent', status: 'proposed' })],
+      studentId: 'student-1',
+      sessionId: null,
+    })
+    await user.click(screen.getByRole('button', { name: /close assistant/i }))
+    expect(screen.getByTestId('discard-confirm')).toBeInTheDocument()
+  })
+
   it('calls onCloseDiscarding when Discard pressed with pending proposal', async () => {
     const user = userEvent.setup()
     const onCloseDiscarding = vi.fn()
@@ -794,6 +836,9 @@ describe('AtelierAssistantPanel', () => {
       mockedList.mockResolvedValueOnce([{
         id: 'session-abc',
         studentId: 'student-1',
+        groupId: null,
+        targetType: 'student',
+        targetName: 'Test Student',
         sessionDate: '2026-04-28',
         title: 'Pretérito indefinido',
         isCancelled: false,

@@ -35,8 +35,11 @@ public class DashboardService : IDashboardService
 
     private async Task<NextSessionDto?> GetNextSessionAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
     {
+        // Groups #1326: NextSession DTO currently assumes a student target.
+        // Group sessions are excluded from this card until #1330 ships the group-session UI.
         var next = await _db.SessionLogs
             .Where(sl => sl.TeacherId == teacherId
+                      && sl.StudentId != null
                       && !sl.IsDeleted
                       && !sl.IsCancelled
                       && sl.SessionDate.HasValue
@@ -83,8 +86,8 @@ public class DashboardService : IDashboardService
 
         return new NextSessionDto(
             SessionLogId: next.Id,
-            StudentId: next.StudentId,
-            StudentName: next.Student.Name,
+            StudentId: next.StudentId!.Value,
+            StudentName: next.Student!.Name,
             StudentCefrLevel: next.Student.CefrLevel,
             SessionDate: next.SessionDate!.Value,
             PlannedContent: next.PlannedContent,
@@ -102,8 +105,10 @@ public class DashboardService : IDashboardService
 
     private async Task<List<TodaySessionDto>> GetTodaySessionsAsync(Guid teacherId, DateTime today, CancellationToken cancellationToken)
     {
+        // Groups #1326: TodaySessionDto assumes a student target. Group sessions excluded until #1330.
         var sessions = await _db.SessionLogs
             .Where(sl => sl.TeacherId == teacherId
+                      && sl.StudentId != null
                       && !sl.IsDeleted
                       && sl.SessionDate.HasValue
                       && sl.SessionDate.Value.Date == today)
@@ -113,8 +118,8 @@ public class DashboardService : IDashboardService
 
         return sessions.Select(sl => new TodaySessionDto(
             SessionLogId: sl.Id,
-            StudentId: sl.StudentId,
-            StudentName: sl.Student.Name,
+            StudentId: sl.StudentId!.Value,
+            StudentName: sl.Student!.Name,
             StudentCefrLevel: sl.Student.CefrLevel,
             SessionDate: sl.SessionDate!.Value,
             PlannedContent: sl.PlannedContent,
@@ -126,8 +131,10 @@ public class DashboardService : IDashboardService
     {
         var endOfWeek = today.AddDays(7);
 
+        // Groups #1326: UpcomingSessionDto assumes a student target. Group sessions excluded until #1330.
         var sessions = await _db.SessionLogs
             .Where(sl => sl.TeacherId == teacherId
+                      && sl.StudentId != null
                       && !sl.IsDeleted
                       && !sl.IsCancelled
                       && sl.SessionDate.HasValue
@@ -140,8 +147,8 @@ public class DashboardService : IDashboardService
 
         return sessions.Select(sl => new UpcomingSessionDto(
             SessionLogId: sl.Id,
-            StudentId: sl.StudentId,
-            StudentName: sl.Student.Name,
+            StudentId: sl.StudentId!.Value,
+            StudentName: sl.Student!.Name,
             StudentCefrLevel: sl.Student.CefrLevel,
             SessionDate: sl.SessionDate!.Value,
             PlannedContent: sl.PlannedContent
@@ -152,11 +159,14 @@ public class DashboardService : IDashboardService
     {
         var recentCutoff = DateTime.UtcNow.Date.AddDays(-7);
 
+        // Groups #1326: SessionListItemDto assumes a student target. Filter to student sessions only.
+        // Group sessions are surfaced via the group route (#1330) and a future Groups sessions list.
         IQueryable<SessionLog> baseQuery = _db.SessionLogs
             .Where(sl => sl.TeacherId == teacherId
+                      && sl.StudentId != null
                       && !sl.IsDeleted
                       && sl.SessionDate.HasValue
-                      && !sl.Student.IsDeleted)
+                      && sl.Student != null && !sl.Student.IsDeleted)
             .Include(sl => sl.Student);
 
         if (studentId.HasValue)
@@ -196,8 +206,8 @@ public class DashboardService : IDashboardService
     private static SessionListItemDto MapToSessionListItem(SessionLog sl) =>
         new(
             sl.Id,
-            sl.StudentId,
-            sl.Student.Name,
+            sl.StudentId!.Value,
+            sl.Student!.Name,
             sl.Student.CefrLevel,
             sl.SessionDate!.Value,
             sl.PlannedContent,
@@ -206,8 +216,10 @@ public class DashboardService : IDashboardService
     private async Task<List<ActiveStudentDto>> GetActiveStudentsAsync(Guid teacherId, DateTime now, CancellationToken cancellationToken)
     {
         var cutoff30Days = now.AddDays(-30);
+        var todayDateOnly = DateOnly.FromDateTime(now);
 
-        var rows = await _db.Students
+        // Phase 1a: student rows (todos + metadata).
+        var studentRows = await _db.Students
             .Where(s => s.TeacherId == teacherId && !s.IsDeleted && s.IsActive)
             .Select(s => new
             {
@@ -221,7 +233,7 @@ public class DashboardService : IDashboardService
                 PendingTodos = s.TeacherFollowups
                     .Where(f => f.Kind == TeacherFollowupKinds.Pedagogical && f.Status == "pending")
                     .OrderBy(f => f.CreatedAt)
-                    // Projection matches TeachingTodoDtoProjection.Compiled — keep in sync.
+                    // Projection matches TeachingTodoDtoProjection.Compiled -- keep in sync.
                     .Select(f => new TeachingTodoDto(
                         f.Id.ToString(), f.Text, f.CreatedAt,
                         f.SourceSessionLogId != null ? f.SourceSessionLogId.ToString() : null,
@@ -229,36 +241,46 @@ public class DashboardService : IDashboardService
                         f.CoveredInSessionLogId != null ? f.CoveredInSessionLogId.ToString() : null,
                         f.DueDate))
                     .ToList(),
-                LastSessionDate = s.SessionLogs
-                    .Where(sl => !sl.IsDeleted && sl.SessionDate.HasValue && sl.SessionDate.Value < now)
-                    .Max(sl => (DateTime?)sl.SessionDate),
-                NextSessionDate = s.SessionLogs
-                    .Where(sl => !sl.IsDeleted && !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now)
-                    .Min(sl => (DateTime?)sl.SessionDate),
-                TotalSessions = s.SessionLogs.Count(sl => !sl.IsDeleted),
-                CancelledSessionsLast30Days = s.SessionLogs
-                    .Count(sl => !sl.IsDeleted
-                              && sl.IsCancelled
-                              && sl.SessionDate.HasValue
-                              && sl.SessionDate.Value >= cutoff30Days
-                              && sl.SessionDate.Value <= now),
-                LastHomeworkStatusRaw = s.SessionLogs
-                    .Where(sl => !sl.IsDeleted
-                              && sl.SessionDate.HasValue
-                              && sl.SessionDate.Value < now
-                              && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
-                    .OrderByDescending(sl => sl.SessionDate)
-                    .Select(sl => (int?)sl.PreviousHomeworkStatus)
-                    .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
-        var todayDateOnly = DateOnly.FromDateTime(now);
+        // Phase 1b: group memberships for all active students in one batch.
+        // Used below to implement BelongsToStudent without repeating the subquery 5x.
+        // Materialize first (EF Core cannot translate ToDictionaryAsync with ToHashSet selector).
+        var studentIds = studentRows.Select(r => r.Id).ToList();
+        var deletedGroupIds = await _db.Groups
+            .Where(g => g.IsDeleted)
+            .Select(g => g.Id)
+            .ToListAsync(cancellationToken);
+        var deletedGroupIdSet = deletedGroupIds.ToHashSet();
+        var membershipRows = await _db.StudentGroups
+            .Where(sg => studentIds.Contains(sg.StudentId))
+            .Select(sg => new { sg.StudentId, sg.GroupId })
+            .ToListAsync(cancellationToken);
+        var groupIdsByStudent = membershipRows
+            .Where(sg => !deletedGroupIdSet.Contains(sg.GroupId))
+            .GroupBy(sg => sg.StudentId)
+            .ToDictionary(g => g.Key, g => g.Select(x => (Guid?)x.GroupId).ToHashSet());
 
-        return rows.Select(r =>
+        // Phase 1c: all non-deleted sessions for this teacher (scoped by teacher, not per-student).
+        // No SessionDate filter here: TotalSessions in the original query had no date filter and
+        // must count undated sessions too. Date-based aggregates below add HasValue guards inline.
+        // In-memory aggregation uses BelongsToStudent (defined once) instead of the previous
+        // 5x inline correlated subquery. Acceptable trade-off: loads ~N rows per teacher vs N*5 SQL
+        // round-trips with correlated subqueries per student.
+        var sessions = await _db.SessionLogs
+            .Where(sl => sl.TeacherId == teacherId && !sl.IsDeleted)
+            .Select(sl => new { sl.StudentId, sl.GroupId, sl.SessionDate, sl.IsCancelled, sl.PreviousHomeworkStatus })
+            .ToListAsync(cancellationToken);
+
+        bool BelongsToStudent(Guid studentId, Guid? groupId)
         {
-            // NearestObjectiveDeadline: earliest future targetDate from ShortTermObjectives JSON
-            // DefaultIfEmpty() on empty sequence returns DateTime.MinValue — treated as null below
+            if (groupId == null) return false;
+            return groupIdsByStudent.TryGetValue(studentId, out var groups) && groups.Contains(groupId);
+        }
+
+        return studentRows.Select(r =>
+        {
             var objectives = JsonStorageHelper.DeserializeList<ShortTermObjectiveDto>(r.ShortTermObjectives);
             var nearestDeadline = objectives
                 .Where(o => o.TargetDate.HasValue && o.TargetDate.Value > todayDateOnly)
@@ -267,8 +289,37 @@ public class DashboardService : IDashboardService
                 .Min();
             DateTime? nearestObjectiveDeadline = nearestDeadline == DateTime.MinValue ? null : nearestDeadline;
 
-            string? lastHomeworkStatus = r.LastHomeworkStatusRaw.HasValue
-                ? ((HomeworkStatus)r.LastHomeworkStatusRaw.Value).ToString()
+            var studentSessions = sessions.Where(sl =>
+                sl.StudentId == r.Id || BelongsToStudent(r.Id, sl.GroupId));
+
+            var lastSessionDate = studentSessions
+                .Where(sl => sl.SessionDate.HasValue && sl.SessionDate.Value < now)
+                .Select(sl => (DateTime?)sl.SessionDate!.Value)
+                .DefaultIfEmpty(null)
+                .Max();
+
+            var nextSessionDate = studentSessions
+                .Where(sl => !sl.IsCancelled && sl.SessionDate.HasValue && sl.SessionDate.Value > now)
+                .Select(sl => (DateTime?)sl.SessionDate!.Value)
+                .DefaultIfEmpty(null)
+                .Min();
+
+            var totalSessions = studentSessions.Count();
+
+            var cancelledLast30 = studentSessions
+                .Count(sl => sl.IsCancelled
+                          && sl.SessionDate.HasValue
+                          && sl.SessionDate.Value >= cutoff30Days
+                          && sl.SessionDate.Value <= now);
+
+            var lastHomeworkStatusRaw = studentSessions
+                .Where(sl => sl.SessionDate.HasValue && sl.SessionDate.Value < now && sl.PreviousHomeworkStatus != HomeworkStatus.NotApplicable)
+                .OrderByDescending(sl => sl.SessionDate)
+                .Select(sl => (int?)sl.PreviousHomeworkStatus)
+                .FirstOrDefault();
+
+            string? lastHomeworkStatus = lastHomeworkStatusRaw.HasValue
+                ? ((HomeworkStatus)lastHomeworkStatusRaw.Value).ToString()
                 : null;
 
             return new ActiveStudentDto(
@@ -277,12 +328,12 @@ public class DashboardService : IDashboardService
                 CefrLevel: r.CefrLevel,
                 NativeLanguages: JsonStorageHelper.DeserializeList<string>(r.NativeLanguages),
                 IsActive: r.IsActive,
-                LastSessionDate: r.LastSessionDate,
-                NextSessionDate: r.NextSessionDate,
-                TotalSessions: r.TotalSessions,
+                LastSessionDate: lastSessionDate,
+                NextSessionDate: nextSessionDate,
+                TotalSessions: totalSessions,
                 TeachingTodosCount: r.TeachingTodosCount,
                 PendingTodos: r.PendingTodos,
-                CancelledSessionsLast30Days: r.CancelledSessionsLast30Days,
+                CancelledSessionsLast30Days: cancelledLast30,
                 NearestObjectiveDeadline: nearestObjectiveDeadline,
                 LastHomeworkStatus: lastHomeworkStatus
             );

@@ -196,6 +196,24 @@ public class PromptService : IPromptService
             .Select(w => w with { Description = w.Description.Length > 120 ? w.Description[..120] : w.Description })
             .ToArray() ?? [];
 
+    /// Appends templateGuidance (always) and optionally a weakness targeting block immediately after.
+    /// Used by the four section-prompt methods that share this tail pattern. Output is byte-identical
+    /// to the inline expansion (same separator "\n\n", same call sites, same conditional checks).
+    private string AppendStandardBlocks(string prompt, GenerationContext ctx, string level,
+        bool includeWeakness = false, string? weaknessSectionType = null)
+    {
+        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
+        if (!string.IsNullOrEmpty(templateGuidance))
+            prompt += "\n\n" + templateGuidance;
+        if (includeWeakness)
+        {
+            var weaknessBlock = BuildWeaknessTargetingForSection(ctx, weaknessSectionType ?? ctx.SectionType ?? DefaultSectionType);
+            if (!string.IsNullOrEmpty(weaknessBlock))
+                prompt += "\n\n" + weaknessBlock;
+        }
+        return prompt;
+    }
+
     /// <summary>
     /// Returns a weakness targeting block for a specific section type, or empty string when
     /// the student has no documented weaknesses or the section has no targeting guidance.
@@ -232,7 +250,7 @@ public class PromptService : IPromptService
         sb.AppendLine($"GRAMMAR SCOPE for {level}:");
         if (scope.InScope.Length > 0)
             sb.AppendLine($"In scope: {string.Join(", ", scope.InScope)}");
-        if (scope.OutOfScope.Length > 0)
+        if (scope.OutOfScope.Length > 0 && !scope.HasFocusTargets)
             sb.AppendLine($"Exclude from teaching targets: {string.Join(", ", scope.OutOfScope)}");
         if (!string.IsNullOrWhiteSpace(scope.CeilingNote))
             sb.AppendLine($"GRAMMAR FOCUS CEILING: {scope.CeilingNote}");
@@ -678,9 +696,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
+        prompt = AppendStandardBlocks(prompt, ctx, level);
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -755,9 +771,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(grammarScope))
             prompt += "\n\n" + grammarScope;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
+        prompt = AppendStandardBlocks(prompt, ctx, level);
 
         var contentTypeContext = BuildContentTypeContextBlock(ctx.SectionType, level, ctx.TemplateName);
         if (!string.IsNullOrEmpty(contentTypeContext))
@@ -960,13 +974,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
-
-        var gwWeaknessBlock = BuildWeaknessTargetingForSection(ctx, ctx.SectionType ?? DefaultSectionType);
-        if (!string.IsNullOrEmpty(gwWeaknessBlock))
-            prompt += "\n\n" + gwWeaknessBlock;
+        prompt = AppendStandardBlocks(prompt, ctx, level, includeWeakness: true);
 
         return prompt;
     }
@@ -1009,13 +1017,7 @@ public class PromptService : IPromptService
         if (!string.IsNullOrEmpty(scopeConstraint))
             prompt += "\n" + scopeConstraint;
 
-        var templateGuidance = BuildTemplateGuidanceBlock(ctx.TemplateName, ctx.SectionType, level);
-        if (!string.IsNullOrEmpty(templateGuidance))
-            prompt += "\n\n" + templateGuidance;
-
-        var ecWeaknessBlock = BuildWeaknessTargetingForSection(ctx, "practice");
-        if (!string.IsNullOrEmpty(ecWeaknessBlock))
-            prompt += "\n\n" + ecWeaknessBlock;
+        prompt = AppendStandardBlocks(prompt, ctx, level, includeWeakness: true, weaknessSectionType: "practice");
 
         return prompt;
     }
@@ -1609,6 +1611,7 @@ public class PromptService : IPromptService
             - newSessionTitle: string or null — concise title (under 60 chars) for a NEW session record the teacher is creating, either scheduled for the future or retroactively registered for a past date. Set to null when the transcript is a post-class reflection for today's session (i.e. the opening contains a present-day anchor such as "hoy", "en la clase de hoy", or a specific time). Set for explicit scheduling statements ("next Monday I want to do a session on the subjunctive", "la semana que viene hagamos una sesión sobre el subjuntivo") and for retrospective registration when the teacher explicitly says they forgot to register a past session ("que se me olvidó registrarla", "apunta una sesión del lunes pasado sobre X"). Past-date mentions inside the body of a reflection (e.g. "la pizarra del 30 de abril") are content references, not triggers for a new session record. Distinct from nextLessonIdeas (planning ideas without a scheduled appointment). Both newSessionTitle and nextLessonIdeas may be set simultaneously if the teacher is scheduling AND has broader ideas.
                 When the teacher uses a todo-creation trigger phrase ({todoTriggersList}), produce a todo object and leave newSessionTitle null — the idea belongs to the todo, not a new session.
             - newSessionDate: string or null — ISO 8601 date (YYYY-MM-DD) for the proposed new session. Apply the weekday resolution rules above: for future dates resolve forward; for retrospective sessions with explicit past markers ("pasado", "de la semana pasada", "que se me olvidó registrar") resolve backward. "la semana que viene" = same day next week. Null only when no specific day or date can be inferred (e.g. "next class", "soon") — do NOT default to today when no date cue is present. Null if newSessionTitle is null. If a date is mentioned without a topic, set both fields to null.
+            - groupMention: string or null — the name or spoken reference the teacher used for a group of students ("el grupo del lunes", "Lunes", "los del lunes", "be uno punto uno", "mis alumnos del lunes"). If the transcript mentions both a named student and a group, extract the group reference here. Set to null only when the transcript clearly and exclusively targets a single student with no indication of a group context. Do not resolve to a group ID; resolution happens server-side.
 
             For suggestedDifficulties, each object must have:
             - description: full sentence describing the difficulty, extracted verbatim from the teacher's language

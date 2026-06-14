@@ -28,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<AssistantTurnFeedback> AssistantTurnFeedbacks => Set<AssistantTurnFeedback>();
     public DbSet<Correction> Corrections => Set<Correction>();
     public DbSet<CorrectionTag> CorrectionTags => Set<CorrectionTag>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<StudentGroup> StudentGroups => Set<StudentGroup>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -187,16 +189,27 @@ public class AppDbContext : DbContext
                  v => ContentBlockTypeExtensions.FromKebabCase(v));
         });
 
-        // SessionLog — no-action from Student, Teacher, and Lesson (SQL Server multi-path constraint)
+        // SessionLog — no-action from Student, Group, Teacher, and Lesson (SQL Server multi-path constraint).
+        // StudentId and GroupId are both nullable; CHECK constraint enforces exactly one is non-null.
         modelBuilder.Entity<SessionLog>(e =>
         {
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_SessionLogs_Target",
+                "([StudentId] IS NULL AND [GroupId] IS NOT NULL) OR ([StudentId] IS NOT NULL AND [GroupId] IS NULL)"));
             e.HasKey(sl => sl.Id);
             e.HasIndex(sl => new { sl.StudentId, sl.SessionDate });
+            e.HasIndex(sl => new { sl.GroupId, sl.SessionDate });
             e.HasIndex(sl => new { sl.TeacherId, sl.IsDeleted });
             e.HasIndex(sl => sl.Status).HasDatabaseName("IX_SessionLogs_Status");
             e.HasOne(sl => sl.Student)
              .WithMany(s => s.SessionLogs)
              .HasForeignKey(sl => sl.StudentId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sl => sl.Group)
+             .WithMany(g => g.SessionLogs)
+             .HasForeignKey(sl => sl.GroupId)
+             .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(sl => sl.Teacher)
              .WithMany()
@@ -212,6 +225,37 @@ public class AppDbContext : DbContext
             e.Property(sl => sl.IsDeleted).HasDefaultValue(false);
             e.Property(sl => sl.TopicTags).HasDefaultValue("[]");
             e.Property(sl => sl.Title).HasMaxLength(120);
+        });
+
+        // Group — soft delete + IsActive toggle, mirrors Student commercial semantics.
+        modelBuilder.Entity<Group>(e =>
+        {
+            e.HasKey(g => g.Id);
+            e.HasIndex(g => new { g.TeacherId, g.IsDeleted });
+            e.HasOne(g => g.Teacher)
+             .WithMany()
+             .HasForeignKey(g => g.TeacherId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.Property(g => g.Name).IsRequired().HasMaxLength(100);
+            e.Property(g => g.Description).HasMaxLength(500);
+            e.Property(g => g.CefrLevel).HasMaxLength(10);
+            e.Property(g => g.IsActive).HasDefaultValue(true);
+            e.Property(g => g.IsDeleted).HasDefaultValue(false);
+        });
+
+        // StudentGroup — many-to-many join. Composite PK, NoAction on both FKs, hard-delete.
+        modelBuilder.Entity<StudentGroup>(e =>
+        {
+            e.HasKey(sg => new { sg.StudentId, sg.GroupId });
+            e.HasIndex(sg => sg.GroupId);
+            e.HasOne(sg => sg.Student)
+             .WithMany(s => s.StudentGroups)
+             .HasForeignKey(sg => sg.StudentId)
+             .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(sg => sg.Group)
+             .WithMany(g => g.StudentGroups)
+             .HasForeignKey(sg => sg.GroupId)
+             .OnDelete(DeleteBehavior.NoAction);
         });
 
         // VoiceNote — cascade delete from Teacher
@@ -339,10 +383,18 @@ public class AppDbContext : DbContext
             // Allowed values defined in TeacherFollowupKinds; SQL string literal required here
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_TeacherFollowups_Kind",
-                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')"));
+                "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective') AND (Kind COLLATE Latin1_General_100_BIN2 <> 'objective' OR ([GroupId] IS NOT NULL AND [StudentId] IS NULL))"));
             e.HasIndex(f => new { f.TeacherId, f.Status });
             e.HasIndex(f => new { f.TeacherId, f.StudentId });
             e.HasIndex(f => new { f.TeacherId, f.StudentId, f.Kind });
+            e.HasIndex(f => new { f.GroupId, f.Status }).HasFilter("[GroupId] IS NOT NULL");
+            // At-most-one scope: a followup may be scoped to a student, a group, or
+            // neither (teacher-level agenda items). Both at once is rejected. This mirrors
+            // TeacherFollowupService.CreateAsync, which only forbids the both-set case.
+            // (Previously XOR, which wrongly forbade teacher-level followups -- see #1356.)
+            e.ToTable(t => t.HasCheckConstraint(
+                "CK_TeacherFollowups_Scope",
+                "[StudentId] IS NULL OR [GroupId] IS NULL"));
             e.Property(f => f.Text).HasMaxLength(500).IsRequired();
             e.Property(f => f.Status).HasDefaultValue("pending");
             e.Property(f => f.Kind).HasMaxLength(20).HasDefaultValue(TeacherFollowupKinds.Operational).IsRequired();
@@ -355,6 +407,11 @@ public class AppDbContext : DbContext
              .HasForeignKey(f => f.StudentId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(f => f.Group)
+             .WithMany(g => g.TeacherFollowups)
+             .HasForeignKey(f => f.GroupId)
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(f => f.SourceSessionLog)
              .WithMany()
              .HasForeignKey(f => f.SourceSessionLogId)
@@ -365,6 +422,7 @@ public class AppDbContext : DbContext
              .HasForeignKey(f => f.CoveredInSessionLogId)
              .IsRequired(false)
              .OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(f => new { f.GroupId, f.Kind });
         });
 
         // Correction — cascade from Teacher; NoAction from Student/Lesson/SessionLog
@@ -376,7 +434,7 @@ public class AppDbContext : DbContext
         {
             e.ToTable(t => t.HasCheckConstraint(
                 "CK_Corrections_Status",
-                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')"));
+                "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Encolada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')"));
             e.HasKey(c => c.Id);
             e.HasIndex(c => new { c.TeacherId, c.IsDeleted });
             e.HasIndex(c => new { c.StudentId, c.IsDeleted });
@@ -417,6 +475,9 @@ public class AppDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_CorrectionTags_Span",
                     "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
+                t.HasCheckConstraint(
+                    "CK_CorrectionTags_FilterStatus",
+                    "FilterStatus COLLATE Latin1_General_100_BIN2 IN ('kept', 'removed')");
             });
             e.HasKey(t => t.Id);
             e.HasIndex(t => new { t.CorrectionId, t.Category });
@@ -428,6 +489,8 @@ public class AppDbContext : DbContext
             e.Property(t => t.SpannedText).HasMaxLength(500).IsRequired();
             e.Property(t => t.Explanation).HasMaxLength(1000);
             e.Property(t => t.CorrectedForm).HasMaxLength(500);
+            e.Property(t => t.FilterStatus).HasMaxLength(20)
+             .HasDefaultValue(CorrectionTagFilterStatus.Kept).IsRequired();
         });
     }
 }

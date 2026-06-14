@@ -161,15 +161,14 @@ public class RedaccionCorrectionPromptBuilderTests
     public void Build_WrapsStudentTextInVerbatimMarkers()
     {
         // Markers use a per-request nonce ("STUDENT_TEXT_VERBATIM_<guid>") so they cannot
-        // collide with user-controlled student text. The label tells the model that tag
-        // offsets must reference this text exactly.
+        // collide with user-controlled student text.
         var ctx = MakeCtx() with { StudentText = "Hoy ablar con mi amigo." };
         var prompt = _builder.BuildWithTool(ctx).Request.UserPrompt;
 
         prompt.Should().MatchRegex("<<<STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().MatchRegex("<<</STUDENT_TEXT_VERBATIM_[0-9a-f]{32}>>>");
         prompt.Should().Contain("Hoy ablar con mi amigo.");
-        prompt.Should().Contain("offsets must reference this text exactly");
+        prompt.Should().Contain("STUDENT TEXT");
     }
 
     [Fact]
@@ -222,6 +221,30 @@ public class RedaccionCorrectionPromptBuilderTests
         req.SystemPrompt.Should().Contain("Cohesión y Coherencia", "C must be labelled as CCoh, covering both connector and discourse errors");
         req.SystemPrompt.Should().Contain("topic sentence", "C must include topic-sentence absence as a discourse-level example");
         req.SystemPrompt.Should().Contain("logically ordered", "C must include logical ordering as a discourse-level error");
+    }
+
+    [Fact]
+    public void Build_SystemPromptContainsParagraphBreakSubtype()
+    {
+        // Issue #1350: C must cover paragraph-break errors (B1+) so the model can flag
+        // a wall of text that should be split into paragraphs per the EOI rubric.
+        var req = _builder.BuildWithTool(MakeCtx()).Request;
+
+        req.SystemPrompt.Should().Contain("Paragraph-break", "C must include paragraph-break as a B1+ subtype");
+        req.SystemPrompt.Should().Contain("B1 and above", "paragraph-break gating must be explicit in the subtype");
+        req.SystemPrompt.Should().Contain("¶", "correctedForm for paragraph-break must be the pilcrow symbol");
+    }
+
+    [Fact]
+    public void Build_SystemPromptContainsParagraphBreakOverflagGuard()
+    {
+        // Issue #1350: the anti-pattern rule must prevent the model from flagging A1 texts
+        // and already-paragraphed texts. Sentence-count threshold is stated in the subtype.
+        var req = _builder.BuildWithTool(MakeCtx()).Request;
+
+        req.SystemPrompt.Should().Contain("5 or more sentences", "paragraph-break subtype must include the sentence-count threshold");
+        req.SystemPrompt.Should().Contain("reasonably paragraphed", "paragraph-break anti-pattern must forbid flagging already-paragraphed texts");
+        req.SystemPrompt.Should().Contain("position marker", "paragraph-break span exception to minimum-span rule must be explicit");
     }
 
     private static RedaccionCorrectionPromptContext MakeCtx() =>

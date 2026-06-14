@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
 
@@ -5,6 +6,8 @@ namespace LangTeach.Api.Services;
 
 internal static class ReflectionMapper
 {
+    private static readonly JsonSerializerOptions CamelCaseOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     internal static CreateSessionLogRequest ToSessionLogRequest(ExtractedReflectionDto extracted, string rawNotes)
     {
         var generalNotes = JoinGeneralNotes(extracted.AreasToImprove?.Value, extracted.EmotionalSignals);
@@ -28,8 +31,15 @@ internal static class ReflectionMapper
     internal static IEnumerable<ProposalDto> ToSessionFieldProposals(
         ExtractedReflectionDto extracted,
         SessionLogDto? current,
-        ProposalFieldsConfig config)
+        ProposalFieldsConfig config,
+        ResolvedTarget? resolvedTarget = null,
+        bool hasAdminIntent = false,
+        string? adminMemberName = null)
     {
+        var extractedTopicTags = extracted.TopicTags.Count > 0
+            ? JsonSerializer.Serialize(extracted.TopicTags, CamelCaseOpts)
+            : null;
+
         var fieldValues = new Dictionary<string, (string? current, string? extracted)>
         {
             ["title"] = (current?.Title, NormalizeSessionTitle(extracted.SessionTitle)),
@@ -37,6 +47,8 @@ internal static class ReflectionMapper
             ["generalNotes"] = (current?.GeneralNotes, extracted.AreasToImprove?.Value),
             ["homeworkAssigned"] = (current?.HomeworkAssigned, extracted.HomeworkAssigned?.Value),
             ["nextSessionTopics"] = (current?.NextSessionTopics, extracted.NextSessionTopics?.Value),
+            ["duration"] = (current?.Duration?.ToString(), extracted.DurationMinutes?.ToString()),
+            ["topicTags"] = (current?.TopicTags, extractedTopicTags),
         };
 
         foreach (var f in config.SessionFields)
@@ -44,6 +56,60 @@ internal static class ReflectionMapper
             if (!fieldValues.TryGetValue(f.Field, out var vals)) continue;
             var proposal = MakeFieldProposal("session", f.Field, f.Label, vals.current, vals.extracted);
             if (proposal is not null) yield return proposal;
+        }
+
+        if (extracted.ProposedNewSession is { } proposed)
+        {
+            var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+            var sessionDate = extracted.SessionStartTime is { } t
+                ? $"{dateOnly}T{t}"
+                : dateOnly;
+
+            object newSessionPayload;
+            if (resolvedTarget is { Target.Kind: "group", Target.ResolvedId: { } groupId })
+            {
+                object? adminCallout = hasAdminIntent && !string.IsNullOrWhiteSpace(adminMemberName)
+                    ? new { memberName = adminMemberName, rawText = extracted.RawGroupMention ?? adminMemberName }
+                    : null;
+
+                newSessionPayload = new
+                {
+                    title = proposed.Title,
+                    sessionDate,
+                    groupId,
+                    groupName = resolvedTarget.ResolvedGroupName ?? resolvedTarget.Target.RawMention,
+                    cefrLevel = resolvedTarget.ResolvedCefrLevel,
+                    requiresConfirmation = false,
+                    adminCallout,
+                };
+            }
+            else if (resolvedTarget is { IsConfident: false })
+            {
+                newSessionPayload = new
+                {
+                    title = proposed.Title,
+                    sessionDate,
+                    rawGroupMention = resolvedTarget.Target.RawMention,
+                    requiresConfirmation = true,
+                    candidates = resolvedTarget.Target.Candidates
+                        .Select(c => new { id = c.Id, name = c.Name, cefrLevel = c.CefrLevel })
+                        .ToList(),
+                };
+            }
+            else
+            {
+                newSessionPayload = new { title = proposed.Title, sessionDate };
+            }
+
+            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, CamelCaseOpts);
+            yield return new ProposalDto(
+                Guid.NewGuid().ToString(),
+                "newSession",
+                "newSession",
+                "New Session",
+                null,
+                proposed.Title,
+                payloadElement);
         }
     }
 

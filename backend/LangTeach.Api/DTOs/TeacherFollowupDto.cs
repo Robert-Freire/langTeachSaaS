@@ -12,7 +12,8 @@ public record TeacherFollowupDto(
     DateOnly? DueDate,
     DateTime? CompletedAt,
     string? SourceSessionLogId,
-    string Kind);
+    string Kind,
+    string? GroupId = null);
 
 public record CreateTeacherFollowupRequest(
     [Required]
@@ -23,10 +24,11 @@ public record CreateTeacherFollowupRequest(
     DateOnly? DueDate,
     Guid? SourceSessionLogId,
     // Allowed values defined in TeacherFollowupKinds; regex must stay as a string literal for attributes
-    [MinLength(1, ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
-    [RegularExpression("^(pedagogical|operational)$",
-        ErrorMessage = "Kind must be 'pedagogical' or 'operational'.")]
-    string? Kind = null);
+    [MinLength(1, ErrorMessage = "Kind must be 'pedagogical', 'operational', or 'objective'.")]
+    [RegularExpression("^(pedagogical|operational|objective)$",
+        ErrorMessage = "Kind must be 'pedagogical', 'operational', or 'objective'.")]
+    string? Kind = null,
+    Guid? GroupId = null);
 
 public record UpdateTeacherFollowupRequest(
     [Required]

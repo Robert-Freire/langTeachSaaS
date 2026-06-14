@@ -12,6 +12,7 @@ function tag(over: Partial<CorrectionTag>): CorrectionTag {
     explanation: null,
     correctedForm: null,
     orderIndex: 0,
+    filterStatus: 'kept',
     ...over,
   }
 }

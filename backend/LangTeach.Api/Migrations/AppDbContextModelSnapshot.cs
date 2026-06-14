@@ -158,7 +158,7 @@ namespace LangTeach.Api.Migrations
 
                     b.ToTable("Corrections", t =>
                         {
-                            t.HasCheckConstraint("CK_Corrections_Status", "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')");
+                            t.HasCheckConstraint("CK_Corrections_Status", "Status COLLATE Latin1_General_100_BIN2 IN ('Pendiente', 'Entregada', 'Encolada', 'Corrigiendo', 'Corregida', 'CorreccionFallida')");
                         });
                 });
 
@@ -187,6 +187,13 @@ namespace LangTeach.Api.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("FilterStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("kept");
+
                     b.Property<int>("OrderIndex")
                         .HasColumnType("int");
 
@@ -205,6 +212,8 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("CorrectionTags", t =>
                         {
                             t.HasCheckConstraint("CK_CorrectionTags_Category", "Category COLLATE Latin1_General_100_BIN2 IN ('C', 'G', 'L', 'O', 'MuyBien')");
+
+                            t.HasCheckConstraint("CK_CorrectionTags_FilterStatus", "FilterStatus COLLATE Latin1_General_100_BIN2 IN ('kept', 'removed')");
 
                             t.HasCheckConstraint("CK_CorrectionTags_Span", "[StartIndex] >= 0 AND [EndIndex] >= [StartIndex]");
                         });
@@ -405,6 +414,69 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("TeacherId", "CreatedAt");
 
                     b.ToTable("GenerationUsages");
+                });
+
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Aliases")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CefrLevel")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CommonFocusAreas")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Interests")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReasonForStudying")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TeachingNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeacherId", "IsDeleted");
+
+                    b.ToTable("Groups");
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Lesson", b =>
@@ -676,6 +748,9 @@ namespace LangTeach.Api.Migrations
                     b.Property<string>("GeneralNotes")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("HomeworkAssigned")
                         .HasColumnType("nvarchar(max)");
 
@@ -717,7 +792,7 @@ namespace LangTeach.Api.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("StudentId")
+                    b.Property<Guid?>("StudentId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("SuggestedDifficulties")
@@ -747,11 +822,16 @@ namespace LangTeach.Api.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_SessionLogs_Status");
 
+                    b.HasIndex("GroupId", "SessionDate");
+
                     b.HasIndex("StudentId", "SessionDate");
 
                     b.HasIndex("TeacherId", "IsDeleted");
 
-                    b.ToTable("SessionLogs");
+                    b.ToTable("SessionLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_SessionLogs_Target", "([StudentId] IS NULL AND [GroupId] IS NOT NULL) OR ([StudentId] IS NOT NULL AND [GroupId] IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.Student", b =>
@@ -869,6 +949,24 @@ namespace LangTeach.Api.Migrations
                     b.ToTable("Students");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.StudentGroup", b =>
+                {
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("StudentId", "GroupId");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("StudentGroups");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Teacher", b =>
                 {
                     b.Property<Guid>("Id")
@@ -932,6 +1030,9 @@ namespace LangTeach.Api.Migrations
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
 
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -967,6 +1068,11 @@ namespace LangTeach.Api.Migrations
 
                     b.HasIndex("StudentId");
 
+                    b.HasIndex("GroupId", "Kind");
+
+                    b.HasIndex("GroupId", "Status")
+                        .HasFilter("[GroupId] IS NOT NULL");
+
                     b.HasIndex("TeacherId", "Status");
 
                     b.HasIndex("TeacherId", "StudentId");
@@ -975,7 +1081,9 @@ namespace LangTeach.Api.Migrations
 
                     b.ToTable("TeacherFollowups", t =>
                         {
-                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational')");
+                            t.HasCheckConstraint("CK_TeacherFollowups_Kind", "Kind COLLATE Latin1_General_100_BIN2 IN ('pedagogical', 'operational', 'objective') AND (Kind COLLATE Latin1_General_100_BIN2 <> 'objective' OR ([GroupId] IS NOT NULL AND [StudentId] IS NULL))");
+
+                            t.HasCheckConstraint("CK_TeacherFollowups_Scope", "[StudentId] IS NULL OR [GroupId] IS NULL");
                         });
                 });
 
@@ -1235,6 +1343,17 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Group", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Teacher");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Lesson", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
@@ -1329,6 +1448,11 @@ namespace LangTeach.Api.Migrations
 
             modelBuilder.Entity("LangTeach.Api.Data.Models.SessionLog", b =>
                 {
+                    b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
+                        .WithMany("SessionLogs")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("LangTeach.Api.Data.Models.Lesson", "LinkedLesson")
                         .WithMany()
                         .HasForeignKey("LinkedLessonId")
@@ -1337,14 +1461,15 @@ namespace LangTeach.Api.Migrations
                     b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
                         .WithMany("SessionLogs")
                         .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Group");
 
                     b.Navigation("LinkedLesson");
 
@@ -1364,11 +1489,35 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.StudentGroup", b =>
+                {
+                    b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
+                        .WithMany("StudentGroups")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LangTeach.Api.Data.Models.Student", "Student")
+                        .WithMany("StudentGroups")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.TeacherFollowup", b =>
                 {
                     b.HasOne("LangTeach.Api.Data.Models.SessionLog", "CoveredInSessionLog")
                         .WithMany()
                         .HasForeignKey("CoveredInSessionLogId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LangTeach.Api.Data.Models.Group", "Group")
+                        .WithMany("TeacherFollowups")
+                        .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LangTeach.Api.Data.Models.SessionLog", "SourceSessionLog")
@@ -1388,6 +1537,8 @@ namespace LangTeach.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("CoveredInSessionLog");
+
+                    b.Navigation("Group");
 
                     b.Navigation("SourceSessionLog");
 
@@ -1455,6 +1606,15 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Entries");
                 });
 
+            modelBuilder.Entity("LangTeach.Api.Data.Models.Group", b =>
+                {
+                    b.Navigation("SessionLogs");
+
+                    b.Navigation("StudentGroups");
+
+                    b.Navigation("TeacherFollowups");
+                });
+
             modelBuilder.Entity("LangTeach.Api.Data.Models.Lesson", b =>
                 {
                     b.Navigation("Notes");
@@ -1479,6 +1639,8 @@ namespace LangTeach.Api.Migrations
                     b.Navigation("Lessons");
 
                     b.Navigation("SessionLogs");
+
+                    b.Navigation("StudentGroups");
 
                     b.Navigation("TeacherFollowups");
                 });

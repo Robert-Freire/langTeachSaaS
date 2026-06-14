@@ -31,17 +31,22 @@ public class SessionLogsController : ControllerBase
     private string Email => User.FindFirstValue(ClaimTypes.Email) ?? "";
 
     [HttpGet]
-    public async Task<IActionResult> List(Guid studentId, CancellationToken cancellationToken)
+    public async Task<IActionResult> List(Guid studentId, [FromQuery] bool includeGroups = false, CancellationToken cancellationToken = default)
     {
         if (Auth0Id is null) return Unauthorized();
         var teacherId = await _profileService.UpsertTeacherAsync(Auth0Id, Email);
 
         try
         {
-            var sessions = await _sessionLogService.ListAsync(teacherId, studentId, cancellationToken);
+            List<SessionLogDto> sessions;
+            if (includeGroups)
+                sessions = await _sessionLogService.ListForStudentIncludingGroupsAsync(teacherId, studentId, cancellationToken);
+            else
+                sessions = await _sessionLogService.ListAsync(teacherId, studentId, cancellationToken);
+
             _logger.LogInformation(
-                "GET /api/students/{StudentId}/sessions. TeacherId={TeacherId} Count={Count}",
-                studentId, teacherId, sessions.Count);
+                "GET /api/students/{StudentId}/sessions?includeGroups={IncludeGroups}. TeacherId={TeacherId} Count={Count}",
+                studentId, includeGroups, teacherId, sessions.Count);
             return Ok(sessions);
         }
         catch (KeyNotFoundException)
@@ -141,6 +146,9 @@ public class SessionLogsController : ControllerBase
         if (patch.ActualContent is not null) request.ActualContent = patch.ActualContent;
         if (patch.GeneralNotes is not null) request.GeneralNotes = patch.GeneralNotes;
         if (patch.HomeworkAssigned is not null) request.HomeworkAssigned = patch.HomeworkAssigned;
+        if (patch.NextSessionTopics is not null) request.NextSessionTopics = patch.NextSessionTopics;
+        if (patch.Duration is not null) request.Duration = patch.Duration;
+        if (patch.TopicTags is not null) request.TopicTags = patch.TopicTags;
 
         try
         {

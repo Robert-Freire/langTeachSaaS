@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using LangTeach.Api.Services;
+using Microsoft.Extensions.Options;
 
 namespace LangTeach.Api.AI;
 
@@ -11,29 +12,28 @@ public record ScopeAffirmerSpan(
     [property: JsonPropertyName("structureLabel")] string StructureLabel,
     [property: JsonPropertyName("structureLevel")] string StructureLevel);
 
+// This pass affirms CORRECT usage of structures STRICTLY ABOVE the student's CEFR level
+// (next-level grammarInScope or higher) when no Pass 2 tag exists for that span.
+// Compare with RedaccionLevelFilterPromptBuilder, which converts soften/muybien decisions
+// from Pass 2 G-tags into MuyBien for near-ceiling structures.
+// The two paths are intentionally non-overlapping: ScopeAffirmer = no Pass 2 tag exists;
+// LevelFilter = Pass 2 tag exists and gets reframed. Future edits to one path must not
+// silently change the boundary -- update both comments together.
 public class RedaccionScopeAffirmerPromptBuilder
 {
     private readonly IPedagogyConfigService _pedagogy;
     private readonly ILogger<RedaccionScopeAffirmerPromptBuilder> _logger;
 
-    // Maps each CEFR level to the next level whose grammarInScope defines the minimum threshold.
-    // C2 is absent: callers must skip ScopeAffirmer for C2 students.
-    public static readonly IReadOnlyDictionary<string, string> NextLevel =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["A1"] = "A2",
-            ["A2"] = "B1",
-            ["B1"] = "B2",
-            ["B2"] = "C1",
-            ["C1"] = "C2",
-        };
+    private readonly PassConfig _affirmerConfig;
 
     public RedaccionScopeAffirmerPromptBuilder(
         IPedagogyConfigService pedagogy,
-        ILogger<RedaccionScopeAffirmerPromptBuilder> logger)
+        ILogger<RedaccionScopeAffirmerPromptBuilder> logger,
+        IOptions<CorrectionPassOptions>? options = null)
     {
         _pedagogy = pedagogy;
         _logger = logger;
+        _affirmerConfig = options?.Value.ScopeAffirmer ?? new PassConfig { Model = "haiku", MaxTokens = 4096 };
     }
 
     // Model: Haiku (enrichment pass; low stakes, grounded by curriculum JSON).
@@ -48,7 +48,8 @@ public class RedaccionScopeAffirmerPromptBuilder
             "PromptUser | blockType=redaccion-scope-affirmer level={Level} nextLevel={NextLevel} textLength={TextLength}",
             studentCefr, nextCefr, studentText.Length);
 
-        return (new ClaudeRequest(SystemPrompt, user, ClaudeModel.Haiku, MaxTokens: 4096, Temperature: 0), ToolDefinition);
+        var model = RedaccionCorrectionPromptBuilder.ParseModel(_affirmerConfig.Model);
+        return (new ClaudeRequest(SystemPrompt, user, model, MaxTokens: _affirmerConfig.MaxTokens, Temperature: _affirmerConfig.Temperature), ToolDefinition);
     }
 
     public static readonly ClaudeToolDefinition ToolDefinition = new(
@@ -91,10 +92,13 @@ You will receive:
 - The student's text with character offsets (the text is 0-indexed)
 
 RULES:
-- Only flag structures at or above the NEXT CEFR level threshold (next-level grammarInScope or higher).
 - Only flag structures used CORRECTLY. Incorrect attempts above level are handled elsewhere.
 - If a structure appears multiple times, flag each correct occurrence separately.
-- If no above-level structures are found, return an empty array.
+
+DISAMBIGUATION: Before flagging "haya", "hubiera", or "hubiese" as subjuntivo perfecto:
+- These forms qualify ONLY when followed by a past participle (compound subjuntivo tense, e.g. "haya terminado", "hubiera podido") OR when clearly in a subordinate clause requiring subjuntivo.
+- Standalone "haya" used as the present of "haber" in existential or modal constructions (e.g. "no haya problema", "tal vez haya tiempo") does NOT qualify as a subjuntivo perfecto achievement at B2 or above -- do not flag it.
+- Only flag when the construction is unambiguously subjuntivo perfecto or imperfecto.
 
 Call the submit_scope_spans tool with a spans array containing all above-level structures found. Use an empty spans array if none are found.
 startIndex is inclusive; endIndex is exclusive.
@@ -130,10 +134,7 @@ startIndex is inclusive; endIndex is exclusive.
         return sb.ToString().TrimEnd();
     }
 
-    // Only normalize whitespace: replacing \n/\r with spaces keeps offsets correct (1-to-1 swap)
-    // and prevents newlines from breaking the prompt structure. Do NOT replace " < > or other
-    // characters: the model reports span indices into the text it sees, so any character mutation
-    // would cause RunScopeAffirmerAsync's span validation to incorrectly reject valid spans.
+    // Whitespace-only: see PromptSanitizer.SanitizeForOffsetTracking for the rationale.
     private static string SanitizeForPrompt(string s) =>
-        s.Replace('\n', ' ').Replace('\r', ' ');
+        PromptSanitizer.SanitizeForOffsetTracking(s);
 }

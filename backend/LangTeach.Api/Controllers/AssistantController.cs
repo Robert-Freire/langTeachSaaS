@@ -20,6 +20,7 @@ public class AssistantController : ControllerBase
     private readonly IProfileService _profileService;
     private readonly IPedagogyConfigService _pedagogy;
     private readonly IAssistantFeedbackService _feedbackService;
+    private readonly IAssistantTargetResolver _targetResolver;
     private readonly ILogger<AssistantController> _logger;
 
     public AssistantController(
@@ -30,6 +31,7 @@ public class AssistantController : ControllerBase
         IProfileService profileService,
         IPedagogyConfigService pedagogy,
         IAssistantFeedbackService feedbackService,
+        IAssistantTargetResolver targetResolver,
         ILogger<AssistantController> logger)
     {
         _studentService = studentService;
@@ -39,6 +41,7 @@ public class AssistantController : ControllerBase
         _profileService = profileService;
         _pedagogy = pedagogy;
         _feedbackService = feedbackService;
+        _targetResolver = targetResolver;
         _logger = logger;
     }
 
@@ -176,26 +179,32 @@ public class AssistantController : ControllerBase
             }
         }
 
-        proposals.AddRange(ReflectionMapper.ToSessionFieldProposals(reflectionExtraction, session, _pedagogy.ProposalFields));
-
-        if (reflectionExtraction.ProposedNewSession is { } proposed)
+        // Resolve group target from transcript if a group mention was extracted.
+        ResolvedTarget? resolvedTarget = null;
+        bool hasAdminIntent = false;
+        string? adminMemberName = null;
+        if (!string.IsNullOrWhiteSpace(reflectionExtraction.RawGroupMention))
         {
-            var dateOnly = proposed.Date ?? DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
-            // dateOnly is yyyy-MM-dd; t is HH:mm -- both guaranteed by the extraction schema.
-            var sessionDate = reflectionExtraction.SessionStartTime is { } t
-                ? $"{dateOnly}T{t}"
-                : dateOnly;
-            var newSessionPayload = new { title = proposed.Title, sessionDate };
-            var payloadElement = JsonSerializer.SerializeToElement(newSessionPayload, camelCaseOpts);
-            proposals.Add(new ProposalDto(
-                Guid.NewGuid().ToString(),
-                "newSession",
-                "newSession",
-                "New Session",
-                null,
-                proposed.Title,
-                payloadElement));
+            resolvedTarget = await _targetResolver.ResolveAsync(reflectionExtraction.RawGroupMention, teacherId, ct);
+
+            // Detect administrative intent: student names from the extraction appearing alongside a group mention.
+            // This signals "log session for the group + offer 1-to-1 for a named student" flow.
+            var extractedStudentName = studentExtraction.Name?.Trim();
+            if (!string.IsNullOrWhiteSpace(extractedStudentName) && student == null)
+            {
+                hasAdminIntent = true;
+                adminMemberName = extractedStudentName;
+            }
         }
+
+        // If the request carries a GroupId anchor (FAB opened from a group route) and the
+        // transcript did not produce a group mention, pin the resolved target to that group.
+        if (resolvedTarget is null && request.GroupId.HasValue)
+            resolvedTarget = await _targetResolver.ResolveByIdAsync(request.GroupId.Value, teacherId, ct);
+
+        proposals.AddRange(ReflectionMapper.ToSessionFieldProposals(
+            reflectionExtraction, session, _pedagogy.ProposalFields,
+            resolvedTarget, hasAdminIntent, adminMemberName));
 
         Guid? suggestedSessionLogId = null;
         if (student != null && !request.SessionLogId.HasValue)

@@ -202,6 +202,8 @@ builder.Services.AddScoped<IUsageLimitService, UsageLimitService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<IAssistantTargetResolver, AssistantTargetResolver>();
 builder.Services.AddScoped<IAssistantFeedbackService, AssistantFeedbackService>();
 builder.Services.AddScoped<ICorrectionService, CorrectionService>();
 builder.Services.AddSingleton<RedaccionCorrectionPromptBuilder>();
@@ -209,7 +211,20 @@ builder.Services.AddSingleton<RedaccionLevelFilterPromptBuilder>();
 builder.Services.AddSingleton<RedaccionScopeAffirmerPromptBuilder>();
 builder.Services.AddSingleton<ICorrectionPromptService, CorrectionPromptService>();
 builder.Services.AddScoped<IRedaccionCorrectionService, RedaccionCorrectionService>();
+builder.Services.AddOptions<CorrectionWorkerOptions>()
+    .Bind(builder.Configuration.GetSection(CorrectionWorkerOptions.SectionName))
+    .Validate(o => o.WorkerConcurrency >= 1, "Correction:WorkerConcurrency must be at least 1")
+    .ValidateOnStart();
+builder.Services.AddOptions<CorrectionPassOptions>()
+    .Bind(builder.Configuration.GetSection(CorrectionPassOptions.SectionName))
+    .Validate(o =>
+        new[] { o.Pass1, o.Filter, o.ScopeAffirmer }.All(p =>
+            (p.Model.Equals("sonnet", StringComparison.OrdinalIgnoreCase) || p.Model.Equals("haiku", StringComparison.OrdinalIgnoreCase)) &&
+            p.MaxTokens >= 256),
+        "CorrectionPasses: Model must be 'sonnet' or 'haiku' and MaxTokens must be >= 256")
+    .ValidateOnStart();
 builder.Services.AddHostedService<CorrectionStaleRecoveryService>();
+builder.Services.AddHostedService<CorrectionWorker>();
 builder.Services.AddScoped<ICorrectionDocxExportService, CorrectionDocxExportService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddSingleton(_ =>

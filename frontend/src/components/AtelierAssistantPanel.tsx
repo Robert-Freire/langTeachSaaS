@@ -12,6 +12,7 @@ import { formatDuration } from '@/lib/formatDuration'
 import { BRAND_NAME } from '@/lib/brand'
 import { useQuery } from '@tanstack/react-query'
 import { listSessions } from '@/api/sessionLogs'
+import { listGroupSessions } from '@/api/groups'
 import { formatMonthDay } from '@/utils/formatDate'
 
 const MIN_DURATION_S = 1
@@ -52,6 +53,7 @@ interface Props {
   onEditPayload?: (id: string, payload: import('@/api/assistant').NewStudentData | import('@/api/assistant').NewSessionData | Record<string, unknown>) => void
   studentId?: string | null
   sessionId?: string | null
+  groupId?: string | null
   onSelectSession?: (sessionId: string) => void
 }
 
@@ -74,6 +76,7 @@ export default function AtelierAssistantPanel({
   onEditPayload,
   studentId,
   sessionId,
+  groupId,
   onSelectSession,
 }: Props) {
   const sessionContextMissing = !sessionId
@@ -88,6 +91,21 @@ export default function AtelierAssistantPanel({
     queryKey: ['sessions', studentId],
     queryFn: () => listSessions(studentId!),
     enabled: !!studentId && showSessionPicker,
+    select: (sessions) =>
+      [...sessions]
+        .filter(s => !s.isCancelled)
+        .sort((a, b) => {
+          const da = new Date(a.sessionDate ?? a.createdAt).getTime()
+          const db = new Date(b.sessionDate ?? b.createdAt).getTime()
+          return db - da
+        })
+        .slice(0, 3),
+  })
+
+  const { data: groupSessions } = useQuery({
+    queryKey: ['group-sessions-picker', groupId],
+    queryFn: () => listGroupSessions(groupId!),
+    enabled: !!groupId && showSessionPicker,
     select: (sessions) =>
       [...sessions]
         .filter(s => !s.isCancelled)
@@ -223,7 +241,9 @@ export default function AtelierAssistantPanel({
 
   function handleCloseAttempt() {
     if (uploadState === 'uploading') return
-    const hasBlockingWork = processing || pendingProposals.length > 0
+    // session proposals in a group context (no studentId) have a permanently disabled Apply
+    // button and cannot be applied — they do not represent committable work
+    const hasBlockingWork = processing || pendingProposals.some(p => !(p.type === 'session' && !studentId))
     if (recording) {
       stopMicRecording(true)
       if (hasBlockingWork) {
@@ -296,8 +316,9 @@ export default function AtelierAssistantPanel({
   const permissionDenied = hookError === 'permission-denied'
   const pendingProposals = proposals.filter(p => p.status === 'proposed')
   const applyAllBlocked = (
-    (!studentId && pendingProposals.some(p => p.type === 'newSession')) ||
-    hasSessionProposalsWithoutContext
+    (!studentId && pendingProposals.some(p => p.type === 'newSession' && !(p.payload as import('@/api/assistant').NewSessionData | null)?.groupId)) ||
+    hasSessionProposalsWithoutContext ||
+    pendingProposals.some(p => p.type === 'newSession' && (p.payload as import('@/api/assistant').NewSessionData | null)?.requiresConfirmation)
   )
 
   return (
@@ -459,7 +480,12 @@ export default function AtelierAssistantPanel({
                           }
                           New session
                         </button>
-                        {(recentSessions ?? []).map(session => {
+                        {groupId && groupSessions !== undefined && groupSessions.length === 0 && (
+                          <p className="text-xs font-inter text-zinc-500 italic px-2" data-testid="group-sessions-empty">
+                            No sessions have been logged for this group yet.
+                          </p>
+                        )}
+                        {(groupId ? (groupSessions ?? []) : (recentSessions ?? [])).map(session => {
                           const dateLabel = session.sessionDate
                             ? formatMonthDay(session.sessionDate)
                             : session.createdAt

@@ -151,7 +151,60 @@ public class CorrectionsControllerExportTests
         allText.Should().Contain("hablar");
     }
 
+    [Fact]
+    public async Task Export_TeacherView_AddsCompletaSuffix_AndIncludesAboveLevelSection()
+    {
+        var (client, studentId, correctionId) = await SetupCorregidaAsync("auth0|export-teacher-view");
+        // Add an above-level (removed) tag so the teacher view has something extra to show.
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var row = db.Corrections.First(c => c.Id == correctionId);
+            var text = row.StudentText ?? "";
+            var idx = text.IndexOf("amigo", StringComparison.Ordinal);
+            db.CorrectionTags.Add(new CorrectionTag
+            {
+                Id = Guid.NewGuid(),
+                CorrectionId = correctionId,
+                Category = CorrectionTagCategory.Gramatica,
+                SpannedText = "amigo",
+                StartIndex = idx,
+                EndIndex = idx + "amigo".Length,
+                Explanation = "Estructura avanzada por encima del nivel.",
+                CorrectedForm = "amigos",
+                OrderIndex = 1,
+                FilterStatus = CorrectionTagFilterStatus.Removed,
+            });
+            db.SaveChanges();
+        }
+
+        // Student view (default): no above-level section, plain filename.
+        var studentResp = await client.GetAsync($"/api/students/{studentId}/corrections/{correctionId}/export.docx");
+        studentResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        studentResp.Content.Headers.ContentDisposition!.FileName.Should().NotContain("-completa");
+        var studentText = await ReadDocxTextAsync(studentResp);
+        studentText.Should().NotContain("Errores por encima del nivel");
+        studentText.Should().NotContain("Estructura avanzada por encima del nivel.");
+
+        // Teacher view: -completa filename + above-level section + explanation.
+        var teacherResp = await client.GetAsync($"/api/students/{studentId}/corrections/{correctionId}/export.docx?view=teacher");
+        teacherResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        teacherResp.Content.Headers.ContentDisposition!.FileName.Should().Contain("-completa");
+        var teacherText = await ReadDocxTextAsync(teacherResp);
+        teacherText.Should().Contain("Errores por encima del nivel");
+        teacherText.Should().Contain("Estructura avanzada por encima del nivel.");
+    }
+
     // --- helpers ---
+
+    private static async Task<string> ReadDocxTextAsync(HttpResponseMessage resp)
+    {
+        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        using var stream = new MemoryStream(bytes);
+        using var doc = WordprocessingDocument.Open(stream, isEditable: false);
+        return string.Concat(doc.MainDocumentPart!.Document!.Body!
+            .Descendants<Text>().Select(t => t.Text));
+    }
 
     private async Task<(HttpClient client, Guid studentId)> SetupAsync(string auth0Id, string? email = null)
     {

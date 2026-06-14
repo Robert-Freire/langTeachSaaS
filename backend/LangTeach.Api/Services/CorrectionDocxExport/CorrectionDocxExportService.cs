@@ -21,7 +21,7 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
 
     private const string MetadataGray = "6B7280"; // gray-500
 
-    public byte[] Generate(CorrectionDetailDto correction, string studentName)
+    public byte[] Generate(CorrectionDetailDto correction, string studentName, bool includeAboveLevel = false)
     {
         using var stream = new MemoryStream();
         using (var doc = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document))
@@ -31,7 +31,7 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             var body = mainPart.Document.Body!;
 
             AppendHeader(body, correction, studentName);
-            AppendCorrectedBody(body, correction);
+            AppendCorrectedBody(body, correction, includeAboveLevel);
             AppendFooter(body);
 
             mainPart.Document.Save();
@@ -60,13 +60,16 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         body.AppendChild(new Paragraph()); // spacer
     }
 
-    private static void AppendCorrectedBody(Body body, CorrectionDetailDto c)
+    private static void AppendCorrectedBody(Body body, CorrectionDetailDto c, bool includeAboveLevel)
     {
         var text = c.StudentText ?? string.Empty;
         var tags = c.Tags
             .Where(t => t.StartIndex >= 0
                         && t.EndIndex > t.StartIndex
                         && t.EndIndex <= text.Length)
+            // Student handout omits above-level errors entirely (level-filtered view);
+            // teacher full-diagnostic keeps them, rendered distinctly below (#1351).
+            .Where(t => includeAboveLevel || t.FilterStatus != CorrectionTagFilterStatus.Removed)
             .OrderBy(t => t.StartIndex)
             .ToList();
 
@@ -75,7 +78,8 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             .Where(t => t.Category == CorrectionTagCategory.MuyBien && !string.IsNullOrWhiteSpace(t.Explanation))
             .ToList();
 
-        var renderedErrorTags = new List<CorrectionTagDto>();
+        var inLevelErrorTags = new List<CorrectionTagDto>();
+        var aboveLevelErrorTags = new List<CorrectionTagDto>();
 
         var currentParagraph = new Paragraph();
         body.AppendChild(currentParagraph);
@@ -91,13 +95,21 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
             {
                 AppendTextWithLineBreaks(body, ref currentParagraph, text.Substring(cursor, tag.StartIndex - cursor), runFactory: PlainRun);
             }
-            int? refNum = null;
-            if (tag.Category != CorrectionTagCategory.MuyBien)
+
+            if (tag.Category == CorrectionTagCategory.MuyBien)
             {
-                renderedErrorTags.Add(tag);
-                refNum = renderedErrorTags.Count;
+                AppendTaggedSpan(currentParagraph, tag, refLabel: null, aboveLevel: false);
             }
-            AppendTaggedSpan(currentParagraph, tag, refNum);
+            else if (tag.FilterStatus == CorrectionTagFilterStatus.Removed)
+            {
+                aboveLevelErrorTags.Add(tag);
+                AppendTaggedSpan(currentParagraph, tag, refLabel: $"N{aboveLevelErrorTags.Count}", aboveLevel: true);
+            }
+            else
+            {
+                inLevelErrorTags.Add(tag);
+                AppendTaggedSpan(currentParagraph, tag, refLabel: inLevelErrorTags.Count.ToString(), aboveLevel: false);
+            }
             cursor = tag.EndIndex;
         }
 
@@ -108,19 +120,19 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
 
         AppendSeparator(body);
 
-        if (renderedErrorTags.Count > 0)
-        {
-            var refNumbers = renderedErrorTags
-                .Select((tag, i) => (tag, refNum: i + 1))
-                .ToDictionary(x => x.tag, x => x.refNum);
-            AppendCorrectionsSection(body, renderedErrorTags, refNumbers);
-        }
+        if (inLevelErrorTags.Count > 0)
+            AppendCorrectionsSection(body, inLevelErrorTags);
+
+        if (aboveLevelErrorTags.Count > 0)
+            AppendAboveLevelSection(body, aboveLevelErrorTags);
 
         if (achievementTags.Count > 0)
             AppendAchievementsSection(body, achievementTags);
     }
 
-    private static void AppendTaggedSpan(Paragraph paragraph, CorrectionTagDto tag, int? refNum)
+    // aboveLevel renders a dotted underline (distinct from the solid in-level underline) so
+    // an above-level error is visually unmistakable, never mixed indistinguishably (#1351).
+    private static void AppendTaggedSpan(Paragraph paragraph, CorrectionTagDto tag, string? refLabel, bool aboveLevel)
     {
         if (tag.Category == CorrectionTagCategory.MuyBien)
         {
@@ -129,10 +141,11 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         }
 
         var color = CategoryColors.TryGetValue(tag.Category, out var hex) ? hex : "000000";
-        paragraph.AppendChild(UnderlinedColoredRun(tag.SpannedText, color));
-        if (refNum.HasValue)
+        var underline = aboveLevel ? UnderlineValues.Dotted : UnderlineValues.Single;
+        paragraph.AppendChild(UnderlinedColoredRun(tag.SpannedText, color, underline));
+        if (refLabel is not null)
         {
-            paragraph.AppendChild(SuperscriptRun(refNum.Value.ToString()));
+            paragraph.AppendChild(SuperscriptRun(refLabel));
         }
     }
 
@@ -149,19 +162,40 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         body.AppendChild(new Paragraph());
     }
 
-    private static void AppendCorrectionsSection(Body body, List<CorrectionTagDto> errorTags, Dictionary<CorrectionTagDto, int> refNumbers)
+    private static void AppendCorrectionsSection(Body body, List<CorrectionTagDto> errorTags)
     {
         body.AppendChild(BuildParagraph(runs: new[] { BoldRun("Correcciones", sizeHalfPoints: 26) }));
         body.AppendChild(new Paragraph());
 
-        foreach (var tag in errorTags)
+        for (var i = 0; i < errorTags.Count; i++)
+            body.AppendChild(CorrectionEntryParagraph((i + 1).ToString(), errorTags[i]));
+    }
+
+    // Teacher-only section: errors the level filter judged above the student's level. They
+    // are absent from the student handout; here they are numbered N1, N2, … and the spans
+    // carry a dotted underline inline (#1351).
+    private static void AppendAboveLevelSection(Body body, List<CorrectionTagDto> aboveLevelTags)
+    {
+        AppendSeparator(body);
+        body.AppendChild(BuildParagraph(runs: new[] { BoldRun("Errores por encima del nivel", sizeHalfPoints: 26) }));
+        body.AppendChild(BuildParagraph(runs: new[]
         {
-            var num = refNumbers[tag];
-            var correctedForm = tag.CorrectedForm ?? string.Empty;
-            var explanation = tag.Explanation ?? string.Empty;
-            var entry = $"{num}. [{tag.Category}] \"{tag.SpannedText}\" → \"{correctedForm}\" — {explanation}";
-            body.AppendChild(BuildParagraph(runs: new[] { PlainRun(entry) }));
-        }
+            ItalicRun(
+                "Estos errores están por encima del nivel del estudiante y no aparecen en su versión. Subrayado de puntos.",
+                sizeHalfPoints: 20),
+        }));
+        body.AppendChild(new Paragraph());
+
+        for (var i = 0; i < aboveLevelTags.Count; i++)
+            body.AppendChild(CorrectionEntryParagraph($"N{i + 1}", aboveLevelTags[i]));
+    }
+
+    private static Paragraph CorrectionEntryParagraph(string numberLabel, CorrectionTagDto tag)
+    {
+        var correctedForm = tag.CorrectedForm ?? string.Empty;
+        var explanation = tag.Explanation ?? string.Empty;
+        var entry = $"{numberLabel}. [{tag.Category}] \"{tag.SpannedText}\" → \"{correctedForm}\" — {explanation}";
+        return BuildParagraph(runs: new[] { PlainRun(entry) });
     }
 
     private static void AppendAchievementsSection(Body body, List<CorrectionTagDto> achievementTags)
@@ -215,9 +249,9 @@ public class CorrectionDocxExportService : ICorrectionDocxExportService
         return BuildRun(text, props);
     }
 
-    private static Run UnderlinedColoredRun(string text, string colorHex)
+    private static Run UnderlinedColoredRun(string text, string colorHex, UnderlineValues underline)
     {
-        var props = new RunProperties(new Color { Val = colorHex }, new Underline { Val = UnderlineValues.Single });
+        var props = new RunProperties(new Color { Val = colorHex }, new Underline { Val = underline });
         return BuildRun(text, props);
     }
 

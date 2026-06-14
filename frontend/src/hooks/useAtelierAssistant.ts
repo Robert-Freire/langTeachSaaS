@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  applyGroupSessionProposal,
   applyNewSessionProposal,
   applySessionProposal,
   applyStudentProposal,
@@ -15,6 +16,7 @@ import {
 export type { NewSessionData, NewStudentData }
 import { createStudent } from '../api/students'
 import { createSession } from '../api/sessionLogs'
+import { createGroupSession } from '../api/groups'
 import { normalizeLanguage, normalizeLanguages } from '../lib/extractionNormalizer'
 
 export type ProposalStatus = 'proposed' | 'applying' | 'applied' | 'dismissed' | 'error'
@@ -47,6 +49,7 @@ export function useAtelierAssistant(
   studentId: string | null,
   sessionId: string | null,
   onAfterSessionApply?: (sessionId: string) => void,
+  groupId?: string | null,
 ): AtelierAssistantState & AtelierAssistantActions {
   const queryClient = useQueryClient()
   const [transcription, setTranscription] = useState<string | null>(null)
@@ -88,6 +91,8 @@ export function useAtelierAssistant(
         text,
         studentId ?? undefined,
         sessionId ?? undefined,
+        undefined,
+        groupId,
       )
       if (generationRef.current !== gen) return
       extractedSessionDateRef.current = extractedSessionDate ?? null
@@ -129,7 +134,7 @@ export function useAtelierAssistant(
     } finally {
       if (generationRef.current === gen) setProcessing(false)
     }
-  }, [studentId, sessionId])
+  }, [studentId, sessionId, groupId])
 
   const apply = useCallback(async (id: string) => {
     if (applyingIdsRef.current.has(id)) return
@@ -171,6 +176,10 @@ export function useAtelierAssistant(
         throw new Error('Cannot apply session update: no session is open on this screen.')
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await applySessionProposal(studentId, sessionId, proposal.field, proposal.newValue)
+      } else if (proposal.type === 'session' && groupId && sessionId && sessionId !== 'new') {
+        await applyGroupSessionProposal(groupId, sessionId, proposal.field, proposal.newValue)
+      } else if (proposal.type === 'session' && groupId) {
+        throw new Error('Select an existing session to apply these notes to.')
       } else if (proposal.type === 'todo' && studentId) {
         await applyTodoProposal(studentId, proposal.newValue)
       } else if (proposal.type === 'newStudent') {
@@ -213,10 +222,20 @@ export function useAtelierAssistant(
           difficulties: [],
         })
       } else if (proposal.type === 'newSession') {
-        if (!studentId) throw new Error('Open from a student\'s screen to schedule a session.')
         const data = proposal.payload as NewSessionData | null | undefined
         if (!data?.title?.trim()) throw new Error('Session title is missing.')
-        await applyNewSessionProposal(studentId, data.title, data.sessionDate)
+        if (data?.requiresConfirmation) throw new Error('Select a group before applying.')
+        if (data?.groupId) {
+          // Group-targeted session: land as group session log
+          await createGroupSession(data.groupId, {
+            title: data.title,
+            sessionDate: data.sessionDate ?? new Date().toISOString().split('T')[0],
+            previousHomeworkStatus: 'NotApplicable',
+          })
+        } else {
+          if (!studentId) throw new Error('Open from a student\'s screen to schedule a session.')
+          await applyNewSessionProposal(studentId, data.title, data.sessionDate)
+        }
       }
       if (generationRef.current !== gen) return
       updateProposal(id, { status: 'applied' })
@@ -226,15 +245,27 @@ export function useAtelierAssistant(
       } else if (proposal.type === 'session' && studentId && sessionId === 'new' && newlyCreatedSessionRef.current) {
         const createdId = newlyCreatedSessionRef.current
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
         Promise.resolve(onAfterSessionApply?.(createdId)).catch(() => { /* proposal already applied; swallow */ })
       } else if (proposal.type === 'session' && studentId && sessionId) {
         await queryClient.invalidateQueries({ queryKey: ['session', studentId, sessionId] })
         await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+        await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
         Promise.resolve(onAfterSessionApply?.(sessionId)).catch(() => { /* proposal already applied; swallow */ })
+      } else if (proposal.type === 'session' && groupId && sessionId && sessionId !== 'new') {
+        await queryClient.invalidateQueries({ queryKey: ['group-session', groupId, sessionId] })
+        await queryClient.invalidateQueries({ queryKey: ['group-sessions', groupId] })
       } else if (proposal.type === 'newStudent') {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
-      } else if (proposal.type === 'newSession' && studentId) {
-        await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+      } else if (proposal.type === 'newSession') {
+        const invalidateData = proposal.payload as NewSessionData | null | undefined
+        if (invalidateData?.groupId) {
+          await queryClient.invalidateQueries({ queryKey: ['group-sessions', invalidateData.groupId] })
+          await queryClient.invalidateQueries({ queryKey: ['groups'] })
+        } else if (studentId) {
+          await queryClient.invalidateQueries({ queryKey: ['sessions', studentId] })
+          await queryClient.invalidateQueries({ queryKey: ['sessions-all', studentId] })
+        }
       } else if (proposal.type === 'todo' && studentId) {
         await queryClient.invalidateQueries({ queryKey: ['student', studentId] })
         await queryClient.invalidateQueries({ queryKey: ['dashboard'] })

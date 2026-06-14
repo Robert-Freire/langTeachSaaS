@@ -36,7 +36,17 @@ public record SuggestedDifficultyDto(
 
 public record TopicTagDto(string Tag, string? Category);
 
-public record ProposedNewSession(string Title, string? Date);
+public record ProposedTarget(
+    string Kind,           // "group" | "student"
+    string RawMention,
+    Guid? ResolvedId,
+    List<GroupSummaryDto> Candidates,
+    bool IsConfident
+);
+
+public record AdministrativeCallout(string MemberName, string RawText);
+
+public record ProposedNewSession(string Title, string? Date, ProposedTarget? Target = null, AdministrativeCallout? AdminCallout = null);
 
 public record ExtractedTeachingTodoDto(string Text);
 
@@ -59,5 +69,6 @@ public record ExtractedReflectionDto(
     bool? IsCancelled,
     List<string> DifficultiesWorkedOn,
     string? SessionStartTime,
-    ProposedNewSession? ProposedNewSession
+    ProposedNewSession? ProposedNewSession,
+    string? RawGroupMention = null
 );

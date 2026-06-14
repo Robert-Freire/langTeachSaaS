@@ -10,6 +10,9 @@ function makeSession(overrides: Partial<SessionLog> = {}): SessionLog {
   return {
     id: 'sess-x',
     studentId: 'student-1',
+    groupId: null,
+    targetType: 'student' as const,
+    targetName: 'Test Student',
     sessionDate: now,
     plannedContent: null,
     actualContent: 'We reviewed the subjunctive.',

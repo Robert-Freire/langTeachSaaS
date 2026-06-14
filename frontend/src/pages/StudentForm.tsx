@@ -224,7 +224,7 @@ export default function StudentForm() {
 
   const { data: followups = [], refetch: refetchFollowups } = useQuery({
     queryKey: ['followups', id],
-    queryFn: () => getFollowups(id!),
+    queryFn: () => getFollowups({ studentId: id! }),
     enabled: isEdit && !!id,
   })
 
