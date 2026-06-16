@@ -60,15 +60,10 @@ test('assistant: topic tags proposal with accented characters shows literal char
       }
     }
 
-    if (topicTagsText) {
-      // Must not contain unicode escape sequences
-      expect(topicTagsText).not.toContain('\\u00')
-      expect(topicTagsText).not.toContain('\\u00e9')
-      expect(topicTagsText).not.toContain('\\u00f3')
-    }
-    // Whether or not topicTags appeared (AI may vary), no unicode escapes must be present anywhere
-    const panelText = await panel.innerText()
-    expect(panelText).not.toContain('\\u00')
+    expect(topicTagsText).not.toBe('')
+    expect(topicTagsText).not.toContain('\\u00')
+    expect(topicTagsText).not.toContain('\\u00e9')
+    expect(topicTagsText).not.toContain('\\u00f3')
   } finally {
     await page.close().catch(() => {})
     await context.close().catch(() => {})
