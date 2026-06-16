@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using LangTeach.Api.AI;
 using LangTeach.Api.DTOs;
@@ -6,7 +7,11 @@ namespace LangTeach.Api.Services;
 
 internal static class ReflectionMapper
 {
-    private static readonly JsonSerializerOptions CamelCaseOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions CamelCaseOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     internal static CreateSessionLogRequest ToSessionLogRequest(ExtractedReflectionDto extracted, string rawNotes)
     {
