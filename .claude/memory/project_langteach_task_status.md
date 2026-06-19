@@ -4,9 +4,11 @@ description: Sprint branch name, milestone sequence, and pointers to live state.
 type: project
 originSessionId: cdfd3e9b-4731-4ad7-8679-11c1de9c3545
 ---
-## In-Flight: Groups sprint CLOSE
+## Groups sprint MERGED to main (2026-06-19)
 
-**Sprint: Groups (sprint/groups)** -- at sprint close, NOT yet merged to main.
+**Sprint: Groups (sprint/groups)** -- MERGED to main via `chore: merge sprint/groups into main` (commit bc4baa61). No sprint currently in flight. Out-of-sprint fixes go to main as hotfixes (branch from main, PR to main, `hotfix` label). Example: #1407 (topic-tags unicode) -> PR #1408 targets main.
+
+Original close state (kept for reference):
 
 All 8 Groups tasks (#1326-#1333) + 3 mid-sprint corrections items (#1349/#1350/#1351) merged to sprint/groups. Backlog triage done; the three backlog files cleared with a dated note. Sprint-close walkthroughs done (claude --chrome): functional Groups + corrections PASS; Vera UX; pedagogy.
 
