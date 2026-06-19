@@ -250,6 +250,24 @@ public class ReflectionMapperTests
     }
 
     [Fact]
+    public void ToSessionFieldProposals_TopicTagsProposal_PreservesAccentedCharacters()
+    {
+        var tags = new List<TopicTagDto> { new("pretérito perfecto", "Grammar"), new("conversación", null) };
+        var dto = MakeDto(topicTags: tags);
+        var config = new ProposalFieldsConfig(
+            StudentFields: [],
+            SkillLevelFields: [],
+            SessionFields: [new SessionFieldEntry("topicTags", "Topic Tags", false)]);
+
+        var proposals = ReflectionMapper.ToSessionFieldProposals(dto, null, config).ToList();
+
+        Assert.Single(proposals);
+        Assert.DoesNotContain("\\u00", proposals[0].NewValue);
+        Assert.Contains("pretérito perfecto", proposals[0].NewValue);
+        Assert.Contains("conversación", proposals[0].NewValue);
+    }
+
+    [Fact]
     public void ToSessionFieldProposals_SkipsTopicTagsProposal_WhenEmpty()
     {
         var dto = MakeDto(topicTags: []);
