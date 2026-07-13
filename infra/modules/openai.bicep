@@ -20,7 +20,7 @@ resource openai 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
 resource whisperDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
   parent: openai
   name: 'whisper'
-  sku: { name: 'Standard', capacity: 1 }
+  sku: { name: 'Standard', capacity: 3 }
   properties: {
     model: {
       format: 'OpenAI'

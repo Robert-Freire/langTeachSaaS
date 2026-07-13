@@ -4,6 +4,9 @@ param env string
 @description('Azure region for all resources')
 param location string = resourceGroup().location
 
+@description('Azure region for the OpenAI account. Whisper is not available in every region (e.g. not in northeurope), so it is pinned independently of the resource group location.')
+param openaiLocation string = 'swedencentral'
+
 @description('SQL Server administrator login')
 param sqlAdminUser string
 
@@ -47,7 +50,7 @@ var keyVaultName  = 'kv-lt-${env}-${take(uniqueString(resourceGroup().id), 6)}'
 // ACR names: 5-50 chars, alphanumeric only, globally unique
 var acrName = 'crlangteach${env}'
 // Azure OpenAI resource name
-var openaiName = 'oai-langteach-${env}'
+var openaiName = 'langteach-openai-${env}'
 // Azure Computer Vision resource name
 var computerVisionName = 'vision-langteach-${env}'
 
@@ -123,7 +126,7 @@ module openai 'modules/openai.bicep' = {
   name: 'openai'
   params: {
     name: openaiName
-    location: location
+    location: openaiLocation
     keyVaultName: keyVaultName
     appPrincipalId: containerApp.outputs.principalId
   }
