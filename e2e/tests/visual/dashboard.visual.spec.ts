@@ -29,16 +29,23 @@ test('@visual dashboard', async ({ browser }) => {
   // followup must get its own GENERAL chip, not appear unlabeled under the
   // preceding student's chip.
   const studentsRes = await page.request.get(`${API_BASE}/api/students`, { headers: AUTH_HEADERS })
+  expect(studentsRes.ok()).toBeTruthy()
   const { items: students } = await studentsRes.json()
   const studentId = students[0].id
-  await page.request.post(`${API_BASE}/api/teacher-followups`, {
+
+  const studentFollowupRes = await page.request.post(`${API_BASE}/api/teacher-followups`, {
     headers: AUTH_HEADERS,
     data: { text: 'Visual spec: student followup before a general note', studentId },
   })
-  await page.request.post(`${API_BASE}/api/teacher-followups`, {
+  expect(studentFollowupRes.ok()).toBeTruthy()
+  const studentFollowup = await studentFollowupRes.json()
+
+  const generalNoteRes = await page.request.post(`${API_BASE}/api/teacher-followups`, {
     headers: AUTH_HEADERS,
     data: { text: 'Visual spec: general note after a student followup' },
   })
+  expect(generalNoteRes.ok()).toBeTruthy()
+  const generalNote = await generalNoteRes.json()
 
   await page.goto('/')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
@@ -51,10 +58,11 @@ test('@visual dashboard', async ({ browser }) => {
   const chipCount = await followupsCard.locator('[data-testid^="followup-student-link-"]').count()
   expect(chipCount).toBeLessThan(followupRowCount)
 
-  // The general note seeded right after a student followup must render its
-  // own GENERAL chip rather than appearing unlabeled under that student.
-  await expect(followupsCard.getByText('Visual spec: general note after a student followup')).toBeVisible()
-  expect(await followupsCard.locator('[data-testid^="followup-general-chip-"]').count()).toBeGreaterThan(0)
+  // The specific seeded student followup and the general note right after it
+  // must each render their own chip: the student's, and a GENERAL chip for
+  // the note rather than it appearing unlabeled under that student.
+  await expect(followupsCard.getByTestId(`followup-student-link-${studentFollowup.id}`)).toBeVisible()
+  await expect(followupsCard.getByTestId(`followup-general-chip-${generalNote.id}`)).toBeVisible()
 
   await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true })
 
