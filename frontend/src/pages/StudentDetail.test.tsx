@@ -85,7 +85,7 @@ const MOCK_STUDENT: studentsApi.Student = {
   learningLanguage: 'Spanish',
   level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
   languages: { nativeLanguages: ['English'], spokenLanguages: ['French'] },
-  identity: { birthYear: 1995, age: null, profession: 'Designer', countryOfOrigin: 'United Kingdom', cityOfOrigin: 'London', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
+  identity: { birthYear: 1995, age: 30, profession: 'Designer', countryOfOrigin: 'United Kingdom', cityOfOrigin: 'London', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona', dateOfBirth: null, email: null },
   profile: {
     interests: ['travel', 'cooking'],
     personalNotes: null,

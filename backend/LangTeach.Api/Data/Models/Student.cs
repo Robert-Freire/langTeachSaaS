@@ -17,6 +17,8 @@ public class Student
     public string SkillLevelOverrides { get; set; } = "{}";
     // Identity fields
     public int? BirthYear { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Email { get; set; }
     public string? Profession { get; set; }
     public string? CountryOfOrigin { get; set; }
     public string? CityOfOrigin { get; set; }
@@ -43,10 +45,19 @@ public class Student
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public int? GetAge()
+    public int? GetAge() => GetAge(DateOnly.FromDateTime(DateTime.UtcNow));
+
+    public int? GetAge(DateOnly today)
     {
+        if (DateOfBirth is DateOnly dob)
+        {
+            var age = today.Year - dob.Year;
+            if (dob > today.AddYears(-age)) age--;
+            return age is >= 0 and <= 120 ? age : null;
+        }
+
         if (BirthYear is not int year) return null;
-        var current = DateTime.UtcNow.Year;
+        var current = today.Year;
         return year >= current - 120 && year <= current ? current - year : null;
     }
 

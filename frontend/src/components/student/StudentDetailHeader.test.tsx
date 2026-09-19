@@ -19,6 +19,8 @@ const BASE_STUDENT: Student = {
     cityOfOrigin: 'London',
     countryOfResidence: 'Spain',
     cityOfResidence: 'Barcelona',
+    dateOfBirth: null,
+    email: null,
   },
   profile: {
     interests: ['travel'],

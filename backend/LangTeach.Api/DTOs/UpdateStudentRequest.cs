@@ -43,7 +43,15 @@ public class UpdateStudentRequest
     public string? TeachingNotes { get; set; }
 
     // Identity fields
+    // BirthYear is server-owned: derived from DateOfBirth when set, otherwise preserved from the
+    // existing student unless explicitly supplied (needed by the voice/assistant PATCH path via
+    // MapStudentToUpdateRequest). The edit form no longer sends this field.
     public int? BirthYear { get; set; }
+
+    public DateOnly? DateOfBirth { get; set; }
+
+    [MaxLength(254)]
+    public string? Email { get; set; }
 
     [MaxLength(128)]
     public string? Profession { get; set; }

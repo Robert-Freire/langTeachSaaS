@@ -79,6 +79,7 @@ const SAMPLE_STUDENT: Student = {
     birthYear: null, age: null, profession: null,
     countryOfOrigin: null, cityOfOrigin: null,
     countryOfResidence: null, cityOfResidence: null,
+    dateOfBirth: null, email: null,
   },
   profile: {
     interests: ['reading'], personalNotes: null, teachingNotes: null,

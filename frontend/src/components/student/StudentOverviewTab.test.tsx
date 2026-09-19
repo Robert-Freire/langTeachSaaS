@@ -31,7 +31,7 @@ const BASE_STUDENT: Student = {
   learningLanguage: 'Spanish',
   level: { cefrLevel: 'B1', officialCefrLevel: null, skillLevelOverrides: {} },
   languages: { nativeLanguages: ['English'], spokenLanguages: [] },
-  identity: { birthYear: null, age: null, profession: 'Designer', countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+  identity: { birthYear: null, age: null, profession: 'Designer', countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, dateOfBirth: null, email: null },
   profile: { interests: ['reading', 'travel'], personalNotes: null, teachingNotes: null, learningGoals: [{ id: '1', text: 'Conversational fluency', children: [] }], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: 'Moving to Spain next year' },
   commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z',

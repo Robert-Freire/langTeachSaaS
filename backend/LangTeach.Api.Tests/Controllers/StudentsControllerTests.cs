@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Reflection;
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Controllers;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
@@ -761,6 +763,134 @@ public class StudentsControllerTests
         var response = await client.PostAsJsonAsync("/api/students/extract-profile", new { text = "any text" });
 
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task Update_DateOfBirthAndEmail_RoundTrip()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|dob-email-roundtrip", "dob-email-roundtrip@example.com");
+        var created = await CreateStudentAsync(client, "Jordi");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            Email = "jordi@example.com",
+        };
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+        updated.Identity.Email.Should().Be("jordi@example.com");
+        updated.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task Update_MalformedEmail_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|malformed-email", "malformed-email@example.com");
+        var created = await CreateStudentAsync(client, "Jordi Malformed");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            Email = "jordi@",
+        };
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PatchStudent_VoiceAssistantPatch_PreservesDateOfBirthAndEmail()
+    {
+        // Acceptance criterion: a PATCH via the voice/assistant path must never null DateOfBirth
+        // or Email, since PatchStudentRequest doesn't carry those fields.
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-preserves-dob-email", "patch-preserves-dob-email@example.com");
+        var created = await CreateStudentAsync(client, "Jordi Patch");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            Email = "jordi@example.com",
+        };
+        (await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var patch = new PatchStudentRequest { Profession = "Ingeniera", BirthYear = 1985 };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{created.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+        updated.Identity.Email.Should().Be("jordi@example.com");
+        // DateOfBirth wins over the voice-proposed BirthYear (#1413 decision).
+        updated.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public void MapStudentToUpdateRequest_CopiesEveryUpdateStudentRequestProperty()
+    {
+        // Drift-prevention: MapStudentToUpdateRequest pre-populates an UpdateStudentRequest from
+        // the current StudentDto before a PATCH overlays its fields. If a new Student field is
+        // added to UpdateStudentRequest but forgotten here, a PATCH silently nulls it (#1413 review).
+        var identity = new StudentIdentityDto(
+            BirthYear: 1990,
+            Age: 34,
+            Profession: "Engineer",
+            CountryOfOrigin: "Brazil",
+            CityOfOrigin: "Sao Paulo",
+            CountryOfResidence: "Spain",
+            CityOfResidence: "Madrid",
+            DateOfBirth: new DateOnly(1990, 5, 1),
+            Email: "test@example.com");
+        var profile = new StudentProfileDto(
+            Interests: ["reading"],
+            PersonalNotes: "notes",
+            TeachingNotes: "teaching notes",
+            LearningGoals: [],
+            Weaknesses: [],
+            Difficulties: [],
+            ShortTermObjectives: [],
+            TeachingTodos: [],
+            ReasonForStudying: "work");
+        var dto = new StudentDto(
+            Id: Guid.NewGuid(),
+            Name: "Test Student",
+            LearningLanguage: "Spanish",
+            Level: new StudentLevelDto("B1", "B2", new Dictionary<string, string>()),
+            Languages: new StudentLanguagesDto(["English"], ["French"]),
+            Identity: identity,
+            Profile: profile,
+            Commercial: new StudentCommercialDto(true, true, "25 euros"),
+            CreatedAt: DateTime.UtcNow,
+            UpdatedAt: DateTime.UtcNow,
+            TeachingChannel: null);
+
+        var method = typeof(StudentsController).GetMethod("MapStudentToUpdateRequest", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("MapStudentToUpdateRequest not found via reflection.");
+        var result = (UpdateStudentRequest)method.Invoke(null, [dto])!;
+
+        result.DateOfBirth.Should().Be(identity.DateOfBirth);
+        result.Email.Should().Be(identity.Email);
+        result.BirthYear.Should().Be(identity.BirthYear);
+        result.Profession.Should().Be(identity.Profession);
+        result.CountryOfOrigin.Should().Be(identity.CountryOfOrigin);
+        result.CityOfOrigin.Should().Be(identity.CityOfOrigin);
+        result.CountryOfResidence.Should().Be(identity.CountryOfResidence);
+        result.CityOfResidence.Should().Be(identity.CityOfResidence);
+        result.ReasonForStudying.Should().Be(profile.ReasonForStudying);
+        result.PersonalNotes.Should().Be(profile.PersonalNotes);
+        result.TeachingNotes.Should().Be(profile.TeachingNotes);
+        result.Interests.Should().BeEquivalentTo(profile.Interests);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(

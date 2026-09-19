@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { updateStudent } from '../api/students'
-import type { StudentFormData } from '../api/students'
+import type { Student, StudentFormData } from '../api/students'
 import { type SaveStatus, DEBOUNCE_MS, IDLE_RESET_MS, RETRY_DELAY_MS, MAX_RETRIES } from '../lib/autosaveConstants'
 
 interface UseStudentAutosaveResult {
@@ -30,6 +30,7 @@ interface UseStudentAutosaveResult {
 export function useStudentAutosave(
   studentId: string | undefined,
   getFormData: React.MutableRefObject<(() => StudentFormData | null) | null>,
+  onSaved?: (student: Student) => void,
 ): UseStudentAutosaveResult {
   // Tracks whether we are currently showing 'saved' (vs 'idle' after the 2s window).
   // React Query keeps isSuccess=true indefinitely; this flag handles the timed reset.
@@ -37,19 +38,22 @@ export function useStudentAutosave(
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSavedRef = useRef(onSaved)
+  useEffect(() => { onSavedRef.current = onSaved }, [onSaved])
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: StudentFormData }) =>
       updateStudent(id, data),
     retry: MAX_RETRIES,
     retryDelay: RETRY_DELAY_MS,
-    onSuccess: () => {
+    onSuccess: (student) => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
       setShowSaved(true)
       idleTimerRef.current = setTimeout(() => {
         setShowSaved(false)
         idleTimerRef.current = null
       }, IDLE_RESET_MS)
+      onSavedRef.current?.(student)
     },
   })
 

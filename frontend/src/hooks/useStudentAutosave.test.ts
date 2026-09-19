@@ -131,6 +131,17 @@ describe('useStudentAutosave', () => {
     expect(result.current.status).toBe('error')
   })
 
+  it('calls onSaved with the server response after a successful save', async () => {
+    const savedStudent = { id: 'stu-1', identity: { birthYear: 1992 } }
+    mockUpdateStudent.mockResolvedValue(savedStudent)
+    const ref = makeGetFormDataRef()
+    const onSaved = vi.fn()
+    const { result } = renderHook(() => useStudentAutosave('stu-1', ref, onSaved), { wrapper: makeWrapper() })
+    act(() => { result.current.saveNow() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(onSaved).toHaveBeenCalledWith(savedStudent)
+  })
+
   it('retries after error (up to 3 times)', async () => {
     mockUpdateStudent.mockRejectedValue(new Error('Network error'))
     const ref = makeGetFormDataRef()

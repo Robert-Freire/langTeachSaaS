@@ -36,7 +36,7 @@ const FULL_STUDENT: Student = {
   learningLanguage: 'Spanish',
   level: { cefrLevel: 'C1', officialCefrLevel: null, skillLevelOverrides: { Reading: 'B2', Writing: 'B1' } },
   languages: { nativeLanguages: ['Italian'], spokenLanguages: ['English', 'French'] },
-  identity: { birthYear: 1998, age: null, profession: 'Film student', countryOfOrigin: 'Italy', cityOfOrigin: 'Rome', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona' },
+  identity: { birthYear: 1998, age: 27, profession: 'Film student', countryOfOrigin: 'Italy', cityOfOrigin: 'Rome', countryOfResidence: 'Spain', cityOfResidence: 'Barcelona', dateOfBirth: null, email: null },
   profile: {
     interests: ['cinema', 'cooking'],
     personalNotes: 'Muy motivado, cinefilo.',

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plus, Trash2, Pencil, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
-import { getStudent, createStudent, updateStudent, deleteStudent, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
+import { getStudent, createStudent, updateStudent, deleteStudent, type Student, type StudentFormData, type Difficulty, type StudentWeaknessItem, type ShortTermObjective, type LearningGoalItem } from '../api/students'
 import { TeachingTodosCard } from '@/components/student/TeachingTodosCard'
 import { getObjectiveUrgency } from '@/lib/objectiveUrgency'
 import { COMPETENCY_OPTIONS } from '../lib/studentOptions'
@@ -45,6 +45,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_BIRTH_DATE = '1920-01-01'
 
 const FORM_SECTIONS = [
   { id: 'section-basic', label: 'Basic Info' },
@@ -192,6 +195,9 @@ export default function StudentForm() {
   const [personalNotes, setPersonalNotes] = useState('')
   const [teachingNotes, setTeachingNotes] = useState('')
   const [birthYear, setBirthYear] = useState<number | null>(null)
+  const [dateOfBirth, setDateOfBirth] = useState<string>('')
+  const [email, setEmail] = useState('')
+  const lastValidEmailRef = useRef<string | null>(null)
   const [profession, setProfession] = useState('')
   const [countryOfOrigin, setCountryOfOrigin] = useState('')
   const [cityOfOrigin, setCityOfOrigin] = useState('')
@@ -259,6 +265,9 @@ export default function StudentForm() {
       setPersonalNotes(existing.profile.personalNotes ?? '')
       setTeachingNotes(existing.profile.teachingNotes ?? '')
       setBirthYear(existing.identity.birthYear ?? null)
+      setDateOfBirth(existing.identity.dateOfBirth ?? '')
+      setEmail(existing.identity.email ?? '')
+      lastValidEmailRef.current = existing.identity.email ?? null
       setProfession(existing.identity.profession ?? '')
       setCountryOfOrigin(existing.identity.countryOfOrigin ?? '')
       setCityOfOrigin(existing.identity.cityOfOrigin ?? '')
@@ -297,6 +306,12 @@ export default function StudentForm() {
         personalNotes: personalNotes.trim() || null,
         teachingNotes: teachingNotes.trim() || null,
         birthYear: birthYear ?? null,
+        dateOfBirth: dateOfBirth || null,
+        email: (() => {
+          const trimmed = email.trim()
+          if (!trimmed) return null
+          return EMAIL_PATTERN.test(trimmed) ? trimmed : lastValidEmailRef.current
+        })(),
         profession: profession.trim() || null,
         countryOfOrigin: countryOfOrigin.trim() || null,
         cityOfOrigin: cityOfOrigin.trim() || null,
@@ -313,7 +328,7 @@ export default function StudentForm() {
   }, [
     isEdit, name, language, cefrLevel, officialCefrLevel, interests, nativeLanguages,
     spokenLanguages, skillLevelOverrides, learningGoals, weaknesses, difficulties,
-    personalNotes, teachingNotes, birthYear, profession, countryOfOrigin, cityOfOrigin,
+    personalNotes, teachingNotes, birthYear, dateOfBirth, email, profession, countryOfOrigin, cityOfOrigin,
     countryOfResidence, cityOfResidence, reasonForStudying, shortTermObjectives,
     isActive, isCorporate, rate, teachingChannel,
   ])
@@ -321,6 +336,7 @@ export default function StudentForm() {
   const { status: saveStatus, scheduleTextSave, saveNow } = useStudentAutosave(
     isEdit ? id : undefined,
     formDataRef,
+    useCallback((student: Student) => { setBirthYear(student.identity?.birthYear ?? null) }, []),
   )
 
   // Scrollspy: listen on the main scroll container
@@ -515,6 +531,7 @@ export default function StudentForm() {
     if (!name.trim()) errs.name = 'Name is required'
     if (!language) errs.language = 'Language is required'
     if (!cefrLevel) errs.cefrLevel = 'CEFR level is required'
+    if (email.trim() && !EMAIL_PATTERN.test(email.trim())) errs.email = 'Enter a valid email address'
     difficulties.forEach((d) => {
       const hasDesc = d.description.trim().length > 0
       const hasCom = d.competency.length > 0
@@ -567,6 +584,8 @@ export default function StudentForm() {
       personalNotes: personalNotes.trim() || null,
       teachingNotes: teachingNotes.trim() || null,
       birthYear: birthYear ?? null,
+      dateOfBirth: dateOfBirth || null,
+      email: EMAIL_PATTERN.test(email.trim()) ? email.trim() : null,
       profession: profession.trim() || null,
       countryOfOrigin: countryOfOrigin.trim() || null,
       cityOfOrigin: cityOfOrigin.trim() || null,
@@ -910,23 +929,56 @@ export default function StudentForm() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
                     <div className="space-y-1.5">
-                      <Label htmlFor="birth-year">Birth Year</Label>
+                      <Label htmlFor="date-of-birth">Date of Birth</Label>
                       <Input
-                        id="birth-year"
-                        type="number"
-                        value={birthYear ?? ''}
+                        id="date-of-birth"
+                        type="date"
+                        value={dateOfBirth}
                         onChange={(e) => {
-                          const raw = e.target.value
-                          const num = Number(raw)
-                          setBirthYear(raw && !isNaN(num) && Number.isInteger(num) ? num : null)
+                          setDateOfBirth(e.target.value)
                           if (isEdit) scheduleTextSave()
                         }}
-                        placeholder="e.g. 1990"
-                        min={1900}
-                        max={new Date().getFullYear()}
-                        data-testid="student-birth-year"
+                        min={MIN_BIRTH_DATE}
+                        max={new Date().toISOString().slice(0, 10)}
+                        data-testid="student-date-of-birth"
                       />
+                      {!dateOfBirth && birthYear && (
+                        <p className="text-xs italic text-zinc-400">
+                          Only the year is recorded ({birthYear}). Add the full date to replace it.
+                        </p>
+                      )}
                     </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="student-email">Email</Label>
+                      <Input
+                        id="student-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setEmail(val)
+                          const trimmed = val.trim()
+                          if (!trimmed) {
+                            lastValidEmailRef.current = null
+                            setErrors((prev) => { const next = { ...prev }; delete next.email; return next })
+                          } else if (EMAIL_PATTERN.test(trimmed)) {
+                            lastValidEmailRef.current = trimmed
+                            setErrors((prev) => { const next = { ...prev }; delete next.email; return next })
+                          } else {
+                            setErrors((prev) => ({ ...prev, email: 'Enter a valid email address' }))
+                          }
+                          if (isEdit) scheduleTextSave()
+                        }}
+                        placeholder="e.g. jordi@example.com"
+                        maxLength={254}
+                        data-testid="student-email"
+                      />
+                      {errors.email && (
+                        <p className="text-xs text-red-500" data-testid="student-email-error">{errors.email}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="max-w-sm">
                     <div className="space-y-1.5">
                       <Label htmlFor="profession">Profession</Label>
                       <Input

@@ -8,7 +8,7 @@ const BASE_STUDENT: Student = {
   id: '1', name: 'Marco', learningLanguage: 'Spanish',
   level: { cefrLevel: 'A1', officialCefrLevel: null, skillLevelOverrides: {} },
   languages: { nativeLanguages: [], spokenLanguages: [] },
-  identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null },
+  identity: { birthYear: null, age: null, profession: null, countryOfOrigin: null, cityOfOrigin: null, countryOfResidence: null, cityOfResidence: null, dateOfBirth: null, email: null },
   profile: { interests: [], personalNotes: null, teachingNotes: null, learningGoals: [], weaknesses: [], difficulties: [], shortTermObjectives: [], teachingTodos: [], reasonForStudying: null },
   commercial: { isActive: true, isCorporate: false, rate: null },
   createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', teachingChannel: null,

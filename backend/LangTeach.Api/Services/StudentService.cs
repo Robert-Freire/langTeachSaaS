@@ -108,7 +108,10 @@ public class StudentService : IStudentService
         ValidateWeaknesses(normalizedWeaknessesCreate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
-        ValidateBirthYear(request.BirthYear);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        ValidateBirthYear(request.BirthYear, today);
+        ValidateDateOfBirth(request.DateOfBirth, today);
+        var normalizedEmailCreate = NormalizeEmail(request.Email);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
@@ -127,7 +130,9 @@ public class StudentService : IStudentService
             Difficulties = Serialize(normalizedDifficulties),
             PersonalNotes = request.PersonalNotes,
             TeachingNotes = request.TeachingNotes,
-            BirthYear = request.BirthYear,
+            BirthYear = request.DateOfBirth?.Year ?? request.BirthYear,
+            DateOfBirth = request.DateOfBirth,
+            Email = normalizedEmailCreate,
             Profession = request.Profession,
             CountryOfOrigin = request.CountryOfOrigin,
             CityOfOrigin = request.CityOfOrigin,
@@ -167,7 +172,10 @@ public class StudentService : IStudentService
         ValidateWeaknesses(normalizedWeaknessesUpdate);
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
-        ValidateBirthYear(request.BirthYear);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        ValidateBirthYear(request.BirthYear, today);
+        ValidateDateOfBirth(request.DateOfBirth, today);
+        var normalizedEmailUpdate = NormalizeEmail(request.Email);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateLearningGoals(request.LearningGoals);
         var normalizedSkillOverrides = NormalizeSkillLevelOverrides(request.SkillLevelOverrides);
@@ -182,7 +190,11 @@ public class StudentService : IStudentService
         student.Difficulties = Serialize(normalizedDifficulties);
         student.PersonalNotes = request.PersonalNotes;
         student.TeachingNotes = request.TeachingNotes;
-        student.BirthYear = request.BirthYear;
+        // DateOfBirth wins when set; any conflicting BirthYear in the same request is ignored.
+        // Full PUT replace otherwise, consistent with every other nullable field on this request.
+        student.BirthYear = request.DateOfBirth?.Year ?? request.BirthYear;
+        student.DateOfBirth = request.DateOfBirth;
+        student.Email = normalizedEmailUpdate;
         student.Profession = request.Profession;
         student.CountryOfOrigin = request.CountryOfOrigin;
         student.CityOfOrigin = request.CityOfOrigin;
@@ -262,7 +274,9 @@ public class StudentService : IStudentService
             s.CountryOfOrigin,
             s.CityOfOrigin,
             s.CountryOfResidence,
-            s.CityOfResidence
+            s.CityOfResidence,
+            s.DateOfBirth,
+            s.Email
         ),
         new StudentProfileDto(
             JsonStorageHelper.DeserializeList<string>(s.Interests),
@@ -323,12 +337,29 @@ public class StudentService : IStudentService
         }
     }
 
-    private static void ValidateBirthYear(int? birthYear)
+    private static void ValidateBirthYear(int? birthYear, DateOnly today)
     {
         if (birthYear is null) return;
-        var currentYear = DateTime.UtcNow.Year;
-        if (birthYear < 1920 || birthYear > currentYear)
-            throw new ValidationException($"BirthYear must be between 1920 and {currentYear}.");
+        if (birthYear < 1920 || birthYear > today.Year)
+            throw new ValidationException($"BirthYear must be between 1920 and {today.Year}.");
+    }
+
+    private static void ValidateDateOfBirth(DateOnly? dateOfBirth, DateOnly today)
+    {
+        if (dateOfBirth is not DateOnly dob) return;
+        if (dob > today)
+            throw new ValidationException("DateOfBirth cannot be in the future.");
+        if (dob.Year < 1920)
+            throw new ValidationException("DateOfBirth cannot be before 1920.");
+    }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        var trimmed = email?.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return null;
+        if (!new EmailAddressAttribute().IsValid(trimmed))
+            throw new ValidationException("Email is not a valid email address.");
+        return trimmed;
     }
 
     private static void ValidateShortTermObjectives(List<ShortTermObjectiveDto> objectives)
