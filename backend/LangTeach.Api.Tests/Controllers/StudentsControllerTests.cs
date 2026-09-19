@@ -842,6 +842,8 @@ public class StudentsControllerTests
         // Drift-prevention: MapStudentToUpdateRequest pre-populates an UpdateStudentRequest from
         // the current StudentDto before a PATCH overlays its fields. If a new Student field is
         // added to UpdateStudentRequest but forgotten here, a PATCH silently nulls it (#1413 review).
+        // Every settable property on UpdateStudentRequest is asserted generically below (not a
+        // hand-picked subset) so a future field added to one side but not the mapper is caught.
         var identity = new StudentIdentityDto(
             BirthYear: 1990,
             Age: 34,
@@ -856,41 +858,52 @@ public class StudentsControllerTests
             Interests: ["reading"],
             PersonalNotes: "notes",
             TeachingNotes: "teaching notes",
-            LearningGoals: [],
-            Weaknesses: [],
-            Difficulties: [],
-            ShortTermObjectives: [],
-            TeachingTodos: [],
+            LearningGoals: [new LearningGoalDto("g1", "Goal", [])],
+            Weaknesses: [new StudentWeaknessDto("Ser/estar", "grammatical")],
+            Difficulties: [new DifficultyDto("d1", "desc", "Grammar", "sub", "high", "stable", "Active")],
+            ShortTermObjectives: [new ShortTermObjectiveDto("o1", "Objective", null)],
+            TeachingTodos: [new TeachingTodoDto("t1", "Todo", DateTime.UtcNow, null, "pending", null, null)],
             ReasonForStudying: "work");
         var dto = new StudentDto(
             Id: Guid.NewGuid(),
             Name: "Test Student",
             LearningLanguage: "Spanish",
-            Level: new StudentLevelDto("B1", "B2", new Dictionary<string, string>()),
+            Level: new StudentLevelDto("B1", "B2", new Dictionary<string, string> { ["Reading"] = "B2" }),
             Languages: new StudentLanguagesDto(["English"], ["French"]),
             Identity: identity,
             Profile: profile,
             Commercial: new StudentCommercialDto(true, true, "25 euros"),
             CreatedAt: DateTime.UtcNow,
             UpdatedAt: DateTime.UtcNow,
-            TeachingChannel: null);
+            TeachingChannel: LangTeach.Api.Data.Models.TeachingChannel.Meet);
 
         var method = typeof(StudentsController).GetMethod("MapStudentToUpdateRequest", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("MapStudentToUpdateRequest not found via reflection.");
         var result = (UpdateStudentRequest)method.Invoke(null, [dto])!;
 
+        // IsActive/IsCorporate are bool (no non-default sentinel), so they're checked by value below
+        // rather than generically; every other property must differ from its type's default.
+        foreach (var prop in typeof(UpdateStudentRequest).GetProperties())
+        {
+            if (prop.Name is nameof(UpdateStudentRequest.IsActive) or nameof(UpdateStudentRequest.IsCorporate))
+                continue;
+
+            var value = prop.GetValue(result);
+            var isDefault = value switch
+            {
+                null => true,
+                string s => string.IsNullOrEmpty(s),
+                System.Collections.ICollection c => c.Count == 0,
+                _ => value.Equals(Activator.CreateInstance(prop.PropertyType)),
+            };
+            isDefault.Should().BeFalse($"MapStudentToUpdateRequest must copy {prop.Name} from the current student, otherwise a PATCH would null it");
+        }
+
+        result.IsActive.Should().Be(dto.Commercial.IsActive);
+        result.IsCorporate.Should().Be(dto.Commercial.IsCorporate);
         result.DateOfBirth.Should().Be(identity.DateOfBirth);
         result.Email.Should().Be(identity.Email);
         result.BirthYear.Should().Be(identity.BirthYear);
-        result.Profession.Should().Be(identity.Profession);
-        result.CountryOfOrigin.Should().Be(identity.CountryOfOrigin);
-        result.CityOfOrigin.Should().Be(identity.CityOfOrigin);
-        result.CountryOfResidence.Should().Be(identity.CountryOfResidence);
-        result.CityOfResidence.Should().Be(identity.CityOfResidence);
-        result.ReasonForStudying.Should().Be(profile.ReasonForStudying);
-        result.PersonalNotes.Should().Be(profile.PersonalNotes);
-        result.TeachingNotes.Should().Be(profile.TeachingNotes);
-        result.Interests.Should().BeEquivalentTo(profile.Interests);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(

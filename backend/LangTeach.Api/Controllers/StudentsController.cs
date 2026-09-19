@@ -232,6 +232,7 @@ public class StudentsController : ControllerBase
         IsActive = s.Commercial.IsActive,
         IsCorporate = s.Commercial.IsCorporate,
         Rate = s.Commercial.Rate,
+        TeachingChannel = s.TeachingChannel,
     };
 
     [HttpPatch("{id:guid}/commercial")]

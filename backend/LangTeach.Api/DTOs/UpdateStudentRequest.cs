@@ -43,9 +43,11 @@ public class UpdateStudentRequest
     public string? TeachingNotes { get; set; }
 
     // Identity fields
-    // BirthYear is server-owned: derived from DateOfBirth when set, otherwise preserved from the
-    // existing student unless explicitly supplied (needed by the voice/assistant PATCH path via
-    // MapStudentToUpdateRequest). The edit form no longer sends this field.
+    // BirthYear is a plain full-replace field like every other nullable field on this request,
+    // except that a set DateOfBirth always wins: StudentService derives BirthYear from it and
+    // ignores any conflicting value here. The edit form has no direct BirthYear control but keeps
+    // resending the last-saved value (refreshed from each response) so clearing the date alone
+    // doesn't also clear it; MapStudentToUpdateRequest does the same for the voice/assistant path.
     public int? BirthYear { get; set; }
 
     public DateOnly? DateOfBirth { get; set; }
