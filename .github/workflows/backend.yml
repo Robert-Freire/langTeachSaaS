@@ -112,7 +112,7 @@ jobs:
   deploy:
     name: Build image and deploy
     needs: [ci, validate-secrets]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_FROZEN != 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
