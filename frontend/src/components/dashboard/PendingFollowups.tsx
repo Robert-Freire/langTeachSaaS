@@ -110,8 +110,12 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
         <div className="space-y-2">
           {visible.map((f, index) => {
             const badge = ageBadge(f.createdAt)
-            const prevStudentId = index > 0 ? visible[index - 1].studentId : null
-            const showChip = f.studentId && f.studentName && f.studentId !== prevStudentId
+            const groupKey = (item: TeacherFollowup) => item.studentId ?? item.groupId ?? 'general'
+            const key = groupKey(f)
+            const prevKey = index > 0 ? groupKey(visible[index - 1]) : null
+            const isGeneral = !f.studentId && !f.groupId
+            const showStudentChip = !!(f.studentId && f.studentName && key !== prevKey)
+            const showGeneralChip = isGeneral && key !== prevKey
             return (
               <div
                 key={f.id}
@@ -125,7 +129,7 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
                   data-testid={`followup-dot-${f.id}`}
                 />
                 <div className="flex-1 min-w-0">
-                  {showChip && (
+                  {showStudentChip && (
                     <Link
                       to={`/students/${f.studentId}`}
                       className="block text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-indigo-600 hover:text-indigo-700 font-inter mb-0.5 transition-colors"
@@ -133,6 +137,14 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
                     >
                       {f.studentName}
                     </Link>
+                  )}
+                  {showGeneralChip && (
+                    <span
+                      className="block text-[0.6875rem] font-bold uppercase tracking-[0.05em] text-zinc-400 font-inter mb-0.5"
+                      data-testid={`followup-general-chip-${f.id}`}
+                    >
+                      General
+                    </span>
                   )}
                   {f.studentId ? (
                     <Link

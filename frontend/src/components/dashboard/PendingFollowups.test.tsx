@@ -269,5 +269,41 @@ describe('PendingFollowups', () => {
       expect(screen.queryByTestId('followup-student-link-f2')).not.toBeInTheDocument()
       expect(screen.getByTestId('followup-student-link-f3')).toBeInTheDocument()
     })
+
+    it('shows a GENERAL chip for a general note between two student followups: HANNA, GENERAL, HANNA', () => {
+      const followups = [
+        makeFollowup({ id: 'f1', studentId: 'hanna-1', studentName: 'Hanna', text: 'Repasar subjuntivo' }),
+        makeFollowup({ id: 'f2', studentId: null, groupId: null, studentName: null, text: 'Revisar el documento de Caperucita' }),
+        makeFollowup({ id: 'f3', studentId: 'hanna-1', studentName: 'Hanna', text: 'Otra tarea de Hanna' }),
+      ]
+      wrap({ followups })
+      expect(screen.getByTestId('followup-student-link-f1')).toHaveTextContent('Hanna')
+      expect(screen.getByTestId('followup-general-chip-f2')).toHaveTextContent(/general/i)
+      expect(screen.getByTestId('followup-student-link-f3')).toHaveTextContent('Hanna')
+      // The GENERAL chip must not be a link or navigate anywhere.
+      expect(screen.getByTestId('followup-general-chip-f2').tagName).not.toBe('A')
+      expect(screen.getByTestId('followup-general-chip-f2')).not.toHaveAttribute('href')
+    })
+
+    it('consecutive general notes show a single GENERAL chip, like consecutive student followups', () => {
+      const followups = [
+        makeFollowup({ id: 'f1', studentId: null, studentName: null, text: 'Nota general 1' }),
+        makeFollowup({ id: 'f2', studentId: null, studentName: null, text: 'Nota general 2' }),
+      ]
+      wrap({ followups })
+      expect(screen.getByTestId('followup-general-chip-f1')).toBeInTheDocument()
+      expect(screen.queryByTestId('followup-general-chip-f2')).not.toBeInTheDocument()
+    })
+
+    it('a general note directly after a group-only followup still gets its own GENERAL chip', () => {
+      const followups = [
+        makeFollowup({ id: 'f1', studentId: null, groupId: 'group-1', studentName: null, text: 'Group todo' }),
+        makeFollowup({ id: 'f2', studentId: null, groupId: null, studentName: null, text: 'Nota general' }),
+      ]
+      wrap({ followups })
+      expect(screen.queryByTestId('followup-student-link-f1')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('followup-general-chip-f1')).not.toBeInTheDocument()
+      expect(screen.getByTestId('followup-general-chip-f2')).toBeInTheDocument()
+    })
   })
 })
