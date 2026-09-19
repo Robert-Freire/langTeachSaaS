@@ -1,5 +1,6 @@
 import type { TeacherFollowup } from '@/api/followups'
 import { createFollowup, updateFollowupStatus } from '@/api/followups'
+import { Input } from '@/components/ui/input'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -151,14 +152,14 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
 
       <div className="mt-3">
         <div className="flex gap-2">
-          <input
+          <Input
             ref={inputRef}
             type="text"
             value={newText}
             onChange={e => { setNewText(e.target.value); if (error) setError(null) }}
             onKeyDown={e => e.key === 'Enter' && handleAddNote()}
             placeholder="Add a general note..."
-            className="min-w-0 flex-1 rounded-md border border-zinc-200 bg-[#F4F2FD] px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            className="min-w-0 flex-1 h-auto rounded-md border-zinc-200 bg-amber-50 px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-amber-400"
             data-testid="general-note-input"
             disabled={createMutation.isPending}
           />
@@ -166,7 +167,7 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
             type="button"
             onClick={handleAddNote}
             disabled={createMutation.isPending || !newText.trim()}
-            className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+            className="shrink-0 rounded-lg bg-amber-500 p-1.5 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors"
             data-testid="general-note-add-btn"
           >
             <Plus className="h-4 w-4" />
