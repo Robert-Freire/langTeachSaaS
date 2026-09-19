@@ -837,6 +837,34 @@ public class StudentsControllerTests
     }
 
     [Fact]
+    public async Task PatchStudent_VoiceAssistantPatch_OutOfRangeBirthYear_DoesNotFailWhenDateOfBirthIsSet()
+    {
+        // CodeRabbit #1413: a stale/out-of-range voice-proposed BirthYear must be silently
+        // discarded (not validated) once the student already has a DateOfBirth on file, since
+        // MapStudentToUpdateRequest carries DateOfBirth into the same UpdateAsync call and it
+        // overrides BirthYear regardless.
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-oor-birthyear", "patch-oor-birthyear@example.com");
+        var created = await CreateStudentAsync(client, "Jordi OOR");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+        };
+        (await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var patch = new PatchStudentRequest { BirthYear = 1900 };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{created.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
     public void MapStudentToUpdateRequest_CopiesEveryUpdateStudentRequestProperty()
     {
         // Drift-prevention: MapStudentToUpdateRequest pre-populates an UpdateStudentRequest from

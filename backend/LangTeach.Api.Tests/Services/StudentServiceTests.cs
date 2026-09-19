@@ -494,6 +494,38 @@ public class StudentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_DateOfBirth_IgnoresOutOfRangeConflictingBirthYear_DoesNotThrow()
+    {
+        // CodeRabbit #1413: BirthYear must not be validated when DateOfBirth is set, since it gets
+        // overridden by it regardless (e.g. a stale voice-assistant proposal with an invalid year).
+        var request = BaseRequest();
+        request.DateOfBirth = new DateOnly(1992, 3, 12);
+        request.BirthYear = 1900;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DateOfBirth_IgnoresOutOfRangeConflictingBirthYear_DoesNotThrow()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            BirthYear = DateTime.UtcNow.Year + 5,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
     public async Task CreateAsync_DateOfBirth_FutureDate_ThrowsValidationException()
     {
         var request = BaseRequest();

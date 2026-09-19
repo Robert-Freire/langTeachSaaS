@@ -109,8 +109,12 @@ public class StudentService : IStudentService
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        ValidateBirthYear(request.BirthYear, today);
         ValidateDateOfBirth(request.DateOfBirth, today);
+        // Skip when DateOfBirth is set: it overrides BirthYear below, so an out-of-range
+        // BirthYear in the same request (e.g. a stale voice-assistant proposal) must be
+        // silently ignored, not rejected.
+        if (request.DateOfBirth is null)
+            ValidateBirthYear(request.BirthYear, today);
         var normalizedEmailCreate = NormalizeEmail(request.Email);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateLearningGoals(request.LearningGoals);
@@ -173,8 +177,12 @@ public class StudentService : IStudentService
         ValidateDifficulties(request.Difficulties);
         var normalizedDifficulties = NormalizeSystemFields(request.Difficulties);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        ValidateBirthYear(request.BirthYear, today);
         ValidateDateOfBirth(request.DateOfBirth, today);
+        // Skip when DateOfBirth is set: it overrides BirthYear below, so an out-of-range
+        // BirthYear in the same request (e.g. a stale voice-assistant proposal) must be
+        // silently ignored, not rejected.
+        if (request.DateOfBirth is null)
+            ValidateBirthYear(request.BirthYear, today);
         var normalizedEmailUpdate = NormalizeEmail(request.Email);
         ValidateShortTermObjectives(request.ShortTermObjectives);
         ValidateLearningGoals(request.LearningGoals);
