@@ -974,7 +974,7 @@ export default function StudentForm() {
                         data-testid="student-email"
                       />
                       {errors.email && (
-                        <p className="text-xs text-red-500" data-testid="student-email-error">{errors.email}</p>
+                        <p className="text-xs text-red-600" data-testid="student-email-error">{errors.email}</p>
                       )}
                     </div>
                   </div>
