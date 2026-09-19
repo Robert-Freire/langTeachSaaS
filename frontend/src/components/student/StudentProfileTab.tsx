@@ -510,7 +510,7 @@ function InterestsSection({
 function FieldValue({ label, value, href }: { label: string; value: string | number | null | undefined; href?: string }) {
   if (value == null || value === '') return null
   return (
-    <div className="flex items-baseline justify-between py-2 border-b border-[#F4F2FD] last:border-0">
+    <div className="flex items-baseline justify-between py-2.5">
       <span className="text-sm font-medium text-zinc-500">{label}</span>
       {href ? (
         <a href={href} className="text-sm font-bold text-indigo-600 text-right hover:underline">{value}</a>
@@ -903,13 +903,15 @@ export function StudentProfileTab({
             ============================================================ */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. Teacher's Working Memory (always visible, unconditional) */}
+          {/* 1. Student Details (structured identity fields; always visible, unconditional).
+              Named distinctly from the dark "Teacher's Working Memory" section below, which
+              holds freeform teacher notes — same label on both would be a naming collision. */}
           <section
             className="bg-white rounded-xl p-5"
             style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
             data-testid="profile-about"
           >
-            <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
+            <SectionHeader>Student Details</SectionHeader>
             {hasAbout ? (
               <div>
                 {student.identity.profession && <FieldValue label="Profession" value={student.identity.profession} />}
