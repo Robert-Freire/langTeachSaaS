@@ -394,6 +394,7 @@ Reference implementation: `ProposalCard.tsx` `TYPE_CONFIG`.
 |---------|-------------|---------------|----------|
 | Teaching Todos | "Add a teaching idea..." | "Teaching Todos" | `teachingTodos` (student) |
 | Followups | "Add followup..." | "Pending Followups" | `followups` (separate entity) |
+| Followups — general note (Dashboard, no student/group) | "Add a general note..." | "Pending Followups" | `followups` (studentId/groupId null); same `bg-amber-50`/`bg-amber-500` color family as Followups |
 | Session notes | n/a | "Notes" (never "Today's Context") | `generalNotes` |
 | Next session | n/a | "Next Session Plan" | `nextSessionTopics` |
 | Cancelled toggle | n/a | "Cancelled" (not under a "Status" heading) | `isCancelled` |
