@@ -21,6 +21,15 @@ test('@visual dashboard', async ({ browser }) => {
 
   await page.goto('/')
   await expect(page.locator('h1')).toBeVisible({ timeout: NAV_TIMEOUT })
+
+  // Pending Followups card includes the general-note add row, and at least
+  // one seeded followup (no studentId/groupId) renders without a student chip.
+  const followupsCard = page.getByTestId('zone2-pending-followups')
+  await expect(followupsCard.getByTestId('general-note-input')).toBeVisible()
+  const followupRowCount = await followupsCard.locator('[data-testid^="followup-dot-"]').count()
+  const chipCount = await followupsCard.locator('[data-testid^="followup-student-link-"]').count()
+  expect(chipCount).toBeLessThan(followupRowCount)
+
   await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true })
 
   expect(consoleErrors.filter(e => !e.includes('favicon'))).toHaveLength(0)
