@@ -1,12 +1,15 @@
 import type { TeacherFollowup } from '@/api/followups'
-import { updateFollowupStatus } from '@/api/followups'
-import { useState } from 'react'
+import { createFollowup, updateFollowupStatus } from '@/api/followups'
+import { useMutation } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 
 const SEE_ALL_THRESHOLD = 5
 
 interface PendingFollowupsProps {
   followups: TeacherFollowup[]
+  onNoteAdded: () => void
 }
 
 interface AgeBadgeInfo {
@@ -39,8 +42,30 @@ function ageBadge(createdAt: string): AgeBadgeInfo {
   }
 }
 
-export function PendingFollowups({ followups }: PendingFollowupsProps) {
+export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsProps) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const [newText, setNewText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const createMutation = useMutation({
+    mutationFn: (text: string) => createFollowup({ text, studentId: null, groupId: null }),
+    onSuccess: () => {
+      setNewText('')
+      setError(null)
+      onNoteAdded()
+      inputRef.current?.focus()
+    },
+    onError: () => {
+      setError('Could not save. Try again.')
+    },
+  })
+
+  function handleAddNote() {
+    const text = newText.trim()
+    if (!text || createMutation.isPending) return
+    createMutation.mutate(text)
+  }
 
   async function handleMarkDone(id: string) {
     setHidden(prev => new Set([...prev, id]))
@@ -123,6 +148,36 @@ export function PendingFollowups({ followups }: PendingFollowupsProps) {
           })}
         </div>
       )}
+
+      <div className="mt-3">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={newText}
+            onChange={e => { setNewText(e.target.value); if (error) setError(null) }}
+            onKeyDown={e => e.key === 'Enter' && handleAddNote()}
+            placeholder="Add a general note..."
+            className="min-w-0 flex-1 rounded-md border border-zinc-200 bg-[#F4F2FD] px-3 py-1.5 text-sm text-[#1A1B22] placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            data-testid="general-note-input"
+            disabled={createMutation.isPending}
+          />
+          <button
+            type="button"
+            onClick={handleAddNote}
+            disabled={createMutation.isPending || !newText.trim()}
+            className="shrink-0 rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+            data-testid="general-note-add-btn"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        {error && (
+          <p className="mt-1.5 text-[0.6875rem] font-semibold text-red-600" data-testid="general-note-error">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

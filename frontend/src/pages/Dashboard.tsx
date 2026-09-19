@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getDashboard } from '@/api/dashboard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NextSessionHero } from '@/components/dashboard/NextSessionHero'
@@ -10,6 +10,7 @@ import { StudentRoster } from '@/components/dashboard/StudentRoster'
 const SLOW_THRESHOLD_MS = 5000
 
 export default function Dashboard() {
+  const queryClient = useQueryClient()
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard'],
     queryFn: getDashboard,
@@ -78,7 +79,10 @@ export default function Dashboard() {
           nextSessionId={nextSession?.sessionLogId ?? null}
           upcomingThisWeek={upcomingThisWeek}
         />
-        <PendingFollowups followups={pendingFollowups} />
+        <PendingFollowups
+          followups={pendingFollowups}
+          onNoteAdded={() => queryClient.invalidateQueries({ queryKey: ['dashboard'] })}
+        />
       </div>
 
       {/* Zone 3: Student Roster */}
