@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Reflection;
 using FluentAssertions;
 using LangTeach.Api.AI;
+using LangTeach.Api.Controllers;
 using LangTeach.Api.DTOs;
 using LangTeach.Api.Services;
 using LangTeach.Api.Tests.Fixtures;
@@ -761,6 +763,175 @@ public class StudentsControllerTests
         var response = await client.PostAsJsonAsync("/api/students/extract-profile", new { text = "any text" });
 
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
+    [Fact]
+    public async Task Update_DateOfBirthAndEmail_RoundTrip()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|dob-email-roundtrip", "dob-email-roundtrip@example.com");
+        var created = await CreateStudentAsync(client, "Jordi");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            Email = "jordi@example.com",
+        };
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+        updated.Identity.Email.Should().Be("jordi@example.com");
+        updated.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task Update_MalformedEmail_ReturnsBadRequest()
+    {
+        var client = _factory.CreateAuthenticatedClient("auth0|malformed-email", "malformed-email@example.com");
+        var created = await CreateStudentAsync(client, "Jordi Malformed");
+
+        var updateRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            Email = "jordi@",
+        };
+        var response = await client.PutAsJsonAsync($"/api/students/{created.Id}", updateRequest);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PatchStudent_VoiceAssistantPatch_PreservesDateOfBirthAndEmail()
+    {
+        // Acceptance criterion: a PATCH via the voice/assistant path must never null DateOfBirth
+        // or Email, since PatchStudentRequest doesn't carry those fields.
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-preserves-dob-email", "patch-preserves-dob-email@example.com");
+        var created = await CreateStudentAsync(client, "Jordi Patch");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            Email = "jordi@example.com",
+        };
+        (await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var patch = new PatchStudentRequest { Profession = "Ingeniera", BirthYear = 1985 };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{created.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+        updated.Identity.Email.Should().Be("jordi@example.com");
+        // DateOfBirth wins over the voice-proposed BirthYear (#1413 decision).
+        updated.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task PatchStudent_VoiceAssistantPatch_OutOfRangeBirthYear_DoesNotFailWhenDateOfBirthIsSet()
+    {
+        // CodeRabbit #1413: a stale/out-of-range voice-proposed BirthYear must be silently
+        // discarded (not validated) once the student already has a DateOfBirth on file, since
+        // MapStudentToUpdateRequest carries DateOfBirth into the same UpdateAsync call and it
+        // overrides BirthYear regardless.
+        var client = _factory.CreateAuthenticatedClient("auth0|patch-oor-birthyear", "patch-oor-birthyear@example.com");
+        var created = await CreateStudentAsync(client, "Jordi OOR");
+
+        var setRequest = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+        };
+        (await client.PutAsJsonAsync($"/api/students/{created.Id}", setRequest))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var patch = new PatchStudentRequest { BirthYear = 1900 };
+        var patchResponse = await client.PatchAsJsonAsync($"/api/students/{created.Id}", patch);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await patchResponse.Content.ReadFromJsonAsync<StudentDto>();
+        updated!.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public void MapStudentToUpdateRequest_CopiesEveryUpdateStudentRequestProperty()
+    {
+        // Drift-prevention: MapStudentToUpdateRequest pre-populates an UpdateStudentRequest from
+        // the current StudentDto before a PATCH overlays its fields. If a new Student field is
+        // added to UpdateStudentRequest but forgotten here, a PATCH silently nulls it (#1413 review).
+        // Every settable property on UpdateStudentRequest is asserted generically below (not a
+        // hand-picked subset) so a future field added to one side but not the mapper is caught.
+        var identity = new StudentIdentityDto(
+            BirthYear: 1990,
+            Age: 34,
+            Profession: "Engineer",
+            CountryOfOrigin: "Brazil",
+            CityOfOrigin: "Sao Paulo",
+            CountryOfResidence: "Spain",
+            CityOfResidence: "Madrid",
+            DateOfBirth: new DateOnly(1990, 5, 1),
+            Email: "test@example.com");
+        var profile = new StudentProfileDto(
+            Interests: ["reading"],
+            PersonalNotes: "notes",
+            TeachingNotes: "teaching notes",
+            LearningGoals: [new LearningGoalDto("g1", "Goal", [])],
+            Weaknesses: [new StudentWeaknessDto("Ser/estar", "grammatical")],
+            Difficulties: [new DifficultyDto("d1", "desc", "Grammar", "sub", "high", "stable", "Active")],
+            ShortTermObjectives: [new ShortTermObjectiveDto("o1", "Objective", null)],
+            TeachingTodos: [new TeachingTodoDto("t1", "Todo", DateTime.UtcNow, null, "pending", null, null)],
+            ReasonForStudying: "work");
+        var dto = new StudentDto(
+            Id: Guid.NewGuid(),
+            Name: "Test Student",
+            LearningLanguage: "Spanish",
+            Level: new StudentLevelDto("B1", "B2", new Dictionary<string, string> { ["Reading"] = "B2" }),
+            Languages: new StudentLanguagesDto(["English"], ["French"]),
+            Identity: identity,
+            Profile: profile,
+            Commercial: new StudentCommercialDto(true, true, "25 euros"),
+            CreatedAt: DateTime.UtcNow,
+            UpdatedAt: DateTime.UtcNow,
+            TeachingChannel: LangTeach.Api.Data.Models.TeachingChannel.Meet);
+
+        var method = typeof(StudentsController).GetMethod("MapStudentToUpdateRequest", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("MapStudentToUpdateRequest not found via reflection.");
+        var result = (UpdateStudentRequest)method.Invoke(null, [dto])!;
+
+        // IsActive/IsCorporate are bool (no non-default sentinel), so they're checked by value below
+        // rather than generically; every other property must differ from its type's default.
+        foreach (var prop in typeof(UpdateStudentRequest).GetProperties())
+        {
+            if (prop.Name is nameof(UpdateStudentRequest.IsActive) or nameof(UpdateStudentRequest.IsCorporate))
+                continue;
+
+            var value = prop.GetValue(result);
+            var isDefault = value switch
+            {
+                null => true,
+                string s => string.IsNullOrEmpty(s),
+                System.Collections.ICollection c => c.Count == 0,
+                _ => value.Equals(Activator.CreateInstance(prop.PropertyType)),
+            };
+            isDefault.Should().BeFalse($"MapStudentToUpdateRequest must copy {prop.Name} from the current student, otherwise a PATCH would null it");
+        }
+
+        result.IsActive.Should().Be(dto.Commercial.IsActive);
+        result.IsCorporate.Should().Be(dto.Commercial.IsCorporate);
+        result.DateOfBirth.Should().Be(identity.DateOfBirth);
+        result.Email.Should().Be(identity.Email);
+        result.BirthYear.Should().Be(identity.BirthYear);
     }
 
     private static async Task<StudentDto> CreateStudentAsync(

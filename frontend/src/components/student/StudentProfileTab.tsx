@@ -507,14 +507,26 @@ function InterestsSection({
 // ------------------------------------------------------------------
 // FieldValue (used in Working Memory sidebar)
 // ------------------------------------------------------------------
-function FieldValue({ label, value }: { label: string; value: string | number | null | undefined }) {
+function FieldValue({ label, value, href }: { label: string; value: string | number | null | undefined; href?: string }) {
   if (value == null || value === '') return null
   return (
-    <div className="flex items-baseline justify-between py-2 border-b border-[#F4F2FD] last:border-0">
+    <div className="flex items-baseline justify-between py-2.5">
       <span className="text-sm font-medium text-zinc-500">{label}</span>
-      <span className="text-sm font-bold text-[#1A1B22] text-right">{value}</span>
+      {href ? (
+        <a href={href} className="text-sm font-bold text-indigo-600 text-right hover:underline">{value}</a>
+      ) : (
+        <span className="text-sm font-bold text-[#1A1B22] text-right">{value}</span>
+      )}
     </div>
   )
+}
+
+const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** "12 Mar 1992" from an ISO yyyy-MM-dd date-only string. */
+function formatDateOfBirth(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return `${day} ${MONTH_ABBREVIATIONS[month - 1]} ${year}`
 }
 
 // ------------------------------------------------------------------
@@ -541,6 +553,7 @@ export function StudentProfileTab({
 
   const hasAbout = !!(
     student.identity.birthYear ||
+    student.identity.email ||
     student.identity.profession ||
     student.identity.countryOfOrigin ||
     student.identity.cityOfOrigin ||
@@ -890,20 +903,31 @@ export function StudentProfileTab({
             ============================================================ */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. Teacher's Working Memory (always visible, unconditional) */}
+          {/* 1. Student Details (structured identity fields; always visible, unconditional).
+              Named distinctly from the dark "Teacher's Working Memory" section below, which
+              holds freeform teacher notes — same label on both would be a naming collision. */}
           <section
             className="bg-white rounded-xl p-5"
             style={{ boxShadow: '0 2px 12px rgba(26,27,34,0.06)' }}
             data-testid="profile-about"
           >
-            <SectionHeader>Teacher&apos;s Working Memory</SectionHeader>
+            <SectionHeader>Student Details</SectionHeader>
             {hasAbout ? (
               <div>
                 {student.identity.profession && <FieldValue label="Profession" value={student.identity.profession} />}
-                {student.identity.birthYear != null && (() => {
-                  const age = new Date().getFullYear() - student.identity.birthYear!
-                  return <FieldValue label="Born" value={`${student.identity.birthYear} (${age})`} />
-                })()}
+                {student.identity.email && (
+                  <FieldValue label="Email" value={student.identity.email} href={`mailto:${student.identity.email}`} />
+                )}
+                {student.identity.birthYear != null && (
+                  <FieldValue
+                    label="Born"
+                    value={
+                      student.identity.dateOfBirth
+                        ? `${formatDateOfBirth(student.identity.dateOfBirth)} (${student.identity.age})`
+                        : `${student.identity.birthYear} (${student.identity.age})`
+                    }
+                  />
+                )}
                 {origin && <FieldValue label="Origin" value={origin} />}
                 {location && <FieldValue label="Residence" value={location} />}
               </div>

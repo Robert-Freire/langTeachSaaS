@@ -59,6 +59,8 @@ export interface StudentIdentity {
   cityOfOrigin: string | null
   countryOfResidence: string | null
   cityOfResidence: string | null
+  dateOfBirth: string | null
+  email: string | null
 }
 
 export interface StudentProfile {
@@ -112,6 +114,8 @@ export interface StudentFormData {
   weaknesses: StudentWeaknessItem[]
   difficulties: Difficulty[]
   birthYear?: number | null
+  dateOfBirth?: string | null
+  email?: string | null
   profession?: string | null
   countryOfOrigin?: string | null
   cityOfOrigin?: string | null

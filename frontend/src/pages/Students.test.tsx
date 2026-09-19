@@ -83,6 +83,7 @@ function makeStudent(overrides: FlatStudentOverrides = {}): studentsApi.Student 
       profession: overrides.profession ?? null,
       countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null,
       countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null,
+      dateOfBirth: null, email: null,
     },
     profile: {
       interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null,

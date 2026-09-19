@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -107,7 +107,7 @@ function makeMockStudent(overrides: {
   id?: string; name?: string; learningLanguage?: string;
   cefrLevel?: string; officialCefrLevel?: string | null; skillLevelOverrides?: Record<string, string>;
   nativeLanguages?: string[]; spokenLanguages?: string[];
-  birthYear?: number | null; profession?: string | null;
+  birthYear?: number | null; dateOfBirth?: string | null; email?: string | null; profession?: string | null;
   countryOfOrigin?: string | null; cityOfOrigin?: string | null;
   countryOfResidence?: string | null; cityOfResidence?: string | null; reasonForStudying?: string | null;
   interests?: string[]; personalNotes?: string | null; teachingNotes?: string | null;
@@ -125,7 +125,7 @@ function makeMockStudent(overrides: {
     learningLanguage: overrides.learningLanguage ?? 'Spanish',
     level: { cefrLevel: overrides.cefrLevel ?? 'B1', officialCefrLevel: overrides.officialCefrLevel ?? null, skillLevelOverrides: overrides.skillLevelOverrides ?? {} },
     languages: { nativeLanguages: overrides.nativeLanguages ?? [], spokenLanguages: overrides.spokenLanguages ?? [] },
-    identity: { birthYear: overrides.birthYear ?? null, age: null, profession: overrides.profession ?? null, countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null, countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null },
+    identity: { birthYear: overrides.birthYear ?? null, age: null, profession: overrides.profession ?? null, countryOfOrigin: overrides.countryOfOrigin ?? null, cityOfOrigin: overrides.cityOfOrigin ?? null, countryOfResidence: overrides.countryOfResidence ?? null, cityOfResidence: overrides.cityOfResidence ?? null, dateOfBirth: overrides.dateOfBirth ?? null, email: overrides.email ?? null },
     profile: { interests: overrides.interests ?? [], personalNotes: overrides.personalNotes ?? null, teachingNotes: overrides.teachingNotes ?? null, learningGoals: overrides.learningGoals ?? [], weaknesses: overrides.weaknesses ?? [], difficulties: overrides.difficulties ?? [], shortTermObjectives: overrides.shortTermObjectives ?? [], teachingTodos: overrides.teachingTodos ?? [], reasonForStudying: overrides.reasonForStudying ?? null },
     commercial: { isActive: overrides.isActive ?? true, isCorporate: overrides.isCorporate ?? false, rate: overrides.rate ?? null },
     createdAt: overrides.createdAt ?? '2026-01-01T00:00:00Z',
@@ -542,10 +542,11 @@ describe('StudentForm', () => {
     expect(chips[2]).toHaveTextContent('Catalan')
   })
 
-  it('renders Personal Background section with all 6 identity fields', () => {
+  it('renders Personal Background section with all identity fields', () => {
     renderNew()
     expect(screen.getByText('Personal Background')).toBeInTheDocument()
-    expect(screen.getByTestId('student-birth-year')).toBeInTheDocument()
+    expect(screen.getByTestId('student-date-of-birth')).toBeInTheDocument()
+    expect(screen.getByTestId('student-email')).toBeInTheDocument()
     expect(screen.getByTestId('student-profession')).toBeInTheDocument()
     expect(screen.getByTestId('student-country-origin')).toBeInTheDocument()
     expect(screen.getByTestId('student-city-origin')).toBeInTheDocument()
@@ -555,17 +556,26 @@ describe('StudentForm', () => {
 
   it('pre-populates identity fields in edit mode', async () => {
     mockGetStudent.mockResolvedValue(makeMockStudent({
-      birthYear: 1990, profession: 'Architect', countryOfOrigin: 'Portugal', cityOfOrigin: 'Lisbon',
+      birthYear: 1990, dateOfBirth: '1990-05-15', email: 'ana@example.com',
+      profession: 'Architect', countryOfOrigin: 'Portugal', cityOfOrigin: 'Lisbon',
       countryOfResidence: 'Spain', cityOfResidence: 'Madrid',
     }))
     renderEdit()
     await screen.findByRole('heading', { name: 'Edit Student' })
-    expect(screen.getByTestId('student-birth-year')).toHaveValue(1990)
+    expect(screen.getByTestId('student-date-of-birth')).toHaveValue('1990-05-15')
+    expect(screen.getByTestId('student-email')).toHaveValue('ana@example.com')
     expect(screen.getByTestId('student-profession')).toHaveValue('Architect')
     expect(screen.getByTestId('student-country-origin')).toHaveValue('Portugal')
     expect(screen.getByTestId('student-city-origin')).toHaveValue('Lisbon')
     expect(screen.getByTestId('student-country-residence')).toHaveValue('Spain')
     expect(screen.getByTestId('student-city-residence')).toHaveValue('Madrid')
+  })
+
+  it('shows helper text with the recorded year when only birthYear is known', async () => {
+    mockGetStudent.mockResolvedValue(makeMockStudent({ birthYear: 1992 }))
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+    expect(screen.getByText(/Only the year is recorded \(1992\)/)).toBeInTheDocument()
   })
 
   it('includes identity fields in form submission', async () => {
@@ -579,7 +589,8 @@ describe('StudentForm', () => {
     await user.click(await screen.findByRole('option', { name: 'Spanish' }))
     await user.click(screen.getByTestId('student-cefr'))
     await user.click(await screen.findByRole('option', { name: 'B1' }))
-    await user.type(screen.getByTestId('student-birth-year'), '1990')
+    fireEvent.change(screen.getByTestId('student-date-of-birth'), { target: { value: '1990-05-15' } })
+    await user.type(screen.getByTestId('student-email'), 'engineer@example.com')
     await user.type(screen.getByTestId('student-profession'), 'Engineer')
     await user.type(screen.getByTestId('student-country-origin'), 'Portugal')
     await user.type(screen.getByTestId('student-city-origin'), 'Porto')
@@ -591,7 +602,8 @@ describe('StudentForm', () => {
     await vi.waitFor(() => {
       expect(mockCreateStudent).toHaveBeenCalledWith(
         expect.objectContaining({
-          birthYear: 1990,
+          dateOfBirth: '1990-05-15',
+          email: 'engineer@example.com',
           profession: 'Engineer',
           countryOfOrigin: 'Portugal',
           cityOfOrigin: 'Porto',
@@ -601,6 +613,27 @@ describe('StudentForm', () => {
       )
     }, { timeout: 8000 })
   })
+
+  it('shows inline error for malformed email and does not block other autosaves', async () => {
+    mockGetStudent.mockResolvedValue(makeMockStudent({ email: 'jordi@example.com' }))
+    mockUpdateStudent.mockResolvedValue({ id: 'stu-1', identity: { birthYear: null } })
+    renderEdit()
+    await screen.findByRole('heading', { name: 'Edit Student' })
+
+    const emailInput = screen.getByTestId('student-email')
+    fireEvent.change(emailInput, { target: { value: 'jordi@' } })
+
+    await screen.findByTestId('student-email-error')
+
+    fireEvent.change(screen.getByTestId('student-profession'), { target: { value: 'Teacher' } })
+
+    await vi.waitFor(() => {
+      expect(mockUpdateStudent).toHaveBeenCalledWith(
+        'stu-1',
+        expect.objectContaining({ email: 'jordi@example.com', profession: 'Teacher' }),
+      )
+    })
+  }, 10000)
 
   it('renders Reason for Studying textarea', () => {
     renderNew()

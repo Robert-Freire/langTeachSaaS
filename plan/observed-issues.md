@@ -6,6 +6,8 @@ Out-of-scope observations logged by agents during implementation. Each row is so
 |---|---|---|---|
 | #1398 | 2026-05-31 | low | AssistantTargetResolver.TryNormalizeSpoken emits CEFR subforms like "B1.1" which violate project rule (only A1/A2/B1/B2/C1/C2 valid, no dot notation). Pre-existing, out of scope. |
 | #1362 | 2026-05-25 | medium | DemoSeeder.SeedTeacherFollowupsAsync throws SQL FK constraint error 547 (DemoSeeder.cs:978) during visual-stack startup on sprint/groups, which aborts EnsureAnaVisualCorrectionAsync so no demo corrections get seeded. Non-fatal (API still starts healthy) but blocks the correction-detail visual spec and review-ui Corregida screenshots. Pre-existing, unrelated to this PR. |
+| #1413 | 2026-09-19 | low | No UI path left to clear a student's BirthYear once set. The edit form's Birth Year input was replaced by Date of Birth; clearing DOB intentionally keeps the last-known year (per issue decision), but there is no longer any control that nulls BirthYear directly. Only reachable via a raw API call. Out of scope for #1413 (not required by its acceptance criteria); file as a follow-up if a teacher actually needs to erase birth data entirely. |
+| #1413 | 2026-09-19 | low | Voice/assistant profile extraction can still propose a `birthYear` for a student who already has a full `DateOfBirth` set; the server silently keeps deriving BirthYear from DateOfBirth and ignores the proposal (intentional per #1413's design), but the assistant UI still shows the proposal as "applied" with no indication it was overridden. Sophy flagged this in pre-implementation review as an accepted edge case, not fixed. Revisit if a voice-extraction bug report surfaces around birth year not updating. |
 
 ---
 

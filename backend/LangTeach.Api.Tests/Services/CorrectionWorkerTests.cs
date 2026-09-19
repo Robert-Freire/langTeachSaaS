@@ -233,6 +233,8 @@ public class CorrectionWorkerTests : IDisposable
                 TeachingNotes TEXT,
                 SkillLevelOverrides TEXT NOT NULL DEFAULT '{}',
                 BirthYear INTEGER,
+                DateOfBirth TEXT,
+                Email TEXT,
                 Profession TEXT,
                 CountryOfOrigin TEXT,
                 CityOfOrigin TEXT,

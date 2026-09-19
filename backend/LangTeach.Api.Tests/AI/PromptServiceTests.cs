@@ -3752,6 +3752,32 @@ public class PromptServiceTests
     }
 
     [Fact]
+    public void GenerationContext_HasNoDateOfBirthOrEmailField()
+    {
+        // #1413: DateOfBirth and Email must never reach an AI prompt. Age may continue to flow
+        // as today. Enforced structurally: GenerationContext must never gain a property that
+        // would let either value leak into a rendered prompt.
+        var properties = typeof(GenerationContext).GetProperties();
+
+        properties.Should().NotContain(p =>
+            p.Name.Contains("DateOfBirth", StringComparison.OrdinalIgnoreCase) ||
+            p.Name.Contains("Email", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Age_RenderedPrompt_NeverContainsDateOfBirthOrEmailStrings()
+    {
+        var dobString = "1992-03-12";
+        var emailString = "jordi@example.com";
+        var ctx = BaseCtx("Ana") with { StudentAge = 34 };
+
+        var request = _sut.BuildLessonPlanPrompt(ctx);
+
+        request.SystemPrompt.Should().NotContain(dobString);
+        request.SystemPrompt.Should().NotContain(emailString);
+    }
+
+    [Fact]
     public void CountryOfOriginAndResidence_IncludedInSystemPrompt()
     {
         var ctx = BaseCtx("Ana") with

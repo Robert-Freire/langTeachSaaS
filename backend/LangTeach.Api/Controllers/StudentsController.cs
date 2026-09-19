@@ -221,6 +221,8 @@ public class StudentsController : ControllerBase
         ShortTermObjectives = s.Profile.ShortTermObjectives,
         TeachingTodos = s.Profile.TeachingTodos,
         BirthYear = s.Identity.BirthYear,
+        DateOfBirth = s.Identity.DateOfBirth,
+        Email = s.Identity.Email,
         Profession = s.Identity.Profession,
         CountryOfOrigin = s.Identity.CountryOfOrigin,
         CityOfOrigin = s.Identity.CityOfOrigin,
@@ -230,6 +232,7 @@ public class StudentsController : ControllerBase
         IsActive = s.Commercial.IsActive,
         IsCorporate = s.Commercial.IsCorporate,
         Rate = s.Commercial.Rate,
+        TeachingChannel = s.TeachingChannel,
     };
 
     [HttpPatch("{id:guid}/commercial")]

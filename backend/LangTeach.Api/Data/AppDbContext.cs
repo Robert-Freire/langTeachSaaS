@@ -65,6 +65,7 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.Cascade);
             e.Property(s => s.IsDeleted).HasDefaultValue(false);
             e.Property(s => s.SkillLevelOverrides).HasDefaultValue("{}");
+            e.Property(s => s.Email).HasMaxLength(254);
         });
 
         // LessonTemplate — seeded, read-only

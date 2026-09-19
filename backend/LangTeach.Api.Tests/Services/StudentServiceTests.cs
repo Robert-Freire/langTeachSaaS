@@ -477,4 +477,216 @@ public class StudentServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ValidationException>();
     }
+
+    // DateOfBirth / Email tests
+
+    [Fact]
+    public async Task CreateAsync_DateOfBirth_DerivesBirthYear_IgnoringConflictingRequestValue()
+    {
+        var request = BaseRequest();
+        request.DateOfBirth = new DateOnly(1992, 3, 12);
+        request.BirthYear = 1980;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.Identity.BirthYear.Should().Be(1992);
+        result.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+    }
+
+    [Fact]
+    public async Task CreateAsync_DateOfBirth_IgnoresOutOfRangeConflictingBirthYear_DoesNotThrow()
+    {
+        // CodeRabbit #1413: BirthYear must not be validated when DateOfBirth is set, since it gets
+        // overridden by it regardless (e.g. a stale voice-assistant proposal with an invalid year).
+        var request = BaseRequest();
+        request.DateOfBirth = new DateOnly(1992, 3, 12);
+        request.BirthYear = 1900;
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DateOfBirth_IgnoresOutOfRangeConflictingBirthYear_DoesNotThrow()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = new DateOnly(1992, 3, 12),
+            BirthYear = DateTime.UtcNow.Year + 5,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task CreateAsync_DateOfBirth_FutureDate_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.DateOfBirth = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_DateOfBirth_Before1920_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.DateOfBirth = new DateOnly(1919, 12, 31);
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_Email_TrimmedAndPersisted()
+    {
+        var request = BaseRequest();
+        request.Email = "  jordi@example.com  ";
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.Identity.Email.Should().Be("jordi@example.com");
+    }
+
+    [Fact]
+    public async Task CreateAsync_Email_WhitespaceOnly_BecomesNull()
+    {
+        var request = BaseRequest();
+        request.Email = "   ";
+
+        var result = await _sut.CreateAsync(_teacherId, request);
+
+        result.Identity.Email.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateAsync_Email_Malformed_ThrowsValidationException()
+    {
+        var request = BaseRequest();
+        request.Email = "jordi@";
+
+        var act = () => _sut.CreateAsync(_teacherId, request);
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DateOfBirth_BirthdayLaterThisYear_AgeNotYetIncremented()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var birthdayLaterThisYear = new DateOnly(today.Year - 34, 12, 31);
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = birthdayLaterThisYear,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.Age.Should().Be(33);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearingDateOfBirth_KeepsLastKnownBirthYear_WhenResent()
+    {
+        // BirthYear is plain full-replace on PUT, like every other nullable field (#1307 contract).
+        // Clearing the date field alone would also null BirthYear; the edit form keeps this from
+        // happening by resending the last-saved birthYear on every autosave (#1413 decision).
+        var createRequest = BaseRequest();
+        createRequest.DateOfBirth = new DateOnly(1992, 3, 12);
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+        created.Identity.BirthYear.Should().Be(1992);
+
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = null,
+            BirthYear = created.Identity.BirthYear,
+        };
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.DateOfBirth.Should().BeNull();
+        result.Identity.BirthYear.Should().Be(1992);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearingDateOfBirth_WithoutResendingBirthYear_ClearsBirthYearToo()
+    {
+        var createRequest = BaseRequest();
+        createRequest.DateOfBirth = new DateOnly(1992, 3, 12);
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = null,
+        };
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.DateOfBirth.Should().BeNull();
+        result.Identity.BirthYear.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_VoicePatchStyleBirthYear_SurvivesWhenNoDateOfBirthSet()
+    {
+        var created = await _sut.CreateAsync(_teacherId, BaseRequest());
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            BirthYear = 1988,
+        };
+
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.BirthYear.Should().Be(1988);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DateOfBirthAndEmail_SurviveInlineEditOfOtherFields()
+    {
+        var createRequest = BaseRequest();
+        createRequest.DateOfBirth = new DateOnly(1992, 3, 12);
+        createRequest.Email = "jordi@example.com";
+        var created = await _sut.CreateAsync(_teacherId, createRequest);
+
+        var update = new UpdateStudentRequest
+        {
+            Name = created.Name,
+            LearningLanguage = created.LearningLanguage,
+            CefrLevel = created.Level.CefrLevel,
+            DateOfBirth = created.Identity.DateOfBirth,
+            Email = created.Identity.Email,
+            Interests = ["cooking"],
+        };
+        var result = await _sut.UpdateAsync(_teacherId, created.Id, update);
+
+        result!.Identity.DateOfBirth.Should().Be(new DateOnly(1992, 3, 12));
+        result.Identity.Email.Should().Be("jordi@example.com");
+        result.Profile.Interests.Should().BeEquivalentTo(["cooking"]);
+    }
+
+    // Drift-prevention: every settable UpdateStudentRequest property must be copied by
+    // StudentsController.MapStudentToUpdateRequest, or a save that doesn't touch a given field
+    // silently nulls it. See LangTeach.Api.Tests.Controllers.StudentsControllerTests for the
+    // reflection-based assertion against MapStudentToUpdateRequest.
 }

@@ -22,7 +22,9 @@ public record StudentIdentityDto(
     string? CountryOfOrigin,
     string? CityOfOrigin,
     string? CountryOfResidence,
-    string? CityOfResidence
+    string? CityOfResidence,
+    DateOnly? DateOfBirth,
+    string? Email
 );
 
 public record StudentProfileDto(

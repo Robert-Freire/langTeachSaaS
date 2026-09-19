@@ -169,7 +169,7 @@ public static class DemoSeeder
 
         var students = new List<Student>
         {
-            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", SpokenLanguages = AnaVisualSpokenLanguages, PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, CreatedAt = now, UpdatedAt = now },
+            new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Ana Visual",   LearningLanguage = "English", CefrLevel = "B2", NativeLanguages = """["Portuguese","Ukrainian"]""", SpokenLanguages = AnaVisualSpokenLanguages, PersonalNotes = VisualTag, LearningGoals = AnaVisualLearningGoals, ShortTermObjectives = AnaVisualShortTermObjectives, SkillLevelOverrides = AnaVisualSkillLevelOverrides, Weaknesses = """[{"description":"Phrasal verbs","weaknessType":"grammatical"},{"description":"Travel vocabulary gaps","weaknessType":"lexical"}]""", Difficulties = AnaVisualDifficulties, BirthYear = 1992, DateOfBirth = new DateOnly(1992, 3, 12), Email = "ana.visual@example.com", CreatedAt = now, UpdatedAt = now },
             new() { Id = Guid.NewGuid(), TeacherId = teacher.Id, Name = "Marco Visual", LearningLanguage = "English", CefrLevel = "A2", NativeLanguages = """["Italian"]""", PersonalNotes = VisualTag, CreatedAt = now, UpdatedAt = now },
         };
         db.Students.AddRange(students);
@@ -333,6 +333,8 @@ public static class DemoSeeder
             TeachingNotes      = "Responds well to visual aids. Prefers structured grammar drills over free conversation. Review subjunctive triggers next session.",
             SkillLevelOverrides = """{"Reading":"B2","Speaking":"B1","Writing":"A2","Listening":"B1"}""",
             BirthYear          = 1992,
+            DateOfBirth        = new DateOnly(1992, 3, 12),
+            Email              = "ana.seed@example.com",
             Profession         = "Marketing Manager",
             CountryOfOrigin    = "Brazil",
             CityOfOrigin       = "São Paulo",
@@ -1052,6 +1054,8 @@ public static class DemoSeeder
             existing.TeachingNotes         = incoming.TeachingNotes;
             existing.SkillLevelOverrides   = incoming.SkillLevelOverrides;
             existing.BirthYear             = incoming.BirthYear;
+            existing.DateOfBirth           = incoming.DateOfBirth;
+            existing.Email                 = incoming.Email;
             existing.Profession            = incoming.Profession;
             existing.CountryOfOrigin       = incoming.CountryOfOrigin;
             existing.CityOfOrigin          = incoming.CityOfOrigin;

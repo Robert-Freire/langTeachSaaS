@@ -117,6 +117,8 @@ export default function StudentDetail() {
       personalNotes: student.profile.personalNotes,
       teachingNotes: student.profile.teachingNotes,
       birthYear: student.identity.birthYear,
+      dateOfBirth: student.identity.dateOfBirth,
+      email: student.identity.email,
       profession: student.identity.profession,
       countryOfOrigin: student.identity.countryOfOrigin,
       cityOfOrigin: student.identity.cityOfOrigin,
