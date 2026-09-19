@@ -48,6 +48,7 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
   const [newText, setNewText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const submittingRef = useRef(false)
 
   const createMutation = useMutation({
     mutationFn: (text: string) => createFollowup({ text, studentId: null, groupId: null }),
@@ -60,11 +61,15 @@ export function PendingFollowups({ followups, onNoteAdded }: PendingFollowupsPro
     onError: () => {
       setError('Could not save. Try again.')
     },
+    onSettled: () => {
+      submittingRef.current = false
+    },
   })
 
   function handleAddNote() {
     const text = newText.trim()
-    if (!text || createMutation.isPending) return
+    if (!text || submittingRef.current) return
+    submittingRef.current = true
     createMutation.mutate(text)
   }
 

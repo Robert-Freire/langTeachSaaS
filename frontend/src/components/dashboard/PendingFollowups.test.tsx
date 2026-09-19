@@ -219,6 +219,27 @@ describe('PendingFollowups', () => {
       await waitFor(() => expect((input as HTMLInputElement).value).toBe(''))
     })
 
+    it('does not create a duplicate when Enter and the Add button fire back-to-back in the same synchronous pass', async () => {
+      // Regression test: createMutation.isPending is a snapshot from the
+      // last render (React Query notifies re-renders via a batched,
+      // macrotask-scheduled manager), so it can still read stale/false
+      // across two handleAddNote() calls that both run before any
+      // re-render happens. A ref-based latch, set synchronously the
+      // instant the first call starts, is what actually prevents the
+      // second call regardless of render/notification timing.
+      let resolveCreate: (value: TeacherFollowup) => void = () => {}
+      mockCreate.mockReturnValue(new Promise<TeacherFollowup>(resolve => { resolveCreate = resolve }))
+      wrap({ followups: [] })
+      const input = screen.getByTestId('general-note-input')
+      fireEvent.change(input, { target: { value: 'Nota' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      fireEvent.click(screen.getByTestId('general-note-add-btn'))
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+      expect(mockCreate).toHaveBeenCalledTimes(1)
+      resolveCreate(makeFollowup({ id: 'new-f', studentId: null, studentName: null }))
+      await waitFor(() => expect((input as HTMLInputElement).value).toBe(''))
+    })
+
     it('keeps the typed text and shows an inline error when the save fails', async () => {
       mockCreate.mockRejectedValue(new Error('network error'))
       wrap({ followups: [] })
